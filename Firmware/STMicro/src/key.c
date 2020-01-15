@@ -37,11 +37,11 @@ void KEY_SetCallback(unsigned int key, KEY_Callback cb)
 {
 	switch (key)
 	{
-		case KEY_2:		cbKey2  = cb;
-		case KEY_5:		cbKey5  = cb;
-		case KEY_7:		cbKey7  = cb;
-		case KEY_11:	cbKey11 = cb;
-		case KEY_12:	cbKey12 = cb;
+		case KEY_2:		cbKey2  = cb; break;
+		case KEY_5:		cbKey5  = cb; break;
+		case KEY_7:		cbKey7  = cb; break;
+		case KEY_11:	cbKey11 = cb; break;
+		case KEY_12:	cbKey12 = cb; break;
 	}
 }
 
