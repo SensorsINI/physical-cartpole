@@ -29,9 +29,9 @@ void ENCODER_Init(void)
 	TIM4->CR1		|= 0x01;				// CEN=1 Enabling timer
 }
 
-unsigned short ENCODER_Read(void)
+short ENCODER_Read(void)
 {
-	return TIM4->CNT;
+	return -(TIM4->CNT); // tobi: negate to make most positive cart position to right side when facing the cart side of balancer
 }
 
 void TIM4_IRQHandler(void)

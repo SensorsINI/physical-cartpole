@@ -139,7 +139,7 @@ void CONTROL_Loop(void)
 
 		// Limit the motor speed
 		// This will reduce the numerical range of command from an int to a short
-		command = angleCmd - positionCmd;
+		command = angleCmd + positionCmd; // was minus before postionCmd, but error seemed wrong sign
 		if      (command >  CONTROL_MOTOR_MAX_SPEED) command =  CONTROL_MOTOR_MAX_SPEED;
 		else if (command < -CONTROL_MOTOR_MAX_SPEED) command = -CONTROL_MOTOR_MAX_SPEED;
 		
@@ -386,6 +386,7 @@ void cmd_StreamOutput(bool en)
 
 void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 {
+#define SPEED 3000
 	short pos;
 	short diff;
 
@@ -396,7 +397,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	// Get left limit
 	SYS_DelayMS(10);
 	positionLimitLeft = ENCODER_Read();
-	MOTOR_SetSpeed(-1500);
+	MOTOR_SetSpeed(-SPEED);
 	
 	while (true)
 	{
@@ -416,7 +417,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	// Get right limit
 	SYS_DelayMS(10);
 	positionLimitRight = ENCODER_Read();
-	MOTOR_SetSpeed(1500);
+	MOTOR_SetSpeed(SPEED);
 	
 	while (true)
 	{
@@ -435,13 +436,13 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 
 	// Move pendulum to the centre (roughly)
 	SYS_DelayMS(10);
-	positionCentre = (positionLimitRight + positionLimitLeft) >> 1;
-	MOTOR_SetSpeed(-1500);
+	positionCentre = (positionLimitRight + positionLimitLeft) >> 1; // average limits
+	MOTOR_SetSpeed(-SPEED/2); // slower to get back to middle
 	while (true)
 	{
 		pos = ENCODER_Read();
 		diff = pos - positionCentre;
-		if (diff < 1)
+		if (diff < 50 && diff >-50) // tobi: check both sides in case position is negative on final calibration side
 		{
 			break;
 		}

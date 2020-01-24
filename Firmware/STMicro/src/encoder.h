@@ -6,6 +6,6 @@
 #define ENCODER_ZERO	10000U
 
 void            ENCODER_Init(void);
-unsigned short	ENCODER_Read(void);
+short	ENCODER_Read(void);
 
 #endif /*__ENCODER_H_*/
