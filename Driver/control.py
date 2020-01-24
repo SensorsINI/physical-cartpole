@@ -1,7 +1,12 @@
 import time
 import kbhit
 import json
+import math
+import csv
+from datetime import datetime
+
 from pendulum import Pendulum
+
 
 SERIAL_PORT             = "/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD             = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
@@ -34,7 +39,7 @@ def saveparams():
     p['POSITION_KP']=POSITION_KP
     p['POSITION_KD']=POSITION_KD
     p['ANGLE_SMOOTHING']=ANGLE_SMOOTHING
-    p['POSITION_SMOOTHING']=ANGLE_SMOOTHING
+    p['POSITION_SMOOTHING']=POSITION_SMOOTHING
     with open('control.json','w') as f:
         json.dump(p,f)
     
@@ -72,7 +77,9 @@ def help():
     print("r/e position proportional gain")
     print("f/d position derivative gain")
     print("c/v position smoothing")
+    print("l toggle logging data")
     print("S/L Save/Load param values from disk")
+    print("D Toggle dance mode")
     print("***********************************")
 
 def printparams():
@@ -88,7 +95,7 @@ def printparams():
     print("    Control Period  {0} ms".format(POSITION_CTRL_PERIOD_MS))
     print("    Smoothing       {0:.2f}".format(POSITION_SMOOTHING))
     print("    P Gain          {0:.2f}".format(POSITION_KP))
-    print("    D Gain          {0:.2f}".format(POSITION_KD))
+    print("    D Gain          {0:.2f}".format(POSITION_KD))    
 
 ratio=1.05
    
@@ -113,9 +120,6 @@ def dec(param):
             param-=1
     return param
     
-    
-    
-
 if ANGLE_CTRL_PERIOD_MS < CONTROL_PERIOD_MS or POSITION_CTRL_PERIOD_MS <CONTROL_PERIOD_MS:
     raise Exception("angle or position control periods too short compared to CONTROL_PERIOD_MS")
 
@@ -127,9 +131,6 @@ p = Pendulum()
 p.open(SERIAL_PORT, SERIAL_BAUD)
 p.control_mode(False)
 p.stream_output(False)
-
-    
-
 
 if CALIBRATE:
     print("Calibrating motor position....")
@@ -186,6 +187,12 @@ positionCmd         = 0
 
 controlEnabled=False
 
+danceEnabled=False
+danceAmpl=1000
+dancePeriodS=8
+
+loggingEnabled=False
+
 kbAvailable=True
 try:
     kb = kbhit.KBHit() # can only use in posix terminal; cannot use from spyder ipython console for example
@@ -208,7 +215,27 @@ while True:
     if kbAvailable & kb.kbhit():
         c = kb.getch()
 
-        if c == 'k':
+        if c=='D':
+            danceEnabled=~danceEnabled
+            print("\ndanceEnabled= {0}".format(danceEnabled))
+        elif c == 'l':
+            loggingEnabled=~loggingEnabled
+            print("\nloggingEnabled= {0}".format(loggingEnabled))
+            if loggingEnabled:
+                try:
+                    csvfilename=datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
+                    csvfile=open(csvfilename, 'w', newline='')
+                    csvwriter = csv.writer(csvfile, delimiter=',')
+                    csvwriter.writerow(['time'] + ['deltaTimeMs']+['angle'] + ['position'] + ['angleTarget']  + ['angleErr'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd']+['actualMotorCmd'])
+                    print("\n Started logging data to "+csvfilename)
+                except Exception as e:
+                    loggingEnabled=False
+                    print("\n" + str(e) + ": Exception opening csvfile; logging disabled")
+            else:
+                csvfile.close()
+                print("\n Stopped logging data to "+csvfilename)
+
+        elif c == 'k':
             controlEnabled=~controlEnabled
             print("\ncontrolEnabled= {0}".format(controlEnabled))
         elif c == 'K':
@@ -230,11 +257,11 @@ while True:
 
         # Increase Target Position
         elif c == ']':
-            POSITION_TARGET += 10
+            POSITION_TARGET += 200
             print("\nIncreased target position to {0}".format(POSITION_TARGET))
         # Decrease Target Position
         elif c == '[':
-            POSITION_TARGET -= 10
+            POSITION_TARGET -= 200
             print("\nDecreased target position to {0}".format(POSITION_TARGET))
             
         # Angle Gains
@@ -301,12 +328,23 @@ while True:
     
      
     timeNow=time.time()
+    deltaTime=timeNow-lastTime
+    lastTime=timeNow
+    elapsedTime=timeNow-startTime
+    diffFactor=(CONTROL_PERIOD_MS/(deltaTime*1000))
+    
+    
+    positionTargetNow=POSITION_TARGET
+    if controlEnabled and danceEnabled:
+        positionTargetNow=POSITION_TARGET+danceAmpl*math.sin(2*math.pi*(elapsedTime/dancePeriodS))
+
+        
     # Balance PD Control
     # Position PD Control
     if timeNow -lastPositionControlTime >= POSITION_CTRL_PERIOD_MS*.001:
         lastPositionControlTime=timeNow
-        positionErr         = POSITION_SMOOTHING*(position - POSITION_TARGET) + (1.0 - POSITION_SMOOTHING)*positionErrPrev # First order low-P=pass filter
-        positionErrDiff     = positionErr - positionErrPrev
+        positionErr         = POSITION_SMOOTHING*(position - positionTargetNow) + (1.0 - POSITION_SMOOTHING)*positionErrPrev # First order low-P=pass filter
+        positionErrDiff     = (positionErr - positionErrPrev)*diffFactor
         positionErrPrev     = positionErr
         # Naive solution: if too positive (too right), move left (minus on positionCmd), 
         # but this does not produce correct control.
@@ -320,7 +358,7 @@ while True:
     if timeNow-lastAngleControlTime >= ANGLE_CTRL_PERIOD_MS*.001:
         lastAngleControlTime=timeNow
         angleErr            = ANGLE_SMOOTHING*(angle - ANGLE_TARGET) + (1.0 - ANGLE_SMOOTHING)*angleErrPrev # First order low-pass filter
-        angleErrDiff        = angleErr - angleErrPrev
+        angleErrDiff        = (angleErr - angleErrPrev)*diffFactor # correct for actual sample interval; if interval is too long, reduce diff error
         angleErrPrev        = angleErr
         angleCmd            = -(ANGLE_KP*angleErr + ANGLE_KD*angleErrDiff) # if too CCW (pos error), move cart left
 
@@ -328,25 +366,33 @@ while True:
     motorCmd = int(round(angleCmd + positionCmd)) # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
     motorCmd =  MOTOR_MAX_PWM if motorCmd >  MOTOR_MAX_PWM else motorCmd
     motorCmd = -MOTOR_MAX_PWM if motorCmd < -MOTOR_MAX_PWM else motorCmd
+    
     if controlEnabled:
         # Send motor command
+        actualMotorCmd=motorCmd
         p.set_motor(motorCmd) # positive motor cmd moves cart right 
     else:
         p.set_motor(0) # turn off motor
-    deltaTime=timeNow-lastTime
-    lastTime=timeNow
+        actualMotorCmd=0
+   
+    if loggingEnabled:
+#      csvwriter.writerow(['time'] + ['deltaTimeMs']+['angle'] + ['position']  + ['angleErr'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'])
+       csvwriter.writerow([elapsedTime,deltaTime*1000,angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd,positionCmd,motorCmd,actualMotorCmd])
+   
     # Print output
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS/CONTROL_PERIOD_MS):
         printCount = 0
-        elapsedTime=timeNow-startTime
         print("\r angle {:+4d} angleErr {:+6.1f} position {:+6d} positionErr {:+6.1f} angleCmd {:+6d} positionCmd {:+6d} motorCmd {:+6d} dt {:.3f}ms            \r".format(int(angle), angleErr, int(position),  positionErr, int(round(angleCmd)), int(round(positionCmd)), motorCmd, deltaTime*1000) , end = '')
 # if we pause like below, state info piles up in serial input buffer
         # instead loop at max possible rate to get latest state info
 #    time.sleep(CONTROL_PERIOD_MS*.001)  # not quite correct since there will be time for execution below
 
 # when x hit during loop or other loop exit
+p.set_motor(0) # turn off motor
 p.close()
+if loggingEnabled:
+    csvfile.close()
     
 
 
