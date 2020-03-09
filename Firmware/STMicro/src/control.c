@@ -38,9 +38,9 @@ unsigned short  angleSamples[64];
 short			angleErrPrev;
 short			positionErrPrev;
 unsigned short 	positionPeriodCnt;
-short			positionCentre;
-short			positionLimitLeft;
-short			positionLimitRight;
+int			positionCentre;
+int			positionLimitLeft;
+int			positionLimitRight;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[32];
@@ -65,9 +65,9 @@ void CONTROL_Init(void)
 	angleErrPrev		= 0;
 	positionErrPrev		= 0;
 	positionPeriodCnt 	= position_ctrlPeriod - 1;
-    positionCentre      = (short)ENCODER_Read();
-    positionLimitLeft   = positionCentre - 1;
-    positionLimitRight  = positionCentre + 1;
+    positionCentre      = (short)ENCODER_Read(); // assume starting position is near center
+    positionLimitLeft   = positionCentre - 2400;
+    positionLimitRight  = positionCentre + 2400; // guess defaults based on 7000-8000 counts at limits
 }
 
 void CONTROL_ToggleState(void)
@@ -163,6 +163,7 @@ void CONTROL_Loop(void)
         if (stopCnt == 500/CONTROL_LOOP_PERIOD_MS)
         {
             cmd_ControlMode(false);
+            MOTOR_SetSpeed(0);
             stopCnt = 0;
         }
         else
@@ -173,7 +174,7 @@ void CONTROL_Loop(void)
 	else
 	{
 		command = 0;
-        stopCnt = 0;
+    stopCnt = 0;
 	}
 
 	// Send latest state to the PC
@@ -387,10 +388,10 @@ void cmd_StreamOutput(bool en)
 void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 {
 #define SPEED 3000
-	short pos;
-	short diff;
+	int pos;
+	int diff;
 
-    __disable_irq();
+ // __disable_irq();
 	MOTOR_Stop();
 	Led_Enable(true);
 
@@ -401,32 +402,33 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	
 	while (true)
 	{
-		SYS_DelayMS(25);
+		SYS_DelayMS(100);
 		pos  = ENCODER_Read();
 		diff = pos - positionLimitLeft;
 		positionLimitLeft = pos;
 
-		if ((diff < 1) && (diff > -1))
+		if ((diff < 10) && (diff > -10)) // if we don't move enough, must have hit limit
 		{
 			break;
 		}
 	}
 
 	MOTOR_Stop();
+	Led_Enable(false);
 
 	// Get right limit
-	SYS_DelayMS(10);
+	SYS_DelayMS(1000);
 	positionLimitRight = ENCODER_Read();
 	MOTOR_SetSpeed(SPEED);
 	
 	while (true)
 	{
-		SYS_DelayMS(25);
+		SYS_DelayMS(100);
 		pos  = ENCODER_Read();
 		diff = pos - positionLimitRight;
 		positionLimitRight = pos;
 		
-		if ((diff < 1) && (diff > -1))
+		if ((diff < 10) && (diff > -10))
 		{
 			break;
 		}
@@ -435,26 +437,27 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	MOTOR_Stop();
 
 	// Move pendulum to the centre (roughly)
-	SYS_DelayMS(10);
-	positionCentre = (positionLimitRight + positionLimitLeft) >> 1; // average limits
+	Led_Enable(true);
+	SYS_DelayMS(1000);
+	positionCentre = (positionLimitRight + positionLimitLeft) /2; // average limits
+	pos = ENCODER_Read();
+	diff = pos - positionCentre;
 	MOTOR_SetSpeed(-SPEED/2); // slower to get back to middle
-	while (true)
+	int count=500;
+	while (diff >100 && --count>0)
 	{
+		SYS_DelayMS(25);
 		pos = ENCODER_Read();
 		diff = pos - positionCentre;
-		if (diff < 50 && diff >-50) // tobi: check both sides in case position is negative on final calibration side
-		{
-			break;
-		}
 	}
 
 	MOTOR_Stop();
     
-    SYS_DelayMS(100);
-    USART_SendBuffer(buff, len);
-    isCalibrated = true;
-    Led_Enable(false);
-    __enable_irq();
+	SYS_DelayMS(100);
+	USART_SendBuffer(buff, len);
+	isCalibrated = true;
+	Led_Enable(false);
+//	__enable_irq();
 }
 
 void cmd_ControlMode(bool en)
@@ -548,25 +551,24 @@ void cmd_GetPositionConfig(void)
 
 void cmd_SetMotor(int speed)
 {
-    short position;
-    
+		int position;
+
+//	MOTOR_SetSpeed(speed);
 	// Only command the motor if the on-board control routine is disabled
-	if (!controlEnabled)
-	{
-        position = ENCODER_Read();
-        
-        // Disable motor if falls hard on either limit
-        if ((speed < 0) && (position < (positionLimitLeft + 20)))
-        {
-            MOTOR_Stop();
-        }
-        else if ((speed > 0) && (position > (positionLimitRight - 20)))
-        {
-            MOTOR_Stop();
-        }
-		else
-        {
-            MOTOR_SetSpeed(speed);
+	if (!controlEnabled){
+				position = ENCODER_Read();
+
+				// Disable motor if falls hard on either limit
+				if ((speed < 0) && (position < (positionLimitLeft + 10)))
+				{
+						MOTOR_Stop();
+				}
+				else if ((speed > 0) && (position > (positionLimitRight - 10)))
+				{
+						MOTOR_Stop();
+				}
+		else{
+				MOTOR_SetSpeed(speed);
 		}
 	}
 }

@@ -1,20 +1,30 @@
 import time
-import kbhit
 import json
 import math
 import csv
+import serial # conda install pyserial
+import sys
+import glob
+# pygame needs python 3.6, not available for 3.7
+import pygame # conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
+import pygame.joystick as joystick # https://www.pygame.org/docs/ref/joystick.html
 from datetime import datetime
-
+# our imports
+import kbhit
 from pendulum import Pendulum
 
+POLOLU_MOTOR            = False # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
-SERIAL_PORT             = "/dev/ttyUSB0" # might move if other devices plugged in
+SERIAL_PORT             = "COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD             = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 PRINT_PERIOD_MS         = 100  # shows state every this many ms
 CONTROL_PERIOD_MS       = 5
-CALIBRATE               = False # True
-MOTOR_FULL_SCALE        = 7199
+CALIBRATE               = False #False # important to calibrate if running standalone to avoid motor burnout because limits are determined during this calibration
+MOTOR_FULL_SCALE        =  7199 # 7199 # with pololu motor and scaling in firmware #7199 # with original motor 
 MOTOR_MAX_PWM           = int(round(0.95 * MOTOR_FULL_SCALE))
+
+JOYSTICK_SCALING        = MOTOR_MAX_PWM # how much joystick value -1:1 should be scaled to motor command
+JOYSTICK_DEADZONE       = 0.05 # deadzone around joystick neutral position that stick is ignored
 
 ANGLE_TARGET            = 3129 # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
 ANGLE_CTRL_PERIOD_MS    = 5         # Must be a multiple of CONTROL_PERIOD_MS
@@ -28,6 +38,37 @@ POSITION_CTRL_PERIOD_MS = 25        # Must be a multiple of CONTROL_PERIOD_MS
 POSITION_SMOOTHING      = 1       # 1.0 turns off smoothing
 POSITION_KP             = 20
 POSITION_KD             = 300
+
+def serial_ports(): # from https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        # if cannot open, check permissions
+        ports = glob.glob('/dev/ttyUSB[0-9]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+
+
 
 def saveparams():
     print("\nSaving parameters")
@@ -123,14 +164,49 @@ def dec(param):
 if ANGLE_CTRL_PERIOD_MS < CONTROL_PERIOD_MS or POSITION_CTRL_PERIOD_MS <CONTROL_PERIOD_MS:
     raise Exception("angle or position control periods too short compared to CONTROL_PERIOD_MS")
 
+# check that we are running from terminal, otherwise we cannot control it
+if sys.stdin.isatty():
+    # running interactively
+    print('running interactively from an interactive terminal, ok')
+else:
+   print('run from an interactive terminal to allow keyboard input')
+   quit()
 
 ################################################################################
 # OPEN SERIAL PORT
 ################################################################################
 p = Pendulum()
-p.open(SERIAL_PORT, SERIAL_BAUD)
+serialPorts=serial_ports()
+print('Available serial ports: '+str(serialPorts))
+if len(serialPorts)==0:
+    print('no serial ports available, or cannot open it; check linux permissions\n Under linux, sudo chmod a+rw [port] transiently, or add user to dialout or tty group')
+    quit()
+
+if len(serialPorts)>1:
+    print(str(len(serialPorts))+' serial ports, taking first one which is '+str(serialPorts[0]))
+SERIAL_PORT=str(serialPorts[0])
+try:
+    p.open(SERIAL_PORT, SERIAL_BAUD)
+except:
+    print('cannot open port '+str(SERIAL_PORT)+': available ports are '+str(serial_ports()))
+    quit()
+
+print('opened '+str(SERIAL_PORT)+' successfully')
 p.control_mode(False)
 p.stream_output(False)
+
+joystickExists=False
+pygame.init()
+joystick.init()
+if joystick.get_count()==1:
+    stick = joystick.Joystick(0)
+    stick.init()
+    axisNum = stick.get_numaxes()
+    buttonNum = stick.get_numbuttons()
+    joystickExists=True
+    print('joystick found with '+str(axisNum)+' axes and '+str(buttonNum)+' buttons')
+else:
+    print('no joystick found, only PD control or no control possible')
 
 if CALIBRATE:
     print("Calibrating motor position....")
@@ -140,9 +216,8 @@ if CALIBRATE:
         exit()
     print("Done calibrating")
 
+loadparams()
 time.sleep(1)
-
-
 
 ################################################################################
 # SET PARAMETERS
@@ -188,7 +263,7 @@ positionCmd         = 0
 controlEnabled=False
 
 danceEnabled=False
-danceAmpl=1000
+danceAmpl=500
 dancePeriodS=8
 
 loggingEnabled=False
@@ -239,9 +314,10 @@ while True:
             controlEnabled=~controlEnabled
             print("\ncontrolEnabled= {0}".format(controlEnabled))
         elif c == 'K':
-           controlEnabled=False
-           print("\nCalibration triggered")
-           p.calibrate()
+            controlEnabled=False
+            print("\nCalibration triggered")
+            p.calibrate()
+            print("\nCalibration finished")
         elif c == 'h' or c=='?':
             help()
         elif c == 'p' :
@@ -329,6 +405,8 @@ while True:
      
     timeNow=time.time()
     deltaTime=timeNow-lastTime
+    if deltaTime==0:
+        deltaTime=1e-6
     lastTime=timeNow
     elapsedTime=timeNow-startTime
     diffFactor=(CONTROL_PERIOD_MS/(deltaTime*1000))
@@ -366,15 +444,31 @@ while True:
     motorCmd = int(round(angleCmd + positionCmd)) # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
     motorCmd =  MOTOR_MAX_PWM if motorCmd >  MOTOR_MAX_PWM else motorCmd
     motorCmd = -MOTOR_MAX_PWM if motorCmd < -MOTOR_MAX_PWM else motorCmd
+
+    stickPos=0.0
+    if joystickExists:
+        # for event in pygame.event.get(): # User did something.
+        #     if event.type == pygame.QUIT: # If user clicked close.
+        #         done = True # Flag that we are done so we exit this loop.
+        #     elif event.type == pygame.JOYBUTTONDOWN:
+        #         print("Joystick button pressed.")
+        #     elif event.type == pygame.JOYBUTTONUP:
+        #         print("Joystick button released.")
+        pygame.event.get() # must call get() to handle internal queue
+        stickPos=stick.get_axis(0) # 0 left right, 1 front back 2 rotate
     
-    if controlEnabled:
-        # Send motor command
+    if abs(stickPos)>JOYSTICK_DEADZONE:
+        actualMotorCmd=int(round(stickPos*JOYSTICK_SCALING))
+    elif controlEnabled:
         actualMotorCmd=motorCmd
-        p.set_motor(motorCmd) # positive motor cmd moves cart right 
     else:
-        p.set_motor(0) # turn off motor
         actualMotorCmd=0
-   
+
+    if POLOLU_MOTOR==False:
+        p.set_motor(-actualMotorCmd) # positive motor cmd moves cart right
+    else:
+        p.set_motor(actualMotorCmd)  # positive motor cmd moves cart right
+
     if loggingEnabled:
 #      csvwriter.writerow(['time'] + ['deltaTimeMs']+['angle'] + ['position']  + ['angleErr'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'])
        csvwriter.writerow([elapsedTime,deltaTime*1000,angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd,positionCmd,motorCmd,actualMotorCmd])
@@ -383,7 +477,7 @@ while True:
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS/CONTROL_PERIOD_MS):
         printCount = 0
-        print("\r angle {:+4d} angleErr {:+6.1f} position {:+6d} positionErr {:+6.1f} angleCmd {:+6d} positionCmd {:+6d} motorCmd {:+6d} dt {:.3f}ms            \r".format(int(angle), angleErr, int(position),  positionErr, int(round(angleCmd)), int(round(positionCmd)), motorCmd, deltaTime*1000) , end = '')
+        print("\r angle {:+4d} angleErr {:+6.1f} position {:+6d} positionErr {:+6.1f} angleCmd {:+6d} positionCmd {:+6d} motorCmd {:+6d} dt {:.3f}ms  stick {:.3f}         \r".format(int(angle), angleErr, int(position),  positionErr, int(round(angleCmd)), int(round(positionCmd)), actualMotorCmd, deltaTime*1000, stickPos), end = '')
 # if we pause like below, state info piles up in serial input buffer
         # instead loop at max possible rate to get latest state info
 #    time.sleep(CONTROL_PERIOD_MS*.001)  # not quite correct since there will be time for execution below
@@ -391,6 +485,8 @@ while True:
 # when x hit during loop or other loop exit
 p.set_motor(0) # turn off motor
 p.close()
+joystick.quit()
+
 if loggingEnabled:
     csvfile.close()
     

@@ -1,26 +1,58 @@
-SERIAL_PORT         = "/dev/ttyUSB0";
+%%
+SERIAL_PORT         = "/dev/ttyUSB1";
 BAUD_RATE           = 230400;
-CALIBRATE           = true;
+CALIBRATE           = false;
 CONTROL_LOOP_MS     = 5;
 ANGLE_SET_POINT     = 3110;
 POSITION_SET_POINT  = 10000;
 RUN_TIME_S          = 5;
 
-p = Pendulum;
-p.open(SERIAL_PORT, BAUD_RATE, CALIBRATE);
-p.clear_buffer();
+%%
+fprintf("printing state\n");
 
-for ii = 1:round((RUN_TIME_S * 1000)/CONTROL_LOOP_MS)
-    [angle ,position] = p.get_state();
+try
+    p = Pendulum;
+    p.open(SERIAL_PORT, BAUD_RATE, CALIBRATE);
+    p.clear_buffer();
 
-    cmd = -100 * (angle - ANGLE_SET_POINT);
-    cmd = round(cmd);
+    for ii = 1:1000
+        [angle ,position] = p.get_state();
+        p.clear_buffer();
+        fprintf("angle %d\tposition %d\n",angle, position);
+       pause(.1);
+     end
+    p.close();
 
-    if mod((ii-1), round(1000/CONTROL_LOOP_MS)) == 0
-        fprintf("%+05d %+06d %+05d\n", angle, position, cmd);
-    end
-   
-    p.set_motor(cmd);
+catch err
+    p.close();
+    rethrow(err);
 end
 
-p.close();
+
+%%
+fprintf("p control for angle\n");
+try
+    p = Pendulum;
+    p.open(SERIAL_PORT, BAUD_RATE, CALIBRATE);
+    p.clear_buffer();
+
+    for ii = 1:round((RUN_TIME_S * 1000)/CONTROL_LOOP_MS)
+        [angle ,position] = p.get_state();
+
+        cmd = -100 * (angle - ANGLE_SET_POINT);
+        
+        if mod((ii-1), round(300/CONTROL_LOOP_MS)) == 0
+            fprintf("angle: %+05d position: %+06d motor: %+05d\n", angle, position, cmd);
+        end
+        
+        
+        cmd = round(cmd);
+        p.set_motor(cmd);
+    end
+    p.close();
+
+catch err
+    p.close();
+    rethrow(err);
+end
+  

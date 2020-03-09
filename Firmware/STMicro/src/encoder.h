@@ -3,9 +3,9 @@
 
 #include "sys.h"
 
-#define ENCODER_ZERO	10000U
+#define ENCODER_ZERO	0 // 10000U
 
-void            ENCODER_Init(void);
+void  ENCODER_Init(void);
 short	ENCODER_Read(void);
 
 #endif /*__ENCODER_H_*/

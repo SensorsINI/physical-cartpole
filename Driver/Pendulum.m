@@ -7,8 +7,8 @@ classdef Pendulum < handle
     end
     methods
         function open(obj, port, baud, calibrate)
-            obj.device = serial(port, 'BaudRate',baud);
-            fopen(obj.device);
+            obj.device = serialport(port,baud,'Timeout',1);
+%             fopen(obj.device);
             obj.prev_pkt_num = 1000;
             obj.msg = zeros(16,1);
             obj.rx_cnt = 0;
@@ -16,24 +16,24 @@ classdef Pendulum < handle
             % Disable the onboard controller
             cmd    = [170, 195, 5, 0, 0];
             cmd(5) = obj.crc8(cmd(1:4));
-            fwrite(obj.device, cmd);
-            flushoutput(obj.device);
+            write(obj.device, cmd,"uint8");
+            flush(obj.device);
 
             % Disable streaming output
             cmd    = [170, 193, 5, 0, 0];
             cmd(5) = obj.crc8(cmd(1:4));
-            fwrite(obj.device, cmd);
-            flushoutput(obj.device);
+            write(obj.device, cmd,"uint8");
+            flush(obj.device);
 
             % Run calibration
             if calibrate
                 cmd    = [170, 194, 4, 0];
                 cmd(4) = obj.crc8(cmd(1:3));
-                fwrite(obj.device, cmd);
-                flushoutput(obj.device);
+                write(obj.device, cmd,"uint8");
+                flush(obj.device);
 
                 while true
-                    obj.msg(obj.rx_cnt+1) = fread(obj.device, 1);
+                    obj.msg(obj.rx_cnt+1) = read(obj.device, 1,"uint8");
                     obj.rx_cnt = obj.rx_cnt + 1;
 
                     if obj.rx_cnt == 4
@@ -50,20 +50,20 @@ classdef Pendulum < handle
             % Enable streaming output
             cmd    = [170, 193, 5, 1, 0];
             cmd(5) = obj.crc8(cmd(1:4));
-            fwrite(obj.device, cmd);
-            flushoutput(obj.device);
+            write(obj.device, cmd,"uint8");
+            flush(obj.device);
 
             obj.clear_buffer()
         end
       
         function close(obj)
-            fclose(obj.device);
+%             close(obj.device); // not needed with serialport
             delete(obj.device);
             clear obj.device
         end
 
         function clear_buffer(obj)
-            flushinput(obj.device)
+            flush(obj.device)
             obj.prev_pkt_num = 1000;
             obj.rx_cnt = 0;
         end
@@ -78,13 +78,13 @@ classdef Pendulum < handle
             val    = typecast(int16(speed), 'uint8');
             cmd    = [170, 200, 6, val(1), val(2), 0];
             cmd(6) = obj.crc8(cmd(1:5));
-            fwrite(obj.device, cmd);
-            flushoutput(obj.device);
+            write(obj.device, cmd,"uint8");
+            flush(obj.device);
         end
 
         function [angle,position] = get_state(obj)
             while true
-                obj.msg(obj.rx_cnt+1) = fread(obj.device, 1);
+                obj.msg(obj.rx_cnt+1) = read(obj.device, 1,"uint8");
                 obj.rx_cnt = obj.rx_cnt + 1;
                 
                 if obj.rx_cnt >= 11

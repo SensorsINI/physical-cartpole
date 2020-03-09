@@ -3,20 +3,20 @@ function invpend
 % L=half pend length, tracklength=half cart track length, 
 % umax=max motor force, Q=dimensionless motor drive
 % joy=joystick (if installed), filename=log file name
-global L umax Q tracklength stopme x xd a ad logfile control joy filename
+global L umax Q tracklength stopme x xd a ad logfile control joy filename resetCalled
 resetonfail=false;  % if pendulum angle crosses 90 or -90 reset()
-m=4; % mass of pend, kg
-M=10; % mass of cart, kg
-Mfric=10; % cart friction, N/m/s
-Jfric=.1; % friction coefficient on angular velocity, Nm/rad/s
+m=2; % mass of pend, kg
+M=2; % mass of cart, kg
+Mfric=1; % cart friction, N/m/s
+Jfric=20x; % friction coefficient on angular velocity, Nm/rad/s
 g=9.8; % gravity, m/s^2
-L=4; % half length of pend, m
+L=10; % half length of pend, m
 J=(m*(2*L)^2)/12; % moment of inertia around center of pend, kg*m
 tracklength=3*2*L; % half of total length of cart track,m
 umax=300; % max cart force, N
 maxv=100; % max DC motor speed, m/s, in absense of friction, used for motor back EMF model
 dt=0; % delta time,s, set by simulation and animation loop time
-controlDisturbance=0.1; % disturbance, as factor of umax
+controlDisturbance=0; % disturbance, as factor of umax
 sensorNoise=0.01; % noise, as factor of max values
 fps=15; % desired animation rate, Hz
 fpsavg=15;
@@ -58,14 +58,18 @@ lastsimtoc=toc;
 lastdrawtoc=toc;
 Q=0; % must exist at all, set by mouse inside figure if no joystick
 while ~stopme
+    if resetCalled
+        reset()
+        resetCalled=false;
+    end
     ueff=umax*(1-abs(xd)/maxv)*Q; % dumb model of EMF of motor, Q is drive -1:1 range
     ueff=ueff+controlDisturbance*randn()*umax; % noise on control
     if ueff<-umax
         ueff=-umax;
     elseif ueff>umax
-        ueff=umax
+        ueff=umax;
     end
-    if x<=-tracklength || x>=tracklength
+    if abs(x)>=tracklength*0.9 % turn off motor near limits
         ueff=0;
     end
   
@@ -74,8 +78,11 @@ while ~stopme
     sa=sin(a);
     A=jml2+(ml^2*(cos(a))^2/(M+m));
     B=M+m+(ml^2)/jml2;
-    add=(-ml/(M+m)*ca*ueff+m*g*L*sa-ml*(1+1/(M+m))*ad^2*ca*sa-ad*Jfric)/A;
+    if abs(x)>tracklength
+        xd=0
+    end
     xdd=(ueff-g*ml^2*sa/jml2+ml^2*L*ad^2*ca*sa/jml2-xd*Mfric)/B;
+    add=(-ml/(M+m)*ca*ueff+m*g*L*sa-ml*(1+1/(M+m))*ad^2*ca*sa-ad*Jfric)/A;
     ad=ad+add*dt;
     xd=xd+xdd*dt;
     a=a+ad*dt;
@@ -91,8 +98,8 @@ while ~stopme
     end
     
     if resetonfail
-        if a>pi/2 || a<-pi/2
-           reset()
+        if abs(a)>pi/2
+           resetCalled=true
            pause(1)
            Q=0;
        end
@@ -145,32 +152,34 @@ if ~isempty(point)
     if xp>tracklength+2*L || xp<-tracklength-2*L || yp<-2*L || yp>2*L
         Q=0;
     else
-        Q=((xp-x)/(2*L));
+        Q=((xp)/(2*L));
     end
     %     fprintf('x=%f y=%f tracklength=%f u=%f\n',x,y,tracklength,u);
 end
 end
 
 function reset()
-global x xd a ad
+global x xd a ad Q t dt lastsimtoc
 fprintf('reset\n');
-x=-.5; % pos, m
+x=0; % pos, m
 a=0; %deg2rad((rand()-.5)); % angle, rad
 xd=0; % xdot, m/s
 ad=0; % angle dot, rad/s
 t=0;
-tic;
+Q=0;
+dt=0;
+lastsimtoc=tic;
 end
 
 function keyfcn(eventdata)
-global stopme logfile control
+global stopme control resetCalled
 
 if eventdata.Key=='0'
-    reset();
+    resetCalled=true;
 elseif eventdata.Key=='x'
-    stopme=true
+    stopme=true;
 elseif eventdata.Key=='c'
-    control=~control
+    control=~control;
 end
 end
 

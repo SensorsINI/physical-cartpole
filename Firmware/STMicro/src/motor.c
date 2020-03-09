@@ -39,7 +39,11 @@ void MOTOR_Stop(void)
 
 void MOTOR_SetSpeed(int speed)
 {
-    if (speed == 0)
+#ifdef POLOLU_MOTOR
+	speed=-speed; // tobi
+#endif
+
+	if (speed == 0)
     {
         PB_OUT(13) = 0;					// AIN1
         PB_OUT(12) = 0;					// AIN2
@@ -57,6 +61,6 @@ void MOTOR_SetSpeed(int speed)
 		PB_OUT(12) = 0;				// AIN2
 	}
 	
-    speed = (speed > MOTOR_FULL_SCALE) ? MOTOR_FULL_SCALE : speed;
-	TIM3->CCR4 = speed;
+  speed = (speed > MOTOR_FULL_SCALE) ? MOTOR_FULL_SCALE : speed;
+	TIM3->CCR4 = (uint16_t)speed;
 }
