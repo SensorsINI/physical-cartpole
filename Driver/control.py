@@ -6,7 +6,8 @@ import serial # conda install pyserial
 import sys
 import glob
 # pygame needs python 3.6, not available for 3.7
-import pygame # conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
+import pygame # pip install -U pygame
+# older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick # https://www.pygame.org/docs/ref/joystick.html
 from datetime import datetime
 # our imports
@@ -15,7 +16,7 @@ from pendulum import Pendulum
 
 POLOLU_MOTOR            = False # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
-SERIAL_PORT             = "COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
+SERIAL_PORT             = None# if None, takes first one available #"COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD             = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 PRINT_PERIOD_MS         = 100  # shows state every this many ms
 CONTROL_PERIOD_MS       = 5
@@ -24,20 +25,25 @@ MOTOR_FULL_SCALE        =  7199 # 7199 # with pololu motor and scaling in firmwa
 MOTOR_MAX_PWM           = int(round(0.95 * MOTOR_FULL_SCALE))
 
 JOYSTICK_SCALING        = MOTOR_MAX_PWM # how much joystick value -1:1 should be scaled to motor command
-JOYSTICK_DEADZONE       = 0.05 # deadzone around joystick neutral position that stick is ignored
+JOYSTICK_DEADZONE       = 0.1 # deadzone around joystick neutral position that stick is ignored
 
 ANGLE_TARGET            = 3129 # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
+# I don't think this is true now. I measure approximately +3525
 ANGLE_CTRL_PERIOD_MS    = 5         # Must be a multiple of CONTROL_PERIOD_MS
 ANGLE_AVG_LENGTH        = 4 # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_SMOOTHING         = 1      # 1.0 turns off smoothing
 ANGLE_KP                = 400
 ANGLE_KD                = 400
+ANGLE_KI                = 0
 
 POSITION_TARGET         = 0 # 1200
 POSITION_CTRL_PERIOD_MS = 25        # Must be a multiple of CONTROL_PERIOD_MS
 POSITION_SMOOTHING      = 1       # 1.0 turns off smoothing
 POSITION_KP             = 20
 POSITION_KD             = 300
+
+
+PARAMS_JSON_FILE= 'control.json'
 
 def serial_ports(): # from https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
     """ Lists serial port names
@@ -71,35 +77,39 @@ def serial_ports(): # from https://stackoverflow.com/questions/12090503/listing-
 
 
 def saveparams():
-    print("\nSaving parameters")
+    print(f"\nSaving parameters to {PARAMS_JSON_FILE}")
     p={}
     p['ANGLE_TARGET']=ANGLE_TARGET
     p['ANGLE_KP']=ANGLE_KP
     p['ANGLE_KD']=ANGLE_KD
+    p['ANGLE_KI']=ANGLE_KI
     p['POSITION_TARGET']=POSITION_TARGET
     p['POSITION_KP']=POSITION_KP
     p['POSITION_KD']=POSITION_KD
     p['ANGLE_SMOOTHING']=ANGLE_SMOOTHING
     p['POSITION_SMOOTHING']=POSITION_SMOOTHING
-    with open('control.json','w') as f:
+    with open('control.json', 'w') as f:
         json.dump(p,f)
     
 def loadparams():
-    print("\nLoading parameters")
-    f=open('control.json')
+    print(f"\nLoading parameters from {PARAMS_JSON_FILE}....")
+    f=open(PARAMS_JSON_FILE)
     try:
         p=json.load(f)
         global ANGLE_TARGET, ANGLE_KP,ANGLE_KD,POSITION_TARGET,POSITION_KP,POSITION_KD,ANGLE_SMOOTHING,POSITION_SMOOTHING
         ANGLE_TARGET=p['ANGLE_TARGET']
         ANGLE_KP=p['ANGLE_KP']
         ANGLE_KD=p['ANGLE_KD']
+        # ANGLE_KI=p['ANGLE_KI']
         POSITION_TARGET=p['POSITION_TARGET']
         POSITION_KP=p['POSITION_KP']
         POSITION_KD=p['POSITION_KD']
         ANGLE_SMOOTHING=p['ANGLE_SMOOTHING']
         POSITION_SMOOTHING=p['POSITION_SMOOTHING']
-    except:
-        print("something went wrong loading parameters")
+    except Exception as e:
+        print(f"\nsomething went wrong loading parameters: {e}")
+        return
+    print("success, parameters are")
     printparams()
   
     
@@ -114,6 +124,7 @@ def help():
     print("[/] increase/decrease position target")
     print("w/q angle proportional gain")
     print("s/a angle derivative gain")
+    print("y/t angle integral gain")
     print("z/x angle smoothing")    
     print("r/e position proportional gain")
     print("f/d position derivative gain")
@@ -121,6 +132,7 @@ def help():
     print("l toggle logging data")
     print("S/L Save/Load param values from disk")
     print("D Toggle dance mode")
+    print(",./ Turn on motor - zero +")
     print("***********************************")
 
 def printparams():
@@ -130,6 +142,7 @@ def printparams():
     print("    Smoothing       {0:.2f}".format(ANGLE_SMOOTHING))
     print("    P Gain          {0:.2f}".format(ANGLE_KP))
     print("    D Gain          {0:.2f}".format(ANGLE_KD))
+    print("    I Gain          {0:.2f}".format(ANGLE_KI))
     
     print("Position PD Control Parameters")
     print("    Set point       {0}".format(POSITION_TARGET))
@@ -226,7 +239,9 @@ p.set_angle_config(     ANGLE_TARGET,
                         ANGLE_AVG_LENGTH,
                         ANGLE_SMOOTHING,
                         ANGLE_KP,
-                        ANGLE_KD)
+                        ANGLE_KD,
+                        # ANGLE_KI
+                        )
 
 p.set_position_config(  POSITION_TARGET,
                         POSITION_CTRL_PERIOD_MS,
@@ -237,6 +252,9 @@ p.set_position_config(  POSITION_TARGET,
 ################################################################################
 # GET PARAMETERS
 ################################################################################
+
+# Why is it getting parameters? To enable checking if they have been correctly written
+# setPoint, avgLen, smoothing, KP, KD
 (   ANGLE_TARGET, 
     ANGLE_AVG_LENGTH, 
     ANGLE_SMOOTHING, 
@@ -261,6 +279,7 @@ positionErrPrev     = 0
 positionCmd         = 0
 
 controlEnabled=False
+manualMotorSetting=False
 
 danceEnabled=False
 danceAmpl=500
@@ -283,14 +302,27 @@ lastAngleControlTime=lastTime
 lastPositionControlTime=lastTime
 angleErr=0
 positionErr=0 # for printing even if not controlling
+angleErrSum=0
 p.stream_output(True)  # now start streaming state
 while True:
     
     # Adjust Parameters
     if kbAvailable & kb.kbhit():
         c = kb.getch()
+        if c=='.':
+            actualMotorCmd=0
+            controlEnabled=False
+            manualMotorSetting=False
+        elif c==',':
+            controlEnabled=False
+            actualMotorCmd-=100
+            manualMotorSetting=True
+        elif c=='/':
+            actualMotorCmd+=100
+            controlEnabled=False
+            manualMotorSetting=True
 
-        if c=='D':
+        elif c=='D':
             danceEnabled=~danceEnabled
             print("\ndanceEnabled= {0}".format(danceEnabled))
         elif c == 'l':
@@ -353,6 +385,16 @@ while True:
         elif c == 'a':
             ANGLE_KD=dec(ANGLE_KD)
             print("\nDecreased angle KD {0}".format(ANGLE_KD))
+
+        elif c == 'y':
+            ANGLE_KI = inc(ANGLE_KI)
+            print("\nIncreased angle KI {0}".format(ANGLE_KI))
+
+        elif c == 't':
+            ANGLE_KI = dec(ANGLE_KI)
+            print("\nDecreased angle KI {0}".format(ANGLE_KI))
+
+
         elif c == 'x':
             ANGLE_SMOOTHING=dec(ANGLE_SMOOTHING)
             if ANGLE_SMOOTHING>1: 
@@ -398,7 +440,7 @@ while True:
             break
 
     # This function will block at the rate of the control loop
-#    p.clear_read_buffer() # if we don't clear read buffer, state output piles up in serial buffer
+    p.clear_read_buffer() # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state() 
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart
     
@@ -431,14 +473,17 @@ while True:
         # i.e. more positve positionErr makes more positive effective ANGLE_TARGET
         # End result is that sign of positionCmd is flipped
         # Also, if positionErr is increasing more, then we want even more lean, so D sign is also positive
-        positionCmd         = +(POSITION_KP*positionErr + POSITION_KD*positionErrDiff) 
+        positionCmd         = +(POSITION_KP*positionErr + POSITION_KD*positionErrDiff)
+        if abs(positionErr) < 1:
+            positionCmd = 0
 
     if timeNow-lastAngleControlTime >= ANGLE_CTRL_PERIOD_MS*.001:
         lastAngleControlTime=timeNow
         angleErr            = ANGLE_SMOOTHING*(angle - ANGLE_TARGET) + (1.0 - ANGLE_SMOOTHING)*angleErrPrev # First order low-pass filter
         angleErrDiff        = (angleErr - angleErrPrev)*diffFactor # correct for actual sample interval; if interval is too long, reduce diff error
+        angleErrSum         =+ angleErr
         angleErrPrev        = angleErr
-        angleCmd            = -(ANGLE_KP*angleErr + ANGLE_KD*angleErrDiff) # if too CCW (pos error), move cart left
+        angleCmd            = -(ANGLE_KP*angleErr + ANGLE_KD*angleErrDiff + ANGLE_KI*angleErrSum) # if too CCW (pos error), move cart left
 
     
     motorCmd = int(round(angleCmd + positionCmd)) # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
@@ -459,9 +504,9 @@ while True:
     
     if abs(stickPos)>JOYSTICK_DEADZONE:
         actualMotorCmd=int(round(stickPos*JOYSTICK_SCALING))
-    elif controlEnabled:
+    elif controlEnabled and not manualMotorSetting:
         actualMotorCmd=motorCmd
-    else:
+    elif manualMotorSetting==False:
         actualMotorCmd=0
 
     if POLOLU_MOTOR==False:

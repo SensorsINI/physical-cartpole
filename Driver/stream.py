@@ -33,7 +33,7 @@ time.sleep(1)
     ANGLE_AVG_LENGTH, 
     ANGLE_SMOOTHING, 
     ANGLE_KP,
-    ANGLE_KD)           = p.get_angle_config()
+    ANGLE_KD)           = p.get_angle_config
 
 (   POSITION_TARGET,
     POSITION_CTRL_PERIOD_MS,
