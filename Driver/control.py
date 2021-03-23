@@ -10,11 +10,12 @@ import pygame # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick # https://www.pygame.org/docs/ref/joystick.html
 from datetime import datetime
-# our imports
+import pendulum
 import kbhit
-from pendulum import Pendulum
 
-POLOLU_MOTOR            = False # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
+from Driver.measure import StepResponseMeasurement
+
+POLOLU_MOTOR            = True # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
 SERIAL_PORT             = None# if None, takes first one available #"COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD             = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
@@ -132,7 +133,8 @@ def help():
     print("l toggle logging data")
     print("S/L Save/Load param values from disk")
     print("D Toggle dance mode")
-    print(",./ Turn on motor - zero +")
+    print(",./ Turn on motor left zero right")
+    print("m Toggle measurement")
     print("***********************************")
 
 def printparams():
@@ -185,15 +187,13 @@ else:
    print('run from an interactive terminal to allow keyboard input')
    quit()
 
-################################################################################
-# OPEN SERIAL PORT
-################################################################################
-p = Pendulum()
 serialPorts=serial_ports()
 print('Available serial ports: '+str(serialPorts))
 if len(serialPorts)==0:
     print('no serial ports available, or cannot open it; check linux permissions\n Under linux, sudo chmod a+rw [port] transiently, or add user to dialout or tty group')
     quit()
+
+p = pendulum.Pendulum()
 
 if len(serialPorts)>1:
     print(str(len(serialPorts))+' serial ports, taking first one which is '+str(serialPorts[0]))
@@ -204,9 +204,11 @@ except:
     print('cannot open port '+str(SERIAL_PORT)+': available ports are '+str(serial_ports()))
     quit()
 
-print('opened '+str(SERIAL_PORT)+' successfully')
 p.control_mode(False)
 p.stream_output(False)
+
+
+print('opened '+str(SERIAL_PORT)+' successfully')
 
 joystickExists=False
 pygame.init()
@@ -232,9 +234,6 @@ if CALIBRATE:
 loadparams()
 time.sleep(1)
 
-################################################################################
-# SET PARAMETERS
-################################################################################
 p.set_angle_config(     ANGLE_TARGET,
                         ANGLE_AVG_LENGTH,
                         ANGLE_SMOOTHING,
@@ -293,6 +292,7 @@ try:
 except:
     kbAvailable=False
     
+measurement=StepResponseMeasurement()
 
 printparams()
 help()
@@ -309,16 +309,16 @@ while True:
     # Adjust Parameters
     if kbAvailable & kb.kbhit():
         c = kb.getch()
-        if c=='.':
+        if c=='.': # zero motor
             actualMotorCmd=0
             controlEnabled=False
             manualMotorSetting=False
-        elif c==',':
+        elif c==',': # left
             controlEnabled=False
-            actualMotorCmd-=100
-            manualMotorSetting=True
-        elif c=='/':
             actualMotorCmd+=100
+            manualMotorSetting=True
+        elif c=='/': # right
+            actualMotorCmd-=100
             controlEnabled=False
             manualMotorSetting=True
 
@@ -433,6 +433,11 @@ while True:
             saveparams()
         elif c=='L':
             loadparams()
+        elif c=='m': # toggle measurement
+            if measurement.is_idle():
+                measurement.start()
+            else:
+                measurement.stop()
 
         # Exit
         elif ord(c) == 27 : # ESC
@@ -441,8 +446,10 @@ while True:
 
     # This function will block at the rate of the control loop
     p.clear_read_buffer() # if we don't clear read buffer, state output piles up in serial buffer #TODO
-    (angle, position, command) = p.read_state() 
-    # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart
+    (angle, position, command) = p.read_state()
+    if POLOLU_MOTOR:
+        position=-position
+    # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
     
      
     timeNow=time.time()
@@ -509,20 +516,31 @@ while True:
     elif manualMotorSetting==False:
         actualMotorCmd=0
 
-    if POLOLU_MOTOR==False:
-        p.set_motor(-actualMotorCmd) # positive motor cmd moves cart right
-    else:
-        p.set_motor(actualMotorCmd)  # positive motor cmd moves cart right
+    if not measurement.is_idle():
+        actualMotorCmd=measurement.motor
+
+    p.set_motor(-actualMotorCmd)
 
     if loggingEnabled:
 #      csvwriter.writerow(['time'] + ['deltaTimeMs']+['angle'] + ['position']  + ['angleErr'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'])
-       csvwriter.writerow([elapsedTime,deltaTime*1000,angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd,positionCmd,motorCmd,actualMotorCmd])
+       csvwriter.writerow([elapsedTime,deltaTime*1000,angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd,positionCmd,motorCmd])
    
     # Print output
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS/CONTROL_PERIOD_MS):
         printCount = 0
-        print("\r angle {:+4d} angleErr {:+6.1f} position {:+6d} positionErr {:+6.1f} angleCmd {:+6d} positionCmd {:+6d} motorCmd {:+6d} dt {:.3f}ms  stick {:.3f}         \r".format(int(angle), angleErr, int(position),  positionErr, int(round(angleCmd)), int(round(positionCmd)), actualMotorCmd, deltaTime*1000, stickPos), end = '')
+        print("\r a {:+4d} aErr {:+6.1f} p {:+6d} pErr {:+6.1f} aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f} meas={}        \r"
+              .format(int(angle),
+                      angleErr,
+                      int(position),
+                      positionErr,
+                      int(round(angleCmd)),
+                      int(round(positionCmd)),
+                      actualMotorCmd,
+                      deltaTime * 1000,
+                      stickPos,
+                      measurement)
+              , end='')
 # if we pause like below, state info piles up in serial input buffer
         # instead loop at max possible rate to get latest state info
 #    time.sleep(CONTROL_PERIOD_MS*.001)  # not quite correct since there will be time for execution below
