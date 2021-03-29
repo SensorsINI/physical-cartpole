@@ -28,6 +28,9 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
+POSITION_FULL_SCALE=2047. # cart position should range over +- this value if calibrated for zero at center
+JOYSTICK_POSITION_KP=JOYSTICK_SCALING/POSITION_FULL_SCALE # proportional gain constant for joystick position control.
+# it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
 ANGLE_TARGET = 3129  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
 # I don't think this is true now. I measure approximately +3525
@@ -36,7 +39,6 @@ ANGLE_AVG_LENGTH = 4  # adc routine in firmware reads ADC this many times quickl
 ANGLE_SMOOTHING = 1  # 1.0 turns off smoothing
 ANGLE_KP = 400
 ANGLE_KD = 400
-ANGLE_KI = 0
 
 POSITION_TARGET = 0  # 1200
 POSITION_CTRL_PERIOD_MS = 25  # Must be a multiple of CONTROL_PERIOD_MS
@@ -119,7 +121,6 @@ def saveparams():
     p['ANGLE_TARGET'] = ANGLE_TARGET
     p['ANGLE_KP'] = ANGLE_KP
     p['ANGLE_KD'] = ANGLE_KD
-    p['ANGLE_KI'] = ANGLE_KI
     p['POSITION_TARGET'] = POSITION_TARGET
     p['POSITION_KP'] = POSITION_KP
     p['POSITION_KD'] = POSITION_KD
@@ -138,7 +139,6 @@ def loadparams():
         ANGLE_TARGET = p['ANGLE_TARGET']
         ANGLE_KP = p['ANGLE_KP']
         ANGLE_KD = p['ANGLE_KD']
-        # ANGLE_KI=p['ANGLE_KI']
         POSITION_TARGET = p['POSITION_TARGET']
         POSITION_KP = p['POSITION_KP']
         POSITION_KD = p['POSITION_KD']
@@ -161,7 +161,6 @@ def help():
     print("[/] increase/decrease position target")
     print("w/q angle proportional gain")
     print("s/a angle derivative gain")
-    print("y/t angle integral gain")
     print("z/x angle smoothing")
     print("r/e position proportional gain")
     print("f/d position derivative gain")
@@ -181,7 +180,6 @@ def printparams():
     print("    Smoothing       {0:.2f}".format(ANGLE_SMOOTHING))
     print("    P Gain          {0:.2f}".format(ANGLE_KP))
     print("    D Gain          {0:.2f}".format(ANGLE_KD))
-    print("    I Gain          {0:.2f}".format(ANGLE_KI))
 
     print("Position PD Control Parameters")
     print("    Set point       {0}".format(POSITION_TARGET))
@@ -252,6 +250,7 @@ p.stream_output(False)
 log.info('opened ' + str(SERIAL_PORT) + ' successfully')
 
 joystickExists = False
+joystickMode=None
 pygame.init()
 joystick.init()
 if joystick.get_count() == 1:
@@ -260,6 +259,7 @@ if joystick.get_count() == 1:
     axisNum = stick.get_numaxes()
     buttonNum = stick.get_numbuttons()
     joystickExists = True
+    joystickMode='speed' # toggles to 'position' with 'j' key
     print('joystick found with ' + str(axisNum) + ' axes and ' + str(buttonNum) + ' buttons')
 else:
     print('no joystick found, only PD control or no control possible')
@@ -280,7 +280,6 @@ p.set_angle_config(ANGLE_TARGET,
                    ANGLE_SMOOTHING,
                    ANGLE_KP,
                    ANGLE_KD,
-                   # ANGLE_KI
                    )
 
 p.set_position_config(POSITION_TARGET,
@@ -432,16 +431,6 @@ while True:
         elif c == 'a':
             ANGLE_KD = dec(ANGLE_KD)
             print("\nDecreased angle KD {0}".format(ANGLE_KD))
-
-        elif c == 'y':
-            ANGLE_KI = inc(ANGLE_KI)
-            print("\nIncreased angle KI {0}".format(ANGLE_KI))
-
-        elif c == 't':
-            ANGLE_KI = dec(ANGLE_KI)
-            print("\nDecreased angle KI {0}".format(ANGLE_KI))
-
-
         elif c == 'x':
             ANGLE_SMOOTHING = dec(ANGLE_SMOOTHING)
             if ANGLE_SMOOTHING > 1:
@@ -485,6 +474,15 @@ while True:
                 measurement.start()
             else:
                 measurement.stop()
+        elif c=='j':
+            if joystickMode is None:
+                log.warning('no joystick')
+            elif joystickMode=='speed':
+                joystickMode='position'
+                log.info(f'set joystick to cart {joystickMode} control mode')
+            elif joystickMode=='position':
+                joystickMode='speed'
+                log.info(f'set joystick to cart {joystickMode} control mode')
 
         # Exit
         elif ord(c) == 27:  # ESC
@@ -525,8 +523,8 @@ while True:
         # End result is that sign of positionCmd is flipped
         # Also, if positionErr is increasing more, then we want even more lean, so D sign is also positive
         positionCmd = +(POSITION_KP * positionErr + POSITION_KD * positionErrDiff)
-        if abs(positionErr) < 1:
-            positionCmd = 0
+        #if abs(positionErr) < 1:
+         #   positionCmd = 0
 
     if timeNow - lastAngleControlTime >= ANGLE_CTRL_PERIOD_MS * .001:
         lastAngleControlTime = timeNow
@@ -534,7 +532,7 @@ while True:
         angleErrDiff = (angleErr - angleErrPrev) * diffFactor  # correct for actual sample interval; if interval is too long, reduce diff error
         angleErrSum = + angleErr
         angleErrPrev = angleErr
-        angleCmd = -(ANGLE_KP * angleErr + ANGLE_KD * angleErrDiff + ANGLE_KI * angleErrSum)  # if too CCW (pos error), move cart left
+        angleCmd = -(ANGLE_KP * angleErr + ANGLE_KD * angleErrDiff)  # if too CCW (pos error), move cart left
 
     motorCmd = int(round(angleCmd + positionCmd))  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
     motorCmd = MOTOR_MAX_PWM if motorCmd > MOTOR_MAX_PWM else motorCmd
@@ -552,10 +550,13 @@ while True:
         #         print("Joystick button released.")
         pygame.event.get()  # must call get() to handle internal queue
         stickPos = stick.get_axis(0)  # 0 left right, 1 front back 2 rotate
-
-    if abs(stickPos) > JOYSTICK_DEADZONE:
+    # todo handle joystick control of cart to position, not speed
+    if joystickMode=='speed' and abs(stickPos) > JOYSTICK_DEADZONE:
         stickControl = True
         actualMotorCmd = int(round(stickPos * JOYSTICK_SCALING))
+    elif joystickMode=='position':
+        stickControl=True
+        actualMotorCmd=int((stickPos*POSITION_FULL_SCALE-position)*JOYSTICK_POSITION_KP)
     elif controlEnabled and not manualMotorSetting:
         actualMotorCmd = motorCmd
     elif manualMotorSetting == False:
