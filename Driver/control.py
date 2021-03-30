@@ -29,7 +29,7 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 POSITION_FULL_SCALE=2047. # cart position should range over +- this value if calibrated for zero at center
-JOYSTICK_POSITION_KP=JOYSTICK_SCALING/POSITION_FULL_SCALE # proportional gain constant for joystick position control.
+JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING/POSITION_FULL_SCALE # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
 ANGLE_TARGET = 3129  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
@@ -569,6 +569,8 @@ while True:
         except TimeoutError as e:
             log.warning(f'timeout in measurement: {e}')
 
+    # clip motor to actual limits
+    actualMotorCmd=actualMotorCmd if actualMotorCmd>-MOTOR_MAX_PWM and actualMotorCmd<MOTOR_MAX_PWM else -MOTOR_MAX_PWM if actualMotorCmd<0 else MOTOR_MAX_PWM
     p.set_motor(-actualMotorCmd)
 
     if loggingEnabled:
