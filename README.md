@@ -1,4 +1,4 @@
-# inverted-pendulum
+# physical-cartpole
 Work related to the Inverted Pendulum Hardware
 
 The Inverted Pendulum is powered by a ST32F103C8T6 microcontroller. `FactoryFirmwareImage.bin` contains the fimrware image as shipped by the factory. It was pulled directly from the micro using a debugger.
