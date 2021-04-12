@@ -14,7 +14,7 @@ from datetime import datetime
 import pendulum
 import kbhit
 
-from Driver.measure import StepResponseMeasurement
+from measure import *
 
 POLOLU_MOTOR = True  # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
