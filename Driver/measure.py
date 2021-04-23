@@ -2,7 +2,7 @@
 # control.py calls update_state() if state is not 'idle'
 import time
 
-from .pendulum import Pendulum
+# from .pendulum import Pendulum
 
 STARTING_POSITION = -2000  # cart starting position
 ENDING_POSITION = 300  # position to turn off motor
@@ -22,10 +22,12 @@ class StepResponseMeasurement:
         self.time_state_changed = time.time()
 
     def start(self):
+        print('Start measurement!')
         self.state = 'start'
         self.motor = 0
 
     def stop(self):
+        print('Stopm measurement!')
         self.motor = 0
         self.state = 'idle'
 

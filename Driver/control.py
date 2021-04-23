@@ -11,17 +11,20 @@ import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 from datetime import datetime
-import pendulum
-import kbhit
+# from Driver.pendulum import Pendulum
+# from Driver.kbhit import KBHit
+# from Driver.measure import StepResponseMeasurement
 
-from measure import *
+from pendulum import Pendulum
+from kbhit import KBHit
+from measure import StepResponseMeasurement
 
 POLOLU_MOTOR = True  # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
 SERIAL_PORT = None  # if None, takes first one available #"COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 PRINT_PERIOD_MS = 100  # shows state every this many ms
-CONTROL_PERIOD_MS = 5
+CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
 CALIBRATE = False  # False # important to calibrate if running standalone to avoid motor burnout because limits are determined during this calibration
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
@@ -29,26 +32,33 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 POSITION_FULL_SCALE=2047. # cart position should range over +- this value if calibrated for zero at center
-JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING/POSITION_FULL_SCALE # proportional gain constant for joystick position control.
+POSITION_NORMALIZATION = 4660 # This is an empirical approximation
+POSITION_FULL_SCALE_N = int(POSITION_NORMALIZATION)/2 # Corrected position full scale
+JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
-
-ANGLE_TARGET = 3129  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
-# I don't think this is true now. I measure approximately +3525
+TRACK_LENGTH = 0.396 # Total usable track length in meters
+# todo check position unit conversion for joystick
+ANGLE_TARGET = 2061  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
+# Angle target value is very sensitive. It keeps changing at every run - we tried stabilizing it by screwing the joint tighter.
 ANGLE_CTRL_PERIOD_MS = 5  # Must be a multiple of CONTROL_PERIOD_MS
 ANGLE_AVG_LENGTH = 4  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_SMOOTHING = 1  # 1.0 turns off smoothing
-ANGLE_KP = 400
-ANGLE_KD = 400
+ANGLE_KP = 271
+ANGLE_KD = 174
 
-POSITION_TARGET = 0  # 1200
-POSITION_CTRL_PERIOD_MS = 25  # Must be a multiple of CONTROL_PERIOD_MS
-POSITION_SMOOTHING = 1  # 1.0 turns off smoothing
-POSITION_KP = 20
-POSITION_KD = 300
+POSITION_TARGET = 100  # 1200
+POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH # Normalizing to have range over track length .396 m
+print('POSITION VALUE:', POSITION_TARGET)
+POSITION_CTRL_PERIOD_MS = 5  # Must be a multiple of CONTROL_PERIOD_MS
+POSITION_SMOOTHING = 0.5  # 1.0 turns off smoothing
+POSITION_KP = 6
+POSITION_KD = 45
+
+POSITION_KP = POSITION_KP*POSITION_NORMALIZATION/TRACK_LENGTH
+POSITION_KD = POSITION_KD*POSITION_NORMALIZATION/TRACK_LENGTH
 
 PARAMS_JSON_FILE = 'control.json'
 LOGGING_LEVEL = logging.INFO
-
 
 def my_logger(name):
     # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -233,7 +243,7 @@ if len(serialPorts) == 0:
     print('no serial ports available, or cannot open it; check linux permissions\n Under linux, sudo chmod a+rw [port] transiently, or add user to dialout or tty group')
     quit()
 
-p = pendulum.Pendulum()
+p = Pendulum()
 
 if len(serialPorts) > 1:
     print(str(len(serialPorts)) + ' serial ports, taking first one which is ' + str(serialPorts[0]))
@@ -282,11 +292,11 @@ p.set_angle_config(ANGLE_TARGET,
                    ANGLE_KD,
                    )
 
-p.set_position_config(POSITION_TARGET,
+p.set_position_config(int(POSITION_TARGET*POSITION_NORMALIZATION/TRACK_LENGTH),
                       POSITION_CTRL_PERIOD_MS,
                       POSITION_SMOOTHING,
-                      POSITION_KP,
-                      POSITION_KD)
+                      int(POSITION_KP*TRACK_LENGTH/POSITION_NORMALIZATION),
+                      int(POSITION_KD*TRACK_LENGTH/POSITION_NORMALIZATION))
 
 ################################################################################
 # GET PARAMETERS
@@ -327,7 +337,7 @@ loggingEnabled = False
 
 kbAvailable = True
 try:
-    kb = kbhit.KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
+    kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
 except:
     kbAvailable = False
 
@@ -377,9 +387,10 @@ while True:
                     csvfilename = datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
                     csvfile = open(csvfilename, 'w', newline='')
                     csvwriter = csv.writer(csvfile, delimiter=',')
-                    # csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
+                    #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
                     csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['position'] + ['angleTarget'] + ['angleErr'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    # csvwriter.writerow(['time'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
                     loggingEnabled = False
@@ -411,11 +422,11 @@ while True:
 
         # Increase Target Position
         elif c == ']':
-            POSITION_TARGET += 200
+            POSITION_TARGET += 200/POSITION_NORMALIZATION*TRACK_LENGTH
             print("\nIncreased target position to {0}".format(POSITION_TARGET))
         # Decrease Target Position
         elif c == '[':
-            POSITION_TARGET -= 200
+            POSITION_TARGET -= 200/POSITION_NORMALIZATION*TRACK_LENGTH
             print("\nDecreased target position to {0}".format(POSITION_TARGET))
 
         # Angle Gains
@@ -492,6 +503,7 @@ while True:
     # This function will block at the rate of the control loop
     p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state()
+    position = position/POSITION_NORMALIZATION*TRACK_LENGTH
     if POLOLU_MOTOR:
         position = -position
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
@@ -515,10 +527,10 @@ while True:
         positionErr = POSITION_SMOOTHING * (position - positionTargetNow) + (1.0 - POSITION_SMOOTHING) * positionErrPrev  # First order low-P=pass filter
         positionErrDiff = (positionErr - positionErrPrev) * diffFactor
         positionErrPrev = positionErr
-        # Naive solution: if too positive (too right), move left (minus on positionCmd), 
+        # Naive solution: if too positive (too right), move left (minus on positionCmd),
         # but this does not produce correct control.
         # The correct strategy is that if cart is too positive (too right),
-        # produce lean to the left by introducing a positive set point angle leaning slightly to left, 
+        # produce lean to the left by introducing a positive set point angle leaning slightly to left,
         # i.e. more positve positionErr makes more positive effective ANGLE_TARGET
         # End result is that sign of positionCmd is flipped
         # Also, if positionErr is increasing more, then we want even more lean, so D sign is also positive
@@ -574,7 +586,7 @@ while True:
     p.set_motor(-actualMotorCmd)
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTarNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
         # Print output
     printCount += 1
