@@ -46,7 +46,7 @@ ANGLE_SMOOTHING = 1  # 1.0 turns off smoothing
 ANGLE_KP = 271
 ANGLE_KD = 174
 
-POSITION_TARGET = 100  # 1200
+POSITION_TARGET = 100/POSITION_NORMALIZATION*TRACK_LENGTH # 1200
 POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH # Normalizing to have range over track length .396 m
 print('POSITION VALUE:', POSITION_TARGET)
 POSITION_CTRL_PERIOD_MS = 5  # Must be a multiple of CONTROL_PERIOD_MS
@@ -201,6 +201,7 @@ def printparams():
 
 ratio = 1.05
 
+# todo round or display it with 10th power
 
 def inc(param):
     if param < 2:
@@ -284,19 +285,19 @@ if CALIBRATE:
 
 loadparams()
 time.sleep(1)
-
-p.set_angle_config(ANGLE_TARGET,
-                   ANGLE_AVG_LENGTH,
-                   ANGLE_SMOOTHING,
-                   ANGLE_KP,
-                   ANGLE_KD,
-                   )
-
-p.set_position_config(int(POSITION_TARGET*POSITION_NORMALIZATION/TRACK_LENGTH),
-                      POSITION_CTRL_PERIOD_MS,
-                      POSITION_SMOOTHING,
-                      int(POSITION_KP*TRACK_LENGTH/POSITION_NORMALIZATION),
-                      int(POSITION_KD*TRACK_LENGTH/POSITION_NORMALIZATION))
+#
+# p.set_angle_config(ANGLE_TARGET,
+#                    ANGLE_AVG_LENGTH,
+#                    ANGLE_SMOOTHING,
+#                    ANGLE_KP,
+#                    ANGLE_KD,
+#                    )
+#
+# p.set_position_config(int(POSITION_TARGET*POSITION_NORMALIZATION/TRACK_LENGTH),
+#                       POSITION_CTRL_PERIOD_MS,
+#                       POSITION_SMOOTHING,
+#                       int(POSITION_KP*TRACK_LENGTH/POSITION_NORMALIZATION),
+#                       int(POSITION_KD*TRACK_LENGTH/POSITION_NORMALIZATION))
 
 ################################################################################
 # GET PARAMETERS
@@ -304,17 +305,7 @@ p.set_position_config(int(POSITION_TARGET*POSITION_NORMALIZATION/TRACK_LENGTH),
 
 # Why is it getting parameters? To enable checking if they have been correctly written
 # setPoint, avgLen, smoothing, KP, KD
-(ANGLE_TARGET,
- ANGLE_AVG_LENGTH,
- ANGLE_SMOOTHING,
- ANGLE_KP,
- ANGLE_KD) = p.get_angle_config()
-
-(POSITION_TARGET,
- POSITION_CTRL_PERIOD_MS,
- POSITION_SMOOTHING,
- POSITION_KP,
- POSITION_KD) = p.get_position_config()
+#
 
 ################################################################################
 # CONTROL LOOP (PC BASED)
@@ -389,7 +380,7 @@ while True:
                     csvwriter = csv.writer(csvfile, delimiter=',')
                     #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
-                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['position'] + ['angleTarget'] + ['angleErr'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['position (m)'] + ['angleTarget'] + ['angleErr'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     # csvwriter.writerow(['time'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
@@ -423,11 +414,11 @@ while True:
         # Increase Target Position
         elif c == ']':
             POSITION_TARGET += 200/POSITION_NORMALIZATION*TRACK_LENGTH
-            print("\nIncreased target position to {0}".format(POSITION_TARGET))
+            print("\nIncreased target position to {0} meters".format(POSITION_TARGET))
         # Decrease Target Position
         elif c == '[':
             POSITION_TARGET -= 200/POSITION_NORMALIZATION*TRACK_LENGTH
-            print("\nDecreased target position to {0}".format(POSITION_TARGET))
+            print("\nDecreased target position to {0} meters".format(POSITION_TARGET))
 
         # Angle Gains
         elif c == 'w':
@@ -586,9 +577,9 @@ while True:
     p.set_motor(-actualMotorCmd)
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTarNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
-        # Print output
+        # Print outputL
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
         printCount = 0
@@ -616,3 +607,7 @@ joystick.quit()
 
 if loggingEnabled:
     csvfile.close()
+# todo put position limitation on position set point increase and decrease
+# todo add initial measurement that calculates normalization values for conversion to proper units for angle and position
+# todo fix get and set params (for chip interface)
+# todo check if position unit convertion  works for all featues: dance, joystick, measurement, save/load, etc.
