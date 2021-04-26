@@ -38,7 +38,12 @@ JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING/POSITION_FULL_SCALE_N # proportional gai
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 TRACK_LENGTH = 0.396 # Total usable track length in meters
 # todo check position unit conversion for joystick
-ANGLE_TARGET = 2061  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
+ANGLE_NORMALIZATION = 4096 # Range of angle values
+ANGLE_HANGING = 3450 # Value from sensor when pendulum is in stable equilibrium point
+ANGLE_DEVIATION = ANGLE_NORMALIZATION - ANGLE_HANGING # Angle deviation from goal
+ANGLE_HANGING_NORMALIZATION = (ANGLE_DEVIATION + ANGLE_HANGING - ANGLE_NORMALIZATION/2)/ANGLE_NORMALIZATION*2*math.pi # Should be equal to pi in radians
+ANGLE_TARGET = 0 # in radians #(ANGLE_TARGET + ANGLE DEVIATION - ANGLE_NORMALIZATION/2)/ANGLE_NORMALIZATION*math.pi
+# ANGLE_TARGET = 2061  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
 # Angle target value is very sensitive. It keeps changing at every run - we tried stabilizing it by screwing the joint tighter.
 ANGLE_CTRL_PERIOD_MS = 5  # Must be a multiple of CONTROL_PERIOD_MS
 ANGLE_AVG_LENGTH = 4  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
@@ -46,9 +51,16 @@ ANGLE_SMOOTHING = 1  # 1.0 turns off smoothing
 ANGLE_KP = 271
 ANGLE_KD = 174
 
+ANGLE_KP = ANGLE_KP/2/math.pi*ANGLE_NORMALIZATION
+ANGLE_KD = ANGLE_KD/2/math.pi*ANGLE_NORMALIZATION
+print('angle_kp', ANGLE_KP)
+print('angle_kd',ANGLE_KD)
+print(math.pi)
+print('angle deviation', ANGLE_DEVIATION)
+print('angle HANGING NORMALIZATION', ANGLE_HANGING_NORMALIZATION)
+
 POSITION_TARGET = 100/POSITION_NORMALIZATION*TRACK_LENGTH # 1200
 POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH # Normalizing to have range over track length .396 m
-print('POSITION VALUE:', POSITION_TARGET)
 POSITION_CTRL_PERIOD_MS = 5  # Must be a multiple of CONTROL_PERIOD_MS
 POSITION_SMOOTHING = 0.5  # 1.0 turns off smoothing
 POSITION_KP = 6
@@ -404,11 +416,11 @@ while True:
             printparams()
         # Increase Target Angle
         elif c == '=':
-            ANGLE_TARGET += 1
+            ANGLE_TARGET += 0.01
             print("\nIncreased target angle to {0}".format(ANGLE_TARGET))
         # Decrease Target Angle
         elif c == '-':
-            ANGLE_TARGET -= 1
+            ANGLE_TARGET -= 0.01
             print("\nDecreased target angle to {0}".format(ANGLE_TARGET))
 
         # Increase Target Position
@@ -498,7 +510,8 @@ while True:
     if POLOLU_MOTOR:
         position = -position
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
-
+    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi
+    # print(angle)
     timeNow = time.time()
     deltaTime = timeNow - lastTime
     if deltaTime == 0:
@@ -583,13 +596,13 @@ while True:
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
         printCount = 0
-        print("\r a {:+4d} aErr {:+6.1f} p {:+6d} pErr {:+6.1f} aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
-              .format(int(angle),
+        print("\r a {:+6.3f} aErr {:+6.3f} p {:+6.3f} pErr {:+6.3f} aCmd {:+6.3f} pCmd {:+6.3f} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
+              .format(angle,
                       angleErr,
-                      int(position),
+                      position,
                       positionErr,
-                      int(round(angleCmd)),
-                      int(round(positionCmd)),
+                      angleCmd,
+                      positionCmd,
                       actualMotorCmd,
                       deltaTime * 1000,
                       stickPos,
