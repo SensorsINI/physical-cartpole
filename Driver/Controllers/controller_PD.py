@@ -10,17 +10,6 @@ from Driver.state_utilities import cartpole_state_varname_to_index
 
 from globals import *
 
-ANGLE_TARGET = 3129
-ANGLE_SMOOTHING = 1  # 1.0 turns off smoothing
-ANGLE_KP = 271
-ANGLE_KD = 174
-
-POSITION_SMOOTHING = 0.5  # 1.0 turns off smoothing
-POSITION_KP = 6
-POSITION_KD = 45
-POSITION_KP = POSITION_KP*POSITION_NORMALIZATION/TRACK_LENGTH
-POSITION_KD = POSITION_KD*POSITION_NORMALIZATION/TRACK_LENGTH
-
 PARAMS_JSON_FILE = 'control.json'
 
 class controller_PD(template_controller):
@@ -40,17 +29,17 @@ class controller_PD(template_controller):
         self.angleCmd = 0.0
         self.positionCmd = 0.0
 
-        self.ANGLE_TARGET = ANGLE_TARGET
+        self.ANGLE_TARGET = 0.0
 
-        self.ANGLE_SMOOTHING = ANGLE_SMOOTHING
-        self.ANGLE_KP = ANGLE_KP
-        self.ANGLE_KD = ANGLE_KD
+        self.ANGLE_SMOOTHING = 0.0
+        self.ANGLE_KP = 0.0
+        self.ANGLE_KD = 0.0
 
         self.POSITION_TARGET = 0
 
-        self.POSITION_SMOOTHING = POSITION_SMOOTHING
-        self.POSITION_KP = POSITION_KP
-        self.POSITION_KD = POSITION_KD
+        self.POSITION_SMOOTHING = 0.0
+        self.POSITION_KP = 0.0
+        self.POSITION_KD = 0.0
 
         self.PARAMS_JSON_FILE = PARAMS_JSON_FILE
 

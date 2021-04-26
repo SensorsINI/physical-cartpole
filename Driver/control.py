@@ -333,6 +333,14 @@ while True:
             print("\nCalibration finished")
         elif c == 'h' or c == '?':
             help()
+        # Increase Target Angle
+        elif c == '=':
+            ANGLE_TARGET += 0.01
+            print("\nIncreased target angle to {0}".format(ANGLE_TARGET))
+        # Decrease Target Angle
+        elif c == '-':
+            ANGLE_TARGET -= 0.01
+            print("\nDecreased target angle to {0}".format(ANGLE_TARGET))
 
         # Increase Target Position
         elif c == ']':
@@ -366,6 +374,7 @@ while True:
     p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state()
     position = position/POSITION_NORMALIZATION*TRACK_LENGTH
+    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi
     if POLOLU_MOTOR:
         position = -position
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
