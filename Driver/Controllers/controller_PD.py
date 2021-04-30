@@ -85,11 +85,9 @@ class controller_PD(template_controller):
         f = open(self.PARAMS_JSON_FILE)
         try:
             p = json.load(f)
-            global ANGLE_TARGET, ANGLE_KP, ANGLE_KD, POSITION_TARGET, POSITION_KP, POSITION_KD, ANGLE_SMOOTHING, POSITION_SMOOTHING
             self.ANGLE_TARGET = p['ANGLE_TARGET']
             self.ANGLE_KP = p['ANGLE_KP']
             self.ANGLE_KD = p['ANGLE_KD']
-            self.POSITION_TARGET = p['POSITION_TARGET']
             self.POSITION_KP = p['POSITION_KP']
             self.POSITION_KD = p['POSITION_KD']
             self.ANGLE_SMOOTHING = p['ANGLE_SMOOTHING']
@@ -106,7 +104,6 @@ class controller_PD(template_controller):
         p['ANGLE_TARGET'] = self.ANGLE_TARGET
         p['ANGLE_KP'] = self.ANGLE_KP
         p['ANGLE_KD'] = self.ANGLE_KD
-        p['POSITION_TARGET'] = self.POSITION_TARGET
         p['POSITION_KP'] = self.POSITION_KP
         p['POSITION_KD'] = self.POSITION_KD
         p['ANGLE_SMOOTHING'] = self.ANGLE_SMOOTHING

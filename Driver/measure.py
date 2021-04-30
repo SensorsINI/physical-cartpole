@@ -1,11 +1,12 @@
 # measurements from cartpole, controlled by state machine.
 # control.py calls update_state() if state is not 'idle'
 import time
+from globals import *
 
 # from .pendulum import Pendulum
 
-STARTING_POSITION = -2000  # cart starting position
-ENDING_POSITION = 300  # position to turn off motor
+STARTING_POSITION = -TRACK_LENGTH/2# cart starting position
+ENDING_POSITION = TRACK_LENGTH/2 # position to turn off motor
 RESET_SPEED = 2500
 SPEED_STEP = 500
 STARTING_SPEED = 500
@@ -27,7 +28,7 @@ class StepResponseMeasurement:
         self.motor = 0
 
     def stop(self):
-        print('Stopm measurement!')
+        print('Stop measurement!')
         self.motor = 0
         self.state = 'idle'
 

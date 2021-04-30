@@ -40,14 +40,9 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING*POSITION_NORMALIZATION/TRACK_LENGTH/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
-# todo check position unit conversion for joystick
-ANGLE_TARGET = 2061  # 3383  # adjust to exactly vertical angle value, read by inspecting angle output
-# Angle target value is very sensitive. It keeps changing at every run - we tried stabilizing it by screwing the joint tighter.
+ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such that angle error is minimized
 
-
-
-POSITION_TARGET = 100/POSITION_NORMALIZATION*TRACK_LENGTH # 1200
-POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH # Normalizing to have range over track length .396 m
+POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
 
 PARAMS_JSON_FILE = 'control.json'
 LOGGING_LEVEL = logging.INFO
@@ -63,7 +58,6 @@ def my_logger(name):
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
     return logger
-
 
 class CustomFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
@@ -142,7 +136,6 @@ def help():
     print("b Print angle measurement from sensor")
     print("***********************************")
 
-
 log = my_logger(__name__)
 
 # check that we are running from terminal, otherwise we cannot control it
@@ -208,8 +201,8 @@ p.set_angle_config(0,
                    0,
                    )
 
-# region This is a part responsible for setting the parameters for firmware controller. Not integrated in current design yet.
-# p.set_angle_config(ANGLE_TARGET,
+# This is a part responsible for setting the parameters for firmware controller. Not integrated in current design yet.
+# p.set_angle_config(ANGLE_TARGET,      # This must take care of both: target angle and 0-point offset
 #                    ANGLE_AVG_LENGTH,
 #                    ANGLE_SMOOTHING,
 #                    ANGLE_KP,
@@ -228,12 +221,12 @@ p.set_angle_config(0,
 #
 # # Why is it getting parameters? To enable checking if they have been correctly written
 # setPoint, avgLen, smoothing, KP, KD
-(ANGLE_TARGET,
- ANGLE_AVG_LENGTH,
- ANGLE_SMOOTHING,
- ANGLE_KP,
- ANGLE_KD) = p.get_angle_config()
-print('ANGLE_AVG_LENGTH: {}'.format(ANGLE_AVG_LENGTH))
+# (ANGLE_TARGET, # This must take care of both: target angle and 0-point offset
+#  ANGLE_AVG_LENGTH,
+#  ANGLE_SMOOTHING,
+#  ANGLE_KP,
+#  ANGLE_KD) = p.get_angle_config()
+# print('ANGLE_AVG_LENGTH: {}'.format(ANGLE_AVG_LENGTH))
 #
 # (POSITION_TARGET,
 #  POSITION_CTRL_PERIOD_MS,
@@ -251,7 +244,7 @@ controlEnabled = False
 manualMotorSetting = False
 
 danceEnabled = False
-danceAmpl = 500
+danceAmpl = 500/POSITION_NORMALIZATION*TRACK_LENGTH
 dancePeriodS = 8
 
 loggingEnabled = False
@@ -277,7 +270,6 @@ actualMotorCmd = 0
 csvfile = None
 csvfilename = None
 csvwriter = None
-motorCmd = 0
 angle_average = 0
 
 while True:
@@ -287,20 +279,23 @@ while True:
         c = kb.getch()
         #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
         controller.keyboard_input(c)
-
+        print('\r actual motor command', actualMotorCmd)
+        # FIXME ,./ commands not working as intended
         if c == '.':  # zero motor
-            actualMotorCmd = 0
             controlEnabled = False
+            actualMotorCmd = 0
             manualMotorSetting = False
+            print('\r actual motor command after .', actualMotorCmd)
         elif c == ',':  # left
             controlEnabled = False
-            actualMotorCmd += 100
+            actualMotorCmd = -10
             manualMotorSetting = True
+            print('\r actual motor command after ,', actualMotorCmd)
         elif c == '/':  # right
-            actualMotorCmd -= 100
             controlEnabled = False
+            actualMotorCmd = 10
             manualMotorSetting = True
-
+            print('\r actual motor command after /', actualMotorCmd)
         elif c == 'D':
             danceEnabled = ~danceEnabled
             print("\ndanceEnabled= {0}".format(danceEnabled))
@@ -336,25 +331,25 @@ while True:
             help()
         # Increase Target Angle
         elif c == '=':
-            ANGLE_TARGET += 0.01
-            print("\nIncreased target angle to {0}".format(ANGLE_TARGET))
+            ANGLE_DEVIATION_FINETUNE += 0.01
+            print("\nIncreased target angle to {0}".format(ANGLE_DEVIATION_FINETUNE))
         # Decrease Target Angle
         elif c == '-':
-            ANGLE_TARGET -= 0.01
-            print("\nDecreased target angle to {0}".format(ANGLE_TARGET))
+            ANGLE_DEVIATION_FINETUNE -= 0.01
+            print("\nDecreased target angle to {0}".format(ANGLE_DEVIATION_FINETUNE))
 
         # Increase Target Position
         elif c == ']':
-            POSITION_TARGET += 200/POSITION_NORMALIZATION*TRACK_LENGTH
+            POSITION_TARGET += 10/POSITION_NORMALIZATION*TRACK_LENGTH
             if (POSITION_TARGET>0.2):
                POSITION_TARGET = 0.2
-            print("\nIncreased target position to {0} meters".format(POSITION_TARGET))
+            print("\nIncreased target position to {0} cm".format(POSITION_TARGET*100))
         # Decrease Target Position
         elif c == '[':
-            POSITION_TARGET -= 200/POSITION_NORMALIZATION*TRACK_LENGTH
+            POSITION_TARGET -= 10/POSITION_NORMALIZATION*TRACK_LENGTH
             if (POSITION_TARGET < -0.2):
                 POSITION_TARGET = -0.2
-            print("\nDecreased target position to {0} meters".format(POSITION_TARGET))
+            print("\nDecreased target position to {0} cm".format(POSITION_TARGET*100))
         elif c == 'm':  # toggle measurement
             if measurement.is_idle():
                 measurement.start()
@@ -388,7 +383,7 @@ while True:
     p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state()
     position = position/POSITION_NORMALIZATION*TRACK_LENGTH
-    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi
+    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi - ANGLE_DEVIATION_FINETUNE
     if POLOLU_MOTOR:
         position = -position
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
@@ -413,11 +408,9 @@ while True:
 
     if timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
         lastControlTime = timeNow
-        motorCmd = controller.step(s=s, target_position=positionTargetNow, time=timeNow, diffFactor=diffFactor)
-
-    motorCmd = MOTOR_MAX_PWM if motorCmd > MOTOR_MAX_PWM else motorCmd
-    motorCmd = -MOTOR_MAX_PWM if motorCmd < -MOTOR_MAX_PWM else motorCmd
-
+        actualMotorCmd = controller.step(s=s, target_position=positionTargetNow, time=timeNow,
+                                         diffFactor=diffFactor)
+        # print('AAAAAAAAAAAAAAAA', actualMotorCmd)
     stickPos = 0.0
     stickControl = False
     if joystickExists:
@@ -439,7 +432,7 @@ while True:
         stickControl=True
         actualMotorCmd=int((stickPos-position)*JOYSTICK_POSITION_KP)
     elif controlEnabled and not manualMotorSetting:
-        actualMotorCmd = motorCmd
+        ...
     elif manualMotorSetting == False:
         actualMotorCmd = 0
 
@@ -451,18 +444,20 @@ while True:
             log.warning(f'timeout in measurement: {e}')
 
     # clip motor to actual limits
-    actualMotorCmd=actualMotorCmd if actualMotorCmd>-MOTOR_MAX_PWM and actualMotorCmd<MOTOR_MAX_PWM else -MOTOR_MAX_PWM if actualMotorCmd<0 else MOTOR_MAX_PWM
+    actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM else actualMotorCmd
+    actualMotorCmd = -MOTOR_MAX_PWM if actualMotorCmd  < -MOTOR_MAX_PWM else actualMotorCmd
+
     p.set_motor(-actualMotorCmd)
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, controller.angleCmd, controller.positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, controller.ANGLE_TARGET, angleErr, positionTargetNow, positionErr, controller.angleCmd, controller.positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
         # Print outputL
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
         printCount = 0
         print("\r a {:+6.3f}rad aErr {:+6.3f}rad p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
-              .format(int(angle),
+              .format(angle,
                       controller.angleErr,
                       position*100,
                       controller.positionErr*100,
@@ -486,7 +481,5 @@ joystick.quit()
 if loggingEnabled:
     csvfile.close()
 
-# todo add initial measurement that calculates normalization values for conversion to proper units for angle and position - ask marcin
-# todo fix get and set params (for chip interface) - MARCIN
-# todo check if position unit conversion  works for all featues: dance, joystick, measurement, save/load, etc.
-# todo - dance mode not working
+# todo fix get and set params (for chip interface), must be compatible with sensor readings
+# todo check if position unit conversion  works for the following features: dance, measurement, save/load, logging.
