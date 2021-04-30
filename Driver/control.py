@@ -37,7 +37,7 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 
-JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
+JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING*POSITION_NORMALIZATION/TRACK_LENGTH/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
 # todo check position unit conversion for joystick
@@ -48,7 +48,6 @@ ANGLE_TARGET = 2061  # 3383  # adjust to exactly vertical angle value, read by i
 
 POSITION_TARGET = 100/POSITION_NORMALIZATION*TRACK_LENGTH # 1200
 POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH # Normalizing to have range over track length .396 m
-print('POSITION VALUE:', POSITION_TARGET)
 
 PARAMS_JSON_FILE = 'control.json'
 LOGGING_LEVEL = logging.INFO
@@ -139,9 +138,9 @@ def help():
     print("D Toggle dance mode")
     print(",./ Turn on motor left zero right")
     print("m Toggle measurement")
-    print("b angle measurement from sensor")
+    print("j Switch joystick control mode")
+    print("b Print angle measurement from sensor")
     print("***********************************")
-
 
 
 log = my_logger(__name__)
@@ -286,7 +285,7 @@ while True:
     # Adjust Parameters
     if kbAvailable & kb.kbhit():
         c = kb.getch()
-        #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b
+        #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
         controller.keyboard_input(c)
 
         if c == '.':  # zero motor
@@ -431,13 +430,14 @@ while True:
         #         print("Joystick button released.")
         pygame.event.get()  # must call get() to handle internal queue
         stickPos = stick.get_axis(0)  # 0 left right, 1 front back 2 rotate
+        stickPos = stickPos*POSITION_FULL_SCALE_N/POSITION_NORMALIZATION*TRACK_LENGTH
     # todo handle joystick control of cart to position, not speed
     if joystickMode=='speed' and abs(stickPos) > JOYSTICK_DEADZONE:
         stickControl = True
         actualMotorCmd = int(round(stickPos * JOYSTICK_SCALING))
     elif joystickMode=='position':
         stickControl=True
-        actualMotorCmd=int((stickPos*POSITION_FULL_SCALE-position)*JOYSTICK_POSITION_KP)
+        actualMotorCmd=int((stickPos-position)*JOYSTICK_POSITION_KP)
     elif controlEnabled and not manualMotorSetting:
         actualMotorCmd = motorCmd
     elif manualMotorSetting == False:
@@ -489,3 +489,4 @@ if loggingEnabled:
 # todo add initial measurement that calculates normalization values for conversion to proper units for angle and position - ask marcin
 # todo fix get and set params (for chip interface) - MARCIN
 # todo check if position unit conversion  works for all featues: dance, joystick, measurement, save/load, etc.
+# todo - dance mode not working

@@ -7,9 +7,9 @@ ANGLE_DEVIATION = ANGLE_NORMALIZATION - ANGLE_HANGING # Angle deviation from goa
 ANGLE_HANGING_NORMALIZATION = (ANGLE_DEVIATION + ANGLE_HANGING - ANGLE_NORMALIZATION/2)/ANGLE_NORMALIZATION*2*math.pi # Should be equal to pi in radians
 
 # Position unit conversion adc to meters: POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH
-POSITION_FULL_SCALE = 2047. # cart position should range over +- this value if calibrated for zero at center
+# POSITION_FULL_SCALE = 2047. # cart position should range over +- this value if calibrated for zero at center
 POSITION_NORMALIZATION = 4660 # This is an empirical approximation
-POSITION_FULL_SCALE_N = int(POSITION_NORMALIZATION)/2 # Corrected position full scale
+POSITION_FULL_SCALE_N = int(POSITION_NORMALIZATION)/2 # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396 # Total usable track length in meters
 
 ratio = 1.05
