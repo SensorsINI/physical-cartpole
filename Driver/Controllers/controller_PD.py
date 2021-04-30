@@ -10,6 +10,8 @@ from Driver.state_utilities import cartpole_state_varname_to_index
 
 from globals import *
 
+# TODO: Remove angle_target from json. You neither should set it externally.
+#  The only possible scenario when angle target is not 0 would be if it follows some trajectory. This trajectory would be calculated inside of the controller.
 PARAMS_JSON_FILE = 'control.json'
 
 class controller_PD(template_controller):

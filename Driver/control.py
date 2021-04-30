@@ -288,12 +288,12 @@ while True:
             print('\r actual motor command after .', actualMotorCmd)
         elif c == ',':  # left
             controlEnabled = False
-            actualMotorCmd = -10
+            actualMotorCmd += 100
             manualMotorSetting = True
             print('\r actual motor command after ,', actualMotorCmd)
         elif c == '/':  # right
             controlEnabled = False
-            actualMotorCmd = 10
+            actualMotorCmd -= 100
             manualMotorSetting = True
             print('\r actual motor command after /', actualMotorCmd)
         elif c == 'D':
@@ -309,7 +309,7 @@ while True:
                     csvwriter = csv.writer(csvfile, delimiter=',')
                     #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
-                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['position (m)'] + ['angleTarget'] + ['angleErr'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle (rad)'] + ['position (m)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     # csvwriter.writerow(['time'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
@@ -332,10 +332,12 @@ while True:
         # Increase Target Angle
         elif c == '=':
             ANGLE_DEVIATION_FINETUNE += 0.01
+            # FIXME: Change this string
             print("\nIncreased target angle to {0}".format(ANGLE_DEVIATION_FINETUNE))
         # Decrease Target Angle
         elif c == '-':
             ANGLE_DEVIATION_FINETUNE -= 0.01
+            # FIXME: Change this string
             print("\nDecreased target angle to {0}".format(ANGLE_DEVIATION_FINETUNE))
 
         # Increase Target Position
@@ -383,6 +385,9 @@ while True:
     p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state()
     position = position/POSITION_NORMALIZATION*TRACK_LENGTH
+    # TODO: Push ANGLE_DEVIATION_FINETUNE inside of the bracket
+    #  and make it initialize to 0 (integrate current value inside ANGLE_DEVIATION)
+    #  when ANGLE_DEVIATION_FINETUNE is in ADC units, it makes sense to decrease and increse it by 1
     angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi - ANGLE_DEVIATION_FINETUNE
     if POLOLU_MOTOR:
         position = -position
@@ -450,7 +455,7 @@ while True:
     p.set_motor(-actualMotorCmd)
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, controller.ANGLE_TARGET, angleErr, positionTargetNow, positionErr, controller.angleCmd, controller.positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, controller.ANGLE_TARGET, angleErr, positionTargetNow, positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
         # Print outputL
     printCount += 1
