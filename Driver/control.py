@@ -139,6 +139,7 @@ def help():
     print("D Toggle dance mode")
     print(",./ Turn on motor left zero right")
     print("m Toggle measurement")
+    print("b angle measurement from sensor")
     print("***********************************")
 
 
@@ -278,13 +279,14 @@ csvfile = None
 csvfilename = None
 csvwriter = None
 motorCmd = 0
+angle_average = 0
 
 while True:
 
     # Adjust Parameters
     if kbAvailable & kb.kbhit():
         c = kb.getch()
-        #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L
+        #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b
         controller.keyboard_input(c)
 
         if c == '.':  # zero motor
@@ -345,10 +347,14 @@ while True:
         # Increase Target Position
         elif c == ']':
             POSITION_TARGET += 200/POSITION_NORMALIZATION*TRACK_LENGTH
+            if (POSITION_TARGET>0.2):
+               POSITION_TARGET = 0.2
             print("\nIncreased target position to {0} meters".format(POSITION_TARGET))
         # Decrease Target Position
         elif c == '[':
             POSITION_TARGET -= 200/POSITION_NORMALIZATION*TRACK_LENGTH
+            if (POSITION_TARGET < -0.2):
+                POSITION_TARGET = -0.2
             print("\nDecreased target position to {0} meters".format(POSITION_TARGET))
         elif c == 'm':  # toggle measurement
             if measurement.is_idle():
@@ -364,6 +370,15 @@ while True:
             elif joystickMode=='position':
                 joystickMode='speed'
                 log.info(f'set joystick to cart {joystickMode} control mode')
+        elif c=='b':
+            for _ in range(10):
+                p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
+                (angle, position, command) = p.read_state()
+                print('Sensor reading to adjust ANGLE_HANGING', angle)
+                angle_average += angle
+            print('Hanging angle average for more precise parameter value', angle_average/10)
+
+
 
         # Exit
         elif ord(c) == 27:  # ESC
@@ -446,11 +461,11 @@ while True:
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
         printCount = 0
-        print("\r a {:+4d} aErr {:+6.1f} p {:+6.3f} pErr {:+6.3f} aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
+        print("\r a {:+6.3f}rad aErr {:+6.3f}rad p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
               .format(int(angle),
                       controller.angleErr,
-                      position,
-                      controller.positionErr,
+                      position*100,
+                      controller.positionErr*100,
                       int(round(controller.angleCmd)),
                       int(round(controller.positionCmd)),
                       actualMotorCmd,
@@ -470,7 +485,7 @@ joystick.quit()
 
 if loggingEnabled:
     csvfile.close()
-# todo put position limitation on position set point increase and decrease
-# todo add initial measurement that calculates normalization values for conversion to proper units for angle and position
-# todo fix get and set params (for chip interface)
-# todo check if position unit convertion  works for all featues: dance, joystick, measurement, save/load, etc.
+
+# todo add initial measurement that calculates normalization values for conversion to proper units for angle and position - ask marcin
+# todo fix get and set params (for chip interface) - MARCIN
+# todo check if position unit conversion  works for all featues: dance, joystick, measurement, save/load, etc.
