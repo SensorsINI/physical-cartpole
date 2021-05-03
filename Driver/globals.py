@@ -14,7 +14,7 @@ POSITION_FULL_SCALE_N = int(POSITION_NORMALIZATION)/2 # Corrected position full 
 TRACK_LENGTH = 0.396 # Total usable track length in meters
 
 # Direction for measurement.py - n = 2 for right, n = 1 for left.
-n = 2
+n = 1
 
 ratio = 1.05
 

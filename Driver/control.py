@@ -1,11 +1,11 @@
 import logging
 import time
 import json
-import math
 import csv
 import serial  # conda install pyserial
 import sys
 import glob
+import numpy as np
 # pygame needs python 3.6, not available for 3.7
 import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
@@ -31,7 +31,7 @@ SERIAL_BAUD = 230400  # default 230400, in firmware.   Alternatives if compiled 
 PRINT_PERIOD_MS = 100  # shows state every this many ms
 CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
 CALIBRATE = False  # False # important to calibrate if running standalone to avoid motor burnout because limits are determined during this calibration
-MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
@@ -311,8 +311,9 @@ while True:
                     csvwriter = csv.writer(csvfile, delimiter=',')
                     #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
-                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle (rad)'] +  ['angleD (rad/s)'] + ['position (m)'] + ['positionD (m/s)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
-                    # csvwriter.writerow(['time'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    csvwriter.writerow(['#time'] + ['deltaTimeMs'] + ['angle (rad)'] + ['angle_cos'] + ['angle_sin'] + ['angleD (rad/s)'] + ['position (m)'] + ['positionD (m/s)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
                     loggingEnabled = False
@@ -390,7 +391,7 @@ while True:
     # TODO: Push ANGLE_DEVIATION_FINETUNE inside of the bracket
     #  and make it initialize to 0 (integrate current value inside ANGLE_DEVIATION)
     #  when ANGLE_DEVIATION_FINETUNE is in ADC units, it makes sense to decrease and increase it by 1
-    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi - ANGLE_DEVIATION_FINETUNE
+    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * np.pi - ANGLE_DEVIATION_FINETUNE
     if POLOLU_MOTOR:
         position = -position
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
@@ -405,7 +406,7 @@ while True:
 
     positionTargetNow = POSITION_TARGET
     if controlEnabled and danceEnabled:
-        positionTargetNow = POSITION_TARGET + danceAmpl * math.sin(2 * math.pi * (elapsedTime / dancePeriodS))
+        positionTargetNow = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * (elapsedTime / dancePeriodS))
 
     # Balance PD Control
     # Position PD Control
@@ -459,8 +460,11 @@ while True:
     angleDerivative = (angle - anglePrev)/deltaTime #rad/s
     positionDerivative = (position - positionPrev)/deltaTime #m/s
 
+    angle_cos = np.cos(angle)
+    angle_sin = np.sin(angle)
+
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, positionTargetNow, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, positionTargetNow, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
 
     anglePrev = angle
     positionPrev = position

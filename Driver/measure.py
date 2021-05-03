@@ -4,7 +4,7 @@ import time
 from globals import *
 
 # from .pendulum import Pendulum
-STARTING_POSITION = -(-1)**n*TRACK_LENGTH/2# cart starting position
+STARTING_POSITION = -(-1)**n*0.17# cart starting position
 ENDING_POSITION = (-1)**n*300*TRACK_LENGTH/POSITION_NORMALIZATION # position to turn off motor
 RESET_SPEED = (-1)**n*2500
 SPEED_STEP = (-1)**n*500
