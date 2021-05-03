@@ -272,6 +272,9 @@ csvfilename = None
 csvwriter = None
 angle_average = 0
 
+anglePrev = 0
+positionPrev = 0
+
 while True:
 
     # Adjust Parameters
@@ -279,7 +282,7 @@ while True:
         c = kb.getch()
         #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
         controller.keyboard_input(c)
-        # FIXME ,./ commands not working as intended
+        # FIXME ,./ commands not working as intended - control overwrites motor value
         if c == '.':  # zero motor
             controlEnabled = False
             actualMotorCmd = 0
@@ -308,7 +311,7 @@ while True:
                     csvwriter = csv.writer(csvfile, delimiter=',')
                     #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
-                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle (rad)'] + ['position (m)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle (rad)'] +  ['angleD (rad/ms)'] + ['position (m)'] + ['positionD (m/ms)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     # csvwriter.writerow(['time'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
@@ -386,7 +389,7 @@ while True:
     position = position/POSITION_NORMALIZATION*TRACK_LENGTH
     # TODO: Push ANGLE_DEVIATION_FINETUNE inside of the bracket
     #  and make it initialize to 0 (integrate current value inside ANGLE_DEVIATION)
-    #  when ANGLE_DEVIATION_FINETUNE is in ADC units, it makes sense to decrease and increse it by 1
+    #  when ANGLE_DEVIATION_FINETUNE is in ADC units, it makes sense to decrease and increase it by 1
     angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * math.pi - ANGLE_DEVIATION_FINETUNE
     if POLOLU_MOTOR:
         position = -position
@@ -409,6 +412,10 @@ while True:
     s = create_cartpole_state()
     s[cartpole_state_varname_to_index('position')] = position
     s[cartpole_state_varname_to_index('angle')] = angle
+    # s[cartpole_state_varname_to_index('positionErrPrev')] = positionErrPrev
+    # s[cartpole_state_varname_to_index('angleErrPrev')] = angleErrPrev
+
+
 
     if timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
         lastControlTime = timeNow
@@ -453,8 +460,14 @@ while True:
 
     p.set_motor(-actualMotorCmd)
 
+    angleDerivative = (angle - anglePrev)/deltaTime/1000 #rad/ms
+    positionDerivative = (position - positionPrev)/deltaTime/1000 #m/ms
+
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, controller.ANGLE_TARGET, angleErr, positionTargetNow, positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, positionTargetNow, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd, stickControl, stickPos, measurement])
+
+    anglePrev = angle
+    positionPrev = position
 
         # Print outputL
     printCount += 1
@@ -486,4 +499,4 @@ if loggingEnabled:
     csvfile.close()
 
 # todo fix get and set params (for chip interface), must be compatible with sensor readings
-# todo check if position unit conversion  works for the following features: dance, measurement, save/load, logging.
+# todo check if position unit conversion works for the following features: dance mode (can be checked for a nice controller only)
