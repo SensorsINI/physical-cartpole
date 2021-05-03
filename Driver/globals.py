@@ -13,6 +13,8 @@ POSITION_NORMALIZATION = 4660 # This is an empirical approximation
 POSITION_FULL_SCALE_N = int(POSITION_NORMALIZATION)/2 # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396 # Total usable track length in meters
 
+# Direction for measurement.py - n = 2 for right, n = 1 for left.
+n = 1
 
 ratio = 1.05
 
