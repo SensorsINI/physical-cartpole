@@ -311,7 +311,7 @@ while True:
                     csvwriter = csv.writer(csvfile, delimiter=',')
                     #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
-                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle (rad)'] +  ['angleD (rad/ms)'] + ['position (m)'] + ['positionD (m/ms)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle (rad)'] +  ['angleD (rad/s)'] + ['position (m)'] + ['positionD (m/s)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     # csvwriter.writerow(['time'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionTarget'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['motorCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
@@ -412,10 +412,6 @@ while True:
     s = create_cartpole_state()
     s[cartpole_state_varname_to_index('position')] = position
     s[cartpole_state_varname_to_index('angle')] = angle
-    # s[cartpole_state_varname_to_index('positionErrPrev')] = positionErrPrev
-    # s[cartpole_state_varname_to_index('angleErrPrev')] = angleErrPrev
-
-
 
     if timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
         lastControlTime = timeNow
@@ -460,8 +456,8 @@ while True:
 
     p.set_motor(-actualMotorCmd)
 
-    angleDerivative = (angle - anglePrev)/deltaTime/1000 #rad/ms
-    positionDerivative = (position - positionPrev)/deltaTime/1000 #m/ms
+    angleDerivative = (angle - anglePrev)/deltaTime #rad/s
+    positionDerivative = (position - positionPrev)/deltaTime #m/s
 
     if loggingEnabled:
         csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, positionTargetNow, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd, stickControl, stickPos, measurement])
