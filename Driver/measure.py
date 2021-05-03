@@ -4,12 +4,14 @@ import time
 from globals import *
 
 # from .pendulum import Pendulum
-
+# make exactly the negative if you want to move in the other direction
 STARTING_POSITION = -TRACK_LENGTH/2# cart starting position
-ENDING_POSITION = TRACK_LENGTH/2 # position to turn off motor
+print("STARTING_POSITION:", STARTING_POSITION)
+ENDING_POSITION = 300*TRACK_LENGTH/POSITION_NORMALIZATION # position to turn off motor
+print('ENDING_POSITION:', ENDING_POSITION)
 RESET_SPEED = 2500
 SPEED_STEP = 500
-STARTING_SPEED = 500
+STARTING_SPEED = 1000 #doesn't work for 500 for some reason
 ENDING_SPEED = 8000
 PAUSE_BEFORE_STEP_S = .5 # pause after reset to start position before starting step
 FRICTION_SLOWDOWN_TIME_S=1 # time at end to just turn off motor and glide to stop
@@ -59,22 +61,29 @@ class StepResponseMeasurement:
                 self.state = 'starting_step'
                 self.time_state_changed = time
         elif self.state == 'starting_step':
+            print('speed', self.speed)
+            print('ENDING_SPEED', ENDING_SPEED)
             if (self.speed < ENDING_SPEED):
                 self.speed += SPEED_STEP
                 self.motor = self.speed
                 self.state = 'moving'
                 self.time_state_changed = time
+                print('MOVING1, GETS STUCK HERE')
             else:
                 self.speed = 0
                 self.motor = (0)
                 self.state = 'idle'
                 self.time_state_changed = time
         elif self.state == 'moving':
+            print('position', position)
+            print('ENDING_POSITION', ENDING_POSITION)
             if position > ENDING_POSITION:
                 self.motor = 0
                 self.state = 'friction_slowdown'
                 self.time_state_changed = time
+                print('MOVING2, GETS STUCK HERE')
             self._check_timeout(time)
+            print('MOVING3, GETS STUCK HERE')
         elif self.state=='friction_slowdown':
             self.motor = 0
             if (time - self.time_state_changed > FRICTION_SLOWDOWN_TIME_S):

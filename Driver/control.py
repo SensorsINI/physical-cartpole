@@ -279,7 +279,6 @@ while True:
         c = kb.getch()
         #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
         controller.keyboard_input(c)
-        print('\r actual motor command', actualMotorCmd)
         # FIXME ,./ commands not working as intended
         if c == '.':  # zero motor
             controlEnabled = False
@@ -443,8 +442,10 @@ while True:
 
     if not measurement.is_idle():
         try:
+            print("POSITION BEFORE INSERTING INTO update_state", position)
             measurement.update_state(angle, position, timeNow)
             actualMotorCmd = measurement.motor
+            print(getattr(measurement,"state"))
         except TimeoutError as e:
             log.warning(f'timeout in measurement: {e}')
 
@@ -453,6 +454,7 @@ while True:
     actualMotorCmd = -MOTOR_MAX_PWM if actualMotorCmd  < -MOTOR_MAX_PWM else actualMotorCmd
 
     p.set_motor(-actualMotorCmd)
+    # print('actual motor command:', actualMotorCmd)
 
     if loggingEnabled:
         csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, controller.ANGLE_TARGET, angleErr, positionTargetNow, positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd, stickControl, stickPos, measurement])
