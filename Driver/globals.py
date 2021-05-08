@@ -1,4 +1,9 @@
 import math
+
+CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
+
+MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_NORMALIZATION/2)/ANGLE_NORMALIZATION*math.pi
 # ANGLE_KP = ANGLE_KP*ANGLE_NORMALIZATION/math.pi
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise

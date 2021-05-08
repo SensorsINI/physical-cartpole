@@ -20,7 +20,8 @@ from kbhit import KBHit
 from measure import StepResponseMeasurement
 
 from Controllers.controller_PD import controller_PD
-from state_utilities import create_cartpole_state, cartpole_state_varname_to_index
+from Controllers.controller_lqr import controller_lqr
+from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 
 from globals import *
 
@@ -29,9 +30,9 @@ POLOLU_MOTOR = True  # set true to set options for this motor, which has opposit
 SERIAL_PORT = None  # if None, takes first one available #"COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 PRINT_PERIOD_MS = 100  # shows state every this many ms
-CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
+
 CALIBRATE = False  # False # important to calibrate if running standalone to avoid motor burnout because limits are determined during this calibration
-MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
@@ -47,7 +48,8 @@ POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
 PARAMS_JSON_FILE = 'control.json'
 LOGGING_LEVEL = logging.INFO
 
-controller = controller_PD()
+# controller = controller_PD()
+controller = controller_lqr()
 
 def my_logger(name):
     # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -191,7 +193,11 @@ if CALIBRATE:
         exit()
     print("Done calibrating")
 
-controller.loadparams()
+try:
+    controller.loadparams()
+except AttributeError:
+    print('loadparams not defined for this controller')
+
 time.sleep(1)
 
 p.set_angle_config(0,
@@ -256,8 +262,10 @@ except:
     kbAvailable = False
 
 measurement = StepResponseMeasurement()
-
-controller.printparams()
+try:
+    controller.printparams()
+except AttributeError:
+    print('printparams not implemented for this controller.')
 help()
 startTime = time.time()
 lastTime = startTime
@@ -281,7 +289,10 @@ while True:
     if kbAvailable & kb.kbhit():
         c = kb.getch()
         #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
-        controller.keyboard_input(c)
+        try:
+            controller.keyboard_input(c)
+        except AttributeError:
+            pass
         # FIXME ,./ commands not working as intended - control overwrites motor value
         if c == '.':  # zero motor
             controlEnabled = False
@@ -309,7 +320,7 @@ while True:
                     csvfilename = datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
                     csvfile = open(csvfilename, 'w', newline='')
                     csvwriter = csv.writer(csvfile, delimiter=',')
-                    #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, positionTargetNow, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
+                    #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, target_position, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
 
                     csvwriter.writerow(['#time'] + ['deltaTimeMs'] + ['angle (rad)'] + ['angle_cos'] + ['angle_sin'] + ['angleD (rad/s)'] + ['position (m)'] + ['positionD (m/s)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
                     csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'])
@@ -402,22 +413,36 @@ while True:
         deltaTime = 1e-6
     lastTime = timeNow
     elapsedTime = timeNow - startTime
-    diffFactor = (CONTROL_PERIOD_MS / (deltaTime * 1000))
 
-    positionTargetNow = POSITION_TARGET
+    angleDerivative = (angle - anglePrev)/deltaTime #rad/s
+    positionDerivative = (position - positionPrev)/deltaTime #m/s
+
+    anglePrev = angle
+    positionPrev = position
+
+    angle_cos = np.cos(angle)
+    angle_sin = np.sin(angle)
+
+
+    target_position = POSITION_TARGET
     if controlEnabled and danceEnabled:
-        positionTargetNow = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * (elapsedTime / dancePeriodS))
+        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * (elapsedTime / dancePeriodS))
 
     # Balance PD Control
     # Position PD Control
     s = create_cartpole_state()
     s[cartpole_state_varname_to_index('position')] = position
     s[cartpole_state_varname_to_index('angle')] = angle
+    s[cartpole_state_varname_to_index('positionD')] = positionDerivative
+    s[cartpole_state_varname_to_index('angleD')] = angleDerivative
+    s[cartpole_state_varname_to_index('angle_cos')] = angle_cos
+    s[cartpole_state_varname_to_index('angle_sin')] = angle_sin
 
     if timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
         lastControlTime = timeNow
-        actualMotorCmd = controller.step(s=s, target_position=positionTargetNow, time=timeNow,
-                                         diffFactor=diffFactor)
+        actualMotorCmd = controller.step(s=s, target_position=target_position, time=timeNow)
+        actualMotorCmd *= MOTOR_FULL_SCALE
+        actualMotorCmd = int(actualMotorCmd)
         # print('AAAAAAAAAAAAAAAA', actualMotorCmd)
     stickPos = 0.0
     stickControl = False
@@ -457,29 +482,23 @@ while True:
 
     p.set_motor(-actualMotorCmd)
 
-    angleDerivative = (angle - anglePrev)/deltaTime #rad/s
-    positionDerivative = (position - positionPrev)/deltaTime #m/s
-
-    angle_cos = np.cos(angle)
-    angle_sin = np.sin(angle)
-
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, positionTargetNow, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
 
-    anglePrev = angle
-    positionPrev = position
 
         # Print outputL
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
         printCount = 0
-        print("\r a {:+6.3f}rad aErr {:+6.3f}rad p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
+        positionErr = s[cartpole_state_varname_to_index('position')] - target_position
+        # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
+        print(
+            "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
               .format(angle,
-                      controller.angleErr,
                       position*100,
-                      controller.positionErr*100,
-                      int(round(controller.angleCmd)),
-                      int(round(controller.positionCmd)),
+                      positionErr*100,
+                      # int(round(controller.angleCmd)),
+                      # int(round(controller.positionCmd)),
                       actualMotorCmd,
                       deltaTime * 1000,
                       stickPos,

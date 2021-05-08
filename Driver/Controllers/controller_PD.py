@@ -2,11 +2,10 @@
 A PD controller for the Cartpole using CartpoleSimulator conventions
 """
 
-
 import json
 
 from Controllers.template_controller import template_controller
-from Driver.state_utilities import cartpole_state_varname_to_index
+from Driver.CartPole.state_utilities import cartpole_state_varname_to_index
 
 from globals import *
 
@@ -45,9 +44,19 @@ class controller_PD(template_controller):
 
         self.PARAMS_JSON_FILE = PARAMS_JSON_FILE
 
+        self.time_last = None
 
-    def step(self, s, target_position, time=None, diffFactor=1.0):
+
+    def step(self, s, target_position, time=None):
+        # This diffFactor was before strangely - dt was a sampling time
+        if self.time_last is None:
+            diffFactor = 1.0
+        else:
+            diffFactor = CONTROL_PERIOD_MS / (time - self.time_last)
+        self.time_last = time
+
         self.POSITION_TARGET = target_position
+
         self.positionErr = self.POSITION_SMOOTHING * (s[cartpole_state_varname_to_index('position')] - target_position) + (1.0 - self.POSITION_SMOOTHING) * self.positionErrPrev  # First order low-P=pass filter
         positionErrDiff = (self.positionErr - self.positionErrPrev) * diffFactor
         self.positionErrPrev = self.positionErr
@@ -66,7 +75,7 @@ class controller_PD(template_controller):
         self.angleCmd = -(self.ANGLE_KP * self.angleErr + self.ANGLE_KD * angleErrDiff)  # if too CCW (pos error), move cart left
 
         motorCmd = int(round(self.angleCmd + self.positionCmd))  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
-
+        motorCmd /= MOTOR_FULL_SCALE # FIXME: The scaling of the motor input should be outside of the controller, respectivelly this factor should be integrated into gains.
         return motorCmd
 
     def printparams(self):
