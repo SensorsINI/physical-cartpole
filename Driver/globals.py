@@ -1,6 +1,9 @@
 import math
+import logging
+LOGGING_LEVEL = logging.INFO
 
 CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
+PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 

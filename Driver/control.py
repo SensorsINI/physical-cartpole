@@ -1,10 +1,9 @@
-import logging
 import time
 import json
 import csv
-import serial  # conda install pyserial
+
 import sys
-import glob
+
 import numpy as np
 # pygame needs python 3.6, not available for 3.7
 import pygame  # pip install -U pygame
@@ -15,15 +14,19 @@ from datetime import datetime
 # from Driver.kbhit import KBHit
 # from Driver.measure import StepResponseMeasurement
 
+from custom_logging import my_logger
+from custom_serial_functions import serial_ports
 from pendulum import Pendulum
 from kbhit import KBHit
 from measure import StepResponseMeasurement
 
-from Controllers.controller_PD import controller_PD
-from Controllers.controller_lqr import controller_lqr
 from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 
+from controllers_management import set_controller
+
 from globals import *
+
+# TODO Why after calibration Cartpole is not at 0 position?
 
 POLOLU_MOTOR = True  # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
@@ -46,73 +49,9 @@ ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such th
 POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
 
 PARAMS_JSON_FILE = 'control.json'
-LOGGING_LEVEL = logging.INFO
 
-# controller = controller_PD()
-controller = controller_lqr()
-
-def my_logger(name):
-    # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    logger = logging.getLogger(name)
-    logger.setLevel(LOGGING_LEVEL)
-    # create console handler
-    ch = logging.StreamHandler()
-    ch.setFormatter(CustomFormatter())
-    logger.addHandler(ch)
-    return logger
-
-class CustomFormatter(logging.Formatter):
-    """Logging Formatter to add colors and count warning / errors"""
-
-    grey = "\x1b[38;21m"
-    yellow = "\x1b[33;21m"
-    red = "\x1b[31;21m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
-
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: grey + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
-
-def serial_ports():  # from https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
-    """ Lists serial port names
-
-        :raises EnvironmentError:
-            On unsupported or unknown platforms
-        :returns:
-            A list of the serial ports available on the system
-    """
-    if sys.platform.startswith('win'):
-        ports = ['COM%s' % (i + 1) for i in range(256)]
-    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-        # this excludes your current terminal "/dev/tty"
-        # if cannot open, check permissions
-        ports = glob.glob('/dev/ttyUSB[0-9]*')
-    elif sys.platform.startswith('darwin'):
-        ports = glob.glob('/dev/tty.*')
-    else:
-        raise EnvironmentError('Unsupported platform')
-
-    result = []
-    for port in ports:
-        try:
-            s = serial.Serial(port)
-            s.close()
-            result.append(port)
-        except (OSError, serial.SerialException):
-            pass
-    return result
+# TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
+controller,_ ,_ = set_controller(controller_name='PD')
 
 
 def help():
