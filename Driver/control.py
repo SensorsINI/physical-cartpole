@@ -27,6 +27,7 @@ from controllers_management import set_controller
 from globals import *
 
 # TODO Why after calibration Cartpole is not at 0 position?
+# TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 
 POLOLU_MOTOR = True  # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
 
