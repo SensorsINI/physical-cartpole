@@ -351,6 +351,8 @@ while True:
     deltaTime = timeNow - lastTime
     if deltaTime == 0:
         deltaTime = 1e-6
+
+    # print(deltaTime)
     lastTime = timeNow
     elapsedTime = timeNow - startTime
 
@@ -383,6 +385,7 @@ while True:
         actualMotorCmd = controller.step(s=s, target_position=target_position, time=timeNow)
         actualMotorCmd *= MOTOR_FULL_SCALE
         actualMotorCmd = int(actualMotorCmd)
+
         # print('AAAAAAAAAAAAAAAA', actualMotorCmd)
     stickPos = 0.0
     stickControl = False

@@ -49,11 +49,15 @@ class controller_PD(template_controller):
 
     def step(self, s, target_position, time=None):
         # This diffFactor was before strangely - dt was a sampling time
+
         if self.time_last is None:
             diffFactor = 1.0
         else:
-            diffFactor = CONTROL_PERIOD_MS / (time - self.time_last)
+            diffFactor = CONTROL_PERIOD_MS / (time - self.time_last) / 1000
+            # print(diffFactor)
+            #diffFactor = 0.005
         self.time_last = time
+        #print(diffFactor)
 
         self.POSITION_TARGET = target_position
 
