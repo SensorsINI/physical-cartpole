@@ -8,7 +8,7 @@ try:
     # Use gitpython to get a current revision number and use it in description of experimental data
     from git import Repo
 except:
-    pass
+    print('GitPython not found')
 
 def csv_init(csv_name=None, controller_name=None):
 
@@ -25,7 +25,7 @@ def csv_init(csv_name=None, controller_name=None):
                 datetime.now().strftime('_%Y-%m-%d_%H-%M-%S')) + '.csv'
         else:
             # This is the original version from Tobi
-            csv_filepath = datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
+            csv_filepath = PATH_TO_EXPERIMENT_RECORDINGS + datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
     else:
         csv_filepath = PATH_TO_EXPERIMENT_RECORDINGS + csv_name
         if csv_name[-4:] != '.csv':
@@ -70,7 +70,7 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['# angleErr: rad'])
         writer.writerow(['# target_position: m'])
         writer.writerow(['# positionErr: m'])
-        writer.writerow(['# Q: normed motor power in the rage [-1,1]'])
+        writer.writerow(['# Q: normed motor power'])
         writer.writerow(['#'])
         writer.writerow(['#'])
 
@@ -80,7 +80,7 @@ def csv_init(csv_name=None, controller_name=None):
                 'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'])
 
     # TODO: Not sure if we really need to return these two things and if this is efficient implementation
-    csvfile = open(csv_filepath, 'w', newline='')
+    csvfile = open(csv_filepath, 'a', newline='')
     csvwriter = csv.writer(csvfile, delimiter=',')
 
     return csv_filepath, csvfile, csvwriter

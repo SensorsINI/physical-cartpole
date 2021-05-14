@@ -56,7 +56,7 @@ angle_smoothing = 0.8
 PARAMS_JSON_FILE = 'control.json'
 
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
-controller,_ ,_ = set_controller(controller_name='lqr')
+controller,_ ,_ = set_controller(controller_name='PD')
 
 def help():
     print("\n***********************************")
@@ -430,21 +430,21 @@ while True:
     # A manual calibration to linearize around origin
     #  Model_velocity.py in CartPole simulator is the script to determine these values
     # The change dependent on velocity sign is motivated theory of classical friction
-    if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
-        actualMotorCmd += 645
-    elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
-        actualMotorCmd -= 514
-    if actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
-        actualMotorCmd = 100*np.sign(s[cartpole_state_varname_to_index('positionD')])
+    # if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
+    #     actualMotorCmd += 645
+    # elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
+    #     actualMotorCmd -= 514
+    # if actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
+    #     actualMotorCmd = 100*int(np.sign(s[cartpole_state_varname_to_index('positionD')]))
 
     # This should be incorrect from my theoretical understanding...
     # But maybe works better if my theoretical motivation is wrong?
-    # if actualMotorCmd > 0:
-    #     actualMotorCmd += 645
-    # elif actualMotorCmd < 0:
-    #     actualMotorCmd -= 514
-    # elif actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
-    #     actualMotorCmd = 100*np.sign(s[cartpole_state_varname_to_index('positionD')])
+    if actualMotorCmd > 0:
+        actualMotorCmd += 645
+    elif actualMotorCmd < 0:
+        actualMotorCmd -= 514
+    if actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
+        actualMotorCmd = 100*int(np.sign(s[cartpole_state_varname_to_index('positionD')]))
 
     # clip motor to actual limits
     actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM else actualMotorCmd
