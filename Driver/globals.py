@@ -4,8 +4,10 @@ LOGGING_LEVEL = logging.INFO
 
 CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
+PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+MOTOR_TYPE = 'POLOLU'
 
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_NORMALIZATION/2)/ANGLE_NORMALIZATION*math.pi
 # ANGLE_KP = ANGLE_KP*ANGLE_NORMALIZATION/math.pi

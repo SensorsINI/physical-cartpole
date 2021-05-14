@@ -1,6 +1,6 @@
 import time
 import json
-import csv
+
 
 import sys
 
@@ -9,7 +9,7 @@ import numpy as np
 import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
-from datetime import datetime
+
 # from Driver.pendulum import Pendulum
 # from Driver.kbhit import KBHit
 # from Driver.measure import StepResponseMeasurement
@@ -23,6 +23,7 @@ from measure import StepResponseMeasurement
 from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 
 from controllers_management import set_controller
+from csv_helpers import csv_init
 
 from globals import *
 
@@ -79,6 +80,8 @@ def help():
     print("j Switch joystick control mode")
     print("b Print angle measurement from sensor")
     print("***********************************")
+
+
 
 log = my_logger(__name__)
 
@@ -262,14 +265,7 @@ while True:
             print("\nloggingEnabled= {0}".format(loggingEnabled))
             if loggingEnabled:
                 try:
-                    csvfilename = datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
-                    csvfile = open(csvfilename, 'w', newline='')
-                    csvwriter = csv.writer(csvfile, delimiter=',')
-                    #csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, position, ANGLE_TARGET, angleErr, target_position, positionErr, angleCmd, positionCmd, motorCmd, actualMotorCmd, stickControl, stickPos, measurement])
-
-                    csvwriter.writerow(['#time'] + ['deltaTimeMs'] + ['angle (rad)'] + ['angle_cos'] + ['angle_sin'] + ['angleD (rad/s)'] + ['position (m)'] + ['positionD (m/s)'] + ['angleTarget (rad)'] + ['angleErr (rad)'] + ['positionTarget (m)'] + ['positionErr (m)'] + ['angleCmd'] + ['positionCmd'] + ['actualMotorCmd'] + ['stickControl'] + ['stickPos'] + ['measurement'])
-                    csvwriter.writerow(['time'] + ['deltaTimeMs'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + ['positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + ['positionCmd'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'])
-
+                    csvfilename, csvfile, csvwriter = csv_init()
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
                     loggingEnabled = False
@@ -407,10 +403,10 @@ while True:
         stickPos = stick.get_axis(0)  # 0 left right, 1 front back 2 rotate
         stickPos = stickPos*POSITION_FULL_SCALE_N/POSITION_NORMALIZATION*TRACK_LENGTH
     # todo handle joystick control of cart to position, not speed
-    if joystickMode=='speed' and abs(stickPos) > JOYSTICK_DEADZONE:
+    if joystickMode == 'speed' and abs(stickPos) > JOYSTICK_DEADZONE:
         stickControl = True
         actualMotorCmd = int(round(stickPos * JOYSTICK_SCALING))
-    elif joystickMode=='position':
+    elif joystickMode == 'position':
         stickControl=True
         actualMotorCmd=int((stickPos-position)*JOYSTICK_POSITION_KP)
     elif controlEnabled and not manualMotorSetting:
@@ -425,15 +421,43 @@ while True:
         except TimeoutError as e:
             log.warning(f'timeout in measurement: {e}')
 
+    # We save motor input BEFORE processing which should linearize (perceived) motor model
+    # TODO: It is not fully cleare if it is the right place for the following line
+    #   I would prefere to have it before "linearization" and after clipping, but lin. goes before clipping
+    #   And I didn't want to have clipping twice (maybe I should?)
+    actualMotorSave = actualMotorCmd
+
+    # A manual calibration to linearize around origin
+    #  Model_velocity.py in CartPole simulator is the script to determine these values
+    # The change dependent on velocity sign is motivated theory of classical friction
+    if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
+        actualMotorCmd += 645
+    elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
+        actualMotorCmd -= 514
+    if actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
+        actualMotorCmd = 100*np.sign(s[cartpole_state_varname_to_index('positionD')])
+
+    # This should be incorrect from my theoretical understanding...
+    # But maybe works better if my theoretical motivation is wrong?
+    # if actualMotorCmd > 0:
+    #     actualMotorCmd += 645
+    # elif actualMotorCmd < 0:
+    #     actualMotorCmd -= 514
+    # elif actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
+    #     actualMotorCmd = 100*np.sign(s[cartpole_state_varname_to_index('positionD')])
+
     # clip motor to actual limits
     actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM else actualMotorCmd
     actualMotorCmd = -MOTOR_MAX_PWM if actualMotorCmd  < -MOTOR_MAX_PWM else actualMotorCmd
 
-    p.set_motor(-actualMotorCmd)
+    # Reverse sign if you are using pololu motor and not the original one
+    if MOTOR_TYPE == 'POLOLU':
+        actualMotorCmd = -actualMotorCmd
+
+    p.set_motor(actualMotorCmd)
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
-
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorSave, actualMotorSave/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
 
         # Print outputL
     printCount += 1
