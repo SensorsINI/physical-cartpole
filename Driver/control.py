@@ -49,11 +49,13 @@ ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such th
 
 POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
 
+angle_smoothing = 0.8
+# angleD_smoothing = 0.8 # todo at some point these should be inside the json file
+
 PARAMS_JSON_FILE = 'control.json'
 
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
-controller,_ ,_ = set_controller(controller_name='PD')
-
+controller,_ ,_ = set_controller(controller_name='lqr')
 
 def help():
     print("\n***********************************")
@@ -61,7 +63,7 @@ def help():
     print("ESC quit")
     print("k toggle control on/off (initially off)")
     print("K trigger motor position calibration")
-    print("=/- increase/decrease angle target")
+    print("=/- increase/decrease (fine tune) angle deviation value")
     print("[/] increase/decrease position target")
     print("w/q angle proportional gain")
     print("s/a angle derivative gain")
@@ -223,6 +225,9 @@ angle_average = 0
 anglePrev = 0
 positionPrev = 0
 
+angleDPrev = 0
+positionDPrev = 0
+
 while True:
 
     # Adjust Parameters
@@ -283,16 +288,16 @@ while True:
             print("\nCalibration finished")
         elif c == 'h' or c == '?':
             help()
-        # Increase Target Angle
+        # Fine tune angle deviation
         elif c == '=':
             ANGLE_DEVIATION_FINETUNE += 0.01
             # FIXME: Change this string
-            print("\nIncreased target angle to {0}".format(ANGLE_DEVIATION_FINETUNE))
+            print("\nIncreased angle fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
         # Decrease Target Angle
         elif c == '-':
             ANGLE_DEVIATION_FINETUNE -= 0.01
             # FIXME: Change this string
-            print("\nDecreased target angle to {0}".format(ANGLE_DEVIATION_FINETUNE))
+            print("\nDecreased angle fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
 
         # Increase Target Position
         elif c == ']':
@@ -324,11 +329,6 @@ while True:
             for _ in range(10):
                 p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
                 (angle, position, command) = p.read_state()
-                print('Sensor reading to adjust ANGLE_HANGING', angle)
-                angle_average += angle
-            print('Hanging angle average for more precise parameter value', angle_average/10)
-
-
 
         # Exit
         elif ord(c) == 27:  # ESC
@@ -343,6 +343,8 @@ while True:
     #  and make it initialize to 0 (integrate current value inside ANGLE_DEVIATION)
     #  when ANGLE_DEVIATION_FINETUNE is in ADC units, it makes sense to decrease and increase it by 1
     angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * np.pi - ANGLE_DEVIATION_FINETUNE
+    angle = angle*(angle_smoothing) + (1-angle_smoothing)*anglePrev
+
     if POLOLU_MOTOR:
         position = -position
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
@@ -359,8 +361,12 @@ while True:
     angleDerivative = (angle - anglePrev)/deltaTime #rad/s
     positionDerivative = (position - positionPrev)/deltaTime #m/s
 
+#    angleDerivative = angleDerivative*angleD_smoothing + (1-angleD_smoothing)*angleDPrev
+
     anglePrev = angle
     positionPrev = position
+
+#    angleDPrev = angleDerivative
 
     angle_cos = np.cos(angle)
     angle_sin = np.sin(angle)
