@@ -148,10 +148,7 @@ if CALIBRATE:
         exit()
     (_, POSITION_OFFSET, _) = p.read_state()
     print("Done calibrating")
-# else:
-#     # TODO: This was not working for some reason...
-#     # Take zero position where cart is at the start of the program
-#     (_, POSITION_OFFSET, _) = p.read_state()
+
 
 
 try:
@@ -297,7 +294,7 @@ while True:
             controlEnabled = False
             print("\nCalibration triggered")
             p.calibrate()
-            # (_, POSITION_OFFSET, _) = p.read_state()
+            (_, POSITION_OFFSET, _) = p.read_state()
             print("\nCalibration finished")
         elif c == 'h' or c == '?':
             help()
