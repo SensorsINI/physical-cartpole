@@ -1,7 +1,7 @@
 import time
 import json
 
-
+from math import fmod
 import sys
 
 import numpy as np
@@ -46,7 +46,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING*POSITION_NORMALIZATION/TRACK_LENGTH/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
-ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such that angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0  #adjust from key commands such that angle error is minimized
 
 POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
 
@@ -56,7 +56,8 @@ angle_smoothing = 0.8
 PARAMS_JSON_FILE = 'control.json'
 
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
-controller,_ ,_ = set_controller(controller_name='PD')
+controller,_ ,_ = set_controller(controller_name=CONTROLLER_NAME)
+
 
 def help():
     print("\n***********************************")
@@ -81,7 +82,16 @@ def help():
     print("b Print angle measurement from sensor")
     print("***********************************")
 
-
+# Wraps the angle into range [-π, π]
+def wrap_angle_rad(angle: float) -> float:
+    Modulo = fmod(angle, 2 * np.pi)  # positive modulo
+    if Modulo < -np.pi:
+        angle = Modulo + 2 * np.pi
+    elif Modulo > np.pi:
+        angle = Modulo - 2 * np.pi
+    else:
+        angle = Modulo
+    return angle
 
 log = my_logger(__name__)
 
@@ -136,7 +146,13 @@ if CALIBRATE:
         print("Failed to connect to device")
         p.close()
         exit()
+    (_, POSITION_OFFSET, _) = p.read_state()
     print("Done calibrating")
+# else:
+#     # TODO: This was not working for some reason...
+#     # Take zero position where cart is at the start of the program
+#     (_, POSITION_OFFSET, _) = p.read_state()
+
 
 try:
     controller.loadparams()
@@ -281,17 +297,18 @@ while True:
             controlEnabled = False
             print("\nCalibration triggered")
             p.calibrate()
+            # (_, POSITION_OFFSET, _) = p.read_state()
             print("\nCalibration finished")
         elif c == 'h' or c == '?':
             help()
         # Fine tune angle deviation
         elif c == '=':
-            ANGLE_DEVIATION_FINETUNE += 0.01
+            ANGLE_DEVIATION_FINETUNE += 1
             # FIXME: Change this string
             print("\nIncreased angle fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
         # Decrease Target Angle
         elif c == '-':
-            ANGLE_DEVIATION_FINETUNE -= 0.01
+            ANGLE_DEVIATION_FINETUNE -= 1
             # FIXME: Change this string
             print("\nDecreased angle fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
 
@@ -334,11 +351,11 @@ while True:
     # This function will block at the rate of the control loop
     p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state()
-    position = position/POSITION_NORMALIZATION*TRACK_LENGTH
-    # TODO: Push ANGLE_DEVIATION_FINETUNE inside of the bracket
-    #  and make it initialize to 0 (integrate current value inside ANGLE_DEVIATION)
-    #  when ANGLE_DEVIATION_FINETUNE is in ADC units, it makes sense to decrease and increase it by 1
-    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) / ANGLE_NORMALIZATION * 2 * np.pi - ANGLE_DEVIATION_FINETUNE
+    position = (position-POSITION_OFFSET)/POSITION_NORMALIZATION*TRACK_LENGTH
+
+    angle = (angle-ANGLE_UP-ANGLE_DEVIATION_FINETUNE)*ANGLE_NORMALIZATION
+    angle = wrap_angle_rad(angle)
+    # FIXME: This 2000 at the bottom results from averaging on chip!!!!!!!!!!!
     angle = angle*(angle_smoothing) + (1-angle_smoothing)*anglePrev
 
     if POLOLU_MOTOR:
@@ -433,11 +450,11 @@ while True:
     # A manual calibration to linearize around origin
     #  Model_velocity.py in CartPole simulator is the script to determine these values
     # The change dependent on velocity sign is motivated theory of classical friction
-    # if actualMotorCmd != 0:
-    #     if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
-    #         actualMotorCmd += 495
-    #     elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
-    #         actualMotorCmd -= 365
+    if actualMotorCmd != 0:
+        if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
+            actualMotorCmd += 495
+        elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
+            actualMotorCmd -= 365
 
     # clip motor to actual limits
     actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM else actualMotorCmd
