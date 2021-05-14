@@ -7,7 +7,7 @@ from globals import PATH_TO_EXPERIMENT_RECORDINGS
 try:
     # Use gitpython to get a current revision number and use it in description of experimental data
     from git import Repo
-except:
+except ModuleNotFoundError:
     print('GitPython not found')
 
 def csv_init(csv_name=None, controller_name=None):
@@ -50,9 +50,9 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['# ' + 'This is CartPole simulation from {} at time {}'
                         .format(datetime.now().strftime('%d.%m.%Y'), datetime.now().strftime('%H:%M:%S'))])
         try:
-            repo = Repo()
+            repo = Repo(search_parent_directories=True)
             git_revision = repo.head.object.hexsha
-        except:
+        except NameError:
             git_revision = 'unknown'
         writer.writerow(['# ' + 'Done with git-revision: {}'
                         .format(git_revision)])

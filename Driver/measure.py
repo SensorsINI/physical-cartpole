@@ -7,9 +7,9 @@ from globals import *
 STARTING_POSITION = -(-1)**n*0.17# cart starting position
 ENDING_POSITION = (-1)**n*300*TRACK_LENGTH/POSITION_NORMALIZATION # position to turn off motor
 RESET_SPEED = (-1)**n*2500
-SPEED_STEP = (-1)**n*500
+SPEED_STEP = (-1)**n*250
 STARTING_SPEED = (-1)**n*1000 #doesn't work for 500 for some reason
-ENDING_SPEED = (-1)**n*8000
+ENDING_SPEED = (-1)**n*8250
 PAUSE_BEFORE_STEP_S = .5 # pause after reset to start position before starting step
 FRICTION_SLOWDOWN_TIME_S=1 # time at end to just turn off motor and glide to stop
 STEP_TIMEOUT_S=10

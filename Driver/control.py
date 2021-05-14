@@ -387,6 +387,9 @@ while True:
         actualMotorCmd = controller.step(s=s, target_position=target_position, time=timeNow)
         actualMotorCmd *= MOTOR_FULL_SCALE
         actualMotorCmd = int(actualMotorCmd)
+        # Prevent from switching of the motor by the controller
+        if actualMotorCmd == 0:
+            actualMotorCmd = 1
 
         # print('AAAAAAAAAAAAAAAA', actualMotorCmd)
     stickPos = 0.0
@@ -430,21 +433,11 @@ while True:
     # A manual calibration to linearize around origin
     #  Model_velocity.py in CartPole simulator is the script to determine these values
     # The change dependent on velocity sign is motivated theory of classical friction
-    # if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
-    #     actualMotorCmd += 645
-    # elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
-    #     actualMotorCmd -= 514
-    # if actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
-    #     actualMotorCmd = 100*int(np.sign(s[cartpole_state_varname_to_index('positionD')]))
-
-    # This should be incorrect from my theoretical understanding...
-    # But maybe works better if my theoretical motivation is wrong?
-    if actualMotorCmd > 0:
-        actualMotorCmd += 645
-    elif actualMotorCmd < 0:
-        actualMotorCmd -= 514
-    if actualMotorCmd == 0 and abs(s[cartpole_state_varname_to_index('positionD')]) > 1.0e-4:
-        actualMotorCmd = 100*int(np.sign(s[cartpole_state_varname_to_index('positionD')]))
+    # if actualMotorCmd != 0:
+    #     if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
+    #         actualMotorCmd += 495
+    #     elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
+    #         actualMotorCmd -= 365
 
     # clip motor to actual limits
     actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM else actualMotorCmd
