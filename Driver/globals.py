@@ -4,7 +4,7 @@ LOGGING_LEVEL = logging.INFO
 
 CONTROLLER_NAME = 'PD'
 
-CONTROL_PERIOD_MS = 5 # It was 25 originally, we changed it to 5 - marcin & asude
+CONTROL_PERIOD_MS = 2 # It was 25 originally, we changed it to 5 - marcin & asude
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
 

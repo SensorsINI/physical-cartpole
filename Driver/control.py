@@ -1,7 +1,7 @@
 import time
 import json
 
-from math import fmod
+
 import sys
 
 import numpy as np
@@ -30,8 +30,6 @@ from globals import *
 # TODO Why after calibration Cartpole is not at 0 position?
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 
-POLOLU_MOTOR = True  # set true to set options for this motor, which has opposite sign for set_motor TODO needs fixing in firmware or wiring of motor
-
 SERIAL_PORT = None  # if None, takes first one available #"COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
 SERIAL_BAUD = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 PRINT_PERIOD_MS = 100  # shows state every this many ms
@@ -46,7 +44,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING*POSITION_NORMALIZATION/TRACK_LENGTH/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
-ANGLE_DEVIATION_FINETUNE = 0  #adjust from key commands such that angle error is minimized
+ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such that angle error is minimized
 
 POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
 
@@ -82,16 +80,7 @@ def help():
     print("b Print angle measurement from sensor")
     print("***********************************")
 
-# Wraps the angle into range [-π, π]
-def wrap_angle_rad(angle: float) -> float:
-    Modulo = fmod(angle, 2 * np.pi)  # positive modulo
-    if Modulo < -np.pi:
-        angle = Modulo + 2 * np.pi
-    elif Modulo > np.pi:
-        angle = Modulo - 2 * np.pi
-    else:
-        angle = Modulo
-    return angle
+
 
 log = my_logger(__name__)
 
@@ -148,8 +137,6 @@ if CALIBRATE:
         exit()
     (_, POSITION_OFFSET, _) = p.read_state()
     print("Done calibrating")
-
-
 
 try:
     controller.loadparams()
@@ -249,7 +236,7 @@ while True:
     # Adjust Parameters
     if kbAvailable & kb.kbhit():
         c = kb.getch()
-        #Keys used in controller: p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
+        #Keys used in controller: 1,2,3,4,p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
         try:
             controller.keyboard_input(c)
         except AttributeError:
@@ -282,45 +269,45 @@ while True:
                     print("\n Started logging data to " + csvfilename)
                 except Exception as e:
                     loggingEnabled = False
-                    print("\n" + str(e) + ": Exception opening csvfile; logging disabled")
+                    print("\n" + str(e) + ": Exception opening csvfile; logging disabled \r\n")
             else:
                 csvfile.close()
                 print("\n Stopped logging data to " + csvfilename)
 
         elif c == 'k':
             controlEnabled = ~controlEnabled
-            print("\ncontrolEnabled= {0}".format(controlEnabled))
+            print("\ncontrolEnabled= {0} \r\n".format(controlEnabled))
         elif c == 'K':
             controlEnabled = False
-            print("\nCalibration triggered")
+            print("\nCalibration triggered \r\n")
             p.calibrate()
             (_, POSITION_OFFSET, _) = p.read_state()
-            print("\nCalibration finished")
+            print("\nCalibration finished \r\n")
         elif c == 'h' or c == '?':
             help()
         # Fine tune angle deviation
         elif c == '=':
-            ANGLE_DEVIATION_FINETUNE += 1
+            ANGLE_DEVIATION_FINETUNE += 0.01
             # FIXME: Change this string
-            print("\nIncreased angle fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+            print("\nIncreased angle fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
         # Decrease Target Angle
         elif c == '-':
-            ANGLE_DEVIATION_FINETUNE -= 1
+            ANGLE_DEVIATION_FINETUNE -= 0.01
             # FIXME: Change this string
-            print("\nDecreased angle fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+            print("\nDecreased angle fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
 
         # Increase Target Position
         elif c == ']':
             POSITION_TARGET += 10/POSITION_NORMALIZATION*TRACK_LENGTH
             if (POSITION_TARGET>0.2):
                POSITION_TARGET = 0.2
-            print("\nIncreased target position to {0} cm".format(POSITION_TARGET*100))
+            print("\nIncreased target position to {0} cm\n".format(POSITION_TARGET*100))
         # Decrease Target Position
         elif c == '[':
             POSITION_TARGET -= 10/POSITION_NORMALIZATION*TRACK_LENGTH
             if (POSITION_TARGET < -0.2):
                 POSITION_TARGET = -0.2
-            print("\nDecreased target position to {0} cm".format(POSITION_TARGET*100))
+            print("\nDecreased target position to {0} cm\n".format(POSITION_TARGET*100))
         elif c == 'm':  # toggle measurement
             if measurement.is_idle():
                 measurement.start()
@@ -336,9 +323,15 @@ while True:
                 joystickMode='speed'
                 log.info(f'set joystick to cart {joystickMode} control mode')
         elif c=='b':
+            angle_average = 0
             for _ in range(10):
                 p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
                 (angle, position, command) = p.read_state()
+                print('Sensor reading to adjust ANGLE_HANGING', angle)
+                angle_average += angle
+            print('Hanging angle average for more precise parameter value', angle_average / 10)
+
+
 
         # Exit
         elif ord(c) == 27:  # ESC
@@ -349,14 +342,12 @@ while True:
     p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = p.read_state()
     position = (position-POSITION_OFFSET)/POSITION_NORMALIZATION*TRACK_LENGTH
-
-    angle = (angle-ANGLE_UP-ANGLE_DEVIATION_FINETUNE)*ANGLE_NORMALIZATION
-    angle = wrap_angle_rad(angle)
-    # FIXME: This 2000 at the bottom results from averaging on chip!!!!!!!!!!!
-    angle = angle*(angle_smoothing) + (1-angle_smoothing)*anglePrev
-
-    if POLOLU_MOTOR:
+    if MOTOR_TYPE == 'POLOLU':
         position = -position
+
+    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    angle = angle * (angle_smoothing) + (1 - angle_smoothing) * anglePrev
+
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
 
     timeNow = time.time()
@@ -396,14 +387,11 @@ while True:
     s[cartpole_state_varname_to_index('angle_cos')] = angle_cos
     s[cartpole_state_varname_to_index('angle_sin')] = angle_sin
 
-    if timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
+    if controlEnabled and timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
         lastControlTime = timeNow
-        actualMotorCmd = controller.step(s=s, target_position=target_position, time=timeNow)
-        actualMotorCmd *= MOTOR_FULL_SCALE
-        actualMotorCmd = int(actualMotorCmd)
-        # Prevent from switching of the motor by the controller
-        if actualMotorCmd == 0:
-            actualMotorCmd = 1
+        calculatedMotorCmd = controller.step(s=s, target_position=target_position, time=timeNow)
+        calculatedMotorCmd *= MOTOR_FULL_SCALE
+        calculatedMotorCmd = int(calculatedMotorCmd)
 
         # print('AAAAAAAAAAAAAAAA', calculatedMotorCmd)
     stickPos = 0.0
@@ -464,7 +452,7 @@ while True:
     p.set_motor(actualMotorCmd)
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, actualMotorSave, actualMotorSave/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
 
         # Print outputL
     printCount += 1
@@ -479,7 +467,7 @@ while True:
                       positionErr*100,
                       # int(round(controller.angleCmd)),
                       # int(round(controller.positionCmd)),
-                      actualMotorCmd,
+                      calculatedMotorCmd,
                       deltaTime * 1000,
                       stickPos,
                       stickControl,
