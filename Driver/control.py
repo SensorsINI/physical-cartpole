@@ -232,7 +232,7 @@ lastControlTime = lastTime
 angleErr = 0
 positionErr = 0  # for printing even if not controlling
 p.stream_output(True)  # now start streaming state
-actualMotorCmd = 0
+calculatedMotorCmd = 0
 csvfile = None
 csvfilename = None
 csvwriter = None
@@ -257,19 +257,19 @@ while True:
         # FIXME ,./ commands not working as intended - control overwrites motor value
         if c == '.':  # zero motor
             controlEnabled = False
-            actualMotorCmd = 0
+            calculatedMotorCmd = 0
             manualMotorSetting = False
-            print('\r actual motor command after .', actualMotorCmd)
+            print('\r actual motor command after .', calculatedMotorCmd)
         elif c == ',':  # left
             controlEnabled = False
-            actualMotorCmd += 100
+            calculatedMotorCmd += 100
             manualMotorSetting = True
-            print('\r actual motor command after ,', actualMotorCmd)
+            print('\r actual motor command after ,', calculatedMotorCmd)
         elif c == '/':  # right
             controlEnabled = False
-            actualMotorCmd -= 100
+            calculatedMotorCmd -= 100
             manualMotorSetting = True
-            print('\r actual motor command after /', actualMotorCmd)
+            print('\r actual motor command after /', calculatedMotorCmd)
         elif c == 'D':
             danceEnabled = ~danceEnabled
             print("\ndanceEnabled= {0}".format(danceEnabled))
@@ -405,7 +405,7 @@ while True:
         if actualMotorCmd == 0:
             actualMotorCmd = 1
 
-        # print('AAAAAAAAAAAAAAAA', actualMotorCmd)
+        # print('AAAAAAAAAAAAAAAA', calculatedMotorCmd)
     stickPos = 0.0
     stickControl = False
     if joystickExists:
@@ -422,19 +422,19 @@ while True:
     # todo handle joystick control of cart to position, not speed
     if joystickMode == 'speed' and abs(stickPos) > JOYSTICK_DEADZONE:
         stickControl = True
-        actualMotorCmd = int(round(stickPos * JOYSTICK_SCALING))
+        calculatedMotorCmd = int(round(stickPos * JOYSTICK_SCALING))
     elif joystickMode == 'position':
         stickControl=True
-        actualMotorCmd=int((stickPos-position)*JOYSTICK_POSITION_KP)
+        calculatedMotorCmd=int((stickPos-position)*JOYSTICK_POSITION_KP)
     elif controlEnabled and not manualMotorSetting:
         ...
     elif manualMotorSetting == False:
-        actualMotorCmd = 0
+        calculatedMotorCmd = 0
 
     if not measurement.is_idle():
         try:
             measurement.update_state(angle, position, timeNow)
-            actualMotorCmd = measurement.motor
+            calculatedMotorCmd = measurement.motor
         except TimeoutError as e:
             log.warning(f'timeout in measurement: {e}')
 
@@ -442,7 +442,7 @@ while True:
     # TODO: It is not fully cleare if it is the right place for the following line
     #   I would prefere to have it before "linearization" and after clipping, but lin. goes before clipping
     #   And I didn't want to have clipping twice (maybe I should?)
-    actualMotorSave = actualMotorCmd
+    actualMotorCmd = calculatedMotorCmd
 
     # A manual calibration to linearize around origin
     #  Model_velocity.py in CartPole simulator is the script to determine these values
