@@ -46,6 +46,9 @@ def setup_serial_connection(CartPoleInstance, SERIAL_PORT):
             'no serial ports available, or cannot open it; check linux permissions\n Under linux, sudo chmod a+rw [port] transiently, or add user to dialout or tty group')
         quit()
 
+    if type(SERIAL_PORT) is int:
+        SERIAL_PORT = str(serialPorts[SERIAL_PORT])
+
     if SERIAL_PORT is None:
         if len(serialPorts) > 1:
             print(str(len(serialPorts)) + ' serial ports, taking first one which is ' + str(serialPorts[0]))
