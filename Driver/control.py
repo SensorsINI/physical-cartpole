@@ -1,6 +1,4 @@
 import time
-import json
-
 
 import sys
 
@@ -10,12 +8,8 @@ import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
-# from Driver.pendulum import Pendulum
-# from Driver.kbhit import KBHit
-# from Driver.measure import StepResponseMeasurement
-
 from custom_logging import my_logger
-from custom_serial_functions import serial_ports
+from custom_serial_functions import setup_serial_connection
 from pendulum import Pendulum
 from kbhit import KBHit
 from measure import StepResponseMeasurement
@@ -30,8 +24,6 @@ from globals import *
 # TODO Why after calibration Cartpole is not at 0 position?
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 
-SERIAL_PORT = None  # if None, takes first one available #"COM4" #"/dev/ttyUSB0" # might move if other devices plugged in
-SERIAL_BAUD = 230400  # default 230400, in firmware.   Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 PRINT_PERIOD_MS = 100  # shows state every this many ms
 
 CALIBRATE = False  # False # important to calibrate if running standalone to avoid motor burnout because limits are determined during this calibration
@@ -92,27 +84,14 @@ else:
     print('run from an interactive terminal to allow keyboard input')
     quit()
 
-serialPorts = serial_ports()
-print('Available serial ports: ' + str(serialPorts))
-if len(serialPorts) == 0:
-    print('no serial ports available, or cannot open it; check linux permissions\n Under linux, sudo chmod a+rw [port] transiently, or add user to dialout or tty group')
-    quit()
+CartPoleInstance = Pendulum()
 
-p = Pendulum()
+setup_serial_connection(CartPoleInstance, SERIAL_PORT=SERIAL_PORT)
 
-if len(serialPorts) > 1:
-    print(str(len(serialPorts)) + ' serial ports, taking first one which is ' + str(serialPorts[0]))
-SERIAL_PORT = str(serialPorts[0])
-try:
-    p.open(SERIAL_PORT, SERIAL_BAUD)
-except:
-    print('cannot open port ' + str(SERIAL_PORT) + ': available ports are ' + str(serial_ports()))
-    quit()
+CartPoleInstance.control_mode(False)
+CartPoleInstance.stream_output(False)
 
-p.control_mode(False)
-p.stream_output(False)
-
-log.info('opened ' + str(SERIAL_PORT) + ' successfully')
+log.info('\n opened ' + str(SERIAL_PORT) + ' successfully')
 
 joystickExists = False
 joystickMode=None
@@ -131,11 +110,11 @@ else:
 
 if CALIBRATE:
     print("Calibrating motor position....")
-    if not p.calibrate():
+    if not CartPoleInstance.calibrate():
         print("Failed to connect to device")
-        p.close()
+        CartPoleInstance.close()
         exit()
-    (_, POSITION_OFFSET, _) = p.read_state()
+    (_, POSITION_OFFSET, _) = CartPoleInstance.read_state()
     print("Done calibrating")
 
 try:
@@ -145,22 +124,22 @@ except AttributeError:
 
 time.sleep(1)
 
-p.set_angle_config(0,
-                   ANGLE_AVG_LENGTH,
-                   0,
-                   0,
-                   0,
-                   )
+CartPoleInstance.set_angle_config(0,
+                                  ANGLE_AVG_LENGTH,
+                                  0,
+                                  0,
+                                  0,
+                                  )
 
 # This is a part responsible for setting the parameters for firmware controller. Not integrated in current design yet.
-# p.set_angle_config(ANGLE_TARGET,      # This must take care of both: target angle and 0-point offset
+# CartPoleInstance.set_angle_config(ANGLE_TARGET,      # This must take care of both: target angle and 0-point offset
 #                    ANGLE_AVG_LENGTH,
 #                    ANGLE_SMOOTHING,
 #                    ANGLE_KP,
 #                    ANGLE_KD,
 #                    )
 #
-# p.set_position_config(POSITION_TARGET,
+# CartPoleInstance.set_position_config(POSITION_TARGET,
 #                       POSITION_CTRL_PERIOD_MS,
 #                       POSITION_SMOOTHING,
 #                       POSITION_KP,
@@ -176,14 +155,14 @@ p.set_angle_config(0,
 #  ANGLE_AVG_LENGTH,
 #  ANGLE_SMOOTHING,
 #  ANGLE_KP,
-#  ANGLE_KD) = p.get_angle_config()
+#  ANGLE_KD) = CartPoleInstance.get_angle_config()
 # print('ANGLE_AVG_LENGTH: {}'.format(ANGLE_AVG_LENGTH))
 #
 # (POSITION_TARGET,
 #  POSITION_CTRL_PERIOD_MS,
 #  POSITION_SMOOTHING,
 #  POSITION_KP,
-#  POSITION_KD) = p.get_position_config()
+#  POSITION_KD) = CartPoleInstance.get_position_config()
 # endregion
 
 ################################################################################
@@ -218,7 +197,7 @@ lastTime = startTime
 lastControlTime = lastTime
 angleErr = 0
 positionErr = 0  # for printing even if not controlling
-p.stream_output(True)  # now start streaming state
+CartPoleInstance.stream_output(True)  # now start streaming state
 calculatedMotorCmd = 0
 csvfile = None
 csvfilename = None
@@ -280,8 +259,8 @@ while True:
         elif c == 'K':
             controlEnabled = False
             print("\nCalibration triggered \r\n")
-            p.calibrate()
-            (_, POSITION_OFFSET, _) = p.read_state()
+            CartPoleInstance.calibrate()
+            (_, POSITION_OFFSET, _) = CartPoleInstance.read_state()
             print("\nCalibration finished \r\n")
         elif c == 'h' or c == '?':
             help()
@@ -325,8 +304,8 @@ while True:
         elif c=='b':
             angle_average = 0
             for _ in range(10):
-                p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                (angle, position, command) = p.read_state()
+                CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
+                (angle, position, command) = CartPoleInstance.read_state()
                 print('Sensor reading to adjust ANGLE_HANGING', angle)
                 angle_average += angle
             print('Hanging angle average for more precise parameter value', angle_average / 10)
@@ -339,8 +318,8 @@ while True:
             break
 
     # This function will block at the rate of the control loop
-    p.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-    (angle, position, command) = p.read_state()
+    CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
+    (angle, position, command) = CartPoleInstance.read_state()
     position = (position-POSITION_OFFSET)/POSITION_NORMALIZATION*TRACK_LENGTH
     if MOTOR_TYPE == 'POLOLU':
         position = -position
@@ -449,7 +428,7 @@ while True:
     if MOTOR_TYPE == 'POLOLU':
         actualMotorCmd = -actualMotorCmd
 
-    p.set_motor(actualMotorCmd)
+    CartPoleInstance.set_motor(actualMotorCmd)
 
     if loggingEnabled:
         csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
@@ -478,8 +457,8 @@ while True:
 #    time.sleep(CONTROL_PERIOD_MS*.001)  # not quite correct since there will be time for execution below
 
 # when x hit during loop or other loop exit
-p.set_motor(0)  # turn off motor
-p.close()
+CartPoleInstance.set_motor(0)  # turn off motor
+CartPoleInstance.close()
 joystick.quit()
 
 if loggingEnabled:

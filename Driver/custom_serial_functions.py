@@ -6,6 +6,8 @@ import glob
 import sys
 import serial  # conda install pyserial
 
+from globals import SERIAL_BAUD, SERIAL_PORT
+
 def serial_ports():  # from https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
     """ Lists serial port names
 
@@ -34,3 +36,25 @@ def serial_ports():  # from https://stackoverflow.com/questions/12090503/listing
         except (OSError, serial.SerialException):
             pass
     return result
+
+
+def setup_serial_connection(CartPoleInstance, SERIAL_PORT):
+    serialPorts = serial_ports()
+    print('Available serial ports: ' + str(serialPorts))
+    if len(serialPorts) == 0:
+        print(
+            'no serial ports available, or cannot open it; check linux permissions\n Under linux, sudo chmod a+rw [port] transiently, or add user to dialout or tty group')
+        quit()
+
+    if SERIAL_PORT is None:
+        if len(serialPorts) > 1:
+            print(str(len(serialPorts)) + ' serial ports, taking first one which is ' + str(serialPorts[0]))
+        else:
+            print('Taking the only available serial port which is ' + str(serialPorts[0]))
+        SERIAL_PORT = str(serialPorts[0])
+
+    try:
+        CartPoleInstance.open(SERIAL_PORT, SERIAL_BAUD)
+    except:
+        print('cannot open port ' + str(SERIAL_PORT) + ': available ports are ' + str(serial_ports()))
+        quit()

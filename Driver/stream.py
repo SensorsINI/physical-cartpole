@@ -61,7 +61,7 @@ print("    D Gain          {0:.2f}".format(POSITION_KD))
 printCount = 0
 
 kb = kbhit.KBHit()
-#p.control_mode(True)
+#CartPoleInstance.control_mode(True)
 p.stream_output(True)
 
 while True:

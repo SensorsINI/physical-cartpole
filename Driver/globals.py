@@ -30,6 +30,10 @@ TRACK_LENGTH = 0.396 # Total usable track length in meters
 # Direction for measurement.py - n = 2 for right, n = 1 for left.
 n = 1
 
+SERIAL_PORT = None  # if None, takes first one available
+# SERIAL_PORT = '/dev/tty.usbserial-14310' # Marcin's Port # if None, takes first one available
+SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
+
 ratio = 1.05
 
 def inc(param):
