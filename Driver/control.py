@@ -131,7 +131,7 @@ CartPoleInstance.set_angle_config(0,
                                   0,
                                   )
 
-# This is a part responsible for setting the parameters for firmware controller. Not integrated in current design yet.
+# # This is a part responsible for setting the parameters for firmware controller. Not integrated in current design yet.
 # CartPoleInstance.set_angle_config(ANGLE_TARGET,      # This must take care of both: target angle and 0-point offset
 #                    ANGLE_AVG_LENGTH,
 #                    ANGLE_SMOOTHING,
@@ -144,6 +144,7 @@ CartPoleInstance.set_angle_config(0,
 #                       POSITION_SMOOTHING,
 #                       POSITION_KP,
 #                       POSITION_KD)
+
 #
 # ################################################################################
 # # GET PARAMETERS
@@ -174,7 +175,7 @@ controlEnabled = False
 manualMotorSetting = False
 
 danceEnabled = False
-danceAmpl = 500/POSITION_NORMALIZATION*TRACK_LENGTH
+danceAmpl = 0.10  # m
 dancePeriodS = 8
 
 loggingEnabled = False
@@ -303,12 +304,14 @@ while True:
                 log.info(f'set joystick to cart {joystickMode} control mode')
         elif c=='b':
             angle_average = 0
-            for _ in range(10):
+            number_of_measurements = 100
+            for _ in range(number_of_measurements):
                 CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
                 (angle, position, command) = CartPoleInstance.read_state()
-                print('Sensor reading to adjust ANGLE_HANGING', angle)
+                # print('Sensor reading to adjust ANGLE_HANGING', angle)
                 angle_average += angle
-            print('Hanging angle average for more precise parameter value', angle_average / 10)
+            angle_average = angle_average / float(number_of_measurements)
+            print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements,angle_average))
 
 
 
@@ -371,6 +374,10 @@ while True:
         calculatedMotorCmd = controller.step(s=s, target_position=target_position, time=timeNow)
         calculatedMotorCmd *= MOTOR_FULL_SCALE
         calculatedMotorCmd = int(calculatedMotorCmd)
+
+    # FIXME: This is to avoid accumulation of integral gain. Find more general solution - you do not want to reload RNN internal state at every iteration...
+    if controlEnabled is False:
+        controller.controller_reset()
 
         # print('AAAAAAAAAAAAAAAA', calculatedMotorCmd)
     stickPos = 0.0

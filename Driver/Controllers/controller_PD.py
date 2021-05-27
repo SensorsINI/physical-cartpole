@@ -11,13 +11,13 @@ from globals import *
 
 # TODO: Remove angle_target from json. You neither should set it externally.
 #  The only possible scenario when angle target is not 0 would be if it follows some trajectory. This trajectory would be calculated inside of the controller.
-PARAMS_JSON_FILE = 'control.json'
+PARAMS_JSON_FILE = 'control_default_new_cartpole.json'
 
 class controller_PD(template_controller):
     def __init__(self):
 
         self.controller_name = 'PD'
-        self.time_last = -1000.0
+        self.time_last = None
 
         self.positionErrPrev = 0.0
         self.angleErrPrev = 0.0
@@ -84,7 +84,7 @@ class controller_PD(template_controller):
         # End result is that sign of positionCmd is flipped
         # KD term with "-" resists the motion
         # KP and KI with "-" acts attractive towards the target position
-        self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff - self.POSITION_KI * self.positionErr_integral*(CONTROL_PERIOD_MS/1.0e3)
+        self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff + self.POSITION_KI * self.positionErr_integral*(CONTROL_PERIOD_MS/1.0e3)
 
         self.angleErr = self.ANGLE_SMOOTHING * (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET) + (1.0 - self.ANGLE_SMOOTHING) * self.angleErrPrev  # First order low-pass filter
         angleErrDiff = (self.angleErr - self.angleErrPrev) * diffFactor  # correct for actual sample interval; if interval is too long, reduce diff error
@@ -226,3 +226,20 @@ class controller_PD(template_controller):
             self.saveparams()
         elif c == 'L':
             self.loadparams()
+
+    def controller_reset(self):
+        self.time_last = None
+
+        self.positionErrPrev = 0.0
+        self.angleErrPrev = 0.0
+
+        self.positionErr_integral = 0.0
+        self.angleErr_integral = 0.0
+
+        self.motorCmd = 0
+
+        self.angleErr = 0.0
+        self.positionErr = 0.0
+
+        self.angleCmd = 0.0
+        self.positionCmd = 0.0
