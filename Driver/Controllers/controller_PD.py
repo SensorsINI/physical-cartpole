@@ -11,7 +11,7 @@ from globals import *
 
 # TODO: Remove angle_target from json. You neither should set it externally.
 #  The only possible scenario when angle target is not 0 would be if it follows some trajectory. This trajectory would be calculated inside of the controller.
-PARAMS_JSON_FILE = 'control_default_new_cartpole.json'
+PARAMS_JSON_FILE = 'control_first_working_with_dance_old.json'
 
 class controller_PD(template_controller):
     def __init__(self):
