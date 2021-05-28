@@ -17,6 +17,7 @@ from measure import StepResponseMeasurement
 from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 
 from controllers_management import set_controller
+from firmware_parameters import set_firmware_parameters
 from csv_helpers import csv_init
 
 from globals import *
@@ -124,48 +125,7 @@ except AttributeError:
 
 time.sleep(1)
 
-CartPoleInstance.set_angle_config(0,
-                                  ANGLE_AVG_LENGTH,
-                                  0,
-                                  0,
-                                  0,
-                                  )
-
-# # This is a part responsible for setting the parameters for firmware controller. Not integrated in current design yet.
-# CartPoleInstance.set_angle_config(ANGLE_TARGET,      # This must take care of both: target angle and 0-point offset
-#                    ANGLE_AVG_LENGTH,
-#                    ANGLE_SMOOTHING,
-#                    ANGLE_KP,
-#                    ANGLE_KD,
-#                    )
-#
-# CartPoleInstance.set_position_config(POSITION_TARGET,
-#                       POSITION_CTRL_PERIOD_MS,
-#                       POSITION_SMOOTHING,
-#                       POSITION_KP,
-#                       POSITION_KD)
-
-#
-# ################################################################################
-# # GET PARAMETERS
-# ################################################################################
-#
-# # Why is it getting parameters? To enable checking if they have been correctly written
-# setPoint, avgLen, smoothing, KP, KD
-# (ANGLE_TARGET, # This must take care of both: target angle and 0-point offset
-#  ANGLE_AVG_LENGTH,
-#  ANGLE_SMOOTHING,
-#  ANGLE_KP,
-#  ANGLE_KD) = CartPoleInstance.get_angle_config()
-# print('ANGLE_AVG_LENGTH: {}'.format(ANGLE_AVG_LENGTH))
-#
-# (POSITION_TARGET,
-#  POSITION_CTRL_PERIOD_MS,
-#  POSITION_SMOOTHING,
-#  POSITION_KP,
-#  POSITION_KD) = CartPoleInstance.get_position_config()
-# endregion
-
+set_firmware_parameters(CartPoleInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 ################################################################################
 # CONTROL LOOP (PC BASED)
 ################################################################################
