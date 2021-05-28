@@ -1,0 +1,3 @@
+[submodule "Driver/SI_Toolkit"]
+	path = Driver/SI_Toolkit
+	url = https://github.com/SensorsINI/SI_Toolkit
