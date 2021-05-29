@@ -136,8 +136,8 @@ controlEnabled = False
 manualMotorSetting = False
 
 danceEnabled = False
-danceAmpl = 0.01  # m
-dancePeriodS = 15.0
+danceAmpl = 0.1  # m
+dancePeriodS = 20.0
 dance_timer = 0.0
 
 loggingEnabled = False
@@ -200,11 +200,13 @@ while True:
             manualMotorSetting = True
             print('\r actual motor command after /', calculatedMotorCmd)
         elif c == 'D':
-            danceEnabled = ~danceEnabled
-            print("\ndanceEnabled= {0}".format(danceEnabled))
             # We want the sinusoid to start at predictible (0) position
             if danceEnabled is True:
-                dance_timer = 0.0
+                danceEnabled = False
+            else:
+                dance_start_time = time.time()
+                danceEnabled = True
+            print("\ndanceEnabled= {0}".format(danceEnabled))
         elif c == 'l':
             loggingEnabled = ~loggingEnabled
             print("\nloggingEnabled= {0}".format(loggingEnabled))
@@ -220,8 +222,10 @@ while True:
                 print("\n Stopped logging data to " + csvfilename)
 
         elif c == 'k':
-            controlEnabled = ~controlEnabled
             if controlEnabled is False:
+                controlEnabled = True
+            else:
+                controlEnabled = False
                 controller.controller_reset()
                 danceEnabled = False
                 calculatedMotorCmd = 0
@@ -327,9 +331,7 @@ while True:
     target_position = POSITION_TARGET
     # if controlEnabled and danceEnabled:
     if danceEnabled:
-        dance_timer += deltaTime
-        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * (dance_timer / dancePeriodS))
-        position = target_position  # This line prevents a sudden jump in perceived target position, due to filtering cartpole thinks at first
+        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * ((elapsedTime-dance_start_time) / dancePeriodS))
 
     # Balance PD Control
     # Position PD Control
@@ -392,13 +394,13 @@ while True:
     # The change dependent on velocity sign is motivated theory of classical friction
     if actualMotorCmd != 0:
         if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
-            actualMotorCmd += 495
+            actualMotorCmd += 387
         elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
-            actualMotorCmd -= 365
+            actualMotorCmd -= 330
 
     # clip motor to  limits - we clip it to the half of the max power
-    actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM//2 else actualMotorCmd
-    actualMotorCmd = -MOTOR_MAX_PWM if actualMotorCmd  < -MOTOR_MAX_PWM//2 else actualMotorCmd
+    actualMotorCmd = int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  > 0.6*MOTOR_MAX_PWM else actualMotorCmd
+    actualMotorCmd = -int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  < -0.6*MOTOR_MAX_PWM else actualMotorCmd
 
     # Temporary safety switch off if went to the boundary
     if abs(position_raw-POSITION_OFFSET)>0.9*(POSITION_ENCODER_RANGE//2):

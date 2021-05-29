@@ -15,8 +15,8 @@ MOTOR_TYPE = 'POLOLU'
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
-ANGLE_ADC_RANGE = 4096 # Range of angle values #
-ANGLE_HANGING = 3195  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_ADC_RANGE = 4095 # Range of angle values #
+ANGLE_HANGING = 3188  # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING = 3126 # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_DEVIATION = ANGLE_ADC_RANGE - ANGLE_HANGING # Angle deviation from goal
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
