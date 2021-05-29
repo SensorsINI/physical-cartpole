@@ -12,22 +12,23 @@ MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #719
 MOTOR_TYPE = 'POLOLU'
 # MOTOR_TYPE = 'ORIGINAL'
 
-# Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_NORMALIZATION/2)/ANGLE_NORMALIZATION*math.pi
-# ANGLE_KP = ANGLE_KP/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
+# Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
+# ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
-ANGLE_NORMALIZATION = 4095 # Range of angle values #
-ANGLE_HANGING = 3188 # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_ADC_RANGE = 4096 # Range of angle values #
+ANGLE_HANGING = 3195  # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING = 3126 # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_DEVIATION = ANGLE_NORMALIZATION - ANGLE_HANGING # Angle deviation from goal
-ANGLE_NORMALIZATION_FACTOR = 2*math.pi/ANGLE_NORMALIZATION
-ANGLE_HANGING_NORMALIZATION = (ANGLE_DEVIATION + ANGLE_HANGING - ANGLE_NORMALIZATION/2)*ANGLE_NORMALIZATION_FACTOR # Should be equal to pi in radians
+ANGLE_DEVIATION = ANGLE_ADC_RANGE - ANGLE_HANGING # Angle deviation from goal
+ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
+ANGLE_HANGING_NORMALIZATION = (ANGLE_DEVIATION + ANGLE_HANGING - ANGLE_ADC_RANGE / 2) * ANGLE_NORMALIZATION_FACTOR # Should be equal to pi in radians
 
-# Position unit conversion adc to meters: POSITION_TARGET = POSITION_TARGET/POSITION_NORMALIZATION*TRACK_LENGTH
-# POSITION_KP = POSITION_KP*POSITION_NORMALIZATION/TRACK_LENGTH/MOTOR_FULL_SCALE
-POSITION_NORMALIZATION = 4660 # This is an empirical approximation
+# Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
+# POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
+POSITION_ENCODER_RANGE = 4660 # This is an empirical approximation
 POSITION_OFFSET = 0  # Serves to adjust starting position - position after calibration is 0
-POSITION_FULL_SCALE_N = int(POSITION_NORMALIZATION)/2 # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
+POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2 # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396 # Total usable track length in meters
+POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH/POSITION_ENCODER_RANGE
 
 # Direction for measurement.py - n = 2 for right, n = 1 for left.
 n = 1

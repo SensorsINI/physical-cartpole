@@ -34,12 +34,13 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 
-JOYSTICK_POSITION_KP=4*JOYSTICK_SCALING*POSITION_NORMALIZATION/TRACK_LENGTH/POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
+# TODO: What is this? POSITION_ENCODER_RANGE and POSITION_FULL_SCALE_N cancel each other
+JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENGTH / POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
 ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such that angle error is minimized
 
-POSITION_TARGET = 0.0/POSITION_NORMALIZATION*TRACK_LENGTH
+POSITION_TARGET = 0.0 # meters
 
 angle_smoothing = 0.8
 # angleD_smoothing = 0.8 # todo at some point these should be inside the json file
@@ -135,8 +136,9 @@ controlEnabled = False
 manualMotorSetting = False
 
 danceEnabled = False
-danceAmpl = 0.10  # m
-dancePeriodS = 8
+danceAmpl = 0.01  # m
+dancePeriodS = 15.0
+dance_timer = 0.0
 
 loggingEnabled = False
 
@@ -200,6 +202,9 @@ while True:
         elif c == 'D':
             danceEnabled = ~danceEnabled
             print("\ndanceEnabled= {0}".format(danceEnabled))
+            # We want the sinusoid to start at predictible (0) position
+            if danceEnabled is True:
+                dance_timer = 0.0
         elif c == 'l':
             loggingEnabled = ~loggingEnabled
             print("\nloggingEnabled= {0}".format(loggingEnabled))
@@ -216,6 +221,10 @@ while True:
 
         elif c == 'k':
             controlEnabled = ~controlEnabled
+            if controlEnabled is False:
+                controller.controller_reset()
+                danceEnabled = False
+                calculatedMotorCmd = 0
             print("\ncontrolEnabled= {0} \r\n".format(controlEnabled))
         elif c == 'K':
             controlEnabled = False
@@ -238,13 +247,13 @@ while True:
 
         # Increase Target Position
         elif c == ']':
-            POSITION_TARGET += 10/POSITION_NORMALIZATION*TRACK_LENGTH
+            POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
             if (POSITION_TARGET>0.2):
                POSITION_TARGET = 0.2
             print("\nIncreased target position to {0} cm\n".format(POSITION_TARGET*100))
         # Decrease Target Position
         elif c == '[':
-            POSITION_TARGET -= 10/POSITION_NORMALIZATION*TRACK_LENGTH
+            POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
             if (POSITION_TARGET < -0.2):
                 POSITION_TARGET = -0.2
             print("\nDecreased target position to {0} cm\n".format(POSITION_TARGET*100))
@@ -282,12 +291,12 @@ while True:
 
     # This function will block at the rate of the control loop
     CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-    (angle, position, command) = CartPoleInstance.read_state()
-    position = (position-POSITION_OFFSET)/POSITION_NORMALIZATION*TRACK_LENGTH
+    (angle, position_raw, command) = CartPoleInstance.read_state()
+    position = (position_raw-POSITION_OFFSET) * POSITION_NORMALIZATION_FACTOR
     if MOTOR_TYPE == 'POLOLU':
         position = -position
 
-    angle = (angle + ANGLE_DEVIATION - ANGLE_NORMALIZATION / 2) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    angle = (angle + ANGLE_DEVIATION - ANGLE_ADC_RANGE / 2) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
     angle = angle * (angle_smoothing) + (1 - angle_smoothing) * anglePrev
 
     # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
@@ -316,8 +325,11 @@ while True:
 
 
     target_position = POSITION_TARGET
-    if controlEnabled and danceEnabled:
-        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * (elapsedTime / dancePeriodS))
+    # if controlEnabled and danceEnabled:
+    if danceEnabled:
+        dance_timer += deltaTime
+        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * (dance_timer / dancePeriodS))
+        position = target_position  # This line prevents a sudden jump in perceived target position, due to filtering cartpole thinks at first
 
     # Balance PD Control
     # Position PD Control
@@ -335,9 +347,6 @@ while True:
         calculatedMotorCmd *= MOTOR_FULL_SCALE
         calculatedMotorCmd = int(calculatedMotorCmd)
 
-    # FIXME: This is to avoid accumulation of integral gain. Find more general solution - you do not want to reload RNN internal state at every iteration...
-    if controlEnabled is False:
-        controller.controller_reset()
 
         # print('AAAAAAAAAAAAAAAA', calculatedMotorCmd)
     stickPos = 0.0
@@ -352,7 +361,7 @@ while True:
         #         print("Joystick button released.")
         pygame.event.get()  # must call get() to handle internal queue
         stickPos = stick.get_axis(0)  # 0 left right, 1 front back 2 rotate
-        stickPos = stickPos*POSITION_FULL_SCALE_N/POSITION_NORMALIZATION*TRACK_LENGTH
+        stickPos = stickPos * POSITION_FULL_SCALE_N * POSITION_NORMALIZATION_FACTOR
     # todo handle joystick control of cart to position, not speed
     if joystickMode == 'speed' and abs(stickPos) > JOYSTICK_DEADZONE:
         stickControl = True
@@ -387,9 +396,16 @@ while True:
         elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
             actualMotorCmd -= 365
 
-    # clip motor to actual limits
-    actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM else actualMotorCmd
-    actualMotorCmd = -MOTOR_MAX_PWM if actualMotorCmd  < -MOTOR_MAX_PWM else actualMotorCmd
+    # clip motor to  limits - we clip it to the half of the max power
+    actualMotorCmd = MOTOR_MAX_PWM if actualMotorCmd  > MOTOR_MAX_PWM//2 else actualMotorCmd
+    actualMotorCmd = -MOTOR_MAX_PWM if actualMotorCmd  < -MOTOR_MAX_PWM//2 else actualMotorCmd
+
+    # Temporary safety switch off if went to the boundary
+    if abs(position_raw-POSITION_OFFSET)>0.9*(POSITION_ENCODER_RANGE//2):
+        controlEnabled = False
+        controller.controller_reset()
+        danceEnabled = False
+        calculatedMotorCmd = 0
 
     # Reverse sign if you are using pololu motor and not the original one
     if MOTOR_TYPE == 'POLOLU':
