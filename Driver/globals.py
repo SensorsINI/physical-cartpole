@@ -50,7 +50,7 @@ JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENG
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
 # SERIAL_PORT = None  # if None, takes first one available
-SERIAL_PORT = 1  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
+SERIAL_PORT = 0  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05

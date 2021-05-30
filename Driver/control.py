@@ -199,12 +199,16 @@ while True:
         elif c=='j':
             if joystickMode is None:
                 log.warning('no joystick')
+            elif joystickMode == 'not active':
+                joystickMode = 'speed'
+                log.info(f'set joystick to cart {joystickMode} control mode')
             elif joystickMode=='speed':
                 joystickMode='position'
                 log.info(f'set joystick to cart {joystickMode} control mode')
             elif joystickMode=='position':
-                joystickMode='speed'
-                log.info(f'set joystick to cart {joystickMode} control mode')
+                joystickMode='not active'
+                log.info(f'set joystick to {joystickMode} mode')
+
         elif c=='b':
             angle_average = 0
             number_of_measurements = 100
@@ -285,18 +289,19 @@ while True:
         calculatedMotorCmd *= MOTOR_FULL_SCALE
         calculatedMotorCmd = int(calculatedMotorCmd)
 
-    if joystickMode is not None:
-        stickPos = get_stick_position(stick)
-        stickPos = stickPos * POSITION_FULL_SCALE_N * POSITION_NORMALIZATION_FACTOR
-        stickControl = True
-        calculatedMotorCmd = motorCmd_from_joystick(joystickMode, stickPos, position)
-    elif joystickMode is None:
+    if joystickMode is None or joystickMode == 'not active':
         stickPos = 0.0
         stickControl = False
         if controlEnabled and not manualMotorSetting:
             ...
         elif manualMotorSetting == False:
             calculatedMotorCmd = 0
+    else:
+        stickPos = get_stick_position(stick)
+        stickPos = stickPos * POSITION_FULL_SCALE_N * POSITION_NORMALIZATION_FACTOR
+        stickControl = True
+        calculatedMotorCmd = motorCmd_from_joystick(joystickMode, stickPos, position)
+
 
     if not measurement.is_idle():
         try:

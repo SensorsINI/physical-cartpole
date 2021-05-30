@@ -13,7 +13,7 @@ def setup_joystick():
         stick.init()
         axisNum = stick.get_numaxes()
         buttonNum = stick.get_numbuttons()
-        joystickMode = 'speed'  # toggles to 'position' with 'j' key
+        joystickMode = 'not active'  # toggles to 'position' with 'j' key
         print('joystick found with ' + str(axisNum) + ' axes and ' + str(buttonNum) + ' buttons')
     else:
         stick = None
@@ -38,12 +38,13 @@ def get_stick_position(stick):
 
 def motorCmd_from_joystick(joystickMode, stickPos, position):
     # todo handle joystick control of cart to position, not speed - is this resolved?
-    if joystickMode == 'speed' and abs(stickPos) > JOYSTICK_DEADZONE:
+    if joystickMode == 'speed':
         MotorCmd = int(round(stickPos * JOYSTICK_SCALING))
     elif joystickMode == 'position':
         MotorCmd = int((stickPos - position) * JOYSTICK_POSITION_KP)
     else:
-        raise NameError('Unknown joystick mode!')
+        error_string = 'Unknown joystick mode: {}'.format(joystickMode)
+        raise NameError(error_string)
     return MotorCmd
 
 # The rest of this file is what was previously in joystick_tester.py
