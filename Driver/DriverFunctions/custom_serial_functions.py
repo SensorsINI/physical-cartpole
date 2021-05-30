@@ -1,12 +1,13 @@
 """
 TODO: It would be great to have at some point functions related to serial communication extracted to a separate place.
     Having it done, it would be not to much work to run physical cartpole directly from CartPole Simulator GUI
+    The pendulum.py seems to gather the serial function. Maybe these two files can be merged...
 """
 import glob
 import sys
 import serial  # conda install pyserial
 
-from globals import SERIAL_BAUD, SERIAL_PORT
+from Driver.globals import SERIAL_BAUD, SERIAL_PORT
 
 def serial_ports():  # from https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
     """ Lists serial port names

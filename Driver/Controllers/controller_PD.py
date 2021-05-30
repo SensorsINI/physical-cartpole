@@ -11,7 +11,7 @@ from globals import *
 
 # TODO: Remove angle_target from json. You neither should set it externally.
 #  The only possible scenario when angle target is not 0 would be if it follows some trajectory. This trajectory would be calculated inside of the controller.
-JSON_PATH = 'json/'
+JSON_PATH = 'Json/'
 PARAMS_JSON_FILE = JSON_PATH + 'control-7.json'
 
 class controller_PD(template_controller):

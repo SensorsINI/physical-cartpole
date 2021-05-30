@@ -1,7 +1,7 @@
 # measurements from cartpole, controlled by state machine.
 # control.py calls update_state() if state is not 'idle'
 import time
-from globals import *
+from Driver.globals import *
 
 # from .pendulum import Pendulum
 STARTING_POSITION = -(-1)**n*0.17# cart starting position

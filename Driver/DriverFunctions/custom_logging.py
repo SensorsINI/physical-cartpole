@@ -3,7 +3,7 @@ Auxiliary functions and classes defining custom logging of physical cartpole pro
 """
 
 import logging
-from globals import LOGGING_LEVEL
+from Driver.globals import LOGGING_LEVEL
 
 def my_logger(name):
     # logging.basicConfig(stream=sys.stdout, level=logging.INFO)

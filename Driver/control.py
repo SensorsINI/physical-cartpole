@@ -1,90 +1,38 @@
 import time
 
-import sys
-
 import numpy as np
-# pygame needs python 3.6, not available for 3.7
-import pygame  # pip install -U pygame
-# older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
+
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
-from custom_logging import my_logger
-from custom_serial_functions import setup_serial_connection
-from pendulum import Pendulum
-from kbhit import KBHit
-from measure import StepResponseMeasurement
+from DriverFunctions.custom_logging import my_logger
+from DriverFunctions.custom_serial_functions import setup_serial_connection
+from DriverFunctions.pendulum import Pendulum
+from DriverFunctions.kbhit import KBHit
+from DriverFunctions.measure import StepResponseMeasurement
+from DriverFunctions.utilities import help, calibrate, terminal_check
+from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
-from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
+from CartPole.state_utilities import create_cartpole_state, STATE_INDICES
 
-from controllers_management import set_controller
-from firmware_parameters import set_firmware_parameters
-from csv_helpers import csv_init
+from DriverFunctions.controllers_management import set_controller
+from DriverFunctions.firmware_parameters import set_firmware_parameters
+from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
 # TODO Why after calibration Cartpole is not at 0 position?
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 
-PRINT_PERIOD_MS = 100  # shows state every this many ms
-
-CALIBRATE = False  # False # important to calibrate if running standalone to avoid motor burnout because limits are determined during this calibration
-
-MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
-
-JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
-JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
-
-# TODO: What is this? POSITION_ENCODER_RANGE and POSITION_FULL_SCALE_N cancel each other
-JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENGTH / POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
-# it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
-
-ANGLE_DEVIATION_FINETUNE = -0.1099999999999999 #adjust from key commands such that angle error is minimized
-
-POSITION_TARGET = 0.0 # meters
-
 angle_smoothing = 0.8
-# angleD_smoothing = 0.8 # todo at some point these should be inside the json file
-
-PARAMS_JSON_FILE = 'control.json'
+# angleD_smoothing = 0.8
 
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
-controller,_ ,_ = set_controller(controller_name=CONTROLLER_NAME)
-
-
-def help():
-    print("\n***********************************")
-    print("keystroke commands")
-    print("ESC quit")
-    print("k toggle control on/off (initially off)")
-    print("K trigger motor position calibration")
-    print("=/- increase/decrease (fine tune) angle deviation value")
-    print("[/] increase/decrease position target")
-    print("w/q angle proportional gain")
-    print("s/a angle derivative gain")
-    print("z/x angle smoothing")
-    print("r/e position proportional gain")
-    print("f/d position derivative gain")
-    print("c/v position smoothing")
-    print("l toggle logging data")
-    print("S/L Save/Load param values from disk")
-    print("D Toggle dance mode")
-    print(",./ Turn on motor left zero right")
-    print("m Toggle measurement")
-    print("j Switch joystick control mode")
-    print("b Print angle measurement from sensor")
-    print("***********************************")
-
-
+controller, _, _ = set_controller(controller_name=CONTROLLER_NAME)
 
 log = my_logger(__name__)
 
 # check that we are running from terminal, otherwise we cannot control it
-if sys.stdin.isatty():
-    # running interactively
-    print('running interactively from an interactive terminal, ok')
-else:
-    print('run from an interactive terminal to allow keyboard input')
-    quit()
+terminal_check()
 
 CartPoleInstance = Pendulum()
 
@@ -95,29 +43,10 @@ CartPoleInstance.stream_output(False)
 
 log.info('\n opened ' + str(SERIAL_PORT) + ' successfully')
 
-joystickExists = False
-joystickMode=None
-pygame.init()
-joystick.init()
-if joystick.get_count() == 1:
-    stick = joystick.Joystick(0)
-    stick.init()
-    axisNum = stick.get_numaxes()
-    buttonNum = stick.get_numbuttons()
-    joystickExists = True
-    joystickMode='speed' # toggles to 'position' with 'j' key
-    print('joystick found with ' + str(axisNum) + ' axes and ' + str(buttonNum) + ' buttons')
-else:
-    print('no joystick found, only PD control or no control possible')
+stick, joystickMode = setup_joystick()
 
 if CALIBRATE:
-    print("Calibrating motor position....")
-    if not CartPoleInstance.calibrate():
-        print("Failed to connect to device")
-        CartPoleInstance.close()
-        exit()
-    (_, POSITION_OFFSET, _) = CartPoleInstance.read_state()
-    print("Done calibrating")
+    POSITION_OFFSET = calibrate(CartPoleInstance)
 
 try:
     controller.loadparams()
@@ -127,9 +56,7 @@ except AttributeError:
 time.sleep(1)
 
 set_firmware_parameters(CartPoleInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
-################################################################################
-# CONTROL LOOP (PC BASED)
-################################################################################
+
 printCount = 0
 
 controlEnabled = False
@@ -138,34 +65,39 @@ manualMotorSetting = False
 danceEnabled = False
 danceAmpl = 0.1  # m
 dancePeriodS = 20.0
-dance_timer = 0.0
+dance_start_time = 0.0
 
 loggingEnabled = False
 
-kbAvailable = True
 try:
     kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
+    kbAvailable = True
 except:
     kbAvailable = False
 
 measurement = StepResponseMeasurement()
+
 try:
     controller.printparams()
 except AttributeError:
     print('printparams not implemented for this controller.')
+
 help()
+
 startTime = time.time()
 lastTime = startTime
-
 lastControlTime = lastTime
+
 angleErr = 0
 positionErr = 0  # for printing even if not controlling
+
 CartPoleInstance.stream_output(True)  # now start streaming state
+
 calculatedMotorCmd = 0
+
 csvfile = None
 csvfilename = None
 csvwriter = None
-angle_average = 0
 
 anglePrev = 0
 positionPrev = 0
@@ -173,9 +105,12 @@ positionPrev = 0
 angleDPrev = 0
 positionDPrev = 0
 
+################################################################################
+# CONTROL LOOP (PC BASED)
+################################################################################
 while True:
 
-    # Adjust Parameters
+    # Keyboard input
     if kbAvailable & kb.kbhit():
         c = kb.getch()
         #Keys used in controller: 1,2,3,4,p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
@@ -227,39 +162,34 @@ while True:
             else:
                 controlEnabled = False
                 controller.controller_reset()
-                danceEnabled = False
                 calculatedMotorCmd = 0
+            danceEnabled = False
             print("\ncontrolEnabled= {0} \r\n".format(controlEnabled))
         elif c == 'K':
             controlEnabled = False
-            print("\nCalibration triggered \r\n")
-            CartPoleInstance.calibrate()
-            (_, POSITION_OFFSET, _) = CartPoleInstance.read_state()
-            print("\nCalibration finished \r\n")
+            POSITION_OFFSET = calibrate(CartPoleInstance)
         elif c == 'h' or c == '?':
             help()
         # Fine tune angle deviation
         elif c == '=':
             ANGLE_DEVIATION_FINETUNE += 0.01
-            # FIXME: Change this string
-            print("\nIncreased angle fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
+            print("\nIncreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
         # Decrease Target Angle
         elif c == '-':
             ANGLE_DEVIATION_FINETUNE -= 0.01
-            # FIXME: Change this string
-            print("\nDecreased angle fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
+            print("\nDecreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
 
         # Increase Target Position
         elif c == ']':
             POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
-            if (POSITION_TARGET>0.2):
-               POSITION_TARGET = 0.2
+            if POSITION_TARGET > 0.8*(POSITION_ENCODER_RANGE//2):
+               POSITION_TARGET = 0.8*(POSITION_ENCODER_RANGE//2)
             print("\nIncreased target position to {0} cm\n".format(POSITION_TARGET*100))
         # Decrease Target Position
         elif c == '[':
             POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
-            if (POSITION_TARGET < -0.2):
-                POSITION_TARGET = -0.2
+            if POSITION_TARGET < -0.8*(POSITION_ENCODER_RANGE//2):
+                POSITION_TARGET = -0.8*(POSITION_ENCODER_RANGE//2)
             print("\nDecreased target position to {0} cm\n".format(POSITION_TARGET*100))
         elif c == 'm':  # toggle measurement
             if measurement.is_idle():
@@ -286,8 +216,6 @@ while True:
             angle_average = angle_average / float(number_of_measurements)
             print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements,angle_average))
 
-
-
         # Exit
         elif ord(c) == 27:  # ESC
             log.info("\nquitting....")
@@ -295,53 +223,61 @@ while True:
 
     # This function will block at the rate of the control loop
     CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-    (angle, position_raw, command) = CartPoleInstance.read_state()
-    position = (position_raw-POSITION_OFFSET) * POSITION_NORMALIZATION_FACTOR
-    if MOTOR_TYPE == 'POLOLU':
-        position = -position
+    (angle, position, command) = CartPoleInstance.read_state()
+    # angle count is more positive CCW facing cart
 
+    position_centered = position-POSITION_OFFSET
+    # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
+    # Hence we revert sign for Pololu
+    if MOTOR_TYPE == 'POLOLU':
+        position_centered = -position_centered
+
+    # Convert position and angle to physical units
     angle = (angle + ANGLE_DEVIATION - ANGLE_ADC_RANGE / 2) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    position = position_centered * POSITION_NORMALIZATION_FACTOR
+
+    # Filter
     angle = angle * (angle_smoothing) + (1 - angle_smoothing) * anglePrev
 
-    # angle count is more positive CCW facing cart, position encoder count is more positive to right facing cart (for stock motor), more negative to right (for pololu motor)
-
+    # Time measurement
     timeNow = time.time()
     deltaTime = timeNow - lastTime
     if deltaTime == 0:
         deltaTime = 1e-6
-
-    # print(deltaTime)
     lastTime = timeNow
     elapsedTime = timeNow - startTime
 
-    angleDerivative = (angle - anglePrev)/deltaTime #rad/s
-    positionDerivative = (position - positionPrev)/deltaTime #m/s
+    # Calculating derivatives (cart velocity and angular velocity of the pole)
+    angleDerivative = (angle - anglePrev)/deltaTime  # rad/s
+    positionDerivative = (position - positionPrev)/deltaTime  # m/s
 
-#    angleDerivative = angleDerivative*angleD_smoothing + (1-angleD_smoothing)*angleDPrev
-
+    # Keep values of angle and position for next timestep, for smoothing and derivative calculation
     anglePrev = angle
     positionPrev = position
 
+#    # Filtering of derivatives
+#    angleDerivative = angleDerivative*angleD_smoothing + (1-angleD_smoothing)*angleDPrev
 #    angleDPrev = angleDerivative
 
+    # Calculate sine and cosie of the angle
     angle_cos = np.cos(angle)
     angle_sin = np.sin(angle)
 
-
-    target_position = POSITION_TARGET
+    # Get the target position
     # if controlEnabled and danceEnabled:
     if danceEnabled:
-        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * ((elapsedTime-dance_start_time) / dancePeriodS))
+        target_position = POSITION_TARGET + danceAmpl * np.sin(2 * np.pi * ((timeNow-dance_start_time) / dancePeriodS))
+    else:
+        target_position = POSITION_TARGET
 
-    # Balance PD Control
-    # Position PD Control
+    # Pack the state into interface acceptable for the controller
     s = create_cartpole_state()
-    s[cartpole_state_varname_to_index('position')] = position
-    s[cartpole_state_varname_to_index('angle')] = angle
-    s[cartpole_state_varname_to_index('positionD')] = positionDerivative
-    s[cartpole_state_varname_to_index('angleD')] = angleDerivative
-    s[cartpole_state_varname_to_index('angle_cos')] = angle_cos
-    s[cartpole_state_varname_to_index('angle_sin')] = angle_sin
+    s[STATE_INDICES['position']] = position
+    s[STATE_INDICES['angle']] = angle
+    s[STATE_INDICES['positionD']] = positionDerivative
+    s[STATE_INDICES['angleD']] = angleDerivative
+    s[STATE_INDICES['angle_cos']] = angle_cos
+    s[STATE_INDICES['angle_sin']] = angle_sin
 
     if controlEnabled and timeNow - lastControlTime >= CONTROL_PERIOD_MS * .001:
         lastControlTime = timeNow
@@ -349,32 +285,18 @@ while True:
         calculatedMotorCmd *= MOTOR_FULL_SCALE
         calculatedMotorCmd = int(calculatedMotorCmd)
 
-
-        # print('AAAAAAAAAAAAAAAA', calculatedMotorCmd)
-    stickPos = 0.0
-    stickControl = False
-    if joystickExists:
-        # for event in pygame.event.get(): # User did something.
-        #     if event.type == pygame.QUIT: # If user clicked close.
-        #         done = True # Flag that we are done so we exit this loop.
-        #     elif event.type == pygame.JOYBUTTONDOWN:
-        #         print("Joystick button pressed.")
-        #     elif event.type == pygame.JOYBUTTONUP:
-        #         print("Joystick button released.")
-        pygame.event.get()  # must call get() to handle internal queue
-        stickPos = stick.get_axis(0)  # 0 left right, 1 front back 2 rotate
+    if joystickMode is not None:
+        stickPos = get_stick_position(stick)
         stickPos = stickPos * POSITION_FULL_SCALE_N * POSITION_NORMALIZATION_FACTOR
-    # todo handle joystick control of cart to position, not speed
-    if joystickMode == 'speed' and abs(stickPos) > JOYSTICK_DEADZONE:
         stickControl = True
-        calculatedMotorCmd = int(round(stickPos * JOYSTICK_SCALING))
-    elif joystickMode == 'position':
-        stickControl=True
-        calculatedMotorCmd=int((stickPos-position)*JOYSTICK_POSITION_KP)
-    elif controlEnabled and not manualMotorSetting:
-        ...
-    elif manualMotorSetting == False:
-        calculatedMotorCmd = 0
+        calculatedMotorCmd = motorCmd_from_joystick(joystickMode, stickPos, position)
+    elif joystickMode is None:
+        stickPos = 0.0
+        stickControl = False
+        if controlEnabled and not manualMotorSetting:
+            ...
+        elif manualMotorSetting == False:
+            calculatedMotorCmd = 0
 
     if not measurement.is_idle():
         try:
@@ -393,17 +315,19 @@ while True:
     #  Model_velocity.py in CartPole simulator is the script to determine these values
     # The change dependent on velocity sign is motivated theory of classical friction
     if actualMotorCmd != 0:
-        if np.sign(s[cartpole_state_varname_to_index('positionD')]) > 0:
+        if np.sign(s[STATE_INDICES['positionD']]) > 0:
             actualMotorCmd += 387
-        elif np.sign(s[cartpole_state_varname_to_index('positionD')]) < 0:
+        elif np.sign(s[STATE_INDICES['positionD']]) < 0:
             actualMotorCmd -= 330
 
     # clip motor to  limits - we clip it to the half of the max power
+    # This assures both: safety against burning the motor and keeping motor in its linear range
+    # NEVER TRY TO RUN IT WITH
     actualMotorCmd = int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  > 0.6*MOTOR_MAX_PWM else actualMotorCmd
     actualMotorCmd = -int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  < -0.6*MOTOR_MAX_PWM else actualMotorCmd
 
     # Temporary safety switch off if went to the boundary
-    if abs(position_raw-POSITION_OFFSET)>0.9*(POSITION_ENCODER_RANGE//2):
+    if abs(position_centered)>0.9*(POSITION_ENCODER_RANGE//2):
         controlEnabled = False
         controller.controller_reset()
         danceEnabled = False
@@ -422,15 +346,13 @@ while True:
     printCount += 1
     if printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
         printCount = 0
-        positionErr = s[cartpole_state_varname_to_index('position')] - target_position
+        positionErr = s[STATE_INDICES['position']] - target_position
         # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
         print(
             "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
               .format(angle,
                       position*100,
                       positionErr*100,
-                      # int(round(controller.angleCmd)),
-                      # int(round(controller.positionCmd)),
                       calculatedMotorCmd,
                       deltaTime * 1000,
                       stickPos,

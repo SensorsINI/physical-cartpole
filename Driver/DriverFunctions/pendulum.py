@@ -1,6 +1,5 @@
 import serial
 import struct
-import sys
 import time
 
 PING_TIMEOUT            = 1.0       # Seconds

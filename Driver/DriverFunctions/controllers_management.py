@@ -10,7 +10,7 @@ import glob
 import numpy as np
 import os
 
-from globals import PATH_TO_CONTROLLERS
+from Driver.globals import PATH_TO_CONTROLLERS
 # Method returns the list of controllers available in the PATH_TO_CONTROLLERS folder
 def get_available_controller_names():
     """
