@@ -126,16 +126,16 @@ while True:
             print('\r actual motor command after .', calculatedMotorCmd)
         elif c == ',':  # left
             controlEnabled = False
-            calculatedMotorCmd += 100
+            calculatedMotorCmd -= 100
             manualMotorSetting = True
             print('\r actual motor command after ,', calculatedMotorCmd)
         elif c == '/':  # right
             controlEnabled = False
-            calculatedMotorCmd -= 100
+            calculatedMotorCmd += 100
             manualMotorSetting = True
             print('\r actual motor command after /', calculatedMotorCmd)
         elif c == 'D':
-            # We want the sinusoid to start at predictible (0) position
+            # We want the sinusoid to start at predictable (0) position
             if danceEnabled is True:
                 danceEnabled = False
             else:
@@ -311,8 +311,8 @@ while True:
             log.warning(f'timeout in measurement: {e}')
 
     # We save motor input BEFORE processing which should linearize (perceived) motor model
-    # TODO: It is not fully cleare if it is the right place for the following line
-    #   I would prefere to have it before "linearization" and after clipping, but lin. goes before clipping
+    # TODO: It is not fully clear if it is the right place for the following line
+    #   I would prefer to have it before "linearization" and after clipping, but lin. goes before clipping
     #   And I didn't want to have clipping twice (maybe I should?)
     actualMotorCmd = calculatedMotorCmd
 
