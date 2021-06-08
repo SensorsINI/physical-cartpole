@@ -332,18 +332,19 @@ while True:
     actualMotorCmd = -int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  < -0.6*MOTOR_MAX_PWM else actualMotorCmd
 
     if measurement.is_idle(): # switch off boundary safety when measurement mode is active.
-    # Temporary safety switch off if went to the boundary
+    # Temporary safety switch off if goes to the boundary
         if abs(position_centered)>0.9*(POSITION_ENCODER_RANGE//2):
             controlEnabled = False
             controller.controller_reset()
             danceEnabled = False
-            calculatedMotorCmd = 0
+            actualMotorCmd = 0
 
     # Reverse sign if you are using pololu motor and not the original one
     if MOTOR_TYPE == 'POLOLU':
         actualMotorCmd = -actualMotorCmd
 
     CartPoleInstance.set_motor(actualMotorCmd)
+    # TODO Take notice that the csv file is saving the calculatedMotorCmd and not the actualMotorCmd. The actualMotorCmd is after safety switching, and motor linearization of the motor input value (calculatedMotorCmd).
 
     if loggingEnabled:
         csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
