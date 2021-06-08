@@ -331,12 +331,13 @@ while True:
     actualMotorCmd = int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  > 0.6*MOTOR_MAX_PWM else actualMotorCmd
     actualMotorCmd = -int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  < -0.6*MOTOR_MAX_PWM else actualMotorCmd
 
+    if measurement.is_idle(): # switch off boundary safety when measurement mode is active.
     # Temporary safety switch off if went to the boundary
-    if abs(position_centered)>0.9*(POSITION_ENCODER_RANGE//2):
-        controlEnabled = False
-        controller.controller_reset()
-        danceEnabled = False
-        calculatedMotorCmd = 0
+        if abs(position_centered)>0.9*(POSITION_ENCODER_RANGE//2):
+            controlEnabled = False
+            controller.controller_reset()
+            danceEnabled = False
+            calculatedMotorCmd = 0
 
     # Reverse sign if you are using pololu motor and not the original one
     if MOTOR_TYPE == 'POLOLU':
