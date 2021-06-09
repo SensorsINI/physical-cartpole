@@ -67,7 +67,8 @@ class controller_PD(template_controller):
 
         self.POSITION_TARGET = target_position
 
-        self.positionErr = self.POSITION_SMOOTHING * (s[cartpole_state_varname_to_index('position')] - target_position) + (1.0 - self.POSITION_SMOOTHING) * self.positionErrPrev  # First order low-P=pass filter
+        # self.positionErr = self.POSITION_SMOOTHING * (s[cartpole_state_varname_to_index('position')] - target_position) + (1.0 - self.POSITION_SMOOTHING) * self.positionErrPrev  # First order low-P=pass filter
+        self.positionErr = (s[cartpole_state_varname_to_index('position')] - target_position)
         positionErrDiff = (self.positionErr - self.positionErrPrev) * diffFactor
         self.positionErrPrev = self.positionErr
         self.positionErr_integral += self.positionErr
@@ -87,7 +88,8 @@ class controller_PD(template_controller):
         # KP and KI with "-" acts attractive towards the target position
         self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff + self.POSITION_KI * self.positionErr_integral*(CONTROL_PERIOD_MS/1.0e3)
 
-        self.angleErr = self.ANGLE_SMOOTHING * (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET) + (1.0 - self.ANGLE_SMOOTHING) * self.angleErrPrev  # First order low-pass filter
+        # self.angleErr = self.ANGLE_SMOOTHING * (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET) + (1.0 - self.ANGLE_SMOOTHING) * self.angleErrPrev  # First order low-pass filter
+        self.angleErr = (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET)
         angleErrDiff = (self.angleErr - self.angleErrPrev) * diffFactor  # correct for actual sample interval; if interval is too long, reduce diff error
         self.angleErrPrev = self.angleErr
         self.angleErr_integral += self.angleErr
@@ -227,6 +229,32 @@ class controller_PD(template_controller):
             self.saveparams()
         elif c == 'L':
             self.loadparams()
+
+    def print_help(self):
+        print("\n***********************************")
+        print("keystroke commands")
+        print("ESC quit")
+        print("k toggle control on/off (initially off)")
+        print("K trigger motor position calibration")
+        print("=/- increase/decrease (fine tune) angle deviation value")
+        print("[/] increase/decrease position target")
+        print("2/1 angle proportional gain")
+        print("w/q angle integral gain")
+        print("s/a angle derivative gain")
+        print("z/x angle smoothing")
+        print("4/3 position proportional gain")
+        print("r/e position integral gain")
+        print("f/d position derivative gain")
+        print("c/v position smoothing")
+        print("p print PID parameters")
+        print("l toggle logging data")
+        print("S/L Save/Load param values from disk")
+        print("D Toggle dance mode")
+        print(",./ Turn on motor left zero right")
+        print("m Toggle measurement")
+        print("j Switch joystick control mode")
+        print("b Print angle measurement from sensor")
+        print("***********************************")
 
     def controller_reset(self):
         self.time_last = None

@@ -42,16 +42,16 @@ class controller_lqr(template_controller):
 
         jacobian = cartpole_jacobian(s, u)
 
-        A = jacobian[:, :-1]
-        B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
+        self.A = jacobian[:, :-1]
+        self.B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
 
         # Cost matrices for LQR controller
-        self.Q = np.diag([10.0, 1.0, 1.0, 1.0])  # How much to punish x, v, theta, omega
-        self.R = 1.0e1  # How much to punish Q
+        self.Q = np.diag([0, 1, 2, 3])  # How much to punish x, v, theta, omega
+        self.R = 1  # How much to punish Q
 
         # first, try to solve the ricatti equation
         # FIXME: Import needs to be different for some reason than in simulator.
-        X = solve_continuous_are(A, B, self.Q, self.R)
+        X = solve_continuous_are(self.A, self.B, self.Q, self.R)
 
         # compute the LQR gain
         if np.array(self.R).ndim == 0:
@@ -59,10 +59,9 @@ class controller_lqr(template_controller):
         else:
             Ri = np.linalg.inv(self.R)
 
-        K = np.dot(Ri, (np.dot(B.T, X)))
+        K = np.dot(Ri, (np.dot(self.B.T, X)))
 
-        eigVals = np.linalg.eigvals(A - np.dot(B, K))
-
+        eigVals = np.linalg.eigvals(self.A - np.dot(self.B, K))
         self.K = K
         self.X = X
         self.eigVals = eigVals
@@ -82,4 +81,93 @@ class controller_lqr(template_controller):
         else:
             pass
 
+        return Q
+
+    def printparams(self):
+        print("Q  - STATE COST MATRIX: ".format(self.Q))
+        print(self.Q)
+        print("R - INPUT COST: ")
+        print(self.R)
+
+        X = solve_continuous_are(self.A, self.B, self.Q, self.R)
+
+        # compute the LQR gain
+        if np.array(self.R).ndim == 0:
+            Ri = 1.0 / self.R
+        else:
+            Ri = np.linalg.inv(self.R)
+
+        K = np.dot(Ri, (np.dot(self.B.T, X)))
+        self.eigVals = np.linalg.eigvals(self.A - np.dot(self.B, K))
+
+        print("EIGEN VALUES:")
+        print(self.eigVals)
+
+    def print_help(self):
+        print("\n***********************************")
+        print("keystroke commands")
+        print("ESC quit")
+        print("k toggle control on/off (initially off)")
+        print("K trigger motor position calibration")
+        print("=/- increase/decrease (fine tune) angle deviation value")
+        print("[/] increase/decrease position target")
+        print("4/3 increase/decrease input penalization")
+        print("2/1 increase/decrease position penalization")
+        print("w/q increase/decrease velocity penalization")
+        print("s/a increase/decrease angle penalization")
+        print("x/z increase/decrease angular velocity penalization")
+        print("p print LQR parameters")
+        print("l toggle logging data")
+        print("S/L Save/Load param values from disk")
+        print("D Toggle dance mode")
+        print(",./ Turn on motor left zero right")
+        print("m Toggle measurement")
+        print("j Switch joystick control mode")
+        print("b Print angle measurement from sensor")
+        print("***********************************")
+
+    def keyboard_input(self, c):
+        if c == 'p':
+            self.printparams()
+        # Increase input penalization
+        elif c == '4':
+            if self.R == 0:
+                self.R = 1e-5
+            else:
+                self.R *= 10
+            print("\nIncreased input penalization to {:}".format(self.R))
+        # Decrease input penalization
+        elif c == '3':
+            if self.R == 1e-5:
+                self.R = 0
+            else:
+                self.R /= 10
+            print("\nDecreased input penalization to {:}".format(self.R))
+        elif c == '2':
+            self.Q[0][0] *= 10
+            print("\nIncreased position penalization {:}".format(self.Q[0][0]))
+        elif c == '1':
+            self.Q[0][0] /= 10
+            print("\nDecreased position penalization {:}".format(self.Q[0][0]))
+        elif c == 'w':
+            self.Q[1][1] *= 10
+            print("\nIncreased velocity penalization {:}".format(self.Q[1][1]))
+        elif c == 'q':
+            self.Q[1][1] /= 10
+            print("\nDecreased velocity penalization {:}".format(self.Q[1][1]))
+        elif c == 's':
+            self.Q[2][2] *= 10
+            print("\nIncreased angle penalization {:}".format(self.Q[2][2]))
+        elif c == 'a':
+            self.Q[2][2] /= 10
+            print("\nDecreased angle penalization {:}".format(self.Q[2][2]))
+        elif c == 'x':
+            self.Q[3][3] *= 10
+            print("\nIncreased angular velocity penalization {:}".format(self.Q[3][3]))
+        elif c == 'z':
+            self.Q[3][3] /= 10
+            print("\nDecreased angular velocity penalization {:}".format(self.Q[3][3]))
+
+    def controller_reset(self):
+        Q = 0
         return Q

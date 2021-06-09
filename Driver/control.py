@@ -82,7 +82,7 @@ try:
 except AttributeError:
     print('printparams not implemented for this controller.')
 
-help()
+controller.print_help()
 
 startTime = time.time()
 lastTime = startTime
@@ -169,7 +169,7 @@ while True:
             controlEnabled = False
             POSITION_OFFSET = calibrate(CartPoleInstance)
         elif c == 'h' or c == '?':
-            help()
+            controller.print_help()
         # Fine tune angle deviation
         elif c == '=':
             ANGLE_DEVIATION_FINETUNE += 0.01
