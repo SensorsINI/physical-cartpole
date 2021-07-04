@@ -9,7 +9,7 @@ from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.pendulum import Pendulum
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.measure import StepResponseMeasurement
-from DriverFunctions.utilities import help, calibrate, terminal_check
+from DriverFunctions.utilities import calibrate, terminal_check
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPole.state_utilities import create_cartpole_state, STATE_INDICES
