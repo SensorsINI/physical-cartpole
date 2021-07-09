@@ -46,8 +46,8 @@ class controller_lqr(template_controller):
         self.B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
 
         # Cost matrices for LQR controller
-        self.Q = np.diag([1, 0.1, 0.1, 0.1])  # How much to punish x, v, theta, omega
-        self.R = 10  # How much to punish the input
+        self.Q = np.diag([5, 0, 10000, 0])  # How much to punish x, v, theta, omega
+        self.R = 1  # How much to punish the input
 
         # first, try to solve the ricatti equation
         # FIXME: Import needs to be different for some reason than in simulator.
