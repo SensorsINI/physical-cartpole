@@ -42,7 +42,7 @@ The 0-angle state is always defined as pole in upright position. This currently 
 P_GLOBALS = SimpleNamespace()  # "p" like parameters
 P_GLOBALS.m = 0.087  # mass of pole, kg # Checked by Antonio & Tobi
 P_GLOBALS.M = 0.230  # mass of cart, kg # Checked by Antonio
-P_GLOBALS.L = 0.395/2.0  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
+P_GLOBALS.L = 0.395  # length of pend, m # Checked by Antonio & Tobi
 P_GLOBALS.u_max = 6.21  # max force produced by the motor, N # Checked by Marcin
 P_GLOBALS.M_fric = 6.34  # cart friction on track, N/m/s # Checked by Marcin
 P_GLOBALS.J_fric = 2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
@@ -105,7 +105,7 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
         positionDD = (
             (
                 + m * g * sa * ca  # Movement of the cart due to gravity
-                - ((J_fric * (-angleD) * ca) / L)  # Movement of the cart due to pend' s friction in the joint
+                - ((J_fric * angleD * ca) / L)  # Movement of the cart due to pend' s friction in the joint
                 - (k + 1) * (
                     + (m * L * (angleD ** 2) * sa)  # Keeps the Cart-Pole center of mass fixed when pole rotates
                     - M_fric * positionD  # Braking of the cart due its friction
@@ -123,7 +123,7 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
 
         angleDD = (
             (
-                - g * sa + positionDD * ca - (J_fric * angleD) / (m * L)
+                g * sa - positionDD * ca - (J_fric * angleD) / (m * L)
             ) / ((k + 1) * L)
         )
 
@@ -206,7 +206,7 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
                      # 2.0 * (k+1) * u * ca * sa * m
                      - 2.0 * m * ca * sa * (
                              m * g * ca * sa
-                             + (angleD * ca * J_fric)/L
+                             - (angleD * ca * J_fric)/L
                              -(k+1) * (m * L * (angleD**2) * sa
                                        -M_fric * angleD
                                        +u)
@@ -214,11 +214,11 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
              + (
                      -(k+1) * m * L * (angleD**2) * ca
                      + m*g * ((ca**2)-(sa**2))
-                     - (angleD * sa * J_fric)/L
+                     + (angleD * sa * J_fric)/L
                                                                 )/ A
 
         J[1, 3] = (-2.0 * (k+1) * L * angleD * sa * m  # vo
-              + (ca * J_fric)/L) / A
+              - (ca * J_fric)/L) / A
 
         J[1, 4] = - (k+1) / A  # vu
 
@@ -234,11 +234,11 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
 
         J[3, 0] = 0.0  # ox
 
-        J[3, 1] = (ca * J[1,1]) / ((k+1) * L)  # ov
+        J[3, 1] = - (ca * J[1,1]) / ((k+1) * L)  # ov
 
-        J[3, 2] = ( -g * ca
-                    + J[1,2] * ca
-                    - sa * ( # positionDD
+        J[3, 2] = ( g * ca
+                    - J[1,2] * ca
+                    + sa * ( # positionDD
             (
                 + m * g * sa * ca  # Movement of the cart due to gravity
                 - ((J_fric * (-angleD) * ca) / L)  # Movement of the cart due to pend' s friction in the joint
@@ -252,11 +252,11 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
         )/ ((k+1) * L)  # ot
 
 
-        J[3, 3] = (ca * J[1,3]
+        J[3, 3] = (- ca * J[1,3]
                    - J_fric/(m*L)
                   ) / ((k+1) * L)             # oo
 
-        J[3, 4] = (ca * J[1,4])/((k+1) * L)   # ou
+        J[3, 4] = (- ca * J[1,4])/((k+1) * L)   # ou
 
         return J
 
