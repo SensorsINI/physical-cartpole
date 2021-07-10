@@ -20,7 +20,7 @@ def calibrate(CartPoleInstance):
 def terminal_check():
     if sys.stdin.isatty():
         # running interactively
-        print('running interactively from an interactive terminal, ok')
+        print('Running interactively from an interactive terminal, ok')
     else:
-        print('run from an interactive terminal to allow keyboard input')
+        print('Run from an interactive terminal to allow keyboard input')
         quit()
