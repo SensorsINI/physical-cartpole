@@ -252,8 +252,8 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
         )/ ((k+1) * L)  # ot
 
 
-        J[3, 3] = (- ca * J[1,3]
-                   + J_fric/(m*L)
+        J[3, 3] = (ca * J[1,3]
+                   - J_fric/(m*L)
                   ) / ((k+1) * L)             # oo
 
         J[3, 4] = (ca * J[1,4])/((k+1) * L)   # ou
