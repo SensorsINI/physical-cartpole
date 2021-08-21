@@ -4,6 +4,10 @@ from Driver.CartPole.state_utilities import create_cartpole_state, cartpole_stat
 
 import numpy as np
 from numpy.random import SFC64, Generator
+
+import sympy as sym
+from sympy.utilities.lambdify import lambdify
+
 rng = Generator(SFC64(123))
 
 # -> PLEASE UPDATE THE cartpole_model.nb (Mathematica file) IF YOU DO ANY CHANGES HERE (EXCEPT
@@ -80,8 +84,7 @@ k, M, m, g, J_fric, M_fric, L, v_max, u_max, sensorNoise, controlDisturbance, co
 # Create initial state vector
 s0 = create_cartpole_state()
 
-
-def _cartpole_ode(angle, angleD, position, positionD, u):
+def _cartpole_ode(ca, sa, angle, angleD, position, positionD, u):
     """
     Calculates current values of second derivative of angle and position
     from current value of angle and position, and their first derivatives
@@ -96,8 +99,7 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
     angle = -angle
     angleD = -angleD
 
-    ca = np.cos(angle)
-    sa = np.sin(angle)
+    sa *= (-1)
 
     if CARTPOLE_EQUATIONS == 'Marcin-Sharpneat':
         # Clockwise rotation is defined as negative
@@ -135,7 +137,6 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
         angleDD = -angleDD # todo?
         print('angleDD', angleDD)
 
-
         # making M go to infinity makes angleDD = (g/k*L)sin(angle) - angleD*J_fric/(k*m*L^2)
         # This is the same as equation derived directly for a pendulum.
         # k is 4/3! It is the factor for pendulum with length 2L: I = k*m*L^2
@@ -148,15 +149,16 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
 
 def cartpole_ode_namespace(s: SimpleNamespace, u: float):
     return _cartpole_ode(
-        s.angle, s.angleD, s.position, s.positionD, u
+        np.cos(s.angle), np.sin(s.angle), s.angle, s.angleD, s.position, s.positionD, u
     )
 
 
 def cartpole_ode(s: np.ndarray, u: float):
-    return _cartpole_ode(
-        s[..., cartpole_state_varname_to_index('angle')], s[..., cartpole_state_varname_to_index('angleD')],
-        s[..., cartpole_state_varname_to_index('position')], s[..., cartpole_state_varname_to_index('positionD')],
-        u
+    angle = s[..., cartpole_state_varname_to_index('angle')]
+    return _cartpole_ode(np.cos(angle), np.sin(angle),
+                s[..., cartpole_state_varname_to_index('angle')], s[..., cartpole_state_varname_to_index('angleD')],
+                s[..., cartpole_state_varname_to_index('position')], s[..., cartpole_state_varname_to_index('positionD')],
+                u
     )
 
 
@@ -174,7 +176,7 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
     :param s: State vector following the globally defined variable order
     :param u: Force applied on cart in unnormalized range
 
-    :returns: A 4x5 numpy.ndarray with all partial derivatives
+    :returns: A 4x5 numpy.ndarray with all partial derivatives (Jacobian)
     """
     if isinstance(s, np.ndarray):
         angle = s[cartpole_state_varname_to_index('angle')]
@@ -275,6 +277,67 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
 
         return J
 
+def cartpole_jacobian_auto(s: Union[np.ndarray, SimpleNamespace], u: float):
+
+    if isinstance(s, np.ndarray):
+        angle = s[cartpole_state_varname_to_index('angle')]
+        angleD = s[cartpole_state_varname_to_index('angleD')]
+        position = s[cartpole_state_varname_to_index('position')]
+        positionD = s[cartpole_state_varname_to_index('positionD')]
+    elif isinstance(s, SimpleNamespace):
+        angle = s.angle
+        angleD = s.angleD
+        position = s.position
+        positionD = s.positionD
+
+    x, v, t, o, u_sym = sym.symbols("x,v,t,o,u_sym")
+    k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym = sym.symbols("k_sym,M_sym,m_sym,L_sym,J_fric_sym,M_fric_sym,g_sym")
+
+    oD, vD = _cartpole_ode(sym.cos(t), sym.sin(t), t, o, x, v, u_sym)
+
+    vv = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(vD, v, 1), "numpy")
+    vt = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(vD, t, 1), "numpy")
+    vo = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(vD, o, 1), "numpy")
+    vu = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(vD, u_sym, 1), "numpy")
+
+    ov = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(oD, v, 1), "numpy")
+    ot = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(oD, t, 1), "numpy")
+    oo = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(oD, o, 1), "numpy")
+    ou = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(oD, u_sym, 1), "numpy")
+
+    J = np.zeros(shape=(4, 5), dtype=np.float32)  # Array to keep Jacobian
+    # ca = np.cos(angle)
+    # sa = np.sin(angle)
+
+    # Jacobian entries
+    J[0, 0] = 0.0  # xx
+    J[0, 1] = 1.0  # xv
+    J[0, 2] = 0.0  # xt
+    J[0, 3] = 0.0  # xo
+    J[0, 4] = 0.0  # xu
+
+    J[1, 0] = 0.0  # vx
+    J[1, 1] = vv(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+    J[1, 2] = vt(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+    J[1, 3] = vo(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+    J[1, 4] = vu(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+
+    J[2, 0] = 0.0  # tx
+    J[2, 1] = 0.0  # tv
+    J[2, 2] = 0.0  # tt
+    J[2, 3] = 1.0  # to
+    J[2, 4] = 0.0  # tu
+
+    J[3, 0] = 0.0  # ox
+    J[3, 1] = ov(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+    J[3, 2] = ot(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+    J[3, 3] = oo(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+    J[3, 4] = ou(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
+
+    print('J_auto', J)
+
+    return J
+
 
 def Q2u(Q):
     """
@@ -304,40 +367,44 @@ if __name__ == '__main__':
     s[cartpole_state_varname_to_index('angleD')] = 0.237
     u = -0.24
 
+    cartpole_ode(s,u)
+    cartpole_jacobian(s,u)
+    cartpole_jacobian_auto(s,u)
+
 
     # Calculate time necessary to evaluate cartpole ODE:
 
-    f_to_measure = 'angleDD, positionDD = cartpole_ode(s, u)'
-    number = 1  # Gives the number of times each timeit call executes the function which we want to measure
-    repeat_timeit = 1 # Gives how many times timeit should be repeated
-    timings = timeit.Timer(f_to_measure, globals=globals()).repeat(repeat_timeit, number)
-    min_time = min(timings)/float(number)
-    max_time = max(timings)/float(number)
-    average_time = np.mean(timings)/float(number)
-    print()
-    print('----------------------------------------------------------------------------------')
-    print('Min time to evaluate ODE is {} us'.format(min_time * 1.0e6))  # ca. 5 us
-    print('Average time to evaluate ODE is {} us'.format(average_time*1.0e6))  # ca 5 us
-    # The max is of little relevance as it is heavily influenced by other processes running on the computer at the same time
-    print('Max time to evaluate ODE is {} us'.format(max_time * 1.0e6))          # ca. 100 us
-    print('----------------------------------------------------------------------------------')
-    print()
+    # f_to_measure = 'angleDD, positionDD = cartpole_ode(s, u)'
+    # number = 1  # Gives the number of times each timeit call executes the function which we want to measure
+    # repeat_timeit = 1 # Gives how many times timeit should be repeated
+    # timings = timeit.Timer(f_to_measure, globals=globals()).repeat(repeat_timeit, number)
+    # min_time = min(timings)/float(number)
+    # max_time = max(timings)/float(number)
+    # average_time = np.mean(timings)/float(number)
+    # print()
+    # print('----------------------------------------------------------------------------------')
+    # print('Min time to evaluate ODE is {} us'.format(min_time * 1.0e6))  # ca. 5 us
+    # print('Average time to evaluate ODE is {} us'.format(average_time*1.0e6))  # ca 5 us
+    # # The max is of little relevance as it is heavily influenced by other processes running on the computer at the same time
+    # print('Max time to evaluate ODE is {} us'.format(max_time * 1.0e6))          # ca. 100 us
+    # print('----------------------------------------------------------------------------------')
+    # print()
     # Calculate time necessary for evaluation of a Jacobian:
 
-    f_to_measure = 'Jacobian = cartpole_jacobian(s, u)'
-    number = 1  # Gives the number of times each timeit call executes the function which we want to measure
-    repeat_timeit = 1 # Gives how many times it should be repeated
-    timings = timeit.Timer(f_to_measure, globals=globals()).repeat(repeat_timeit, number)
-    min_time = min(timings)/float(number)
-    max_time = max(timings)/float(number)
-    average_time = np.mean(timings)/float(number)
-    print('Min time to calculate Jacobian is {} us'.format(min_time * 1.0e6))  # ca. 14 us
-    print('Average time to calculate Jacobian is {} us'.format(average_time*1.0e6))  # ca 16 us
-    print('Max time to calculate Jacobian is {} us'.format(max_time * 1.0e6))          # ca. 150 us
-
-    # Calculate once more to print the resulting matrix
-    Jacobian = np.around(cartpole_jacobian(s, u), decimals=6)
-
-    print()
-    print(Jacobian.dtype)
-    print(Jacobian)
+    # f_to_measure = 'Jacobian = cartpole_jacobian(s, u)'
+    # number = 1  # Gives the number of times each timeit call executes the function which we want to measure
+    # repeat_timeit = 1 # Gives how many times it should be repeated
+    # timings = timeit.Timer(f_to_measure, globals=globals()).repeat(repeat_timeit, number)
+    # min_time = min(timings)/float(number)
+    # max_time = max(timings)/float(number)
+    # average_time = np.mean(timings)/float(number)
+    # print('Min time to calculate Jacobian is {} us'.format(min_time * 1.0e6))  # ca. 14 us
+    # print('Average time to calculate Jacobian is {} us'.format(average_time*1.0e6))  # ca 16 us
+    # print('Max time to calculate Jacobian is {} us'.format(max_time * 1.0e6))          # ca. 150 us
+    #
+    # # Calculate once more to print the resulting matrix
+    # Jacobian = np.around(cartpole_jacobian(s, u), decimals=6)
+    #
+    # print()
+    # print(Jacobian.dtype)
+    # print(Jacobian)
