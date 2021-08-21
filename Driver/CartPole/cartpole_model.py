@@ -17,9 +17,9 @@ rng = Generator(SFC64(123))
 """This script contains equations and parameters used currently in CartPole simulator."""
 
 # You can choose CartPole dynamical equations you want to use in simulation by setting CARTPOLE_EQUATIONS variable
-# The possible choices and their explanation are listed below
+# The possible choices and their explanation are listed below.
 # Notice that any set of equation require setting the convention for the angle
-# to draw a CartPole correctly in the CartPole GUI
+# to draw a CartPole correctly in the CartPole GUI.
 CARTPOLE_EQUATIONS = 'Marcin-Sharpneat'
 """ 
 Possible choices: 'Marcin-Sharpneat', (currently no more choices available)
@@ -39,7 +39,7 @@ Required angle convention for CartPole GUI: CLOCK-NEG
 ANGLE_CONVENTION = 'CLOCK-NEG'
 """Defines if a clockwise angle change is negative ('CLOCK-NEG') or positive ('CLOCK-POS')
 
-The 0-angle state is always defined as pole in upright position. This currently cannot be changed
+The 0-angle state is always defined as pole in upright position. This currently cannot be changed.
 """
 
 # Parameters of the CartPole
@@ -87,25 +87,23 @@ s0 = create_cartpole_state()
 def _cartpole_ode(ca, sa, angle, angleD, position, positionD, u):
     """
     Calculates current values of second derivative of angle and position
-    from current value of angle and position, and their first derivatives
+    from current values of angle and position, and their first derivatives.
 
-    :param angle, angleD, position, positionD: Essential state information of cart
+    :param cos(angle), sin(angle), angle, angleD, position, positionD: Essential state information of cart
     :param u: Force applied on cart in unnormalized range
 
     :returns: angular acceleration, horizontal acceleration
     """
-
-    # To compensate for the cw angle convention in SharpNeat
-    angle = -angle
-    angleD = -angleD
-
-    sa *= (-1)
-
     if CARTPOLE_EQUATIONS == 'Marcin-Sharpneat':
-        # Clockwise rotation is defined as negative
-        # force and cart movement to the right are defined as positive
-        # g (gravitational acceleration) is positive (absolute value)
-        # Checked independently by Marcin and Krishna
+
+        # Counter clockwise rotation is defined as positive,
+        # force and cart movement to the right are defined as positive,
+        # g (gravitational acceleration) is positive (absolute value).
+        # Checked independently by Marcin and Krishna.
+
+        # To compensate for the cw angle convention in SharpNeat since the cartpole has ccw angle convention.
+        angleD = -angleD
+        sa *= (-1)
 
         A = m * (ca ** 2) - (k + 1) * (M + m)
 
@@ -120,7 +118,7 @@ def _cartpole_ode(ca, sa, angle, angleD, position, positionD, u):
                 )
             ) / A
         )
-        print('positionDD', positionDD)
+
         # Making m go to 0 and setting J_fric=0 (fine for pole without mass)
         # positionDD = (u_max/M)*Q-(M_fric/M)*positionD
         # Compare this with positionDD = a*Q-b*positionD
@@ -134,8 +132,7 @@ def _cartpole_ode(ca, sa, angle, angleD, position, positionD, u):
             ) / ((k + 1) * L)
         )
 
-        angleDD = -angleDD # todo?
-        print('angleDD', angleDD)
+        angleDD = -angleDD
 
         # making M go to infinity makes angleDD = (g/k*L)sin(angle) - angleD*J_fric/(k*m*L^2)
         # This is the same as equation derived directly for a pendulum.
@@ -163,121 +160,22 @@ def cartpole_ode(s: np.ndarray, u: float):
 
 
 def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
+
     """
-    Jacobian of cartpole ode with the following structure:
+        Jacobian of cartpole ode with the following structure:
 
         # ______________|    position     |   positionD    | angle | angleD |       u       |
         # position  (x) |   xx -> J[0,0]        xv            xt       xo      xu -> J[0,4]
         # positionD (v) |       vx              vv            vt       vo         vu
         # angle     (t) |       tx              tv            tt       to         tu
         # angleD    (o) |   ox -> J[3,0]        ov            ot       oo      ou -> J[3,4]
-    
+
     :param p: Namespace containing environment variables such track length, cart mass and pole mass
     :param s: State vector following the globally defined variable order
     :param u: Force applied on cart in unnormalized range
 
     :returns: A 4x5 numpy.ndarray with all partial derivatives (Jacobian)
     """
-    if isinstance(s, np.ndarray):
-        angle = s[cartpole_state_varname_to_index('angle')]
-        angleD = s[cartpole_state_varname_to_index('angleD')]
-        position = s[cartpole_state_varname_to_index('position')]
-        positionD = s[cartpole_state_varname_to_index('positionD')]
-    elif isinstance(s, SimpleNamespace):
-        angle = s.angle
-        angleD = s.angleD
-        position = s.position
-        positionD = s.positionD
-
-    angle = -angle # todo?
-    angleD = -angleD
-    
-    J = np.zeros(shape=(4, 5), dtype=np.float32)  # Array to keep Jacobian
-    ca = np.cos(angle)
-    sa = np.sin(angle)
-
-    if CARTPOLE_EQUATIONS == 'Marcin-Sharpneat':
-        # Helper function
-        A = m * (ca ** 2) - (k + 1) * (M + m)
-
-        # Jacobian entries
-        J[0, 0] = 0.0  # xx
-
-        J[0, 1] = 1.0  # xv
-
-        J[0, 2] = 0.0  # xt
-
-        J[0, 3] = 0.0  # xo
-
-        J[0, 4] = 0.0  # xu
-
-        J[1, 0] = 0.0  # vx
-
-        J[1, 1] = (k+1) * M_fric / A  # vv
-
-        J[1, 2] = (  - 2.0 * m * ca * sa * (
-                             m * g * sa * ca
-                             - (k + 1) * (u
-                                          + m * L * (angleD ** 2) * sa
-                                          - M_fric * positionD
-                                          )
-                             - (angleD * ca * J_fric)/L
-                                             )
-                  )/(A**2) \
-             - (
-                     + m * g * ((ca ** 2) - (sa ** 2))
-                     - (k+1) * (m * L * (angleD**2) * ca)
-                     - (angleD * (-sa) * J_fric)/L
-                  )/A                                  # vt
-
-        J[1, 3] = (-2.0 * (k+1) * L * angleD * sa * m
-                   - (ca * J_fric)/L) / A              # vo
-
-        J[1, 3] *= (-1)
-
-        J[1, 4] = - (k+1) / A  # vu
-
-        J[2, 0] = 0.0  # tx
-
-        J[2, 1] = 0.0  # tv
-
-        J[2, 2] = 0.0  # tt
-
-        J[2, 3] = 1.0  # to
-
-        J[2, 4] = 0.0  # tu
-
-        J[3, 0] = 0.0  # ox
-
-        J[3, 1] = (- ca * J[1,1]) / ((k+1) * L)  # ov
-
-        J[3, 2] = ( g * ca
-                    - ( J[1,2] * ca
-                       - sa * (( # positionDD
-                            + m * g * sa * ca  # Movement of the cart due to gravity
-                            - ((J_fric * angleD * ca) / L)  # Movement of the cart due to pend' s friction in the joint
-                            - (k + 1) * (
-                                + (m * L * (angleD ** 2) * sa)  # Keeps the Cart-Pole center of mass fixed when pole rotates
-                                - M_fric * positionD  # Braking of the cart due its friction
-                                + u  # Effect of force applied to cart
-                                        )
-                            ) / A
-                            )
-                       )
-                   ) / ((k+1) * L)  # ot
-
-        J[3, 3] = (- ca * J[1,3]   # oo
-                   + J_fric/(m*L)) / ((k+1) * L)
-
-        J[3, 4] = (- ca * J[1,4])/((k+1) * L)   # ou
-
-        J[3,:] *= (-1)
-
-        print('J', J)
-
-        return J
-
-def cartpole_jacobian_auto(s: Union[np.ndarray, SimpleNamespace], u: float):
 
     if isinstance(s, np.ndarray):
         angle = s[cartpole_state_varname_to_index('angle')]
@@ -306,8 +204,6 @@ def cartpole_jacobian_auto(s: Union[np.ndarray, SimpleNamespace], u: float):
     ou = lambdify((x, v, t, o, u_sym, k_sym, M_sym, m_sym, L_sym, J_fric_sym, M_fric_sym, g_sym), sym.diff(oD, u_sym, 1), "numpy")
 
     J = np.zeros(shape=(4, 5), dtype=np.float32)  # Array to keep Jacobian
-    # ca = np.cos(angle)
-    # sa = np.sin(angle)
 
     # Jacobian entries
     J[0, 0] = 0.0  # xx
@@ -334,8 +230,6 @@ def cartpole_jacobian_auto(s: Union[np.ndarray, SimpleNamespace], u: float):
     J[3, 3] = oo(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
     J[3, 4] = ou(position, positionD, angle, angleD, u, k, M, m, L, J_fric, M_fric, g)
 
-    print('J_auto', J)
-
     return J
 
 
@@ -346,7 +240,7 @@ def Q2u(Q):
     In future there might be implemented here a more sophisticated model of a motor driving CartPole
     """
     u = u_max * (
-        Q + controlDisturbance *  rng.standard_normal(size=np.shape(Q), dtype=np.float32) + P_GLOBALS.controlBias
+        Q + controlDisturbance * rng.standard_normal(size=np.shape(Q), dtype=np.float32) + P_GLOBALS.controlBias
     )  # Q is drive -1:1 range, add noise on control
 
     return u
@@ -369,8 +263,7 @@ if __name__ == '__main__':
 
     cartpole_ode(s,u)
     cartpole_jacobian(s,u)
-    cartpole_jacobian_auto(s,u)
-
+    # cartpole_jacobian_auto(s,u)
 
     # Calculate time necessary to evaluate cartpole ODE:
 
