@@ -20,6 +20,18 @@ from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
+from math import fmod
+
+def wrap_angle_rad(angle: float) -> float:
+    Modulo = fmod(angle, 2 * np.pi)  # positive modulo
+    if Modulo < -np.pi:
+        angle = Modulo + 2 * np.pi
+    elif Modulo > np.pi:
+        angle = Modulo - 2 * np.pi
+    else:
+        angle = Modulo
+    return angle
+
 # TODO Why after calibration Cartpole is not at 0 position?
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 
@@ -36,7 +48,8 @@ terminal_check()
 
 CartPoleInstance = Pendulum()
 
-setup_serial_connection(CartPoleInstance, SERIAL_PORT=SERIAL_PORT)
+CartPoleInstance.open(SERIAL_PORT, SERIAL_BAUD)
+# setup_serial_connection(CartPoleInstance, SERIAL_PORT=SERIAL_PORT)
 
 CartPoleInstance.control_mode(False)
 CartPoleInstance.stream_output(False)
@@ -242,6 +255,7 @@ while True:
 
     # Filter
     angle = angle * (angle_smoothing) + (1 - angle_smoothing) * anglePrev
+    angle = wrap_angle_rad(angle)
 
     # Time measurement
     timeNow = time.time()

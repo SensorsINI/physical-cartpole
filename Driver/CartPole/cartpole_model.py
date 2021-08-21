@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from typing import Union
-from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
+from Driver.CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 
 import numpy as np
 from numpy.random import SFC64, Generator
@@ -91,6 +91,11 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
 
     :returns: angular acceleration, horizontal acceleration
     """
+
+    # To compensate for the cw angle convention in SharpNeat
+    angle = -angle
+    angleD = -angleD
+
     ca = np.cos(angle)
     sa = np.sin(angle)
 
@@ -105,7 +110,7 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
         positionDD = (
             (
                 + m * g * sa * ca  # Movement of the cart due to gravity
-                - ((J_fric * (-angleD) * ca) / L)  # Movement of the cart due to pend' s friction in the joint
+                - ((J_fric * angleD * ca) / L)  # Movement of the cart due to pend' s friction in the joint
                 - (k + 1) * (
                     + (m * L * (angleD ** 2) * sa)  # Keeps the Cart-Pole center of mass fixed when pole rotates
                     - M_fric * positionD  # Braking of the cart due its friction
@@ -113,7 +118,7 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
                 )
             ) / A
         )
-
+        print('positionDD', positionDD)
         # Making m go to 0 and setting J_fric=0 (fine for pole without mass)
         # positionDD = (u_max/M)*Q-(M_fric/M)*positionD
         # Compare this with positionDD = a*Q-b*positionD
@@ -123,9 +128,12 @@ def _cartpole_ode(angle, angleD, position, positionD, u):
 
         angleDD = (
             (
-                - g * sa + positionDD * ca - (J_fric * angleD) / (m * L)
+                g * sa - positionDD * ca - (J_fric * angleD) / (m * L)
             ) / ((k + 1) * L)
         )
+
+        angleDD = -angleDD # todo?
+        print('angleDD', angleDD)
 
 
         # making M go to infinity makes angleDD = (g/k*L)sin(angle) - angleD*J_fric/(k*m*L^2)
@@ -178,6 +186,9 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
         angleD = s.angleD
         position = s.position
         positionD = s.positionD
+
+    angle = -angle # todo?
+    angleD = -angleD
     
     J = np.zeros(shape=(4, 5), dtype=np.float32)  # Array to keep Jacobian
     ca = np.cos(angle)
@@ -202,23 +213,25 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
 
         J[1, 1] = (k+1) * M_fric / A  # vv
 
-        J[1, 2] = (    # vt
-                     # 2.0 * (k+1) * u * ca * sa * m
-                     - 2.0 * m * ca * sa * (
-                             m * g * ca * sa
-                             + (angleD * ca * J_fric)/L
-                             -(k+1) * (m * L * (angleD**2) * sa
-                                       -M_fric * angleD
-                                       +u)
-                                             ))/(A**2) \
-             + (
-                     -(k+1) * m * L * (angleD**2) * ca
-                     + m*g * ((ca**2)-(sa**2))
-                     - (angleD * sa * J_fric)/L
-                                                                )/ A
+        J[1, 2] = (  - 2.0 * m * ca * sa * (
+                             m * g * sa * ca
+                             - (k + 1) * (u
+                                          + m * L * (angleD ** 2) * sa
+                                          - M_fric * positionD
+                                          )
+                             - (angleD * ca * J_fric)/L
+                                             )
+                  )/(A**2) \
+             - (
+                     + m * g * ((ca ** 2) - (sa ** 2))
+                     - (k+1) * (m * L * (angleD**2) * ca)
+                     - (angleD * (-sa) * J_fric)/L
+                  )/A                                  # vt
 
-        J[1, 3] = (-2.0 * (k+1) * L * angleD * sa * m  # vo
-              + (ca * J_fric)/L) / A
+        J[1, 3] = (-2.0 * (k+1) * L * angleD * sa * m
+                   - (ca * J_fric)/L) / A              # vo
+
+        J[1, 3] *= (-1)
 
         J[1, 4] = - (k+1) / A  # vu
 
@@ -234,29 +247,31 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
 
         J[3, 0] = 0.0  # ox
 
-        J[3, 1] = (ca * J[1,1]) / ((k+1) * L)  # ov
+        J[3, 1] = (- ca * J[1,1]) / ((k+1) * L)  # ov
 
-        J[3, 2] = ( -g * ca
-                    + J[1,2] * ca
-                    - sa * ( # positionDD
-            (
-                + m * g * sa * ca  # Movement of the cart due to gravity
-                - ((J_fric * (-angleD) * ca) / L)  # Movement of the cart due to pend' s friction in the joint
-                - (k + 1) * (
-                    + (m * L * (angleD ** 2) * sa)  # Keeps the Cart-Pole center of mass fixed when pole rotates
-                    - M_fric * positionD  # Braking of the cart due its friction
-                    + u  # Effect of force applied to cart
-                )
-            ) / A
-        )
-        )/ ((k+1) * L)  # ot
+        J[3, 2] = ( g * ca
+                    - ( J[1,2] * ca
+                       - sa * (( # positionDD
+                            + m * g * sa * ca  # Movement of the cart due to gravity
+                            - ((J_fric * angleD * ca) / L)  # Movement of the cart due to pend' s friction in the joint
+                            - (k + 1) * (
+                                + (m * L * (angleD ** 2) * sa)  # Keeps the Cart-Pole center of mass fixed when pole rotates
+                                - M_fric * positionD  # Braking of the cart due its friction
+                                + u  # Effect of force applied to cart
+                                        )
+                            ) / A
+                            )
+                       )
+                   ) / ((k+1) * L)  # ot
 
+        J[3, 3] = (- ca * J[1,3]   # oo
+                   + J_fric/(m*L)) / ((k+1) * L)
 
-        J[3, 3] = (ca * J[1,3]
-                   - J_fric/(m*L)
-                  ) / ((k+1) * L)             # oo
+        J[3, 4] = (- ca * J[1,4])/((k+1) * L)   # ou
 
-        J[3, 4] = (ca * J[1,4])/((k+1) * L)   # ou
+        J[3,:] *= (-1)
+
+        print('J', J)
 
         return J
 
@@ -294,7 +309,7 @@ if __name__ == '__main__':
 
     f_to_measure = 'angleDD, positionDD = cartpole_ode(s, u)'
     number = 1  # Gives the number of times each timeit call executes the function which we want to measure
-    repeat_timeit = 100000 # Gives how many times timeit should be repeated
+    repeat_timeit = 1 # Gives how many times timeit should be repeated
     timings = timeit.Timer(f_to_measure, globals=globals()).repeat(repeat_timeit, number)
     min_time = min(timings)/float(number)
     max_time = max(timings)/float(number)
@@ -311,7 +326,7 @@ if __name__ == '__main__':
 
     f_to_measure = 'Jacobian = cartpole_jacobian(s, u)'
     number = 1  # Gives the number of times each timeit call executes the function which we want to measure
-    repeat_timeit = 100000 # Gives how many times timeit should be repeated
+    repeat_timeit = 1 # Gives how many times it should be repeated
     timings = timeit.Timer(f_to_measure, globals=globals()).repeat(repeat_timeit, number)
     min_time = min(timings)/float(number)
     max_time = max(timings)/float(number)
@@ -320,7 +335,7 @@ if __name__ == '__main__':
     print('Average time to calculate Jacobian is {} us'.format(average_time*1.0e6))  # ca 16 us
     print('Max time to calculate Jacobian is {} us'.format(max_time * 1.0e6))          # ca. 150 us
 
-    # Calculate once more to prrint the resulting matrix
+    # Calculate once more to print the resulting matrix
     Jacobian = np.around(cartpole_jacobian(s, u), decimals=6)
 
     print()
