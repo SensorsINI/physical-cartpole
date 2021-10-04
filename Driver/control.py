@@ -241,7 +241,6 @@ while True:
     # This function will block at the rate of the control loop
     CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = CartPoleInstance.read_state()
-    # angle count is more positive CCW facing cart
 
     position_centered = position-POSITION_OFFSET
     # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
@@ -250,7 +249,8 @@ while True:
         position_centered = -position_centered
 
     # Convert position and angle to physical units
-    angle = (angle + ANGLE_DEVIATION - ANGLE_ADC_RANGE / 2) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    angle = (angle + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    # print(ANGLE_DEVIATION_FINETUNE)
     position = position_centered * POSITION_NORMALIZATION_FACTOR
 
     # Filter

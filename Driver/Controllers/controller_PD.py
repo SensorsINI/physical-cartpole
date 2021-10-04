@@ -158,14 +158,6 @@ class controller_PD(template_controller):
     def keyboard_input(self, c):
         if c == 'p':
             self.printparams()
-        # Increase Target Angle
-        elif c == '=':
-            self.ANGLE_TARGET += 1
-            print("\nIncreased target angle to {0}".format(self.ANGLE_TARGET))
-        # Decrease Target Angle
-        elif c == '-':
-            self.ANGLE_TARGET -= 1
-            print("\nDecreased target angle to {0}".format(self.ANGLE_TARGET))
         # Angle Gains
         elif c == '2':
             self.ANGLE_KP = inc(self.ANGLE_KP)
