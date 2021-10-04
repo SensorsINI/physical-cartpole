@@ -62,9 +62,11 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['# Units:'])
         writer.writerow(['# time: s'])
         writer.writerow(['# deltaTimeMs: ms'])
+        writer.writerow(['# angle_raw'])
         writer.writerow(['# angle: rad'])
         writer.writerow(['# angleD: rad/s'])
         writer.writerow(['# position: m'])
+        writer.writerow(['# position_raw'])
         writer.writerow(['# positionD: m/s'])
         writer.writerow(['# angleTarget: rad'])
         writer.writerow(['# angleErr: rad'])
@@ -75,7 +77,7 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['#'])
 
         writer.writerow(
-            ['time'] + ['deltaTimeMs'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position'] + [
+            ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
                 'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + [
                 'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'])
 

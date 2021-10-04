@@ -241,6 +241,8 @@ while True:
     # This function will block at the rate of the control loop
     CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
     (angle, position, command) = CartPoleInstance.read_state()
+    angle_raw = angle
+    position_raw  = position
 
     position_centered = position-POSITION_OFFSET
     # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
@@ -361,7 +363,7 @@ while True:
     # TODO Take notice that the csv file is saving the calculatedMotorCmd and not the actualMotorCmd. The actualMotorCmd is after safety switching, and motor linearization of the motor input value (calculatedMotorCmd).
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle_raw, angle, angleDerivative, angle_cos, angle_sin, position_raw, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
 
         # Print outputL
     printCount += 1
