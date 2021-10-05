@@ -112,10 +112,9 @@ class Pendulum:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        self.end = time.time()
 
     def read_state(self):
-        reply = self._receive_reply(CMD_STATE, 19)
+        reply = self._receive_reply(CMD_STATE, 11)
 
         # Verify packet sequence 
         if self.prevPktNum != 1000:
@@ -124,17 +123,12 @@ class Pendulum:
         self.prevPktNum = reply[3]
 
         (angle, position, command) = struct.unpack('hhh', bytes(reply[4:10]))
-        sent, received = struct.unpack('ff', bytes(reply[10:18]))
-        return angle, position, command, sent, received
+        return (angle, position, command)
 
     def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout
-        self.start = False
-
         while True:
             c = self.device.read()
-            if self.start == False:
-                self.start = time.time()
             if len(c) == 0:
                 self.device.timeout = None
                 return []

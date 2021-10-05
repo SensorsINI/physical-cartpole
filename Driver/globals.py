@@ -23,12 +23,17 @@ MOTOR_TYPE = 'POLOLU'
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4095  # Range of angle values #
-ANGLE_HANGING = 3188  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1084  # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING = 3126 # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_DEVIATION = ANGLE_ADC_RANGE - ANGLE_HANGING  # Angle deviation from goal
+
+if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
+    ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to -pi
+else:
+    ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to pi
+
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_HANGING_NORMALIZATION = (ANGLE_DEVIATION + ANGLE_HANGING - ANGLE_ADC_RANGE / 2) * ANGLE_NORMALIZATION_FACTOR  # Should be equal to pi in radians
-ANGLE_DEVIATION_FINETUNE = -0.1099999999999999  # adjust from key commands such that angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0.11999999999999998
+  # adjust from key commands such that angle error is minimized
 
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
@@ -50,7 +55,7 @@ JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENG
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
 # SERIAL_PORT = None  # if None, takes first one available
-SERIAL_PORT = '/dev/ttyUSB2'  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
+SERIAL_PORT = '/dev/ttyUSB1'  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05
