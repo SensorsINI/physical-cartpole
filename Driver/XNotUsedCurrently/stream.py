@@ -180,7 +180,7 @@ while True:
             p.stream_output(True)
 
     # This function will block at the rate of the control loop
-    (angle, position, command) = p.read_state()
+    (angle, position, command, _, _) = p.read_state()
 
     # Print output
     printCount += 1
