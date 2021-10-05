@@ -284,7 +284,6 @@ def cartpole_jacobian(s: Union[np.ndarray, SimpleNamespace], u: float):
         return J
 
 
-
 def Q2u(Q):
     """
     Converts dimensionless motor power [-1,1] to a physical force acting on a cart.

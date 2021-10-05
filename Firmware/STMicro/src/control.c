@@ -186,7 +186,7 @@ void CONTROL_Loop(void)
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;
         buffer[ 2] = 19;
-        buffer[ 3] = some gpacketCnt++;
+        buffer[ 3] = packetCnt++;
         *((short *)&buffer[4]) = angle;
         *((short *)&buffer[6]) = position;
         *((short *)&buffer[8]) = (short)command;
