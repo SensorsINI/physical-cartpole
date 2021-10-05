@@ -72,6 +72,7 @@ set_firmware_parameters(CartPoleInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 printCount = 0
 
 controlEnabled = False
+firmwareControl = False
 manualMotorSetting = False
 
 danceEnabled = False
@@ -167,7 +168,11 @@ while True:
             else:
                 csvfile.close()
                 print("\n Stopped logging data to " + csvfilename)
-
+        elif c == 'u': # toggle firmware control
+            firmwareControl = not firmwareControl
+            print(firmwareControl)
+            print(firmwareControl)
+            CartPoleInstance.control_mode(firmwareControl)
         elif c == 'k':
             if controlEnabled is False:
                 controlEnabled = True
@@ -226,7 +231,7 @@ while True:
             number_of_measurements = 100
             for _ in range(number_of_measurements):
                 CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                (angle, position, command) = CartPoleInstance.read_state()
+                (angle, position, command, sent, received) = CartPoleInstance.read_state()
                 # print('Sensor reading to adjust ANGLE_HANGING', angle)
                 angle_average += angle
             angle_average = angle_average / float(number_of_measurements)
@@ -239,7 +244,7 @@ while True:
 
     # This function will block at the rate of the control loop
     CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-    (angle, position, command) = CartPoleInstance.read_state()
+    (angle, position, command, sent, received) = CartPoleInstance.read_state()
     angle_raw = angle
     position_raw  = position
 
@@ -362,7 +367,7 @@ while True:
     # TODO Take notice that the csv file is saving the calculatedMotorCmd and not the actualMotorCmd. The actualMotorCmd is after safety switching, and motor linearization of the motor input value (calculatedMotorCmd).
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle_raw, angle, angleDerivative, angle_cos, angle_sin, position_raw, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle_raw, angle, angleDerivative, angle_cos, angle_sin, position_raw, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement, sent, received, received-sent, CartPoleInstance.end-CartPoleInstance.start])
 
         # Print outputL
     printCount += 1
@@ -371,7 +376,7 @@ while True:
         positionErr = s[STATE_INDICES['position']] - target_position
         # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
         print(
-            "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
+            "\r angle:{:+6.3f}rad  position:{:+6.3f}cm position error:{:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}  sent:{}, received:{}, latency:{}, python latency:{}     \r"
               .format(angle,
                       position*100,
                       positionErr*100,
@@ -379,7 +384,8 @@ while True:
                       deltaTime * 1000,
                       stickPos,
                       stickControl,
-                      measurement)
+                      measurement,
+                      sent, received, received-sent, CartPoleInstance.end-CartPoleInstance.start)
               , end='')
 # if we pause like below, state info piles up in serial input buffer
 # instead loop at max possible rate to get latest state info
