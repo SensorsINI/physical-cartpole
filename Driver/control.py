@@ -1,5 +1,4 @@
 import time
-
 import numpy as np
 
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
