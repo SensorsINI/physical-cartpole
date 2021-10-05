@@ -9,7 +9,7 @@ from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.pendulum import Pendulum
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.measure import StepResponseMeasurement
-from DriverFunctions.utilities import help, calibrate, terminal_check
+from DriverFunctions.utilities import calibrate, terminal_check
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPole.state_utilities import create_cartpole_state, STATE_INDICES
@@ -35,7 +35,7 @@ def wrap_angle_rad(angle: float) -> float:
 # TODO Why after calibration Cartpole is not at 0 position?
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 
-angle_smoothing = 1.0
+angle_smoothing = 0.8
 # angleD_smoothing = 0.8
 
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
@@ -48,7 +48,8 @@ terminal_check()
 
 CartPoleInstance = Pendulum()
 
-setup_serial_connection(CartPoleInstance, SERIAL_PORT=SERIAL_PORT)
+CartPoleInstance.open(SERIAL_PORT, SERIAL_BAUD)
+# setup_serial_connection(CartPoleInstance, SERIAL_PORT=SERIAL_PORT)
 
 CartPoleInstance.control_mode(False)
 CartPoleInstance.stream_output(False)
@@ -72,7 +73,6 @@ set_firmware_parameters(CartPoleInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 printCount = 0
 
 controlEnabled = False
-firmwareControl = False
 manualMotorSetting = False
 
 danceEnabled = False
@@ -95,7 +95,7 @@ try:
 except AttributeError:
     print('printparams not implemented for this controller.')
 
-help()
+controller.print_help()
 
 startTime = time.time()
 lastTime = startTime
@@ -139,16 +139,16 @@ while True:
             print('\r actual motor command after .', calculatedMotorCmd)
         elif c == ',':  # left
             controlEnabled = False
-            calculatedMotorCmd += 100
+            calculatedMotorCmd -= 100
             manualMotorSetting = True
             print('\r actual motor command after ,', calculatedMotorCmd)
         elif c == '/':  # right
             controlEnabled = False
-            calculatedMotorCmd -= 100
+            calculatedMotorCmd += 100
             manualMotorSetting = True
             print('\r actual motor command after /', calculatedMotorCmd)
         elif c == 'D':
-            # We want the sinusoid to start at predictible (0) position
+            # We want the sinusoid to start at predictable (0) position
             if danceEnabled is True:
                 danceEnabled = False
             else:
@@ -168,11 +168,7 @@ while True:
             else:
                 csvfile.close()
                 print("\n Stopped logging data to " + csvfilename)
-        elif c == 'u': # toggle firmware control
-            firmwareControl = not firmwareControl
-            print(firmwareControl)
-            print(firmwareControl)
-            CartPoleInstance.control_mode(firmwareControl)
+
         elif c == 'k':
             if controlEnabled is False:
                 controlEnabled = True
@@ -186,7 +182,7 @@ while True:
             controlEnabled = False
             POSITION_OFFSET = calibrate(CartPoleInstance)
         elif c == 'h' or c == '?':
-            help()
+            controller.print_help()
         # Fine tune angle deviation
         elif c == '=':
             ANGLE_DEVIATION_FINETUNE += 0.01
@@ -231,7 +227,7 @@ while True:
             number_of_measurements = 100
             for _ in range(number_of_measurements):
                 CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                (angle, position, command, sent, received) = CartPoleInstance.read_state()
+                (angle, position, command) = CartPoleInstance.read_state()
                 # print('Sensor reading to adjust ANGLE_HANGING', angle)
                 angle_average += angle
             angle_average = angle_average / float(number_of_measurements)
@@ -244,8 +240,9 @@ while True:
 
     # This function will block at the rate of the control loop
     CartPoleInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-    (angle, position, command, sent, received) = CartPoleInstance.read_state()
-    # angle count is more positive CCW facing cart
+    (angle, position, command) = CartPoleInstance.read_state()
+    angle_raw = angle
+    position_raw  = position
 
     position_centered = position-POSITION_OFFSET
     # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
@@ -254,7 +251,8 @@ while True:
         position_centered = -position_centered
 
     # Convert position and angle to physical units
-    angle = (angle + ANGLE_DEVIATION - ANGLE_ADC_RANGE / 2) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    angle = (angle + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+    # print(ANGLE_DEVIATION_FINETUNE)
     position = position_centered * POSITION_NORMALIZATION_FACTOR
 
     # Filter
@@ -329,8 +327,8 @@ while True:
             log.warning(f'timeout in measurement: {e}')
 
     # We save motor input BEFORE processing which should linearize (perceived) motor model
-    # TODO: It is not fully cleare if it is the right place for the following line
-    #   I would prefere to have it before "linearization" and after clipping, but lin. goes before clipping
+    # TODO: It is not fully clear if it is the right place for the following line
+    #   I would prefer to have it before "linearization" and after clipping, but lin. goes before clipping
     #   And I didn't want to have clipping twice (maybe I should?)
     actualMotorCmd = calculatedMotorCmd
 
@@ -349,21 +347,23 @@ while True:
     actualMotorCmd = int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  > 0.6*MOTOR_MAX_PWM else actualMotorCmd
     actualMotorCmd = -int(0.6*MOTOR_MAX_PWM) if actualMotorCmd  < -0.6*MOTOR_MAX_PWM else actualMotorCmd
 
-    # Temporary safety switch off if went to the boundary
-    if abs(position_centered)>0.9*(POSITION_ENCODER_RANGE//2):
-        controlEnabled = False
-        controller.controller_reset()
-        danceEnabled = False
-        calculatedMotorCmd = 0
+    if measurement.is_idle(): # switch off boundary safety when measurement mode is active.
+    # Temporary safety switch off if goes to the boundary
+        if abs(position_centered)>0.9*(POSITION_ENCODER_RANGE//2):
+            controlEnabled = False
+            controller.controller_reset()
+            danceEnabled = False
+            actualMotorCmd = 0
 
     # Reverse sign if you are using pololu motor and not the original one
     if MOTOR_TYPE == 'POLOLU':
         actualMotorCmd = -actualMotorCmd
 
     CartPoleInstance.set_motor(actualMotorCmd)
+    # TODO Take notice that the csv file is saving the calculatedMotorCmd and not the actualMotorCmd. The actualMotorCmd is after safety switching, and motor linearization of the motor input value (calculatedMotorCmd).
 
     if loggingEnabled:
-        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle, angleDerivative, angle_cos, angle_sin, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement, sent, received, received-sent, CartPoleInstance.end-CartPoleInstance.start])
+        csvwriter.writerow([elapsedTime, deltaTime * 1000, angle_raw, angle, angleDerivative, angle_cos, angle_sin, position_raw, position, positionDerivative, controller.ANGLE_TARGET, controller.angleErr, target_position, controller.positionErr, controller.angleCmd, controller.positionCmd, calculatedMotorCmd, calculatedMotorCmd/MOTOR_FULL_SCALE, stickControl, stickPos, measurement])
 
         # Print outputL
     printCount += 1
@@ -372,7 +372,7 @@ while True:
         positionErr = s[STATE_INDICES['position']] - target_position
         # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
         print(
-            "\r angle:{:+6.3f}rad  position:{:+6.3f}cm position error:{:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}  sent:{}, received:{}, latency:{}, python latency:{}     \r"
+            "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  stick {:.3f}:{} meas={}        \r"
               .format(angle,
                       position*100,
                       positionErr*100,
@@ -380,8 +380,7 @@ while True:
                       deltaTime * 1000,
                       stickPos,
                       stickControl,
-                      measurement,
-                      sent, received, received-sent, CartPoleInstance.end-CartPoleInstance.start)
+                      measurement)
               , end='')
 # if we pause like below, state info piles up in serial input buffer
 # instead loop at max possible rate to get latest state info

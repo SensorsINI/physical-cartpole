@@ -1,6 +1,6 @@
 """
 This script finds the parameters of cartpole pole
-We assume that cartpole is immobilized. The equations boils down to:
+We assume that cart is immobilized. The equations boils down to:
 angleDD * moment_of_inertia = -mg(L/2)sin(angle) - J_friction * angleD
 moment_of_inertia = k*m*L^2
 angleDD = (-g/(2kL)) * sin(angle) - J_friction/(kmL^2) * angleD
