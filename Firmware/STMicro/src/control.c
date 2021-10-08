@@ -4,7 +4,6 @@
 #include "led.h"
 #include "usart.h"
 #include "control.h"
-#include "timer.h"
 
 // Command set
 #define SERIAL_MAX_PKT_LENGTH		32
@@ -42,7 +41,6 @@ unsigned short 	positionPeriodCnt;
 int			positionCentre;
 int			positionLimitLeft;
 int			positionLimitRight;
-float      timeSent = 0, timeReceived = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[32];
@@ -86,7 +84,7 @@ void CONTROL_Loop(void)
     static int              positionCmd     = 0;
     static unsigned char	packetCnt       = 0;
     static unsigned int     stopCnt         = 0;
-	static unsigned char	buffer[30];
+	static unsigned char	buffer[11];
 	unsigned int 			angleAccum;
 	unsigned short 			i;
 	short 					angle, angleErr;
@@ -176,25 +174,21 @@ void CONTROL_Loop(void)
 	else
 	{
 		command = 0;
-        stopCnt = 0;
+    stopCnt = 0;
 	}
 
 	// Send latest state to the PC
     if (streamEnable)
     {
-        //float latency = timeSent - timeReceived;
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;
-        buffer[ 2] = 19;
+        buffer[ 2] = 11;
         buffer[ 3] = packetCnt++;
         *((short *)&buffer[4]) = angle;
         *((short *)&buffer[6]) = position;
         *((short *)&buffer[8]) = (short)command;
-        *((float *)&buffer[10]) = timeSent;
-        *((float *)&buffer[14]) = timeReceived;
-        buffer[18] = crc(buffer, 18);
-        USART_SendBuffer(buffer, 19);
-        timeSent = TIMER1_getSystemTime();
+        buffer[10] = crc(buffer, 10);
+        USART_SendBuffer(buffer, 11);
     }
 
 	// Flash LED every second (500 ms on, 500 ms off)
@@ -327,7 +321,6 @@ void CONTROL_BackgroundTask(void)
 							{
 								if (pktLen == 6)
 								{
-									timeReceived = TIMER1_getSystemTime();
 									motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 									cmd_SetMotor(motorCmd);
 								}
