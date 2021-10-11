@@ -47,6 +47,7 @@ class PhysicalCartPoleDriver:
         self.printCount = 0
 
         self.controlEnabled = False
+        self.firmwareControl = False
         self.manualMotorSetting = False
 
         self.danceEnabled = False
@@ -75,6 +76,9 @@ class PhysicalCartPoleDriver:
         self.csvfilename = None
         self.csvwriter = None
 
+        self.angle_raw = 0.0
+        self.position_raw = 0.0
+
         self.anglePrev = 0.0
         self.positionPrev = 0.0
 
@@ -95,6 +99,10 @@ class PhysicalCartPoleDriver:
         # Joystick variable
         self.stickPos = None
         self.stickControl = None
+
+        self.command = None
+        self.sent = None
+        self.received = None
 
     def run(self):
         self.setup()
@@ -237,7 +245,11 @@ class PhysicalCartPoleDriver:
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
-
+            elif c == 'u':  # toggle firmware control
+                firmwareControl = not firmwareControl
+                print(firmwareControl)
+                print(firmwareControl)
+                CartPoleInstance.control_mode(firmwareControl)
             elif c == 'k':
                 if self.controlEnabled is False:
                     self.controlEnabled = True
@@ -296,7 +308,7 @@ class PhysicalCartPoleDriver:
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
                     self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                    (angle, _, _) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _) = CartPoleInstance.read_state()
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
@@ -311,7 +323,7 @@ class PhysicalCartPoleDriver:
 
         # This function will block at the rate of the control loop
         self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-        (self.angle_raw, self.position_raw, _) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.position_raw, self.command, self.sent, self.received) = CartPoleInstance.read_state()
 
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
         # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
@@ -435,7 +447,8 @@ class PhysicalCartPoleDriver:
              self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
              self.target_position, self.controller.positionErr, self.controller.angleCmd,
              self.controller.positionCmd, self.calculatedMotorCmd, self.calculatedMotorCmd / MOTOR_FULL_SCALE,
-             self.stickControl, self.stickPos, self.measurement])
+             self.stickControl, self.stickPos, self.measurement,
+             self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start])
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
@@ -444,7 +457,7 @@ class PhysicalCartPoleDriver:
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
-                "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
+                "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}  sent:{}, received:{}, latency:{}, python latency:{}     \r"
                     .format(self.s[ANGLE_IDX],
                             self.s[POSITION_IDX] * 100,
                             self.positionErr * 100,
@@ -452,7 +465,8 @@ class PhysicalCartPoleDriver:
                             self.deltaTime * 1000,
                             self.stickPos,
                             self.stickControl,
-                            self.measurement)
+                            self.measurement,
+                            self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start)
                 , end='')
         
 

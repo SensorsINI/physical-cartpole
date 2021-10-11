@@ -22,8 +22,11 @@ class Interface:
         self.msg            = []
         self.prevPktNum     = 1000
 
+        self.start = None
+        self.end = None
+
     def open(self, port, baud):
-        self.device         = serial.Serial(port, baudrate=baud, timeout=None)
+        self.device = serial.Serial(port, baudrate=baud, timeout=None)
         self.device.reset_input_buffer()
 
     def close(self):
