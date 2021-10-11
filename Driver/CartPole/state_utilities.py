@@ -3,32 +3,25 @@ import numpy as np
 
 
 STATE_VARIABLES = np.sort(
-    [
-        "angle",
-        "angleD",
-        "angle_cos",
-        "angle_sin",
-        "angleDD",
-        "position",
-        "positionD",
-        "positionDD",
-    ]
+    ["angle", "angleD", "angle_cos", "angle_sin", "position", "positionD",]
 )
 
-STATE_VARIABLES_REDUCED = np.sort(
-    ['angle',
-     'angleD',
-     'angle_cos',
-     'angle_sin',
-     'position',
-     'positionD',
-     ]
-)
+STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}
 
-STATE_INDICES = {x: np.where(STATE_VARIABLES==x)[0][0] for x in STATE_VARIABLES}
-STATE_INDICES_REDUCED = {x: np.where(STATE_VARIABLES_REDUCED==x)[0][0] for x in STATE_VARIABLES_REDUCED}
+CONTROL_INPUTS = np.sort(["Q"])
 
-def create_cartpole_state(state: dict={}, dtype=None) -> np.ndarray:
+CONTROL_INDICES = {x: np.where(CONTROL_INPUTS == x)[0][0] for x in CONTROL_INPUTS}
+
+"""Define indices of values in state statically"""
+ANGLE_IDX = STATE_INDICES["angle"].item()
+ANGLED_IDX = STATE_INDICES["angleD"].item()
+POSITION_IDX = STATE_INDICES["position"].item()
+POSITIOND_IDX = STATE_INDICES["positionD"].item()
+ANGLE_COS_IDX = STATE_INDICES["angle_cos"].item()
+ANGLE_SIN_IDX = STATE_INDICES["angle_sin"].item()
+
+
+def create_cartpole_state(state: dict = {}, dtype=None) -> np.ndarray:
     """
     Constructor of cartpole state from named arguments. The order of variables is fixed in STATE_VARIABLES.
 
@@ -37,10 +30,8 @@ def create_cartpole_state(state: dict={}, dtype=None) -> np.ndarray:
 
     :param angle: Pole angle. 0 means pole is upright. Clockwise angle rotation is defined as negative.
     :param angleD: Angular velocity of pole.
-    :param angleDD: Angular acceleration of pole.
     :param position: Horizontal position of pole.
     :param positionD: Horizontal velocity of pole. Cart movement to the right is positive.
-    :param positionDD: Horizontal acceleration of pole.
 
     :returns: A numpy.ndarray with values filled in order set by STATE_VARIABLES
     """
@@ -60,6 +51,7 @@ def create_cartpole_state(state: dict={}, dtype=None) -> np.ndarray:
     return s
 
 
+# THE FUNCTIONS BELOW ARE POTENTIALLY SLOW!
 def cartpole_state_varname_to_index(variable_name: str) -> int:
     return STATE_INDICES[variable_name]
 
@@ -100,7 +92,7 @@ def cartpole_state_vector_to_namespace(s_vector: np.ndarray) -> SimpleNamespace:
 
 # # Test functions
 # s = create_cartpole_state(dict(angleD=12.1, angleDD=-33.5, position=2.3, positionD=-19.77, positionDD=3.42))
-# s[cartpole_state_varname_to_index('positionD')] = -14.9
+# s[POSITIOND_IDX] = -14.9
 # cartpole_state_index_to_varname(4)
 
 # sn = SimpleNamespace()

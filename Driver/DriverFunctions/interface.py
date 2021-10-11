@@ -16,7 +16,7 @@ CMD_GET_POSITION_CONFIG = 0xC7
 CMD_SET_MOTOR           = 0xC8
 CMD_STATE               = 0xCC
 
-class Pendulum:
+class Interface:
     def __init__(self):
         self.device         = None
         self.msg            = []
