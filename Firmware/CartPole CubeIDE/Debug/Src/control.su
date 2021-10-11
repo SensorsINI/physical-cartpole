@@ -1,0 +1,17 @@
+core_cm3.h:1204:22:__enable_irq	4	static,ignoring_inline_asm
+core_cm3.h:1205:22:__disable_irq	4	static,ignoring_inline_asm
+control.c:62:6:CONTROL_Init	8	static
+control.c:75:6:CONTROL_ToggleState	8	static
+control.c:81:6:CONTROL_Loop	56	static
+control.c:210:6:CONTROL_BackgroundTask	32	static
+control.c:381:6:cmd_Ping	16	static
+control.c:388:6:cmd_StreamOutput	16	static
+control.c:395:6:cmd_Calibrate	32	static
+control.c:470:6:cmd_ControlMode	16	static
+control.c:495:6:cmd_SetAngleConfig	16	static
+control.c:507:6:cmd_GetAngleConfig	8	static
+control.c:524:6:cmd_SetPositionConfig	16	static
+control.c:538:6:cmd_GetPositionConfig	16	static
+control.c:559:6:cmd_SetMotor	24	static
+control.c:583:15:crc	32	static
+control.c:607:6:crcIsValid	24	static

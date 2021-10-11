@@ -1,0 +1,5 @@
+key.c:9:6:KEY_Init	8	static
+key.c:36:6:KEY_SetCallback	16	static
+key.c:49:6:EXTI2_IRQHandler	8	static
+key.c:64:6:EXTI9_5_IRQHandler	8	static
+key.c:88:6:EXTI15_10_IRQHandler	8	static

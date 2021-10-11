@@ -1,0 +1,3 @@
+motor.c:4:6:MOTOR_Init	4	static
+motor.c:33:6:MOTOR_Stop	4	static
+motor.c:40:6:MOTOR_SetSpeed	16	static

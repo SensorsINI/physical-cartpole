@@ -1,0 +1,4 @@
+timer.c:8:6:TIMER1_Init	16	static
+timer.c:23:6:TIMER1_SetCallback	16	static
+timer.c:28:7:TIMER1_getSystemTime	16	static
+timer.c:33:6:TIM1_UP_IRQHandler	8	static

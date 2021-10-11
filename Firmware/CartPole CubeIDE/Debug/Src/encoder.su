@@ -1,0 +1,3 @@
+encoder.c:4:6:ENCODER_Init	8	static
+encoder.c:32:7:ENCODER_Read	4	static
+encoder.c:41:6:TIM4_IRQHandler	4	static

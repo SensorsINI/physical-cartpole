@@ -65,7 +65,7 @@ class Interface:
         return self._receive_reply(CMD_CALIBRATE, 4, CALIBRATE_TIMEOUT) == msg
 
     def control_mode(self, en):
-        msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, en]
+        msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()

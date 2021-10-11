@@ -1,0 +1,3 @@
+angle.c:3:6:ANGLE_Init	4	static
+angle.c:42:16:ANGLE_Read	4	static
+angle.c:52:16:ANGLE_ReadAvergage	24	static
