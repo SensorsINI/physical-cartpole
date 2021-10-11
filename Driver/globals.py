@@ -23,7 +23,7 @@ MOTOR_TYPE = 'POLOLU'
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4095  # Range of angle values #
-ANGLE_HANGING = 1084  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1015.95  # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING = 3126 # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
@@ -54,7 +54,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENGTH / POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
-SERIAL_PORT = '/dev/tty.usbserial-14210'  # if None, takes first one available
+SERIAL_PORT = '/dev/ttyUSB1'  # if None, takes first one available
 # SERIAL_PORT = '/dev/ttyUSB1'  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 

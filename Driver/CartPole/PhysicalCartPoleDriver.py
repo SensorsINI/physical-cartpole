@@ -246,10 +246,9 @@ class PhysicalCartPoleDriver:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
             elif c == 'u':  # toggle firmware control
-                firmwareControl = not firmwareControl
-                print(firmwareControl)
-                print(firmwareControl)
-                CartPoleInstance.control_mode(firmwareControl)
+                self.firmwareControl = not self.firmwareControl
+                print("Firmware Control", self.firmwareControl)
+                self.InterfaceInstance.control_mode(self.firmwareControl)
             elif c == 'k':
                 if self.controlEnabled is False:
                     self.controlEnabled = True
@@ -308,7 +307,7 @@ class PhysicalCartPoleDriver:
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
                     self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                    (angle, _, _, _, _) = CartPoleInstance.read_state()
+                    (angle, _, _, _, _) = self.InterfaceInstance.read_state()
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
@@ -323,7 +322,7 @@ class PhysicalCartPoleDriver:
 
         # This function will block at the rate of the control loop
         self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-        (self.angle_raw, self.position_raw, self.command, self.sent, self.received) = CartPoleInstance.read_state()
+        (self.angle_raw, self.position_raw, self.command, self.sent, self.received) = self.InterfaceInstance.read_state()
 
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
         # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
