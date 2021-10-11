@@ -36,14 +36,12 @@ class controller_PD(template_controller):
 
         self.ANGLE_TARGET = 0.0
 
-        # self.ANGLE_SMOOTHING = 0.0
         self.ANGLE_KP = 0.0
         self.ANGLE_KD = 0.0
         self.ANGLE_KI = 0.0
 
         self.POSITION_TARGET = 0
 
-        self.POSITION_SMOOTHING = 0.0
         self.POSITION_KP = 0.0
         self.POSITION_KD = 0.0
         self.POSITION_KI = 0.0
@@ -60,14 +58,11 @@ class controller_PD(template_controller):
             diffFactor = 1.0
         else:
             diffFactor = CONTROL_PERIOD_MS / (time - self.time_last) / 1000
-            # print(diffFactor)
-            #diffFactor = 0.005
+
         self.time_last = time
-        #print(diffFactor)
 
         self.POSITION_TARGET = target_position
 
-        # self.positionErr = self.POSITION_SMOOTHING * (s[cartpole_state_varname_to_index('position')] - target_position) + (1.0 - self.POSITION_SMOOTHING) * self.positionErrPrev  # First order low-P=pass filter
         self.positionErr = (s[cartpole_state_varname_to_index('position')] - target_position)
         positionErrDiff = (self.positionErr - self.positionErrPrev) * diffFactor
         self.positionErrPrev = self.positionErr
@@ -88,7 +83,6 @@ class controller_PD(template_controller):
         # KP and KI with "-" acts attractive towards the target position
         self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff + self.POSITION_KI * self.positionErr_integral*(CONTROL_PERIOD_MS/1.0e3)
 
-        # self.angleErr = self.ANGLE_SMOOTHING * (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET) + (1.0 - self.ANGLE_SMOOTHING) * self.angleErrPrev  # First order low-pass filter
         self.angleErr = (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET)
         angleErrDiff = (self.angleErr - self.angleErrPrev) * diffFactor  # correct for actual sample interval; if interval is too long, reduce diff error
         self.angleErrPrev = self.angleErr
@@ -134,8 +128,6 @@ class controller_PD(template_controller):
             self.POSITION_KP = p['POSITION_KP']
             self.POSITION_KI = p['POSITION_KI']
             self.POSITION_KD = p['POSITION_KD']
-            # self.ANGLE_SMOOTHING = p['ANGLE_SMOOTHING']
-            # self.POSITION_SMOOTHING = p['POSITION_SMOOTHING']
         except Exception as e:
             print(f"\nsomething went wrong loading parameters: {e}")
             return
@@ -152,14 +144,12 @@ class controller_PD(template_controller):
         p['POSITION_KP'] = self.POSITION_KP
         p['POSITION_KI'] = self.POSITION_KI
         p['POSITION_KD'] = self.POSITION_KD
-        # p['ANGLE_SMOOTHING'] = self.ANGLE_SMOOTHING
-        # p['POSITION_SMOOTHING'] = self.POSITION_SMOOTHING
         with open('control.json', 'w') as f:
             json.dump(p, f)
 
     def keyboard_input(self, c):
         if c == 'p':
-            self.printparams()
+            self.printparams(self.ANGLE_SMOOTHING, self.POSITION_SMOOTHING)
         # Angle Gains
         elif c == '2':
             self.ANGLE_KP = inc(self.ANGLE_KP)
@@ -179,17 +169,6 @@ class controller_PD(template_controller):
         elif c == 'a':
             self.ANGLE_KD = dec(self.ANGLE_KD)
             print("\nDecreased angle KD {0}".format(self.ANGLE_KD))
-        # elif c == 'x':
-        #     self.ANGLE_SMOOTHING = dec(self.ANGLE_SMOOTHING)
-        #     if self.ANGLE_SMOOTHING > 1:
-        #         self.ANGLE_SMOOTHING = 1
-        #     print("\nIncreased ANGLE_SMOOTHING {0}".format(self.ANGLE_SMOOTHING))
-        # elif c == 'z':
-        #     self.ANGLE_SMOOTHING = inc(self.ANGLE_SMOOTHING)
-        #     if self.ANGLE_SMOOTHING > 1:
-        #         self.ANGLE_SMOOTHING = 1
-        #     print("\nDecreased ANGLE_SMOOTHING {0}".format(self.ANGLE_SMOOTHING))
-
         # Position Gains
         elif c == '4':
             self.POSITION_KP = inc(self.POSITION_KP)
@@ -209,16 +188,6 @@ class controller_PD(template_controller):
         elif c == 'd':
             self.POSITION_KD = dec(self.POSITION_KD)
             print("\nDecreased position KD {0}".format(self.POSITION_KD))
-        # elif c == 'v':
-        #     self.POSITION_SMOOTHING = dec(self.POSITION_SMOOTHING)
-        #     if self.POSITION_SMOOTHING > 1:
-        #         self.POSITION_SMOOTHING = 1
-        #     print("\nIncreased POSITION_SMOOTHING {0}".format(self.POSITION_SMOOTHING))
-        # elif c == 'c':
-        #     self.POSITION_SMOOTHING = inc(self.POSITION_SMOOTHING)
-        #     if self.POSITION_SMOOTHING > 1:
-        #         self.POSITION_SMOOTHING = 1
-        #     print("\nDecreased POSITION_SMOOTHING {0}".format(self.POSITION_SMOOTHING))
         elif c == 'S':
             self.saveparams()
         elif c == 'L':
