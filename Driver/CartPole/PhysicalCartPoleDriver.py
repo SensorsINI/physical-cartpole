@@ -39,6 +39,7 @@ class PhysicalCartPoleDriver:
 
         # Filters
         self.angle_smoothing = 0.8
+        self.position_smoothing = 1.0 # position smoothing turned off
 
         # Joystick variables
         self.stick = None
@@ -131,7 +132,7 @@ class PhysicalCartPoleDriver:
         set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 
         try:
-            self.controller.printparams()
+            self.controller.printparams(self.angle_smoothing, self.position_smoothing)
         except AttributeError:
             print('printparams not implemented for this self.controller.')
 
@@ -201,7 +202,27 @@ class PhysicalCartPoleDriver:
             except AttributeError:
                 pass
             # FIXME ,./ commands not working as intended - control overwrites motor value
-            if c == '.':  # zero motor
+            if c == 'x':
+                self.angle_smoothing = dec(self.angle_smoothing)
+                if self.angle_smoothing > 1:
+                    self.angle_smoothing = 1
+                print("\nIncreased ANGLE_SMOOTHING {0}".format(self.angle_smoothing))
+            elif c == 'z':
+                self.angle_smoothing = inc(self.angle_smoothing)
+                if self.angle_smoothing > 1:
+                    self.angle_smoothing = 1
+                print("\nDecreased ANGLE_SMOOTHING {0}".format(self.angle_smoothing))
+            elif c == 'v':
+                self.position_smoothing= dec(self.position_smoothing)
+                if self.position_smoothing > 1:
+                    self.position_smoothing = 1
+                print("\nIncreased POSITION_SMOOTHING {0}".format(self.position_smoothing))
+            elif c == 'c':
+                self.position_smoothing = inc(self.position_smoothing)
+                if self.position_smoothing > 1:
+                    self.position_smoothing = 1
+                print("\nDecreased POSITION_SMOOTHING {0}".format(self.position_smoothing))
+            elif c == '.':  # zero motor
                 self.controlEnabled = False
                 self.calculatedMotorCmd = 0
                 self.manualMotorSetting = False

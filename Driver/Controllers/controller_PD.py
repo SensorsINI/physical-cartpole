@@ -36,7 +36,7 @@ class controller_PD(template_controller):
 
         self.ANGLE_TARGET = 0.0
 
-        self.ANGLE_SMOOTHING = 0.0
+        # self.ANGLE_SMOOTHING = 0.0
         self.ANGLE_KP = 0.0
         self.ANGLE_KD = 0.0
         self.ANGLE_KI = 0.0
@@ -105,7 +105,9 @@ class controller_PD(template_controller):
         motorCmd = self.angleCmd + self.positionCmd  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
         return motorCmd
 
-    def printparams(self):
+    def printparams(self, ANGLE_SMOOTHING, POSITION_SMOOTHING):
+        self.ANGLE_SMOOTHING = ANGLE_SMOOTHING
+        self.POSITION_SMOOTHING = POSITION_SMOOTHING
         print("\nAngle PID Control Parameters")
         print("    Set point       {0}".format(self.ANGLE_TARGET))
         print("    Smoothing       {0:.2f}".format(self.ANGLE_SMOOTHING))
@@ -132,13 +134,13 @@ class controller_PD(template_controller):
             self.POSITION_KP = p['POSITION_KP']
             self.POSITION_KI = p['POSITION_KI']
             self.POSITION_KD = p['POSITION_KD']
-            self.ANGLE_SMOOTHING = p['ANGLE_SMOOTHING']
-            self.POSITION_SMOOTHING = p['POSITION_SMOOTHING']
+            # self.ANGLE_SMOOTHING = p['ANGLE_SMOOTHING']
+            # self.POSITION_SMOOTHING = p['POSITION_SMOOTHING']
         except Exception as e:
             print(f"\nsomething went wrong loading parameters: {e}")
             return
         print("success, parameters are")
-        self.printparams()
+        self.printparams(self.ANGLE_SMOOTHING, self.POSITION_SMOOTHING)
 
     def saveparams(self):
         print(f"\nSaving parameters to {PARAMS_JSON_FILE}")
@@ -150,8 +152,8 @@ class controller_PD(template_controller):
         p['POSITION_KP'] = self.POSITION_KP
         p['POSITION_KI'] = self.POSITION_KI
         p['POSITION_KD'] = self.POSITION_KD
-        p['ANGLE_SMOOTHING'] = self.ANGLE_SMOOTHING
-        p['POSITION_SMOOTHING'] = self.POSITION_SMOOTHING
+        # p['ANGLE_SMOOTHING'] = self.ANGLE_SMOOTHING
+        # p['POSITION_SMOOTHING'] = self.POSITION_SMOOTHING
         with open('control.json', 'w') as f:
             json.dump(p, f)
 
@@ -177,16 +179,16 @@ class controller_PD(template_controller):
         elif c == 'a':
             self.ANGLE_KD = dec(self.ANGLE_KD)
             print("\nDecreased angle KD {0}".format(self.ANGLE_KD))
-        elif c == 'x':
-            self.ANGLE_SMOOTHING = dec(self.ANGLE_SMOOTHING)
-            if self.ANGLE_SMOOTHING > 1:
-                self.ANGLE_SMOOTHING = 1
-            print("\nIncreased ANGLE_SMOOTHING {0}".format(self.ANGLE_SMOOTHING))
-        elif c == 'z':
-            self.ANGLE_SMOOTHING = inc(self.ANGLE_SMOOTHING)
-            if self.ANGLE_SMOOTHING > 1:
-                self.ANGLE_SMOOTHING = 1
-            print("\nDecreased ANGLE_SMOOTHING {0}".format(self.ANGLE_SMOOTHING))
+        # elif c == 'x':
+        #     self.ANGLE_SMOOTHING = dec(self.ANGLE_SMOOTHING)
+        #     if self.ANGLE_SMOOTHING > 1:
+        #         self.ANGLE_SMOOTHING = 1
+        #     print("\nIncreased ANGLE_SMOOTHING {0}".format(self.ANGLE_SMOOTHING))
+        # elif c == 'z':
+        #     self.ANGLE_SMOOTHING = inc(self.ANGLE_SMOOTHING)
+        #     if self.ANGLE_SMOOTHING > 1:
+        #         self.ANGLE_SMOOTHING = 1
+        #     print("\nDecreased ANGLE_SMOOTHING {0}".format(self.ANGLE_SMOOTHING))
 
         # Position Gains
         elif c == '4':
@@ -207,16 +209,16 @@ class controller_PD(template_controller):
         elif c == 'd':
             self.POSITION_KD = dec(self.POSITION_KD)
             print("\nDecreased position KD {0}".format(self.POSITION_KD))
-        elif c == 'v':
-            self.POSITION_SMOOTHING = dec(self.POSITION_SMOOTHING)
-            if self.POSITION_SMOOTHING > 1:
-                self.POSITION_SMOOTHING = 1
-            print("\nIncreased POSITION_SMOOTHING {0}".format(self.POSITION_SMOOTHING))
-        elif c == 'c':
-            self.POSITION_SMOOTHING = inc(self.POSITION_SMOOTHING)
-            if self.POSITION_SMOOTHING > 1:
-                self.POSITION_SMOOTHING = 1
-            print("\nDecreased POSITION_SMOOTHING {0}".format(self.POSITION_SMOOTHING))
+        # elif c == 'v':
+        #     self.POSITION_SMOOTHING = dec(self.POSITION_SMOOTHING)
+        #     if self.POSITION_SMOOTHING > 1:
+        #         self.POSITION_SMOOTHING = 1
+        #     print("\nIncreased POSITION_SMOOTHING {0}".format(self.POSITION_SMOOTHING))
+        # elif c == 'c':
+        #     self.POSITION_SMOOTHING = inc(self.POSITION_SMOOTHING)
+        #     if self.POSITION_SMOOTHING > 1:
+        #         self.POSITION_SMOOTHING = 1
+        #     print("\nDecreased POSITION_SMOOTHING {0}".format(self.POSITION_SMOOTHING))
         elif c == 'S':
             self.saveparams()
         elif c == 'L':
