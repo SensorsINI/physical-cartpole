@@ -35,14 +35,16 @@ float 			position_KD			= CONTROL_POSITION_KD;
 volatile bool 	controlEnabled;
 bool            isCalibrated;
 unsigned short  ledPeriod;
-unsigned short  angleSamples[64];
+short 			angleSamples[64];
+short			rotation_count = 0;
+
 short			angleErrPrev;
 short			positionErrPrev;
 unsigned short 	positionPeriodCnt;
-int			positionCentre;
-int			positionLimitLeft;
-int			positionLimitRight;
-float      timeSent = 0, timeReceived = 0;
+int			    positionCentre;
+int			    positionLimitLeft;
+int			    positionLimitRight;
+float           timeSent = 0, timeReceived = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[32];
@@ -101,9 +103,18 @@ void CONTROL_Loop(void)
 	{
 		angleAccum += angleSamples[i];
 	}
+	rotation_count = 0;
+
 	angle 		= (short)(angleAccum / angle_averageLen);
 	positionRaw = (short)ENCODER_Read();
     position    = positionRaw - positionCentre;
+
+	if (angle > 4095){
+		angle =  angle-4096;
+	}
+	if (angle < 0){
+		angle =  angle+4096;
+	}
 
 	// Microcontroller Control Routine
 	if (controlEnabled)
@@ -211,6 +222,9 @@ void CONTROL_BackgroundTask(void)
 {
 	static unsigned short 	angleSampIndex 	= 0;
 	static unsigned int 	rxCnt			= 0;
+	static short 			angle_previous = 0;
+	short			        angle_current = 0;
+	short		        	angle_difference = 0;
 	unsigned int			i;
 	unsigned int 			idx;
 	unsigned int			pktLen;
@@ -219,7 +233,19 @@ void CONTROL_BackgroundTask(void)
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	angleSamples[angleSampIndex++] = ANGLE_Read();
+	angle_current = ANGLE_Read();
+
+	angle_difference = angle_current-angle_previous;
+	if (angle_difference > 2000){
+		rotation_count -= 1;
+	}
+	if (angle_difference < -2000){
+		rotation_count += 1;
+	}
+
+	angleSamples[angleSampIndex++] = angle_current + rotation_count*4096;
+	angle_previous = angle_current;
+
 	if (angleSampIndex >= angle_averageLen)
 	{
 		angleSampIndex = 0;
