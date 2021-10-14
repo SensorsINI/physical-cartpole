@@ -39,7 +39,7 @@ float 			position_KD			= CONTROL_POSITION_KD;
 volatile bool 	controlEnabled;
 bool            isCalibrated;
 unsigned short  ledPeriod;
-short 			angleSamples[64];
+int 			angleSamples[64];
 short			rotation_count = 0;
 
 short			angleErrPrev;
@@ -66,6 +66,8 @@ void 			cmd_SetPositionConfig(const unsigned char * config);
 void 			cmd_GetPositionConfig(void);
 void 			cmd_SetMotor(int motorCmd);
 
+unsigned short 	angleSampIndex 	= 0;
+
 void CONTROL_Init(void)
 {
 	controlEnabled		= false;
@@ -86,7 +88,7 @@ void CONTROL_ToggleState(void)
 
 const int ADC_RANGE = 4096;
 
-int wrap(int angle) {
+/*int wrap(int angle) {
     if (angle > 4095){
 		angle = angle-4096;
 	}
@@ -97,15 +99,30 @@ int wrap(int angle) {
 }
 
 int unwrap(int previous, int current) {
-	int diff = current-previous;
-	int rotation_count = 0;
+	short diff = current-previous;
 
-	if (diff > 2000)
-		rotation_count = -1;
-	if (diff < -2000)
-		rotation_count = 1;
+	if (diff > ADC_RANGE/2)
+		rotation_count--;
+	if (diff < -ADC_RANGE/2)
+		rotation_count++;
 
 	return current + rotation_count*4096;
+}*/
+
+int wrap(int current) {
+	if(current > 0)
+		return current - ADC_RANGE * (current / ADC_RANGE);
+	else
+		return current + ADC_RANGE * (current / ADC_RANGE + 1);
+}
+
+
+int unwrap(int previous, int current) {
+    int diff = previous-current;
+	if (diff>0)
+    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE + 1) / 2);
+	else
+    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE - 1) / 2);
 }
 
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
@@ -120,7 +137,7 @@ void CONTROL_Loop(void)
 	static unsigned char	buffer[30];
 	int 					angleAccum;
 	unsigned short 			i;
-	short 					angle, angleErr;
+	int 					angle, angleErr;
 	short 					positionRaw, position, positionErr;
 	float 					angleErrDiff;
 	float 					positionErrDiff;
@@ -133,7 +150,8 @@ void CONTROL_Loop(void)
 	}
 	rotation_count = 0;
 
-	angle 		= (short)(angleAccum / angle_averageLen);
+	//angle 		= wrap(angleAccum / angle_averageLen);
+	angle = angleSamples[angleSampIndex] + 4000;
 	positionRaw = (short)ENCODER_Read();
     position    = positionRaw - positionCentre;
 
@@ -240,38 +258,35 @@ void CONTROL_Loop(void)
 	}
 }
 
+
 void CONTROL_BackgroundTask(void)
 {
-	static unsigned short 	angleSampIndex 	= 0;
 	static unsigned int 	rxCnt			= 0;
-	static short 			angle_previous = 0;
-	short			        angle_current = 0;
-	short		        	angle_difference = 0;
+	static int  			angle_previous = 0;
+	int          angle_current = 0;
 	unsigned int			i;
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
 
+	static int previousAngles[10] = {0};
+	static int currentAngles[10] = {0};
+
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	angle_current = ANGLE_Read();
+	angle_current = (int)ANGLE_Read();
 
-	angle_difference = angle_current-angle_previous;
-	if (angle_difference > 2000){
-		rotation_count -= 1;
-	}
-	if (angle_difference < -2000){
-		rotation_count += 1;
-	}
 
-	angleSamples[angleSampIndex++] = angle_current + rotation_count*4096;
-	angle_previous = angle_current;
+	currentAngles[angleSampIndex] = angle_current;
+	previousAngles[angleSampIndex] = angle_previous;
+	//angleSamples[angleSampIndex] = unwrap(angle_previous, angle_current);
+	angleSamples[angleSampIndex] = angle_current;
 
-	if (angleSampIndex >= angle_averageLen)
-	{
+	angle_previous = angleSamples[angleSampIndex];
+
+	if (++angleSampIndex >= angle_averageLen)
 		angleSampIndex = 0;
-	}
 
 	///////////////////////////////////////////////////
 	// Process Commands from PC
