@@ -38,7 +38,7 @@ class PhysicalCartPoleDriver:
         self.log = my_logger(__name__)
 
         # Filters
-        self.angle_smoothing = 0.8
+        self.angle_smoothing = 1
 
         # Joystick variables
         self.stick = None
@@ -154,22 +154,17 @@ class PhysicalCartPoleDriver:
     def run_experiment(self):
 
         while True:
-
             self.keyboard_input()
-
             self.get_state_and_time_measurement()
-
             self.set_target_position()
 
             if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
                 self.lastControlTime = self.timeNow
-                self.calculatedMotorCmd = self.controller.step(s=self.s, target_position=self.target_position,
-                                                               time=self.timeNow)
+                self.calculatedMotorCmd = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
                 self.calculatedMotorCmd *= MOTOR_FULL_SCALE
                 self.calculatedMotorCmd = int(self.calculatedMotorCmd)
 
             self.joystick_action()
-
             self.measurement_action()
 
             # We save motor input BEFORE processing which should linearize (perceived) motor model
@@ -200,7 +195,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE
+        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING
         if self.kbAvailable & self.kb.kbhit():
             c = self.kb.getch()
             # Keys used in self.controller: 1,2,3,4,p, =, -, w, q, self.s, a, x, z, r, e, f, d, v, c, S, L, b, j
@@ -311,6 +306,7 @@ class PhysicalCartPoleDriver:
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
+                ANGLE_HANGING = angle_average
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
 
             # Exit
@@ -336,6 +332,7 @@ class PhysicalCartPoleDriver:
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Filter
+        angle = np.unwrap(angle)
         angle = angle * (self.angle_smoothing) + (1 - self.angle_smoothing) * self.anglePrev
         angle = wrap_angle_rad(angle)
 
@@ -454,19 +451,13 @@ class PhysicalCartPoleDriver:
         if self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
-            # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
-                "\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}  sent:{}, received:{}, latency:{}, python latency:{}     \r"
+                "\rangle:{:+.3f}rad, position:{:+.3f}cm, position error:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
                             self.s[POSITION_IDX] * 100,
                             self.positionErr * 100,
                             self.calculatedMotorCmd,
                             self.deltaTime * 1000,
-                            self.stickPos,
-                            self.stickControl,
-                            self.measurement,
-                            self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start)
+                            (self.received-self.sent) * 1000,
+                            (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000)
                 , end='')
-        
-
-

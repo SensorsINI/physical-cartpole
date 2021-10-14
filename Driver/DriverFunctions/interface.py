@@ -21,7 +21,6 @@ class Interface:
         self.device         = None
         self.msg            = []
         self.prevPktNum     = 1000
-
         self.start = None
         self.end = None
 
@@ -36,7 +35,7 @@ class Interface:
             time.sleep(2)
             self.device.close()
             self.device = None
-    
+
     def clear_read_buffer(self):
         self.device.reset_input_buffer()
         self.prevPktNum = 1000
@@ -173,8 +172,8 @@ class Interface:
 
     def _crc(self, msg):
         crc8 = 0x00
-        
-        for i in range(len(msg)): 
+
+        for i in range(len(msg)):
             val = msg[i]
             for b in range(8):
                 sum = (crc8 ^ val) & 0x01
