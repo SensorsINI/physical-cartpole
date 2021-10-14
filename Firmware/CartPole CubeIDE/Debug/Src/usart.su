@@ -1,9 +1,0 @@
-core_cm3.h:1204:22:__enable_irq	4	static,ignoring_inline_asm
-core_cm3.h:1205:22:__disable_irq	4	static,ignoring_inline_asm
-usart.c:11:6:USART_Init	32	static
-usart.c:47:15:USART_Receive	4	static
-usart.c:53:6:USART_ReceiveNonBlocking	16	static
-usart.c:63:6:USART_ReceiveAsync	16	static
-usart.c:82:6:USART1_IRQHandler	16	static
-usart.c:115:6:USART_Send	16	static
-usart.c:121:6:USART_SendBuffer	24	static

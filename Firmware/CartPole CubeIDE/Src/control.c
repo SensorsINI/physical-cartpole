@@ -79,10 +79,6 @@ void CONTROL_Init(void)
 
 void CONTROL_ToggleState(void)
 {
-	char buffer[2];
-	/*if(!isCalibrated)
-		cmd_Calibrate(buffer, 0);
-	else*/
 	cmd_ControlMode(!controlEnabled);
 }
 
@@ -114,8 +110,7 @@ void CONTROL_Loop(void)
     position    = positionRaw - positionCentre;
 
 	// Microcontroller Control Routine
-	if (controlEnabled)
-	{
+	if (controlEnabled)	{
 		// Angle PD control
         angleErr = angle - angle_setPoint;
 		if (angle_smoothing < 1.0)
@@ -217,15 +212,26 @@ void CONTROL_Loop(void)
 
 const int ADC_RANGE = 4096;
 
-int wrap(int current) {
-	if(current > 0)
-		return current - ADC_RANGE * (current / ADC_RANGE);
-	else
-		return current + ADC_RANGE * (current / ADC_RANGE + 1);
+int wrap(int angle) {
+    if (angle > 4095){
+		angle = angle-4096;
+	}
+	if (angle < 0){
+		angle = angle+4096;
+	}
+	return angle;
 }
 
 int unwrap(int previous, int current) {
-	return current - ADC_RANGE * (previous / ADC_RANGE);
+	int diff = current-previous;
+	int rotation_count = 0;
+
+	if (diff > 2000)
+		rotation_count = -1;
+	if (diff < -2000)
+		rotation_count = 1;
+
+	return current + rotation_count*4096;
 }
 
 
@@ -241,9 +247,13 @@ void CONTROL_BackgroundTask(void)
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	int previous = angleSamples[angleSampIndex == 0 ? angle_averageLen : angleSampIndex-1];
+	/*int previous = angleSamples[angleSampIndex == 0 ? angle_averageLen : angleSampIndex-1];
 	int current = ANGLE_Read();
 	angleSamples[angleSampIndex] = unwrap(current, previous);
+
+	if (++angleSampIndex >= angle_averageLen)
+		angleSampIndex = 0;*/
+	angleSamples[angleSampIndex] = ANGLE_Read();
 
 	if (++angleSampIndex >= angle_averageLen)
 		angleSampIndex = 0;
