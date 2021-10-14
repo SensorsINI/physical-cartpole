@@ -38,7 +38,7 @@ class PhysicalCartPoleDriver:
         self.log = my_logger(__name__)
 
         # Filters
-        self.angle_smoothing = 1
+        self.angle_smoothing = 0.8
 
         # Joystick variables
         self.stick = None

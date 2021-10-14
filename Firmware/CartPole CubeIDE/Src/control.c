@@ -39,7 +39,9 @@ float 			position_KD			= CONTROL_POSITION_KD;
 volatile bool 	controlEnabled;
 bool            isCalibrated;
 unsigned short  ledPeriod;
-int  			angleSamples[64];
+short 			angleSamples[64];
+short			rotation_count = 0;
+
 short			angleErrPrev;
 short			positionErrPrev;
 unsigned short 	positionPeriodCnt;
@@ -82,6 +84,30 @@ void CONTROL_ToggleState(void)
 	cmd_ControlMode(!controlEnabled);
 }
 
+const int ADC_RANGE = 4096;
+
+int wrap(int angle) {
+    if (angle > 4095){
+		angle = angle-4096;
+	}
+	if (angle < 0){
+		angle = angle+4096;
+	}
+	return angle;
+}
+
+int unwrap(int previous, int current) {
+	int diff = current-previous;
+	int rotation_count = 0;
+
+	if (diff > 2000)
+		rotation_count = -1;
+	if (diff < -2000)
+		rotation_count = 1;
+
+	return current + rotation_count*4096;
+}
+
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
 void CONTROL_Loop(void)
 {
@@ -105,9 +131,13 @@ void CONTROL_Loop(void)
 	for (i = 0; i < angle_averageLen; i++) {
 		angleAccum += angleSamples[i];
 	}
+	rotation_count = 0;
+
 	angle 		= (short)(angleAccum / angle_averageLen);
 	positionRaw = (short)ENCODER_Read();
     position    = positionRaw - positionCentre;
+
+
 
 	// Microcontroller Control Routine
 	if (controlEnabled)	{
@@ -210,35 +240,13 @@ void CONTROL_Loop(void)
 	}
 }
 
-const int ADC_RANGE = 4096;
-
-int wrap(int angle) {
-    if (angle > 4095){
-		angle = angle-4096;
-	}
-	if (angle < 0){
-		angle = angle+4096;
-	}
-	return angle;
-}
-
-int unwrap(int previous, int current) {
-	int diff = current-previous;
-	int rotation_count = 0;
-
-	if (diff > 2000)
-		rotation_count = -1;
-	if (diff < -2000)
-		rotation_count = 1;
-
-	return current + rotation_count*4096;
-}
-
-
 void CONTROL_BackgroundTask(void)
 {
 	static unsigned short 	angleSampIndex 	= 0;
 	static unsigned int 	rxCnt			= 0;
+	static short 			angle_previous = 0;
+	short			        angle_current = 0;
+	short		        	angle_difference = 0;
 	unsigned int			i;
 	unsigned int 			idx;
 	unsigned int			pktLen;
@@ -247,16 +255,23 @@ void CONTROL_BackgroundTask(void)
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	/*int previous = angleSamples[angleSampIndex == 0 ? angle_averageLen : angleSampIndex-1];
-	int current = ANGLE_Read();
-	angleSamples[angleSampIndex] = unwrap(current, previous);
+	angle_current = ANGLE_Read();
 
-	if (++angleSampIndex >= angle_averageLen)
-		angleSampIndex = 0;*/
-	angleSamples[angleSampIndex] = ANGLE_Read();
+	angle_difference = angle_current-angle_previous;
+	if (angle_difference > 2000){
+		rotation_count -= 1;
+	}
+	if (angle_difference < -2000){
+		rotation_count += 1;
+	}
 
-	if (++angleSampIndex >= angle_averageLen)
+	angleSamples[angleSampIndex++] = angle_current + rotation_count*4096;
+	angle_previous = angle_current;
+
+	if (angleSampIndex >= angle_averageLen)
+	{
 		angleSampIndex = 0;
+	}
 
 	///////////////////////////////////////////////////
 	// Process Commands from PC
