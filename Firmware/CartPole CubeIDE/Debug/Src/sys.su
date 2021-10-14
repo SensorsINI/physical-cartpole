@@ -1,6 +1,0 @@
-sys.c:4:6:SYS_Init	16	static
-sys.c:50:6:SYS_JTAG_Set	16	static
-sys.c:70:6:SYS_NVIC_Init	32	static
-sys.c:93:6:SYS_EXTI_Config	32	static
-sys.c:111:6:SYS_DelayUS	24	static
-sys.c:128:6:SYS_DelayMS	24	static
