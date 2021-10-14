@@ -37,7 +37,7 @@ float 			position_KI			= CONTROL_POSITION_KI;
 float 			position_KD			= CONTROL_POSITION_KD;
 
 volatile bool 	controlEnabled;
-bool            isCalibrated;
+bool            isCalibrated = true;
 unsigned short  ledPeriod;
 int  			angleSamples[64];
 short			angleErrPrev;
@@ -144,17 +144,17 @@ void CONTROL_Loop(void)
 
 		// Limit the motor speed
 		// This will reduce the numerical range of command from an int to a short
-		command = angleCmd + positionCmd; // was minus before postionCmd, but error seemed wrong sign
+		command = angleCmd - positionCmd; // was minus before postionCmd, but error seemed wrong sign
 		if      (command >  CONTROL_MOTOR_MAX_SPEED) command =  CONTROL_MOTOR_MAX_SPEED;
 		else if (command < -CONTROL_MOTOR_MAX_SPEED) command = -CONTROL_MOTOR_MAX_SPEED;
 
         // Disable motor if falls hard on either limit
-        if ((command < 0) && (positionRaw > (positionLimitLeft + 20)))
+        if ((command < 0) && (positionRaw < (positionLimitLeft + 20)))
         {
             command = 0;
             stopCnt++;
         }
-        else if ((command > 0) && (positionRaw < (positionLimitRight - 20)))
+        else if ((command > 0) && (positionRaw > (positionLimitRight - 20)))
         {
             command = 0;
             stopCnt++;
@@ -262,9 +262,7 @@ void CONTROL_BackgroundTask(void)
 	// Process Commands from PC
 	///////////////////////////////////////////////////
 	if (USART_ReceiveAsync(&rxBuffer[rxCnt]))
-	{
 		rxCnt++;
-	}
 
 	// Buffer should have at least 4 bytes
 	if (rxCnt >= 4)
@@ -447,7 +445,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 		diff = pos - positionLimitLeft;
 		positionLimitLeft = pos;
 
-		if ((diff < 10) && (diff > -10)) // if we don't move enough, must have hit limit
+		if (abs(diff) < 10) // if we don't move enough, must have hit limit
 		{
 			break;
 		}
@@ -468,7 +466,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 		diff = pos - positionLimitRight;
 		positionLimitRight = pos;
 
-		if ((diff < 10) && (diff > -10))
+		if (abs(diff) < 10)
 		{
 			break;
 		}
@@ -484,7 +482,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	diff = pos - positionCentre;
 	MOTOR_SetSpeed(-SPEED/2); // slower to get back to middle
 	int count=500;
-	while ((diff > 100 || diff < -100) && --count>0)
+	while (abs(diff) > 100 && --count>0)
 	{
 		SYS_DelayMS(25);
 		pos = ENCODER_Read();
