@@ -323,6 +323,7 @@ class PhysicalCartPoleDriver:
                 ANGLE_HANGING = angle_average
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
 
+                # update angle deviation according to ANGLE_HANGING update
                 if ANGLE_HANGING < ANGLE_ADC_RANGE / 2:
                     ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
                 else:

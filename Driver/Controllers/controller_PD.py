@@ -3,6 +3,7 @@ A PD controller for the Cartpole using CartpoleSimulator conventions
 """
 
 import json
+from datetime import datetime
 
 from Controllers.template_controller import template_controller
 from CartPole.state_utilities import cartpole_state_varname_to_index
@@ -128,7 +129,9 @@ class controller_PD(template_controller):
         self.printparams(self.ANGLE_SMOOTHING)
 
     def saveparams(self):
-        print(f"\nSaving parameters to {PARAMS_JSON_FILE}")
+        json_filepath = JSON_PATH + self.controller_name + str(datetime.now().strftime('_%Y-%m-%d_%H-%M-%S')) + '.json'
+        print(f"\nSaving parameters to {json_filepath}")
+
         p = {}
         p['ANGLE_TARGET'] = self.ANGLE_TARGET
         p['ANGLE_KP'] = self.ANGLE_KP
@@ -137,7 +140,7 @@ class controller_PD(template_controller):
         p['POSITION_KP'] = self.POSITION_KP
         p['POSITION_KI'] = self.POSITION_KI
         p['POSITION_KD'] = self.POSITION_KD
-        with open('control.json', 'w') as f:
+        with open(json_filepath, 'w') as f:
             json.dump(p, f)
 
     def keyboard_input(self, c):
