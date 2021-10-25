@@ -45,6 +45,7 @@ bool			controlSynch = false;
 bool            isCalibrated = true;
 unsigned short  ledPeriod;
 int  			angleSamples[64];
+unsigned short 	angleSampIndex 	= 0;
 short			angleErrPrev;
 short			positionErrPrev;
 unsigned short 	positionPeriodCnt;
@@ -122,19 +123,40 @@ void CONTROL_Loop(void)
     static unsigned char	packetCnt       = 0;
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
-	int 					angleAccum;
 	unsigned short 			i;
-	short 					angle, angleErr;
+	static int 				prevAngle = 0;
+	int 					angle, angleErr;
 	short 					positionRaw, position, positionErr;
 	float 					angleErrDiff;
 	float 					positionErrDiff;
 	int   					command;
+	int angle_mean = 0;
+
 
 	// Get latest angle and position
-	angleAccum = 0;
-	for (i = 0; i < angle_averageLen; i++)
-		angleAccum += angleSamples[i];
-	angle 		= (short)(angleAccum / angle_averageLen);
+	int angle_sum = 0;
+	int angle_min = angleSamples[0];
+	int angle_max = angleSamples[0];
+	int angle_maxstep = 0;
+
+	for (i = 0; i < angle_averageLen; i++) {
+		//angle_maxstep
+		angle_min = (angleSamples[i] < angle_min ? angleSamples[i] : angle_min);
+		angle_max = (angleSamples[i] > angle_max ? angleSamples[i] : angle_max);
+		angle_sum += angleSamples[i];
+	}
+	if (angle_averageLen > 2)
+		angle_mean = (short)((angle_sum - angle_min - angle_max) / (angle_averageLen-2));
+	else
+		angle_mean = angle_sum / angle_averageLen;
+
+	// jump detected: keep old value
+	/*if (abs(angle_max-angle_min) > 300) {
+		angle = prevAngle;
+	} else*/
+	angle = angle_mean;
+	prevAngle = angle;
+
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position    = (positionRaw - positionCentre);
 
@@ -217,6 +239,11 @@ void CONTROL_Loop(void)
         *((short *)&buffer[8]) = (short)command;
         *((float *)&buffer[10]) = timeSent;
         *((float *)&buffer[14]) = timeReceived;
+
+    	/*for (i = 1; i <= angle_averageLen; i++) {
+            *((float *)&buffer[18+2*i]) = angleSamples[(angle_averageLen + angleSampIndex - i) % angle_averageLen];
+    	}*/
+
         buffer[18] = crc(buffer, 18);
         USART_SendBuffer(buffer, 19);
         timeSent = TIMER1_getSystemTime();
@@ -234,13 +261,14 @@ void CONTROL_Loop(void)
 
 void CONTROL_BackgroundTask(void)
 {
-	static unsigned short 	angleSampIndex 	= 0;
 	static unsigned int 	rxCnt			= 0;
 	unsigned int			i;
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
 	static int				lastRead = 0;
+	//static bool				jumpDetected = false;
+	//static int				jumpTimestamp = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
@@ -255,13 +283,37 @@ void CONTROL_BackgroundTask(void)
 	if (now < lastRead) {
 		lastRead = now;
 	}
+	/*// jump detected: reset after 5000us
+	else if (jumpDetected && now > jumpTimestamp + 5000) {
+		jumpDetected = false;
+
+		// flush buffer with new value
+		int currAngle = ANGLE_Read();
+		for(int i=0; i<angle_averageLen; i++)
+			angleSamples[i] = currAngle;
+		lastAngle = currAngle;
+		lastRead = now;
+	}*/
 	// read every 200us
 	else if (now > lastRead + 200) {
-		angleSamples[angleSampIndex] = ANGLE_Read();
+		int currAngle = ANGLE_Read();
 
-		if (++angleSampIndex >= angle_averageLen)
-			angleSampIndex = 0;
+		/*// new jump: close to boundary && slope too high (30/0.2ms = 750/5ms)
+		#define THRESHOLD 200
+		#define MAX_SLOPE 10
+		if ((currAngle < THRESHOLD || currAngle > 4096 - THRESHOLD) && abs(lastAngle-currAngle) > MAX_SLOPE) {
+			jumpDetected = true;
+			jumpTimestamp = now;
+		}
 
+		// keep angle during jump
+		if (jumpDetected)
+			currAngle = lastAngle;*/
+
+		angleSamples[angleSampIndex] = currAngle;
+		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
+
+		//lastAngle = currAngle;
 		lastRead = now;
 	}
 

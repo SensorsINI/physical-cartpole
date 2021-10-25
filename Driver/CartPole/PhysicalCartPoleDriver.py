@@ -136,7 +136,7 @@ class PhysicalCartPoleDriver:
 
         time.sleep(1)
 
-        set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
+        #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 
         try:
             self.controller.printparams()
@@ -451,8 +451,9 @@ class PhysicalCartPoleDriver:
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             print(
-                "\rangle:{:+.3f}rad, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
+                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
+                            self.angle_raw,
                             self.s[POSITION_IDX] * 100,
                             self.calculatedMotorCmd,
                             self.deltaTime * 1000,
