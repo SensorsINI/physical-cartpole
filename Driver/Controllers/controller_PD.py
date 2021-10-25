@@ -10,6 +10,10 @@ from CartPole.state_utilities import cartpole_state_varname_to_index
 
 from globals import *
 
+# PID params from json
+JSON_PATH = 'Json/'
+PARAMS_JSON_FILE = JSON_PATH + 'control-7.json'
+
 class controller_PD(template_controller):
     def __init__(self):
 

@@ -13,10 +13,6 @@ PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
 
-# PID params from json
-JSON_PATH = 'Json/'
-PARAMS_JSON_FILE = JSON_PATH + 'control-factory.json'
-
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
