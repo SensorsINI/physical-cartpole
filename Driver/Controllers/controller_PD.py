@@ -95,11 +95,9 @@ class controller_PD(template_controller):
         motorCmd = self.angleCmd + self.positionCmd  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
         return motorCmd
 
-    def printparams(self, ANGLE_SMOOTHING):
-        self.ANGLE_SMOOTHING = ANGLE_SMOOTHING
+    def printparams(self):
         print("\nAngle PID Control Parameters")
         print("    Set point       {0}".format(self.ANGLE_TARGET))
-        print("    Smoothing       {0:.2f}".format(self.ANGLE_SMOOTHING))
         print("    P Gain          {0:.2f}".format(self.ANGLE_KP))
         print("    I Gain          {0:.2f}".format(self.ANGLE_KI))
         print("    D Gain          {0:.2f}".format(self.ANGLE_KD))
@@ -126,7 +124,7 @@ class controller_PD(template_controller):
             print(f"\nsomething went wrong loading parameters: {e}")
             return
         print("success, parameters are")
-        self.printparams(self.ANGLE_SMOOTHING)
+        self.printparams()
 
     def saveparams(self):
         json_filepath = JSON_PATH + self.controller_name + str(datetime.now().strftime('_%Y-%m-%d_%H-%M-%S')) + '.json'
@@ -145,7 +143,7 @@ class controller_PD(template_controller):
 
     def keyboard_input(self, c):
         if c == 'p':
-            self.printparams(self.ANGLE_SMOOTHING)
+            self.printparams()
         # Angle Gains
         elif c == '2':
             self.ANGLE_KP = inc(self.ANGLE_KP)

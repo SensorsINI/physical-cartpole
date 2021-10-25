@@ -139,7 +139,7 @@ class PhysicalCartPoleDriver:
         set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 
         try:
-            self.controller.printparams(self.angle_smoothing)
+            self.controller.printparams()
         except AttributeError:
             print('printparams not implemented for this self.controller.')
 
