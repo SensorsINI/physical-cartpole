@@ -2,7 +2,7 @@
 import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
-from Driver.globals import JOYSTICK_SCALING, JOYSTICK_DEADZONE, JOYSTICK_POSITION_KP
+from globals import JOYSTICK_SCALING, JOYSTICK_DEADZONE, JOYSTICK_POSITION_KP
 
 
 def setup_joystick():

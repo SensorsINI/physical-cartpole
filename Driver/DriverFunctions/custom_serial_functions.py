@@ -7,7 +7,7 @@ import glob
 import sys
 import serial  # conda install pyserial
 
-from Driver.globals import SERIAL_BAUD, SERIAL_PORT
+from globals import SERIAL_BAUD, SERIAL_PORT
 
 def serial_ports():  # from https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
     """ Lists serial port names

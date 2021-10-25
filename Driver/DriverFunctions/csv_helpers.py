@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 import csv
 
-from Driver.globals import PATH_TO_EXPERIMENT_RECORDINGS
+from globals import PATH_TO_EXPERIMENT_RECORDINGS
 
 try:
     # Use gitpython to get a current revision number and use it in description of experimental data
