@@ -34,7 +34,10 @@ def set_firmware_parameters(CartPoleInstance, **kwargs):
                                       ANGLE_AVG_LENGTH_FIRMWARE,
                                       ANGLE_SMOOTHING_FIRMWARE,
                                       ANGLE_KP_FIRMWARE,
+                                      0,
                                       ANGLE_KD_FIRMWARE,
+                                      0,
+                                      0
                                       )
 
     CartPoleInstance.set_position_config(POSITION_TARGET_FIRMWARE,

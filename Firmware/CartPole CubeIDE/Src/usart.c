@@ -12,7 +12,7 @@ void USART_Init(unsigned int baud, bool interruptEn)
 {
 	unsigned short mantissa;
 	unsigned short fraction;
-	float temp = 72000000UL;
+	float temp = 72e6;
 
     rxInp = 0;
     rxOut = 0;

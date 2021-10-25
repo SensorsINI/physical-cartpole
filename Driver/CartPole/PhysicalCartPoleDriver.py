@@ -451,10 +451,9 @@ class PhysicalCartPoleDriver:
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             print(
-                "\rangle:{:+.3f}rad, position:{:+.3f}cm, position error:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
+                "\rangle:{:+.3f}rad, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
                             self.s[POSITION_IDX] * 100,
-                            self.positionErr * 100,
                             self.calculatedMotorCmd,
                             self.deltaTime * 1000,
                             (self.received-self.sent) * 1000,

@@ -69,13 +69,16 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
-    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KD):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 20]
+    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch):
+        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 29]
         msg += list(struct.pack('h', setPoint))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('f', smoothing))
         msg += list(struct.pack('f', KP))
+        msg += list(struct.pack('f', KI))
         msg += list(struct.pack('f', KD))
+        msg += list(struct.pack('i', controlLatencyUs))
+        msg += list(struct.pack('B', controlSynch))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
@@ -85,9 +88,9 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 20)
-        (setPoint, avgLen, smoothing, KP, KD) = struct.unpack('hHfff', bytes(reply[3:19]))
-        return (setPoint, avgLen, smoothing, KP, KD)
+        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 29)
+        (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch) = struct.unpack('hHffffiB', bytes(reply[3:20]))
+        return (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch)
 
     def set_position_config(self, setPoint, ctrlPeriod_ms, smoothing, KP, KD):
         msg = [SERIAL_SOF, CMD_SET_POSITION_CONFIG, 20]

@@ -37,17 +37,23 @@ float 			position_KI			= CONTROL_POSITION_KI;
 float 			position_KD			= CONTROL_POSITION_KD;
 
 volatile bool 	controlEnabled;
+int 			controlLatencyUs = 0;		// used to simulate Latency
+bool			controlLatencyEnable = false;
+int	 			controlLatencyTimestampUs = 0;
+int 			controlCommand = 0;
+bool			controlSynch = false;
 bool            isCalibrated = true;
 unsigned short  ledPeriod;
 int  			angleSamples[64];
 short			angleErrPrev;
 short			positionErrPrev;
 unsigned short 	positionPeriodCnt;
-int			positionCentre;
-int			positionLimitLeft;
-int			positionLimitRight;
-float      timeSent = 0, timeReceived = 0;
-float angle_I = 0, position_I = 0;
+int				positionCentre;
+int				positionLimitLeft;
+int				positionLimitRight;
+int				encoderDirection = 1;
+float      		timeSent = 0, timeReceived = 0;
+float 			angle_I = 0, position_I = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[32];
@@ -82,6 +88,30 @@ void CONTROL_ToggleState(void)
 	cmd_ControlMode(!controlEnabled);
 }
 
+const int ADC_RANGE = 4096;
+
+int wrap(int angle) {
+    if (angle > 4095) {
+		angle = angle-4096;
+	}
+	if (angle < 0) {
+		angle = angle+4096;
+	}
+	return angle;
+}
+
+int unwrap(int previous, int current) {
+	int diff = current-previous;
+	int rotation_count = 0;
+
+	if (diff > 2000)
+		rotation_count = -1;
+	if (diff < -2000)
+		rotation_count = 1;
+
+	return current + rotation_count*4096;
+}
+
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
 void CONTROL_Loop(void)
 {
@@ -102,84 +132,76 @@ void CONTROL_Loop(void)
 
 	// Get latest angle and position
 	angleAccum = 0;
-	for (i = 0; i < angle_averageLen; i++) {
+	for (i = 0; i < angle_averageLen; i++)
 		angleAccum += angleSamples[i];
-	}
 	angle 		= (short)(angleAccum / angle_averageLen);
-	positionRaw = (short)ENCODER_Read();
-    position    = positionRaw - positionCentre;
+	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
+    position    = (positionRaw - positionCentre);
 
 	// Microcontroller Control Routine
 	if (controlEnabled)	{
 		// Angle PD control
         angleErr = angle - angle_setPoint;
 		if (angle_smoothing < 1.0)
-		{
 			angleErrDiff = (angle_smoothing*angleErr) + ((1.0 - angle_smoothing)*angleErrPrev);
-		}
 		else
-		{
 			angleErrDiff = angleErr - angleErrPrev;
-		}
 		angleErrPrev = angleErr;
 		angleCmd	 = -(angle_KP*angleErr + angle_KD*angleErrDiff);
 
 		// Position PD control
-		positionPeriodCnt++;
-		if (positionPeriodCnt >= position_ctrlPeriod)
-		{
+		if (++positionPeriodCnt >= position_ctrlPeriod) {
 			positionPeriodCnt = 0;
 			positionErr = position - position_setPoint;
-			if (position_smoothing < 1.0)
-			{
+			if(position_smoothing < 1.0)
 				positionErrDiff = (position_smoothing*positionErr) + ((1.0 - position_smoothing)*positionErrPrev);
-			}
 			else
-			{
 				positionErrDiff = positionErr - positionErrPrev;
-			}
 			positionErrPrev	= positionErr;
-			positionCmd		= position_KP*positionErr + position_KD*positionErrDiff;
+			position_I += positionErr;
+			positionCmd		= -(position_KP*positionErr + position_KD*positionErrDiff);
 		}
 
 		// Limit the motor speed
 		// This will reduce the numerical range of command from an int to a short
-		command = angleCmd - positionCmd; // was minus before postionCmd, but error seemed wrong sign
+		command = angleCmd + positionCmd; // was minus before postionCmd, but error seemed wrong sign
 		if      (command >  CONTROL_MOTOR_MAX_SPEED) command =  CONTROL_MOTOR_MAX_SPEED;
 		else if (command < -CONTROL_MOTOR_MAX_SPEED) command = -CONTROL_MOTOR_MAX_SPEED;
 
         // Disable motor if falls hard on either limit
-        if ((command < 0) && (positionRaw < (positionLimitLeft + 20)))
-        {
+        if ((command < 0) && (positionRaw < (positionLimitLeft + 20))) {
             command = 0;
             stopCnt++;
-        }
-        else if ((command > 0) && (positionRaw > (positionLimitRight - 20)))
-        {
+        } else if ((command > 0) && (positionRaw > (positionLimitRight - 20))) {
             command = 0;
             stopCnt++;
-        }
-        else
-        {
+        } else {
             stopCnt = 0;
         }
 
         // Quit control if pendulum has continously been at the end for 500 ms
-        if (stopCnt == 500/CONTROL_LOOP_PERIOD_MS)
-        {
+        if (stopCnt == 500/CONTROL_LOOP_PERIOD_MS) {
             cmd_ControlMode(false);
             MOTOR_SetSpeed(0);
             stopCnt = 0;
-        }
-        else
-        {
-            MOTOR_SetSpeed(-command);
+        } else {
+        	if(controlLatencyUs) {
+        		controlLatencyTimestampUs = TIMER1_getSystemTime_Us() + controlLatencyUs;
+        		controlCommand = command;
+        		controlLatencyEnable = true;
+        	}
+        	else
+        		MOTOR_SetSpeed(-command);
         }
 	}
 	else
 	{
-		command = 0;
-        stopCnt = 0;
+		if(controlSynch) {
+            MOTOR_SetSpeed(controlCommand);
+		} else {
+			command = 0;
+	        stopCnt = 0;
+		}
 	}
 
 	// Send latest state to the PC
@@ -210,31 +232,6 @@ void CONTROL_Loop(void)
 	}
 }
 
-const int ADC_RANGE = 4096;
-
-int wrap(int angle) {
-    if (angle > 4095){
-		angle = angle-4096;
-	}
-	if (angle < 0){
-		angle = angle+4096;
-	}
-	return angle;
-}
-
-int unwrap(int previous, int current) {
-	int diff = current-previous;
-	int rotation_count = 0;
-
-	if (diff > 2000)
-		rotation_count = -1;
-	if (diff < -2000)
-		rotation_count = 1;
-
-	return current + rotation_count*4096;
-}
-
-
 void CONTROL_BackgroundTask(void)
 {
 	static unsigned short 	angleSampIndex 	= 0;
@@ -243,20 +240,39 @@ void CONTROL_BackgroundTask(void)
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
+	static int				lastRead = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
 	/*int previous = angleSamples[angleSampIndex == 0 ? angle_averageLen : angleSampIndex-1];
 	int current = ANGLE_Read();
-	angleSamples[angleSampIndex] = unwrap(current, previous);
+	angleSamples[angleSampIndex] = unwrap(current, previous);*/
 
-	if (++angleSampIndex >= angle_averageLen)
-		angleSampIndex = 0;*/
-	angleSamples[angleSampIndex] = ANGLE_Read();
+	int now = TIMER1_getSystemTime_Us();
 
-	if (++angleSampIndex >= angle_averageLen)
-		angleSampIndex = 0;
+	// int-overflow after 1h
+	if (now < lastRead) {
+		lastRead = now;
+	}
+	// read every 200us
+	else if (now > lastRead + 200) {
+		angleSamples[angleSampIndex] = ANGLE_Read();
+
+		if (++angleSampIndex >= angle_averageLen)
+			angleSampIndex = 0;
+
+		lastRead = now;
+	}
+
+
+	///////////////////////////////////////////////////
+	// Apoply Delayed Control Command
+	///////////////////////////////////////////////////
+	if (controlLatencyEnable && controlLatencyTimestampUs >= TIMER1_getSystemTime_Us()) {
+		MOTOR_SetSpeed(controlCommand);
+		controlLatencyEnable = false;
+	}
 
 	///////////////////////////////////////////////////
 	// Process Commands from PC
@@ -320,7 +336,7 @@ void CONTROL_BackgroundTask(void)
 
 							case CMD_SET_ANGLE_CONFIG:
 							{
-								if (pktLen == 20)
+								if (pktLen == 29)
 								{
 									cmd_SetAngleConfig(&rxBuffer[3]);
 								}
@@ -360,7 +376,10 @@ void CONTROL_BackgroundTask(void)
 								{
 									timeReceived = TIMER1_getSystemTime();
 									motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
-									cmd_SetMotor(motorCmd);
+									if(controlSynch)
+										controlCommand = motorCmd;
+									else
+										cmd_SetMotor(motorCmd);
 								}
 								break;
 							}
@@ -428,67 +447,67 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	#define SPEED 3000
 	int pos;
 	int diff;
+	float fDiff;
 
 	__disable_irq();
 	MOTOR_Stop();
 	Led_Enable(true);
 
 	// Get left limit
-	SYS_DelayMS(10);
+	SYS_DelayMS(100);
 	positionLimitLeft = ENCODER_Read();
 	MOTOR_SetSpeed(-SPEED);
 
-	while (true)
-	{
+	do {
 		SYS_DelayMS(100);
 		pos  = ENCODER_Read();
 		diff = pos - positionLimitLeft;
 		positionLimitLeft = pos;
 
-		if (abs(diff) < 10) // if we don't move enough, must have hit limit
-		{
-			break;
-		}
-	}
+		// if we don't move enough, must have hit limit
+	} while(abs(diff) > 10);
 
 	MOTOR_Stop();
 	Led_Enable(false);
 
 	// Get right limit
-	SYS_DelayMS(1000);
+	SYS_DelayMS(100);
 	positionLimitRight = ENCODER_Read();
 	MOTOR_SetSpeed(SPEED);
 
-	while (true)
-	{
+	do {
 		SYS_DelayMS(100);
 		pos  = ENCODER_Read();
 		diff = pos - positionLimitRight;
 		positionLimitRight = pos;
 
-		if (abs(diff) < 10)
-		{
-			break;
-		}
-	}
+		// if we don't move enough, must have hit limit
+	} while(abs(diff) > 10);
 
 	MOTOR_Stop();
 
 	// Move pendulum to the centre (roughly)
 	Led_Enable(true);
-	SYS_DelayMS(1000);
-	positionCentre = (positionLimitRight + positionLimitLeft) /2; // average limits
-	pos = ENCODER_Read();
-	diff = pos - positionCentre;
-	MOTOR_SetSpeed(-SPEED/2); // slower to get back to middle
-	int count=500;
-	while (abs(diff) > 100 && --count>0)
-	{
-		SYS_DelayMS(25);
-		pos = ENCODER_Read();
-		diff = pos - positionCentre;
-	}
+	SYS_DelayMS(200);
+	// invert reading for original motor
+	if (positionLimitRight < positionLimitLeft) {
+		int temp = positionLimitRight;
+		positionLimitRight = positionLimitLeft;
+		positionLimitLeft = temp;
+		encoderDirection = -1;
+	} else
+		encoderDirection = 1;
+	positionCentre = (positionLimitRight + positionLimitLeft) / 2;			// average limits
 
+	// Slower to get back to middle
+	MOTOR_SetSpeed(-SPEED/2);
+	do {
+		fDiff = 2.0 * abs(ENCODER_Read() - positionCentre) / abs(positionLimitRight - positionLimitLeft);
+		// Slow Down even more to get more accurately to the middle
+		if(fDiff < 1e-1) {
+			MOTOR_SetSpeed(-SPEED/4);
+		}
+	} while(fDiff > 5e-4);
 	MOTOR_Stop();
 
 	SYS_DelayMS(100);
@@ -500,12 +519,10 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 
 void cmd_ControlMode(bool en)
 {
-    if (en && !isCalibrated)
-    {
-        cmd_Calibrate(0, 0);
+    if(en && !isCalibrated) {
+    	cmd_Calibrate(0, 0);
     }
-
-	__disable_irq();
+    __disable_irq();
 	if (en && !controlEnabled)
 	{
 		angleErrPrev		= 0;
@@ -530,7 +547,10 @@ void cmd_SetAngleConfig(const unsigned char * config)
     angle_averageLen    = *((unsigned short *)&config[ 2]);
     angle_smoothing     = *((float          *)&config[ 4]);
     angle_KP            = *((float          *)&config[ 8]);
-    angle_KD            = *((float          *)&config[12]);
+    angle_KI            = *((float          *)&config[12]);
+    angle_KD            = *((float          *)&config[16]);
+    controlLatencyUs    = *((int            *)&config[20]);
+    controlSynch		= *((bool	        *)&config[24]);
 	angleErrPrev		= 0;
 	__enable_irq();
 }
@@ -539,16 +559,19 @@ void cmd_GetAngleConfig(void)
 {
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_ANGLE_CONFIG;
-	txBuffer[ 2] = 20;
+	txBuffer[ 2] = 28;
     *((short          *)&txBuffer[ 3]) = angle_setPoint;
 	*((unsigned short *)&txBuffer[ 5]) = angle_averageLen;
     *((float          *)&txBuffer[ 7]) = angle_smoothing;
     *((float          *)&txBuffer[11]) = angle_KP;
-    *((float          *)&txBuffer[15]) = angle_KD;
-	txBuffer[19] = crc(txBuffer, 19);
+    *((float          *)&txBuffer[15]) = angle_KI;
+    *((float          *)&txBuffer[19]) = angle_KD;
+    *((float          *)&txBuffer[23]) = controlLatencyUs;
+    *((bool           *)&txBuffer[27]) = controlSynch;
+	txBuffer[28] = crc(txBuffer, 28);
 
 	__disable_irq();
-	USART_SendBuffer(txBuffer, 20);
+	USART_SendBuffer(txBuffer, 29);
 	__enable_irq();
 }
 
@@ -591,7 +614,7 @@ void cmd_SetMotor(int speed)
 {
 		int position;
 
-//	MOTOR_SetSpeed(speed);
+	//	MOTOR_SetSpeed(speed);
 	// Only command the motor if the on-board control routine is disabled
 	if (!controlEnabled){
 				position = ENCODER_Read();
