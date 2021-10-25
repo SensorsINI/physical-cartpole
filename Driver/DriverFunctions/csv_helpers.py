@@ -65,21 +65,36 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['# angle_raw'])
         writer.writerow(['# angle: rad'])
         writer.writerow(['# angleD: rad/s'])
-        writer.writerow(['# position: m'])
+        writer.writerow(['# angle_cos:'])
+        writer.writerow(['# angle_sin:'])
         writer.writerow(['# position_raw'])
+        writer.writerow(['# position: m'])
         writer.writerow(['# positionD: m/s'])
         writer.writerow(['# angleTarget: rad'])
         writer.writerow(['# angleErr: rad'])
         writer.writerow(['# target_position: m'])
         writer.writerow(['# positionErr: m'])
+        writer.writerow(['# angleCmd:'])
+        writer.writerow(['# positionCmd:'])
+        writer.writerow(['# actualMotorSave:'])
         writer.writerow(['# Q: normed motor power'])
+        writer.writerow(['# stickControl'])
+        writer.writerow(['# stickPos'])
+        writer.writerow(['# measurement'])
+        writer.writerow(['# angle_squared'])
+        writer.writerow(['# position_squared'])
+        writer.writerow(['# Q_squared'])
+        writer.writerow(['# sent'])
+        writer.writerow(['# received'])
+        writer.writerow(['# latency'])
+        writer.writerow(['# pythonLatency'])
         writer.writerow(['#'])
         writer.writerow(['#'])
 
         writer.writerow(
             ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
                 'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + [
-                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['sent'] + ['received'] + ['latency']  + ['pythonLatency'] )
+                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['received'] + ['latency']  + ['pythonLatency'] )
 
     # TODO: Not sure if we really need to return these two things and if this is efficient implementation
     csvfile = open(csv_filepath, 'a', newline='')

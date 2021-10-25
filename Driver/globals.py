@@ -26,7 +26,7 @@ MOTOR_TYPE = 'POLOLU'
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 # ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING = 1014 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
     ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to -pi
