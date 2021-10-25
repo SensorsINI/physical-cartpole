@@ -139,7 +139,7 @@ class PhysicalCartPoleDriver:
         set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
 
         try:
-            self.controller.printparams(self.angle_smoothing, self.position_smoothing)
+            self.controller.printparams(self.angle_smoothing)
         except AttributeError:
             print('printparams not implemented for this self.controller.')
 
@@ -199,7 +199,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING
+        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION
         if self.kbAvailable & self.kb.kbhit():
             c = self.kb.getch()
             # Keys used in self.controller: 1,2,3,4,p, =, -, w, q, self.s, a, x, z, r, e, f, d, v, c, S, L, b, j
@@ -218,16 +218,6 @@ class PhysicalCartPoleDriver:
                 if self.angle_smoothing > 1:
                     self.angle_smoothing = 1
                 print("\nDecreased ANGLE_SMOOTHING {0}".format(self.angle_smoothing))
-            elif c == 'v':
-                self.position_smoothing= dec(self.position_smoothing)
-                if self.position_smoothing > 1:
-                    self.position_smoothing = 1
-                print("\nIncreased POSITION_SMOOTHING {0}".format(self.position_smoothing))
-            elif c == 'c':
-                self.position_smoothing = inc(self.position_smoothing)
-                if self.position_smoothing > 1:
-                    self.position_smoothing = 1
-                print("\nDecreased POSITION_SMOOTHING {0}".format(self.position_smoothing))
             elif c == '.':  # zero motor
                 self.controlEnabled = False
                 self.calculatedMotorCmd = 0
@@ -333,6 +323,11 @@ class PhysicalCartPoleDriver:
                 ANGLE_HANGING = angle_average
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
 
+                if ANGLE_HANGING < ANGLE_ADC_RANGE / 2:
+                    ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
+                else:
+                    ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+
             # Exit
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
@@ -352,7 +347,6 @@ class PhysicalCartPoleDriver:
 
         # Convert position and angle to physical units
         angle = (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
-        # print(ANGLE_DEVIATION_FINETUNE)
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Filter

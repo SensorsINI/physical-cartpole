@@ -9,11 +9,6 @@ from CartPole.state_utilities import cartpole_state_varname_to_index
 
 from globals import *
 
-# TODO: Remove angle_target from json. You neither should set it externally.
-#  The only possible scenario when angle target is not 0 would be if it follows some trajectory. This trajectory would be calculated inside of the controller.
-JSON_PATH = 'Json/'
-PARAMS_JSON_FILE = JSON_PATH + 'control-7.json'
-
 class controller_PD(template_controller):
     def __init__(self):
 
@@ -99,9 +94,8 @@ class controller_PD(template_controller):
         motorCmd = self.angleCmd + self.positionCmd  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
         return motorCmd
 
-    def printparams(self, ANGLE_SMOOTHING, POSITION_SMOOTHING):
+    def printparams(self, ANGLE_SMOOTHING):
         self.ANGLE_SMOOTHING = ANGLE_SMOOTHING
-        self.POSITION_SMOOTHING = POSITION_SMOOTHING
         print("\nAngle PID Control Parameters")
         print("    Set point       {0}".format(self.ANGLE_TARGET))
         print("    Smoothing       {0:.2f}".format(self.ANGLE_SMOOTHING))
@@ -111,7 +105,6 @@ class controller_PD(template_controller):
 
         print("Position PD Control Parameters")
         print("    Set point       {0}".format(self.POSITION_TARGET))
-        print("    Smoothing       {0:.2f}".format(self.POSITION_SMOOTHING))
         print("    P Gain          {0:.2f}".format(self.POSITION_KP))
         print("    I Gain          {0:.2f}".format(self.POSITION_KI))
         print("    D Gain          {0:.2f}".format(self.POSITION_KD))
@@ -132,7 +125,7 @@ class controller_PD(template_controller):
             print(f"\nsomething went wrong loading parameters: {e}")
             return
         print("success, parameters are")
-        self.printparams(self.ANGLE_SMOOTHING, self.POSITION_SMOOTHING)
+        self.printparams(self.ANGLE_SMOOTHING)
 
     def saveparams(self):
         print(f"\nSaving parameters to {PARAMS_JSON_FILE}")
@@ -149,7 +142,7 @@ class controller_PD(template_controller):
 
     def keyboard_input(self, c):
         if c == 'p':
-            self.printparams(self.ANGLE_SMOOTHING, self.POSITION_SMOOTHING)
+            self.printparams(self.ANGLE_SMOOTHING)
         # Angle Gains
         elif c == '2':
             self.ANGLE_KP = inc(self.ANGLE_KP)
@@ -208,7 +201,6 @@ class controller_PD(template_controller):
         print("4/3 position proportional gain")
         print("r/e position integral gain")
         print("f/d position derivative gain")
-        print("c/v position smoothing")
         print("p print PID parameters")
         print("l toggle logging data")
         print("S/L Save/Load param values from disk")
