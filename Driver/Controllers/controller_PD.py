@@ -7,11 +7,11 @@ from datetime import datetime
 
 from Controllers.template_controller import template_controller
 from CartPole.state_utilities import cartpole_state_varname_to_index
+from DriverFunctions.json_helpers import get_new_json_filename
 
 from globals import *
 
 # PID params from json
-JSON_PATH = 'Json/'
 PARAMS_JSON_FILE = JSON_PATH + 'control-7.json'
 
 class controller_PD(template_controller):
@@ -131,7 +131,7 @@ class controller_PD(template_controller):
         self.printparams()
 
     def saveparams(self):
-        json_filepath = JSON_PATH + self.controller_name + str(datetime.now().strftime('_%Y-%m-%d_%H-%M-%S')) + '.json'
+        json_filepath = get_new_json_filename(self.controller_name)
         print(f"\nSaving parameters to {json_filepath}")
 
         p = {}
