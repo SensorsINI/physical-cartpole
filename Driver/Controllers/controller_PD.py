@@ -5,7 +5,7 @@ A PD controller for the Cartpole using CartpoleSimulator conventions
 import json
 
 from Controllers.template_controller import template_controller
-from Driver.CartPole.state_utilities import cartpole_state_varname_to_index
+from CartPole.state_utilities import cartpole_state_varname_to_index
 
 from globals import *
 

@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 import csv
 
-from Driver.globals import PATH_TO_EXPERIMENT_RECORDINGS
+from globals import PATH_TO_EXPERIMENT_RECORDINGS
 
 try:
     # Use gitpython to get a current revision number and use it in description of experimental data
@@ -79,7 +79,7 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(
             ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
                 'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + [
-                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'])
+                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['sent'] + ['received'] + ['latency']  + ['pythonLatency'] )
 
     # TODO: Not sure if we really need to return these two things and if this is efficient implementation
     csvfile = open(csv_filepath, 'a', newline='')

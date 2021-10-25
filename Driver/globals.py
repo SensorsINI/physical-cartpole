@@ -23,7 +23,7 @@ MOTOR_TYPE = 'POLOLU'
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
-ANGLE_HANGING = 1016  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1015.95  # left cartpole # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING = 3126 # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
@@ -32,7 +32,7 @@ else:
     ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to pi
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.11999999999999998
+ANGLE_DEVIATION_FINETUNE = 0 #0.11999999999999998
   # adjust from key commands such that angle error is minimized
 
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
@@ -54,9 +54,9 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENGTH / POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
 # it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
 
-# SERIAL_PORT = None  # if None, takes first one available
-SERIAL_PORT = '/dev/tty.usbserial-14210'  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
-# SERIAL_PORT = '/dev/ttyUSB1'  # index of the port on the list of all serial point (on Marcin's computer name changes, but it is always second port...)
+import platform
+import subprocess
+SERIAL_PORT = subprocess.run(['ls /dev/tty.usbserial*'], shell=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1] if platform.system() == 'Darwin' else '/dev/ttyUSB1'
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05

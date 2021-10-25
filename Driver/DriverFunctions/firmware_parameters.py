@@ -1,16 +1,16 @@
 # TODO: These default values should be set the way cartpole firmware controller is working
 #   @Asude, I'm sorry, I've lost the values you calculated...
-ANGLE_TARGET_FIRMWARE_DEFAULT = 3110
+ANGLE_TARGET_FIRMWARE_DEFAULT = 3059
 ANGLE_AVG_LENGTH_FIRMWARE_DEFAULT = 10
 ANGLE_SMOOTHING_FIRMWARE_DEFAULT = 1
-ANGLE_KP_FIRMWARE_DEFAULT = 0
-ANGLE_KD_FIRMWARE_DEFAULT = 0
+ANGLE_KP_FIRMWARE_DEFAULT = 400
+ANGLE_KD_FIRMWARE_DEFAULT = 400
 
 POSITION_TARGET_FIRMWARE_DEFAULT = 0
 POSITION_CTRL_PERIOD_MS_FIRMWARE_DEFAULT = 5
 POSITION_SMOOTHING_FIRMWARE_DEFAULT = 1
-POSITION_KP_FIRMWARE_DEFAULT = 0
-POSITION_KD_FIRMWARE_DEFAULT = 0
+POSITION_KP_FIRMWARE_DEFAULT = 20
+POSITION_KD_FIRMWARE_DEFAULT = 300
 
 
 def set_firmware_parameters(CartPoleInstance, **kwargs):
@@ -34,7 +34,10 @@ def set_firmware_parameters(CartPoleInstance, **kwargs):
                                       ANGLE_AVG_LENGTH_FIRMWARE,
                                       ANGLE_SMOOTHING_FIRMWARE,
                                       ANGLE_KP_FIRMWARE,
+                                      0,
                                       ANGLE_KD_FIRMWARE,
+                                      0,
+                                      0
                                       )
 
     CartPoleInstance.set_position_config(POSITION_TARGET_FIRMWARE,

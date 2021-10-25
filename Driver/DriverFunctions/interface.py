@@ -21,9 +21,11 @@ class Interface:
         self.device         = None
         self.msg            = []
         self.prevPktNum     = 1000
+        self.start = None
+        self.end = None
 
     def open(self, port, baud):
-        self.device         = serial.Serial(port, baudrate=baud, timeout=None)
+        self.device = serial.Serial(port, baudrate=baud, timeout=None)
         self.device.reset_input_buffer()
 
     def close(self):
@@ -33,7 +35,7 @@ class Interface:
             time.sleep(2)
             self.device.close()
             self.device = None
-    
+
     def clear_read_buffer(self):
         self.device.reset_input_buffer()
         self.prevPktNum = 1000
@@ -62,18 +64,21 @@ class Interface:
         return self._receive_reply(CMD_CALIBRATE, 4, CALIBRATE_TIMEOUT) == msg
 
     def control_mode(self, en):
-        msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, en]
+        msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
 
-    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KD):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 20]
+    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch):
+        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 29]
         msg += list(struct.pack('h', setPoint))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('f', smoothing))
         msg += list(struct.pack('f', KP))
+        msg += list(struct.pack('f', KI))
         msg += list(struct.pack('f', KD))
+        msg += list(struct.pack('i', controlLatencyUs))
+        msg += list(struct.pack('B', controlSynch))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
@@ -83,9 +88,9 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 20)
-        (setPoint, avgLen, smoothing, KP, KD) = struct.unpack('hHfff', bytes(reply[3:19]))
-        return (setPoint, avgLen, smoothing, KP, KD)
+        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 29)
+        (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch) = struct.unpack('hHffffiB', bytes(reply[3:20]))
+        return (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch)
 
     def set_position_config(self, setPoint, ctrlPeriod_ms, smoothing, KP, KD):
         msg = [SERIAL_SOF, CMD_SET_POSITION_CONFIG, 20]
@@ -112,9 +117,10 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
+        self.end = time.time()
 
     def read_state(self):
-        reply = self._receive_reply(CMD_STATE, 11)
+        reply = self._receive_reply(CMD_STATE, 19)
 
         # Verify packet sequence 
         if self.prevPktNum != 1000:
@@ -123,12 +129,17 @@ class Interface:
         self.prevPktNum = reply[3]
 
         (angle, position, command) = struct.unpack('hhh', bytes(reply[4:10]))
-        return (angle, position, command)
+        sent, received = struct.unpack('ff', bytes(reply[10:18]))
+        return angle, position, command, sent, received
 
     def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout
+        self.start = False
+
         while True:
             c = self.device.read()
+            if self.start == False:
+                self.start = time.time()
             if len(c) == 0:
                 self.device.timeout = None
                 return []
@@ -164,8 +175,8 @@ class Interface:
 
     def _crc(self, msg):
         crc8 = 0x00
-        
-        for i in range(len(msg)): 
+
+        for i in range(len(msg)):
             val = msg[i]
             for b in range(8):
                 sum = (crc8 ^ val) & 0x01
