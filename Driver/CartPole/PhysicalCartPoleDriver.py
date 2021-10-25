@@ -154,8 +154,11 @@ class PhysicalCartPoleDriver:
     def run_experiment(self):
 
         while True:
+
             self.keyboard_input()
+
             self.get_state_and_time_measurement()
+
             self.set_target_position()
 
             if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
@@ -165,6 +168,7 @@ class PhysicalCartPoleDriver:
                 self.calculatedMotorCmd = int(self.calculatedMotorCmd)
 
             self.joystick_action()
+
             self.measurement_action()
 
             # We save motor input BEFORE processing which should linearize (perceived) motor model
@@ -195,7 +199,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING
+        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION
         if self.kbAvailable & self.kb.kbhit():
             c = self.kb.getch()
             # Keys used in self.controller: 1,2,3,4,p, =, -, w, q, self.s, a, x, z, r, e, f, d, v, c, S, L, b, j
@@ -204,7 +208,17 @@ class PhysicalCartPoleDriver:
             except AttributeError:
                 pass
             # FIXME ,./ commands not working as intended - control overwrites motor value
-            if c == '.':  # zero motor
+            if c == 'x':
+                self.angle_smoothing = dec(self.angle_smoothing)
+                if self.angle_smoothing > 1:
+                    self.angle_smoothing = 1
+                print("\nIncreased ANGLE_SMOOTHING {0}".format(self.angle_smoothing))
+            elif c == 'z':
+                self.angle_smoothing = inc(self.angle_smoothing)
+                if self.angle_smoothing > 1:
+                    self.angle_smoothing = 1
+                print("\nDecreased ANGLE_SMOOTHING {0}".format(self.angle_smoothing))
+            elif c == '.':  # zero motor
                 self.controlEnabled = False
                 self.calculatedMotorCmd = 0
                 self.manualMotorSetting = False
@@ -309,6 +323,12 @@ class PhysicalCartPoleDriver:
                 ANGLE_HANGING = angle_average
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
 
+                # update angle deviation according to ANGLE_HANGING update
+                if ANGLE_HANGING < ANGLE_ADC_RANGE / 2:
+                    ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
+                else:
+                    ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+
             # Exit
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
@@ -328,7 +348,6 @@ class PhysicalCartPoleDriver:
 
         # Convert position and angle to physical units
         angle = (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
-        # print(ANGLE_DEVIATION_FINETUNE)
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Filter
@@ -450,6 +469,7 @@ class PhysicalCartPoleDriver:
         if self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
+            # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
                 "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
@@ -460,3 +480,6 @@ class PhysicalCartPoleDriver:
                             (self.received-self.sent) * 1000,
                             (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000)
                 , end='')
+        
+
+
