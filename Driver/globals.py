@@ -13,6 +13,10 @@ PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
 
+# PID params from json
+JSON_PATH = 'Json/'
+PARAMS_JSON_FILE = JSON_PATH + 'control-factory.json'
+
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
@@ -23,8 +27,8 @@ MOTOR_TYPE = 'POLOLU'
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
-ANGLE_HANGING = 1015.95  # left cartpole # Value from sensor when pendulum is at stable equilibrium point
-# ANGLE_HANGING = 3126 # Value from sensor when pendulum is at stable equilibrium point
+# ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1014 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
     ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to -pi
@@ -32,8 +36,7 @@ else:
     ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to pi
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0 #0.11999999999999998
-  # adjust from key commands such that angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0.11999999999999998 # adjust from key commands such that upright angle error is minimized
 
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
