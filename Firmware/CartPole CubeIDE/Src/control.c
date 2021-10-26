@@ -91,26 +91,38 @@ void CONTROL_ToggleState(void)
 
 const int ADC_RANGE = 4096;
 
-int wrap(int angle) {
-    if (angle > 4095) {
-		angle = angle-4096;
-	}
-	if (angle < 0) {
-		angle = angle+4096;
-	}
-	return angle;
+int wrapLocal(int angle) {
+    if (angle >= ADC_RANGE)
+		return angle - ADC_RANGE;
+	if (angle < 0)
+		return angle + ADC_RANGE;
+	else
+		return angle;
+}
+int unwrapLocal(int previous, int current) {
+	int diff = current-previous;
+
+	if (diff > 2000)
+		return current - ADC_RANGE;
+	if (diff < -2000)
+		return current + ADC_RANGE;
+	else
+		return current;
+}
+
+int wrap(int current) {
+	if(current > 0)
+		return current - ADC_RANGE * (current / ADC_RANGE);
+	else
+		return current + ADC_RANGE * (current / ADC_RANGE + 1);
 }
 
 int unwrap(int previous, int current) {
-	int diff = current-previous;
-	int rotation_count = 0;
-
-	if (diff > 2000)
-		rotation_count = -1;
-	if (diff < -2000)
-		rotation_count = 1;
-
-	return current + rotation_count*4096;
+    int diff = previous-current;
+	if (diff>0)
+    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE + 1) / 2);
+	else
+    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE - 1) / 2);
 }
 
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
