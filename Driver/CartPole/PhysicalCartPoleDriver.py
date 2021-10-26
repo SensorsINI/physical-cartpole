@@ -343,8 +343,7 @@ class PhysicalCartPoleDriver:
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
         # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
         # Hence we revert sign for Pololu
-        if MOTOR_TYPE == 'POLOLU':
-            self.position_centered_unconverted = -self.position_centered_unconverted
+        self.position_centered_unconverted = -self.position_centered_unconverted
 
         # Convert position and angle to physical units
         angle = (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
@@ -437,11 +436,7 @@ class PhysicalCartPoleDriver:
         actualMotorCmd = int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd > 0.6 * MOTOR_MAX_PWM else actualMotorCmd
         actualMotorCmd = -int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd < -0.6 * MOTOR_MAX_PWM else actualMotorCmd
 
-        # Reverse sign if you are using pololu motor and not the original one
-        if MOTOR_TYPE == 'POLOLU':
-            actualMotorCmd = -actualMotorCmd
-
-        return actualMotorCmd
+        return -actualMotorCmd
 
     def safety_switch_off(self, actualMotorCmd):
         # Temporary safety switch off if goes to the boundary

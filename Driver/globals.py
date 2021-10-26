@@ -18,9 +18,6 @@ JSON_PATH = 'Json/'
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
-MOTOR_TYPE = 'POLOLU'
-# MOTOR_TYPE = 'ORIGINAL'
-
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
