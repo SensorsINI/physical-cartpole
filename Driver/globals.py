@@ -55,7 +55,7 @@ JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENG
 
 import platform
 import subprocess
-SERIAL_PORT = subprocess.run(['ls /dev/tty.usbserial*'], shell=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1] if platform.system() == 'Darwin' else '/dev/ttyUSB1'
+SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB1'
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05

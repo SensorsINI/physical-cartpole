@@ -7,6 +7,8 @@
 import time
 import numpy as np
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
 from DriverFunctions.custom_logging import my_logger
@@ -27,6 +29,11 @@ from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
+import subprocess, multiprocessing, platform
+from multiprocessing import Process, Queue
+from DriverFunctions.LivePlotThread import LivePlotThread
+import matplotlib.pyplot as plt
+from multiprocessing.connection import Client
 
 class PhysicalCartPoleDriver:
     def __init__(self):
@@ -45,6 +52,7 @@ class PhysicalCartPoleDriver:
         self.joystickMode = None
 
         self.printCount = 0
+        self.printCount2 = 0
 
         self.controlEnabled = False
         self.firmwareControl = False
@@ -56,6 +64,7 @@ class PhysicalCartPoleDriver:
         self.dance_start_time = 0.0
 
         self.loggingEnabled = False
+        self.livePlotEnabled = True
 
         try:
             self.kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
@@ -182,6 +191,9 @@ class PhysicalCartPoleDriver:
 
             if self.loggingEnabled:
                 self.write_csv_row()
+
+            if self.livePlotEnabled:
+                self.plot_live()
 
             # Print output
             self.write_current_data_to_terminal()
@@ -329,6 +341,13 @@ class PhysicalCartPoleDriver:
                 else:
                     ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
 
+            elif c == '5':
+                subprocess.call(["python", "DataAnalysis/state_analysis.py"])
+
+            elif c == '6':
+                self.livePlotEnabled = not self.livePlotEnabled
+                print(f"\nLive Plot: {self.livePlotEnabled}")
+
             # Exit
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
@@ -460,9 +479,32 @@ class PhysicalCartPoleDriver:
              self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
              self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start])
 
+    def plot_live(self):
+        BUFFER_LENGTH = 5
+        BUFFER_WIDTH = 1
+
+        if not hasattr(self, 'live_connection'):
+            address = ('localhost', 6000)
+            self.live_connection = Client(address)
+            self.live_buffer_index = 0
+            self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+        else:
+            if self.live_buffer_index < BUFFER_LENGTH:
+                self.live_buffer[self.live_buffer_index, :] = np.array([
+                    self.angle_raw,
+                    #self.s[ANGLE_IDX],
+                    #self.s[POSITION_IDX] * 100,
+                ])
+                self.live_buffer_index += 1
+            else:
+                #print(self.live_buffer)
+                self.live_connection.send(self.live_buffer)
+                self.live_buffer_index = 0
+                self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
+        if False or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"

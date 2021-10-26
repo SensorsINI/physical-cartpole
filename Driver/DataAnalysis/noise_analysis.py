@@ -3,12 +3,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+import glob
+import os
 
-# file_path = 'ExperimentRecordings/cartpole-2021-10-04-13-41-12.csv'
-file_path = '../ExperimentRecordings/upright_pole_cartpole-2021-10-04-17-50-44.csv'
-# file_path = 'ExperimentRecordings/hanging_pole_cartpole-2021-10-04-17-48-52.csv'
+list_of_files = glob.glob('../ExperimentRecordings/*.csv')
+latest_file = max(list_of_files, key=os.path.getctime)
 
-data: pd.DataFrame = pd.read_csv(file_path, comment='#')  # skip comment lines starting with #
+data: pd.DataFrame = pd.read_csv(latest_file, comment='#')  # skip comment lines starting with #
 angle_raw_data = data['angle_raw']
 
 # extract data information
