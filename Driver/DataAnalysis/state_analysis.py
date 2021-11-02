@@ -1,11 +1,15 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+#matplotlib.use('Qt5Agg')
 import glob
 import os
 
-list_of_files = glob.glob('ExperimentRecordings/*.csv')
-latest_file = max(list_of_files, key=os.path.getctime)
-data = pd.read_csv(latest_file, comment='#')
+list_of_files = glob.glob('../ExperimentRecordings/*.csv')
+list_of_files.sort(key=os.path.getctime, reverse=True)
+file = list_of_files[6]
+data = pd.read_csv(file, comment='#')
 
 data = data[['angle', 'angle_raw']][0:2000]
 
@@ -14,7 +18,7 @@ fig2, axs2 = plt.subplots(len(data.columns), 1, figsize=(12, 9))
 colors = plt.rcParams["axes.prop_cycle"]()
 
 print("\n")
-print(f"Analysing File: {latest_file}")
+print(f"Analysing File: {file}")
 print(f"Angle Raw -- Min: {data['angle_raw'].min()}, Max: {data['angle_raw'].max()}, Mean: {data['angle_raw'].mean():.3f}, Std: {data['angle_raw'].std():.3f}")
 print()
 
@@ -30,4 +34,4 @@ for i, col_name in enumerate(data):
     axs2[i].legend(loc='upper right')
     axs2[i].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
     
-plt. show()
+plt.show()

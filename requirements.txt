@@ -5,3 +5,5 @@ pandas
 matplotlib
 scipy
 GitPython
+PyQt5
+tk

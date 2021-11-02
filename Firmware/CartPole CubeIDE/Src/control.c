@@ -45,6 +45,7 @@ bool			controlSynch = false;
 bool            isCalibrated = true;
 unsigned short  ledPeriod;
 int  			angleSamples[64];
+int  			angleSamplesTimestamp[64];
 unsigned short 	angleSampIndex 	= 0;
 short			angleErrPrev;
 short			positionErrPrev;
@@ -135,7 +136,6 @@ void CONTROL_Loop(void)
     static unsigned char	packetCnt       = 0;
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
-	unsigned short 			i;
 	static int 				prevAngle = 0;
 	int 					angle, angleErr;
 	short 					positionRaw, position, positionErr;
@@ -144,29 +144,44 @@ void CONTROL_Loop(void)
 	int   					command;
 	int angle_mean = 0;
 
-
 	// Get latest angle and position
 	int angle_sum = 0;
 	int angle_min = angleSamples[0];
 	int angle_max = angleSamples[0];
-	int angle_maxstep = 0;
+	int invalid_step = 0;
 
-	for (i = 0; i < angle_averageLen; i++) {
-		//angle_maxstep
-		angle_min = (angleSamples[i] < angle_min ? angleSamples[i] : angle_min);
-		angle_max = (angleSamples[i] > angle_max ? angleSamples[i] : angle_max);
-		angle_sum += angleSamples[i];
+	#define MAX_ADC_STEP 10
+	#define MAX_INVALID_STEPS 2
+
+	for (int i = 0; i < angle_averageLen; i++) {
+		// start at oldest value (since angleSampIndex is not yet overwritten)
+		int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
+		//int dt = angleSamplesTimestamp[] - angleSamplesTimestamp
+
+		angle_min = (curr < angle_min ? curr : angle_min);
+		angle_max = (curr > angle_max ? curr : angle_max);
+		angle_sum += curr;
+
+		int prev = angleSamples[(angleSampIndex + i + angle_averageLen - 1) % angle_averageLen];
+		// previous value for oldest value not existing
+		if(i != 0 && abs(curr-prev) > MAX_ADC_STEP)
+			invalid_step++;
 	}
+
+	// Averaging & Median Filter: exclude min/max values from average
 	if (angle_averageLen > 2)
 		angle_mean = (short)((angle_sum - angle_min - angle_max) / (angle_averageLen-2));
 	else
 		angle_mean = angle_sum / angle_averageLen;
 
-	// jump detected: keep old value
-	/*if (abs(angle_max-angle_min) > 300) {
+	// Anomaly Detection: discard buffer if too many invalid steps (allow 2 for 1 outlier/popcorn noise)
+	if (invalid_step <= MAX_INVALID_STEPS)
+		angle = angle_mean;
+	else
 		angle = prevAngle;
-	} else*/
-	angle = angle_mean;
+
+	// jump Detection:
+
 	prevAngle = angle;
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
@@ -307,7 +322,8 @@ void CONTROL_BackgroundTask(void)
 		lastRead = now;
 	}*/
 	// read every 200us
-	else if (now > lastRead + 200) {
+	else if (now > lastRead + 100) {
+		// conversion takes 18us
 		int currAngle = ANGLE_Read();
 
 		/*// new jump: close to boundary && slope too high (30/0.2ms = 750/5ms)
@@ -323,6 +339,7 @@ void CONTROL_BackgroundTask(void)
 			currAngle = lastAngle;*/
 
 		angleSamples[angleSampIndex] = currAngle;
+		angleSamplesTimestamp[angleSampIndex] = now;
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
 		//lastAngle = currAngle;

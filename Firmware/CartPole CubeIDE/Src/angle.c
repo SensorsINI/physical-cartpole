@@ -41,6 +41,9 @@ void ANGLE_Init(void)
 
 unsigned short ANGLE_Read(void)
 {
+	// Conversion Cycles = 239.5 cycles + 12.5 cycles = 252 cycles
+	// Conversion Time = 252 cycles / 14MHz = 18us
+
 	// Set conversion sequence		 
 	ADC1->SQR3		&= 0xFFFFFFE0;		// Regular sequence 1 channel 3
 	ADC1->SQR3		|= 3;		  			    

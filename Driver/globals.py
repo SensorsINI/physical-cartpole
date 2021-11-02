@@ -7,6 +7,8 @@ CALIBRATE = False  # If True calibration will be run at start-up of the program
 # important to calibrate if running standalone to avoid motor burnout
 # because limits are determined during this calibration
 
+LIVE_PLOT = False
+
 CONTROLLER_NAME = 'PD'
 CONTROL_PERIOD_MS = 2  # It was 25 originally, we changed it to 5 - marcin & asude
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
@@ -23,7 +25,7 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 # ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+#ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:

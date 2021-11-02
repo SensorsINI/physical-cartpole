@@ -2,6 +2,8 @@ from multiprocessing.connection import Listener
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib
+matplotlib.use('TkAgg')
 
 address = ('localhost', 6000)     # family is deduced to be 'AF_INET'
 listener = Listener(address)
@@ -43,7 +45,7 @@ def animate(i):
             axs[i].legend(loc='upper right')
             axs[i].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
 
-ani = animation.FuncAnimation(fig, animate, interval=50)
+ani = animation.FuncAnimation(fig, animate, interval=100)
 plt.show()
 fig.close()
 print('Finished')

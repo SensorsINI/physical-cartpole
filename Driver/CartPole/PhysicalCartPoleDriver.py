@@ -30,9 +30,6 @@ from DriverFunctions.csv_helpers import csv_init
 from globals import *
 
 import subprocess, multiprocessing, platform
-from multiprocessing import Process, Queue
-from DriverFunctions.LivePlotThread import LivePlotThread
-import matplotlib.pyplot as plt
 from multiprocessing.connection import Client
 
 class PhysicalCartPoleDriver:
@@ -64,7 +61,7 @@ class PhysicalCartPoleDriver:
         self.dance_start_time = 0.0
 
         self.loggingEnabled = False
-        self.livePlotEnabled = True
+        self.livePlotEnabled = LIVE_PLOT
 
         try:
             self.kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
@@ -381,7 +378,7 @@ class PhysicalCartPoleDriver:
         self.elapsedTime = self.timeNow - self.startTime
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = (angle - self.anglePrev) / self.deltaTime  # rad/self.s
+        angleDerivative = wrap_angle_rad(angle - self.anglePrev) / self.deltaTime  # rad/self.s
         positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
 
         # Keep values of angle and position for next timestep, for smoothing and derivative calculation
@@ -481,7 +478,7 @@ class PhysicalCartPoleDriver:
 
     def plot_live(self):
         BUFFER_LENGTH = 5
-        BUFFER_WIDTH = 1
+        BUFFER_WIDTH = 2
 
         if not hasattr(self, 'live_connection'):
             address = ('localhost', 6000)
@@ -492,7 +489,7 @@ class PhysicalCartPoleDriver:
             if self.live_buffer_index < BUFFER_LENGTH:
                 self.live_buffer[self.live_buffer_index, :] = np.array([
                     self.angle_raw,
-                    #self.s[ANGLE_IDX],
+                    self.s[ANGLE_IDX],
                     #self.s[POSITION_IDX] * 100,
                 ])
                 self.live_buffer_index += 1
