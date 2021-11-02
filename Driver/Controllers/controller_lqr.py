@@ -48,8 +48,8 @@ class controller_lqr(template_controller):
         self.B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
 
         # Cost matrices for LQR controller
-        self.Q = np.diag([2000, 0.01, 8000, 10])  # How much to punish x, v, theta, omega
-        self.R = 100.5 # How much to punish the input
+        self.Q = np.diag([0.0, 0.0, 0.0, 0.0])  # How much to punish x, v, theta, omega
+        self.R = 100.0 # How much to punish the input
 
         # first, try to solve the ricatti equation
         # FIXME: Import needs to be different for some reason than in simulator.
@@ -126,11 +126,12 @@ class controller_lqr(template_controller):
         print("K trigger motor position calibration")
         print("=/- increase/decrease (fine tune) angle deviation value")
         print("[/] increase/decrease position target")
-        print("4/3 increase/decrease input penalization")
-        print("2/1 increase/decrease position penalization")
-        print("w/q increase/decrease velocity penalization")
-        print("s/a increase/decrease angle penalization")
-        print("x/z increase/decrease angular velocity penalization")
+        print("2/1 increase/decrease input penalization")
+        print("w/q increase/decrease position penalization")
+        print("s/a increase/decrease velocity penalization")
+        print("r/e increase/decrease angle penalization")
+        print("f/d increase/decrease angular velocity penalization")
+        print("z/x angle smoothing")
         print("p print LQR parameters")
         print("l toggle logging data")
         print("S/L Save/Load param values from disk")
@@ -145,43 +146,43 @@ class controller_lqr(template_controller):
         if c == 'p':
             self.printparams()
 
-        elif c == '4': # Increase input penalization
+        elif c == '2': # Increase input penalization
             self.R = inc(self.R)
             self.update()
             print("\nIncreased input penalization to {:}".format(self.R))
-        elif c == '3': # Decrease input penalization
+        elif c == '1': # Decrease input penalization
             self.R = dec(self.R)
             self.update()
             print("\nDecreased input penalization to {:}".format(self.R))
-        elif c == '2': # Increase position penalization
+        elif c == 'w': # Increase position penalization
             self.Q[0][0] = inc(self.Q[0][0])
             self.update()
             print("\nIncreased position penalization {:}".format(self.Q[0][0]))
-        elif c == '1': # Decrease position penalization
+        elif c == 'q': # Decrease position penalization
             self.Q[0][0] = dec(self.Q[0][0])
             self.update()
             print("\nDecreased position penalization {:}".format(self.Q[0][0]))
-        elif c == 'w': # Increase velocity penalization
+        elif c == 's': # Increase velocity penalization
             self.Q[1][1] = inc(self.Q[1][1])
             self.update()
             print("\nIncreased velocity penalization {:}".format(self.Q[1][1]))
-        elif c == 'q': # Decrease velocity penalization
+        elif c == 'a': # Decrease velocity penalization
             self.Q[1][1] = dec(self.Q[1][1])
             self.update()
             print("\nDecreased velocity penalization {:}".format(self.Q[1][1]))
-        elif c == 's': # Increase angle penalization
+        elif c == 'r': # Increase angle penalization
             self.Q[2][2] = inc(self.Q[2][2])
             self.update()
             print("\nIncreased angle penalization {:}".format(self.Q[2][2]))
-        elif c == 'a': # Decrease angle penalization
+        elif c == 'e': # Decrease angle penalization
             self.Q[2][2] = dec(self.Q[2][2])
             self.update()
             print("\nDecreased angle penalization {:}".format(self.Q[2][2]))
-        elif c == 'x': # Increase angular velocity penalization
+        elif c == 'f': # Increase angular velocity penalization
             self.Q[3][3] = inc(self.Q[3][3])
             self.update()
             print("\nIncreased angular velocity penalization {:}".format(self.Q[3][3]))
-        elif c == 'z': # Decrease angular velocity penalization
+        elif c == 'd': # Decrease angular velocity penalization
             self.Q[3][3] = dec(self.Q[3][3])
             self.update()
             print("\nDecreased angular velocity penalization {:}".format(self.Q[3][3]))
