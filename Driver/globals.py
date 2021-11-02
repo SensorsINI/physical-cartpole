@@ -3,6 +3,8 @@ import logging
 LOGGING_LEVEL = logging.INFO
 PRINT_PERIOD_MS = 100  # shows state every this many ms
 
+LIVE_PLOT = True
+
 CALIBRATE = False  # If True calibration will be run at start-up of the program
 # important to calibrate if running standalone to avoid motor burnout
 # because limits are determined during this calibration
