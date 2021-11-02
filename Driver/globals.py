@@ -7,8 +7,6 @@ CALIBRATE = False  # If True calibration will be run at start-up of the program
 # important to calibrate if running standalone to avoid motor burnout
 # because limits are determined during this calibration
 
-LIVE_PLOT = False
-
 CONTROLLER_NAME = 'PD'
 CONTROL_PERIOD_MS = 2  # It was 25 originally, we changed it to 5 - marcin & asude
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored

@@ -3,7 +3,7 @@ This is a linear-quadratic regulator
 It assumes that the input relation is u = Q*u_max (no fancy motor model) !
 """
 
-from scipy.linalg import solve_continuous_are
+from scipy.linalg import solve_continuous_are, solve_discrete_are
 import numpy as np
 
 from Controllers.template_controller import template_controller
@@ -66,6 +66,8 @@ class controller_lqr(template_controller):
         self.X = X
         self.eigVals = eigVals
 
+        # self.motorcmd_save = []
+
     def update(self):
         X = solve_continuous_are(self.A, self.B, self.Q, self.R)
 
@@ -88,6 +90,7 @@ class controller_lqr(template_controller):
             [[s[cartpole_state_varname_to_index('position')] - target_position], [s[cartpole_state_varname_to_index('positionD')]], [s[cartpole_state_varname_to_index('angle')]], [s[cartpole_state_varname_to_index('angleD')]]])
 
         motorCmd = np.asscalar(np.dot(-self.K, state))
+        # self.motorcmd_save.append(motorCmd)
 
         # Clip Q
         if motorCmd > 1.0:
@@ -96,6 +99,7 @@ class controller_lqr(template_controller):
             motorCmd = -1.0
         else:
             pass
+
         return motorCmd
 
     def printparams(self):
@@ -107,6 +111,10 @@ class controller_lqr(template_controller):
         print(self.eigVals)
         print("GAIN VECTOR K:")
         print(self.K)
+        # print(self.motorcmd_save)
+        # if self.motorcmd_save:
+        #     print(np.max(self.motorcmd_save))
+        #     print(np.min(self.motorcmd_save))
 
     def print_help(self):
         print("\n***********************************")
