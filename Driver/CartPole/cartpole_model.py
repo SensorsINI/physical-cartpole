@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from typing import Union
-from Driver.CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
+from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 
 import numpy as np
 from numpy.random import SFC64, Generator
