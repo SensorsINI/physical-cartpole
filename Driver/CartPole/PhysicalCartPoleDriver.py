@@ -351,6 +351,7 @@ class PhysicalCartPoleDriver:
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Filter
+
         angle = angle * (self.angle_smoothing) + (1 - self.angle_smoothing) * self.anglePrev
         angle = wrap_angle_rad(angle)
 
