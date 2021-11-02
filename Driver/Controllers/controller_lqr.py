@@ -10,6 +10,8 @@ from Controllers.template_controller import template_controller
 from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 from CartPole.cartpole_model import cartpole_jacobian, u_max, s0
 
+from globals import *
+
 class controller_lqr(template_controller):
     def __init__(self):
         # From https://github.com/markwmuller/controlpy/blob/master/controlpy/synthesis.py#L8
@@ -144,50 +146,43 @@ class controller_lqr(template_controller):
             self.printparams()
 
         elif c == '4': # Increase input penalization
-            if self.R == 0:
-                self.R = 1e-5
-            else:
-                self.R *= 10
+            self.R = inc(self.R)
             self.update()
             print("\nIncreased input penalization to {:}".format(self.R))
-
         elif c == '3': # Decrease input penalization
-            if self.R == 1e-5:
-                self.R = 0
-            else:
-                self.R /= 10
+            self.R = dec(self.R)
             self.update()
             print("\nDecreased input penalization to {:}".format(self.R))
         elif c == '2': # Increase position penalization
-            self.Q[0][0] *= 10
+            self.Q[0][0] = inc(self.Q[0][0])
             self.update()
             print("\nIncreased position penalization {:}".format(self.Q[0][0]))
         elif c == '1': # Decrease position penalization
-            self.Q[0][0] /= 10
+            self.Q[0][0] = dec(self.Q[0][0])
             self.update()
             print("\nDecreased position penalization {:}".format(self.Q[0][0]))
         elif c == 'w': # Increase velocity penalization
-            self.Q[1][1] *= 10
+            self.Q[1][1] = inc(self.Q[1][1])
             self.update()
             print("\nIncreased velocity penalization {:}".format(self.Q[1][1]))
         elif c == 'q': # Decrease velocity penalization
-            self.Q[1][1] /= 10
+            self.Q[1][1] = dec(self.Q[1][1])
             self.update()
             print("\nDecreased velocity penalization {:}".format(self.Q[1][1]))
         elif c == 's': # Increase angle penalization
-            self.Q[2][2] *= 10
+            self.Q[2][2] = inc(self.Q[2][2])
             self.update()
             print("\nIncreased angle penalization {:}".format(self.Q[2][2]))
         elif c == 'a': # Decrease angle penalization
-            self.Q[2][2] /= 10
+            self.Q[2][2] = dec(self.Q[2][2])
             self.update()
             print("\nDecreased angle penalization {:}".format(self.Q[2][2]))
         elif c == 'x': # Increase angular velocity penalization
-            self.Q[3][3] *= 10
+            self.Q[3][3] = inc(self.Q[3][3])
             self.update()
             print("\nIncreased angular velocity penalization {:}".format(self.Q[3][3]))
         elif c == 'z': # Decrease angular velocity penalization
-            self.Q[3][3] /= 10
+            self.Q[3][3] = dec(self.Q[3][3])
             self.update()
             print("\nDecreased angular velocity penalization {:}".format(self.Q[3][3]))
 
