@@ -27,6 +27,8 @@ from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
+from latency_adder import LatencyAdder
+
 
 class PhysicalCartPoleDriver:
     def __init__(self):
@@ -103,6 +105,11 @@ class PhysicalCartPoleDriver:
         self.command = None
         self.sent = None
         self.received = None
+
+        # Artificially adding latency
+        self.latency = 0.0
+        self.LatencyAdderInstance = LatencyAdder(latency=self.latency)
+        self.s_delayed = np.copy(self.s)
 
     def run(self):
         self.setup()
@@ -382,6 +389,9 @@ class PhysicalCartPoleDriver:
         self.s[ANGLED_IDX] = angleDerivative
         self.s[ANGLE_COS_IDX] = np.cos(self.s[ANGLE_IDX])
         self.s[ANGLE_SIN_IDX] = np.sin(self.s[ANGLE_IDX])
+
+        self.LatencyAdderInstance.add_current_state_to_latency_buffer(self.s)
+        self.s = self.LatencyAdderInstance.get_interpolated_delayed_state()
 
     def set_target_position(self):
         # Get the target position
