@@ -27,7 +27,7 @@ from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
-from latency_adder import LatencyAdder
+from CartPole.latency_adder import LatencyAdder
 
 
 class PhysicalCartPoleDriver:
@@ -107,8 +107,8 @@ class PhysicalCartPoleDriver:
         self.received = None
 
         # Artificially adding latency
-        self.latency = 0.0
-        self.LatencyAdderInstance = LatencyAdder(latency=self.latency)
+        self.additional_latency = 0.0
+        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency)
         self.s_delayed = np.copy(self.s)
 
     def run(self):
@@ -318,6 +318,16 @@ class PhysicalCartPoleDriver:
                     self.joystickMode = 'not active'
                     self.log.info(f'set joystick to {self.joystickMode} mode')
 
+            elif c == '6':
+                self.additional_latency += 0.002
+                print('Additional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
+                self.LatencyAdderInstance.set_latency(self.additional_latency)
+            elif c == '5':
+                self.additional_latency -= 0.002
+                if self.additional_latency < 0.0:
+                    self.additional_latency = 0.0
+                print('Additional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
+                self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == 'b':
                 angle_average = 0
                 number_of_measurements = 100
