@@ -3,19 +3,41 @@
 import time
 from globals import *
 
-# from .pendulum import Pendulum
-STARTING_POSITION = -(-1)**n*0.17# cart starting position
-ENDING_POSITION = (-1) ** n * 300 * TRACK_LENGTH / POSITION_ENCODER_RANGE # position to turn off motor
-RESET_SPEED = (-1)**n*2500
-SPEED_STEP = (-1)**n*250
-STARTING_SPEED = (-1)**n*1000 #doesn't work for 500 for some reason
-ENDING_SPEED = (-1)**n*8250
+ACCELERATE_FIRST_TO_LEFT = True
+BIDIRECTIONAL = True
+
+# Direction for measurement.py with the cart accelerating to right:
+STARTING_POSITION = -0.17# cart starting position
+ENDING_POSITION = 300 * TRACK_LENGTH / POSITION_ENCODER_RANGE # position to turn off motor
+RESET_SPEED = 2500
+SPEED_STEP = 250
+STARTING_SPEED = 1000 #doesn't work for 500 for some reason
+ENDING_SPEED = 8250
 PAUSE_BEFORE_STEP_S = .5 # pause after reset to start position before starting step
 FRICTION_SLOWDOWN_TIME_S=1 # time at end to just turn off motor and glide to stop
 STEP_TIMEOUT_S=10
 
+# Call this function if you wish cart to accelerate to left instead
+def get_parameters_opposite_direction():
+    global STARTING_POSITION, ENDING_POSITION, RESET_SPEED, SPEED_STEP, STARTING_SPEED, ENDING_SPEED
+
+    STARTING_POSITION = -STARTING_POSITION
+    ENDING_POSITION = -ENDING_POSITION
+    RESET_SPEED = -RESET_SPEED
+    SPEED_STEP = -SPEED_STEP
+    STARTING_SPEED = -STARTING_SPEED
+    ENDING_SPEED = -ENDING_SPEED
+
+
+
 class StepResponseMeasurement:
     def __init__(self):
+
+        if ACCELERATE_FIRST_TO_LEFT:
+            get_parameters_opposite_direction()
+
+        self.second_round = False # In case of bidirectional measurement, detect second "round", the opposite direction
+
         self.state = 'idle'
         self.speed = RESET_SPEED
         self.motor = 0
@@ -65,9 +87,18 @@ class StepResponseMeasurement:
                 self.state = 'moving'
                 self.time_state_changed = time
             else:
+                if BIDIRECTIONAL and (self.second_round == False):
+                    get_parameters_opposite_direction()
+                    self.second_round = True
+                    self.state = 'start'
+                else:
+                    if BIDIRECTIONAL:
+                        get_parameters_opposite_direction()
+                        self.second_round = False
+                    self.state = 'idle'
+
                 self.speed = 0
                 self.motor = (0)
-                self.state = 'idle'
                 self.time_state_changed = time
         elif self.state == 'moving':
             if (ENDING_POSITION>0 and position>ENDING_POSITION) or (ENDING_POSITION<0 and position<ENDING_POSITION):

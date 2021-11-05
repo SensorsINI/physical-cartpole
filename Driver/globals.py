@@ -26,7 +26,8 @@ MOTOR_TYPE = 'POLOLU'
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 # ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+#ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
     ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to -pi
@@ -45,9 +46,6 @@ TRACK_LENGTH = 0.396  # Total usable track length in meters
 POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH/POSITION_ENCODER_RANGE # 0.000084978540773
 
 POSITION_TARGET = 0.0  # meters
-
-# Direction for measurement.py - n = 2 for right, n = 1 for left.
-n = 1
 
 JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
