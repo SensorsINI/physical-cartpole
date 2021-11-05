@@ -484,7 +484,7 @@ class PhysicalCartPoleDriver:
              self.target_position, self.controller.positionErr, self.controller.angleCmd,
              self.controller.positionCmd, self.calculatedMotorCmd, Q,
              self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
-             self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start])
+             self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
