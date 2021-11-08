@@ -5,11 +5,12 @@ from globals import *
 
 ACCELERATE_FIRST_TO_LEFT = True
 BIDIRECTIONAL = True
+FRICTION_SLOWDOWN = False
 
 # Direction for measurement.py with the cart accelerating to right:
-STARTING_POSITION = -0.17# cart starting position
+STARTING_POSITION = -0.15 # cart starting position
 ENDING_POSITION = 300 * TRACK_LENGTH / POSITION_ENCODER_RANGE # position to turn off motor
-RESET_SPEED = 2500
+RESET_SPEED = 1500
 SPEED_STEP = 250
 STARTING_SPEED = 1000 #doesn't work for 500 for some reason
 ENDING_SPEED = 8250
@@ -103,10 +104,13 @@ class StepResponseMeasurement:
         elif self.state == 'moving':
             if (ENDING_POSITION>0 and position>ENDING_POSITION) or (ENDING_POSITION<0 and position<ENDING_POSITION):
                 self.motor = 0
-                self.state = 'friction_slowdown'
+                if FRICTION_SLOWDOWN:
+                    self.state = 'friction_slowdown'
+                else:
+                    self.state = 'resetting'
                 self.time_state_changed = time
             self._check_timeout(time)
-        elif self.state=='friction_slowdown':
+        elif self.state == 'friction_slowdown':
             self.motor = 0
             if (time - self.time_state_changed > FRICTION_SLOWDOWN_TIME_S):
                 self.state='resetting'
