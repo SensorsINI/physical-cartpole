@@ -48,8 +48,8 @@ unsigned short ANGLE_Read(void)
 	ADC1->SQR3		&= 0xFFFFFFE0;		// Regular sequence 1 channel 3
 	ADC1->SQR3		|= 3;		  			    
 	ADC1->CR2		|= 1<<22;			// Start rule conversion channel 
-	while (!(ADC1->SR & 1<<1));			// Wait for conversion end   
-	return ADC1->DR;					// Return the ADC value	
+	while (!(ADC1->SR & 1<<1));			// Wait for conversion end
+	return ADC1->DR;					// Return the ADC value
 }
 
 unsigned short ANGLE_ReadAvergage(unsigned int n)

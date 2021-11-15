@@ -31,11 +31,7 @@ void ENCODER_Init(void)
 
 short ENCODER_Read(void)
 {
-#ifdef POLOLU_MOTOR
-	return -(TIM4->CNT); 
-#else
-	return -(TIM4->CNT); // tobi: negate to make most positive cart position to right side when facing the cart side of balancer
-#endif
+	return -(TIM4->CNT);
 }
 
 void TIM4_IRQHandler(void)

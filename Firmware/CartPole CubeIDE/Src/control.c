@@ -144,28 +144,16 @@ void CONTROL_Loop(void)
 	int   					command;
 	int angle_mean = 0;
 
-	// Get latest angle and position
+	// sum/min/max of buffer
 	int angle_sum = 0;
 	int angle_min = angleSamples[0];
 	int angle_max = angleSamples[0];
-	int invalid_step = 0;
-
-	#define MAX_ADC_STEP 10
-	#define MAX_INVALID_STEPS 2
-
 	for (int i = 0; i < angle_averageLen; i++) {
-		// start at oldest value (since angleSampIndex is not yet overwritten)
 		int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
-		//int dt = angleSamplesTimestamp[] - angleSamplesTimestamp
 
 		angle_min = (curr < angle_min ? curr : angle_min);
 		angle_max = (curr > angle_max ? curr : angle_max);
 		angle_sum += curr;
-
-		int prev = angleSamples[(angleSampIndex + i + angle_averageLen - 1) % angle_averageLen];
-		// previous value for oldest value not existing
-		if(i != 0 && abs(curr-prev) > MAX_ADC_STEP)
-			invalid_step++;
 	}
 
 	// Averaging & Median Filter: exclude min/max values from average
@@ -174,15 +162,29 @@ void CONTROL_Loop(void)
 	else
 		angle_mean = angle_sum / angle_averageLen;
 
+	// Detect invalid steps
+	#define MAX_ADC_STEP 10
+	#define MAX_INVALID_STEPS 2
+
+	int invalid_step = 0;
+	for (int i = 0; i < angle_averageLen; i++) {
+		// start at oldest value (since angleSampIndex is not yet overwritten)
+		int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
+		//int dt = angleSamplesTimestamp[] - angleSamplesTimestamp
+
+		int prev = angleSamples[(angleSampIndex + i + angle_averageLen - 1) % angle_averageLen];
+		// previous value for oldest value not existing
+		if(i != 0 && abs(curr-prev) > MAX_ADC_STEP)
+			invalid_step++;
+	}
+
 	// Anomaly Detection: discard buffer if too many invalid steps (allow 2 for 1 outlier/popcorn noise)
 	if (invalid_step <= MAX_INVALID_STEPS)
-		angle = angle_mean;
+		prevAngle = angle = angle_mean;
 	else
 		angle = prevAngle;
 
-	// jump Detection:
 
-	prevAngle = angle;
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position    = (positionRaw - positionCentre);
@@ -294,58 +296,26 @@ void CONTROL_BackgroundTask(void)
 	unsigned int			pktLen;
 	short					motorCmd;
 	static int				lastRead = 0;
-	//static bool				jumpDetected = false;
-	//static int				jumpTimestamp = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	/*int previous = angleSamples[angleSampIndex == 0 ? angle_averageLen : angleSampIndex-1];
-	int current = ANGLE_Read();
-	angleSamples[angleSampIndex] = unwrap(current, previous);*/
-
 	int now = TIMER1_getSystemTime_Us();
 
 	// int-overflow after 1h
 	if (now < lastRead) {
 		lastRead = now;
 	}
-	/*// jump detected: reset after 5000us
-	else if (jumpDetected && now > jumpTimestamp + 5000) {
-		jumpDetected = false;
-
-		// flush buffer with new value
-		int currAngle = ANGLE_Read();
-		for(int i=0; i<angle_averageLen; i++)
-			angleSamples[i] = currAngle;
-		lastAngle = currAngle;
-		lastRead = now;
-	}*/
 	// read every 200us
 	else if (now > lastRead + 100) {
 		// conversion takes 18us
-		int currAngle = ANGLE_Read();
+		angleSamples[angleSampIndex] = ANGLE_Read();
 
-		/*// new jump: close to boundary && slope too high (30/0.2ms = 750/5ms)
-		#define THRESHOLD 200
-		#define MAX_SLOPE 10
-		if ((currAngle < THRESHOLD || currAngle > 4096 - THRESHOLD) && abs(lastAngle-currAngle) > MAX_SLOPE) {
-			jumpDetected = true;
-			jumpTimestamp = now;
-		}
-
-		// keep angle during jump
-		if (jumpDetected)
-			currAngle = lastAngle;*/
-
-		angleSamples[angleSampIndex] = currAngle;
 		angleSamplesTimestamp[angleSampIndex] = now;
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
-		//lastAngle = currAngle;
 		lastRead = now;
 	}
-
 
 	///////////////////////////////////////////////////
 	// Apoply Delayed Control Command

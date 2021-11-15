@@ -3,7 +3,7 @@ import logging
 LOGGING_LEVEL = logging.INFO
 PRINT_PERIOD_MS = 100  # shows state every this many ms
 
-LIVE_PLOT = True
+LIVE_PLOT = False
 
 CALIBRATE = False  # If True calibration will be run at start-up of the program
 # important to calibrate if running standalone to avoid motor burnout
@@ -25,8 +25,8 @@ MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 # ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
-#ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+#ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
     ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to -pi

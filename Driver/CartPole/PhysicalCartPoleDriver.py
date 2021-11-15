@@ -479,7 +479,7 @@ class PhysicalCartPoleDriver:
 
     def plot_live(self):
         BUFFER_LENGTH = 5
-        BUFFER_WIDTH = 2
+        BUFFER_WIDTH = 3
 
         if not hasattr(self, 'live_connection'):
             address = ('localhost', 6000)
@@ -489,6 +489,7 @@ class PhysicalCartPoleDriver:
         else:
             if self.live_buffer_index < BUFFER_LENGTH:
                 self.live_buffer[self.live_buffer_index, :] = np.array([
+                    self.sent,
                     self.angle_raw,
                     self.s[ANGLE_IDX],
                     #self.s[POSITION_IDX] * 100,
