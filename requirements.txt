@@ -7,4 +7,5 @@ scipy
 GitPython
 PyQt5
 tk
+sympy
 sklearn
