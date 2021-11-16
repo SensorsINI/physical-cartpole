@@ -1,3 +1,5 @@
 /Driver/ExperimentRecordings/
 /Firmware/CartPole CubeIDE/Debug/Src/
+/Firmware/Factory Firmware CubeIDE/Debug/Src/
 .DS_Store
+/.idea

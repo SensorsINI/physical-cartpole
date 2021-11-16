@@ -4,6 +4,7 @@ import time
 
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
+READ_STATE_TIMEOUT      = 1.0      # Seconds
 SERIAL_SOF              = 0xAA
 CMD_PING                = 0xC0
 CMD_STREAM_ON           = 0xC1
@@ -25,6 +26,8 @@ class Interface:
         self.end = None
 
     def open(self, port, baud):
+        self.port = port
+        self.baud = baud
         self.device = serial.Serial(port, baudrate=baud, timeout=None)
         self.device.reset_input_buffer()
 
@@ -120,7 +123,7 @@ class Interface:
         self.end = time.time()
 
     def read_state(self):
-        reply = self._receive_reply(CMD_STATE, 19)
+        reply = self._receive_reply(CMD_STATE, 19, READ_STATE_TIMEOUT)
 
         # Verify packet sequence 
         if self.prevPktNum != 1000:
@@ -138,13 +141,20 @@ class Interface:
 
         while True:
             c = self.device.read()
-            if self.start == False:
-                self.start = time.time()
+            # Timeout: reopen device, start stream, reset msg and try again
             if len(c) == 0:
-                self.device.timeout = None
-                return []
-
-            self.msg.append(ord(c))
+                print('\nReconnecting.')
+                self.device.close()
+                self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
+                self.clear_read_buffer()
+                time.sleep(1)
+                self.stream_output(True)
+                self.msg = []
+                self.start = False
+            else:
+                self.msg.append(ord(c))
+                if self.start == False:
+                    self.start = time.time()
 
             while len(self.msg) >= cmdLen:
                 # print('I am looping! Hurra!')

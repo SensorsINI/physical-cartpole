@@ -13,6 +13,7 @@ from globals import *
 
 # PID params from json
 PARAMS_JSON_FILE = JSON_PATH + 'control-7.json'
+ #PARAMS_JSON_FILE = JSON_PATH + 'control-factory.json'
 
 class controller_PD(template_controller):
     def __init__(self):

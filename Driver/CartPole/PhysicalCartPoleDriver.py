@@ -7,6 +7,8 @@
 import time
 import numpy as np
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
 from DriverFunctions.custom_logging import my_logger
@@ -27,8 +29,9 @@ from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
+import subprocess, multiprocessing, platform
+from multiprocessing.connection import Client
 from CartPole.latency_adder import LatencyAdder
-
 
 class PhysicalCartPoleDriver:
     def __init__(self):
@@ -47,6 +50,7 @@ class PhysicalCartPoleDriver:
         self.joystickMode = None
 
         self.printCount = 0
+        self.printCount2 = 0
 
         self.controlEnabled = False
         self.firmwareControl = False
@@ -58,6 +62,7 @@ class PhysicalCartPoleDriver:
         self.dance_start_time = 0.0
 
         self.loggingEnabled = False
+        self.livePlotEnabled = LIVE_PLOT
 
         try:
             self.kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
@@ -190,6 +195,9 @@ class PhysicalCartPoleDriver:
             if self.loggingEnabled:
                 self.write_csv_row()
 
+            if self.livePlotEnabled:
+                self.plot_live()
+
             # Print output
             self.write_current_data_to_terminal()
 
@@ -318,11 +326,11 @@ class PhysicalCartPoleDriver:
                     self.joystickMode = 'not active'
                     self.log.info(f'set joystick to {self.joystickMode} mode')
 
-            elif c == '6':
+            elif c == '8':
                 self.additional_latency += 0.002
                 print('Additional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
-            elif c == '5':
+            elif c == '7':
                 self.additional_latency -= 0.002
                 if self.additional_latency < 0.0:
                     self.additional_latency = 0.0
@@ -346,6 +354,13 @@ class PhysicalCartPoleDriver:
                 else:
                     ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
 
+            elif c == '5':
+                subprocess.call(["python", "DataAnalysis/state_analysis.py"])
+
+            elif c == '6':
+                self.livePlotEnabled = not self.livePlotEnabled
+                print(f"\nLive Plot: {self.livePlotEnabled}")
+
             # Exit
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
@@ -360,8 +375,7 @@ class PhysicalCartPoleDriver:
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
         # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
         # Hence we revert sign for Pololu
-        if MOTOR_TYPE == 'POLOLU':
-            self.position_centered_unconverted = -self.position_centered_unconverted
+        self.position_centered_unconverted = -self.position_centered_unconverted
 
         # Convert position and angle to physical units
         angle = (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
@@ -381,7 +395,7 @@ class PhysicalCartPoleDriver:
         self.elapsedTime = self.timeNow - self.startTime
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = (angle - self.anglePrev) / self.deltaTime  # rad/self.s
+        angleDerivative = wrap_angle_rad(angle - self.anglePrev) / self.deltaTime  # rad/self.s
         positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
 
         # Keep values of angle and position for next timestep, for smoothing and derivative calculation
@@ -458,11 +472,7 @@ class PhysicalCartPoleDriver:
         actualMotorCmd = int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd > 0.6 * MOTOR_MAX_PWM else actualMotorCmd
         actualMotorCmd = -int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd < -0.6 * MOTOR_MAX_PWM else actualMotorCmd
 
-        # Reverse sign if you are using pololu motor and not the original one
-        if MOTOR_TYPE == 'POLOLU':
-            actualMotorCmd = -actualMotorCmd
-
-        return actualMotorCmd
+        return -actualMotorCmd
 
     def safety_switch_off(self, actualMotorCmd):
         # Temporary safety switch off if goes to the boundary
@@ -486,9 +496,33 @@ class PhysicalCartPoleDriver:
              self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
              self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
 
+    def plot_live(self):
+        BUFFER_LENGTH = 5
+        BUFFER_WIDTH = 3
+
+        if not hasattr(self, 'live_connection'):
+            address = ('localhost', 6000)
+            self.live_connection = Client(address)
+            self.live_buffer_index = 0
+            self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+        else:
+            if self.live_buffer_index < BUFFER_LENGTH:
+                self.live_buffer[self.live_buffer_index, :] = np.array([
+                    self.sent,
+                    self.angle_raw,
+                    self.s[ANGLE_IDX],
+                    #self.s[POSITION_IDX] * 100,
+                ])
+                self.live_buffer_index += 1
+            else:
+                #print(self.live_buffer)
+                self.live_connection.send(self.live_buffer)
+                self.live_buffer_index = 0
+                self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
+        if False or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"

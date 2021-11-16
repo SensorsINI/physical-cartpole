@@ -1,3 +1,9 @@
-numpy
+numpy==1.21.0
 pygame
 pyserial
+pandas
+matplotlib
+scipy
+GitPython
+PyQt5
+tk

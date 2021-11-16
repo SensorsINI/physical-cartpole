@@ -3,6 +3,8 @@ import logging
 LOGGING_LEVEL = logging.INFO
 PRINT_PERIOD_MS = 100  # shows state every this many ms
 
+LIVE_PLOT = False
+
 CALIBRATE = False  # If True calibration will be run at start-up of the program
 # important to calibrate if running standalone to avoid motor burnout
 # because limits are determined during this calibration
@@ -18,16 +20,13 @@ JSON_PATH = 'Json/'
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
 
-MOTOR_TYPE = 'POLOLU'
-# MOTOR_TYPE = 'ORIGINAL'
-
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 # ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
-#ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1015 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+#ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
     ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2 # moves upright to 0 and hanging to -pi
@@ -55,7 +54,7 @@ JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENG
 
 import platform
 import subprocess
-SERIAL_PORT = subprocess.run(['ls /dev/tty.usbserial*'], shell=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1] if platform.system() == 'Darwin' else '/dev/ttyUSB1'
+SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB1'
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05

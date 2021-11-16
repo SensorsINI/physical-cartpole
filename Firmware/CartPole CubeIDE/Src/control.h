@@ -15,13 +15,13 @@
 #define CONTROL_ANGLE_KP                200.0f
 #define CONTROL_ANGLE_KI                0
 #define CONTROL_ANGLE_KD                200.0f
-#define CONTROL_ANGLE_AVERAGE_LEN		15  //16        // Number of samples to average over to determine angular displacement (max is 32)
+#define CONTROL_ANGLE_AVERAGE_LEN		20  //16        // Number of samples to average over to determine angular displacement (max is 32)
 
 #define CONTROL_POSITION_SET_POINT      0
 #define CONTROL_POSITION_SMOOTHING      1 // 0.2f        // 0 to 1.0 (1.0 disables smoothing)
 #define CONTROL_POSITION_KP             10.0 //20.0f
 #define CONTROL_POSITION_KI             0
-#define CONTROL_POSITION_KD             0.0 //300.0f
+#define CONTROL_POSITION_KD             100.0 //300.0f
 #define CONTROL_POSITION_PERIOD_MS      20 // 25
 
 void CONTROL_Init(void);
