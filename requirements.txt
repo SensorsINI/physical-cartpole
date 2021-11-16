@@ -1,4 +1,4 @@
-numpy==1.21.0
+numpy
 pygame
 pyserial
 pandas
@@ -7,3 +7,4 @@ scipy
 GitPython
 PyQt5
 tk
+sklearn

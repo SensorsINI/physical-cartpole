@@ -32,8 +32,8 @@ float TIMER1_getSystemTime() {
     return ((float)timer_resets + (TIM1->SR ? 1.0 : 0.0)) * 1e-3 * _periodMS + ((float)TIM1->CNT) * 1e-6;
 }
 
-// long max value: 2'147'483'647us = 2'147.483647s
-int TIMER1_getSystemTime_Us() {
+// unsigned long max value: 4'294'967'295us = 4'294.967'295s ~ 60min
+unsigned int TIMER1_getSystemTime_Us() {
     return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * _periodMS + TIM1->CNT;
 }
 

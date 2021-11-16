@@ -123,7 +123,7 @@ class Interface:
         self.end = time.time()
 
     def read_state(self):
-        reply = self._receive_reply(CMD_STATE, 19, READ_STATE_TIMEOUT)
+        reply = self._receive_reply(CMD_STATE, 20, READ_STATE_TIMEOUT)
 
         # Verify packet sequence 
         if self.prevPktNum != 1000:
@@ -131,9 +131,10 @@ class Interface:
                 print("WARNING -- Skipped packets [prev={0} now={1}]".format(self.prevPktNum, reply[3]))
         self.prevPktNum = reply[3]
 
-        (angle, position, command) = struct.unpack('hhh', bytes(reply[4:10]))
-        sent, received = struct.unpack('ff', bytes(reply[10:18]))
-        return angle, position, command, sent, received
+        (angle, angleD, position) = struct.unpack('hhh', bytes(reply[4:10]))
+        frozen = struct.unpack('B', bytes(reply[10:11]))[0]
+        sent, received = struct.unpack('II', bytes(reply[11:19]))
+        return angle, angleD, position, frozen, sent/1e6, received/1e6
 
     def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout

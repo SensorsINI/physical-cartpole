@@ -325,7 +325,7 @@ class PhysicalCartPoleDriver:
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
                     self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                    (angle, _, _, _, _) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
@@ -354,11 +354,9 @@ class PhysicalCartPoleDriver:
 
         # This function will block at the rate of the control loop
         self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-        (self.angle_raw, self.position_raw, self.command, self.sent, self.received) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.frozen, self.sent, self.received) = self.InterfaceInstance.read_state()
 
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
-        # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
-        # Hence we revert sign for Pololu
         self.position_centered_unconverted = -self.position_centered_unconverted
 
         # Convert position and angle to physical units
@@ -366,8 +364,6 @@ class PhysicalCartPoleDriver:
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Filter
-
-        angle = angle * (self.angle_smoothing) + (1 - self.angle_smoothing) * self.anglePrev
         angle = wrap_angle_rad(angle)
 
         # Time self.measurement
@@ -379,7 +375,7 @@ class PhysicalCartPoleDriver:
         self.elapsedTime = self.timeNow - self.startTime
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = wrap_angle_rad(angle - self.anglePrev) / self.deltaTime  # rad/self.s
+        angleDerivative = wrap_angle_rad(self.angleD_raw * ANGLE_NORMALIZATION_FACTOR) / self.deltaTime  # rad/self.s
         positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
 
         # Keep values of angle and position for next timestep, for smoothing and derivative calculation
@@ -469,7 +465,7 @@ class PhysicalCartPoleDriver:
     def write_csv_row(self):
         Q = self.calculatedMotorCmd / MOTOR_FULL_SCALE
         self.csvwriter.writerow(
-            [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+            [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
              self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
              self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
              self.target_position, self.controller.positionErr, self.controller.angleCmd,
@@ -479,7 +475,7 @@ class PhysicalCartPoleDriver:
 
     def plot_live(self):
         BUFFER_LENGTH = 5
-        BUFFER_WIDTH = 3
+        BUFFER_WIDTH = 4
 
         if not hasattr(self, 'live_connection'):
             address = ('localhost', 6000)
@@ -491,7 +487,9 @@ class PhysicalCartPoleDriver:
                 self.live_buffer[self.live_buffer_index, :] = np.array([
                     self.sent,
                     self.angle_raw,
-                    self.s[ANGLE_IDX],
+                    self.angleD_raw,
+                    self.frozen
+                    #self.s[ANGLE_IDX],
                     #self.s[POSITION_IDX] * 100,
                 ])
                 self.live_buffer_index += 1
@@ -508,9 +506,11 @@ class PhysicalCartPoleDriver:
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
+                "\rangle:{:+.3f}rad, angle raw:{:}, angleD raw:{:}, frozen:{:} position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
+                            self.angleD_raw,
+                            self.frozen,
                             self.s[POSITION_IDX] * 100,
                             self.calculatedMotorCmd,
                             self.deltaTime * 1000,
