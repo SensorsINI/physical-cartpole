@@ -476,9 +476,9 @@ class PhysicalCartPoleDriver:
 
     def plot_live(self):
         BUFFER_LENGTH = 5
-        BUFFER_WIDTH = 4
+        BUFFER_WIDTH = 7
 
-        if self.livePlotReset:
+        if not hasattr(self, 'livePlotReset') or self.livePlotReset:
             self.livePlotReset = False
             self.live_buffer_index = 0
             self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
@@ -497,8 +497,10 @@ class PhysicalCartPoleDriver:
                     #self.angleD_raw,
                     self.s[ANGLE_IDX],
                     self.s[ANGLED_IDX],
-                    self.frozen
-                    #self.s[POSITION_IDX] * 100,
+                    self.s[POSITION_IDX] * 100,
+                    self.s[POSITIOND_IDX] * 100,
+                    self.calculatedMotorCmd,
+                    self.frozen,
                 ])
                 self.live_buffer_index += 1
             else:

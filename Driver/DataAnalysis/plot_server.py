@@ -15,11 +15,11 @@ print(f'Connected to: {listener.last_accepted}')
 
 fig = plt.figure('Live Plot')
 fig.subplots_adjust(hspace=0.5)
-data = np.zeros((0,4))
-labels = ['angle', 'angleD']
+data = np.zeros((0, 7))
+labels = ['angle', 'angleD', 'position', 'positionD', 'calculatedMotorCmd']
 axs = []
-for i in range(2):
-    axs.append(fig.add_subplot(2, 1, i+1))
+for i in range(data.shape[1]-2):
+    axs.append(fig.add_subplot(data.shape[1]-2, 1, i+1))
 received = True
 
 def animate(i):
@@ -42,14 +42,15 @@ def animate(i):
         received = False
         # plot received data
         colors = plt.rcParams["axes.prop_cycle"]()
-        for i in range(2):
+
+        for i in range(data.shape[1]-2):
             color = next(colors)["color"]
             axs[i].clear()
             axs[i].set_title(f"Min: {data[:, i+1].min():.3f}, Max: {data[:, i+1].max():.3f}, Mean: {data[:, i+1].mean():.3f}, Std: {data[:, i+1].std():.3f}", size=8)
             axs[i].plot(data[:, 0], data[:, i+1], label=labels[i], marker='.', color=color)
             axs[i].legend(loc='upper right')
             axs[i].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
-            for b in data[data[:, 3]>0,0]:
+            for b in data[data[:, -1] > 0, 0]:
                 axs[i].axvline(x=b, color='red', linestyle='--', alpha=0.7)
 
 
