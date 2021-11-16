@@ -343,6 +343,7 @@ class PhysicalCartPoleDriver:
 
             elif c == '6':
                 self.livePlotEnabled = not self.livePlotEnabled
+                self.livePlotReset = True
                 print(f"\nLive Plot: {self.livePlotEnabled}")
 
             # Exit
@@ -477,19 +478,26 @@ class PhysicalCartPoleDriver:
         BUFFER_LENGTH = 5
         BUFFER_WIDTH = 4
 
-        if not hasattr(self, 'live_connection'):
-            address = ('localhost', 6000)
-            self.live_connection = Client(address)
+        if self.livePlotReset:
+            self.livePlotReset = False
             self.live_buffer_index = 0
             self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
-        else:
+
+            if not hasattr(self, 'live_connection'):
+                address = ('localhost', 6000)
+                self.live_connection = Client(address)
+            else:
+                self.live_connection.send("reset")
+
+        if hasattr(self, 'live_connection'):
             if self.live_buffer_index < BUFFER_LENGTH:
                 self.live_buffer[self.live_buffer_index, :] = np.array([
                     self.sent,
-                    self.angle_raw,
-                    self.angleD_raw,
+                    #self.angle_raw,
+                    #self.angleD_raw,
+                    self.s[ANGLE_IDX],
+                    self.s[ANGLED_IDX],
                     self.frozen
-                    #self.s[ANGLE_IDX],
                     #self.s[POSITION_IDX] * 100,
                 ])
                 self.live_buffer_index += 1
@@ -506,11 +514,9 @@ class PhysicalCartPoleDriver:
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, angleD raw:{:}, frozen:{:} position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
+                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
-                            self.angleD_raw,
-                            self.frozen,
                             self.s[POSITION_IDX] * 100,
                             self.calculatedMotorCmd,
                             self.deltaTime * 1000,

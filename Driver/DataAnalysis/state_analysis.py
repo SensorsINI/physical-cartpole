@@ -6,7 +6,7 @@ matplotlib.use('TkAgg')
 import glob
 import os
 
-list_of_files = glob.glob('Driver/ExperimentRecordings/*.csv')
+list_of_files = glob.glob('../ExperimentRecordings/*.csv')
 print(list_of_files)
 list_of_files.sort(key=os.path.getctime, reverse=True)
 latest_file = list_of_files[0]

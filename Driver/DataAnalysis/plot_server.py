@@ -16,23 +16,31 @@ print(f'Connected to: {listener.last_accepted}')
 fig = plt.figure('Live Plot')
 fig.subplots_adjust(hspace=0.5)
 data = np.zeros((0,4))
-labels = ['angle_raw', 'angleD_raw']
+labels = ['angle', 'angleD']
 axs = []
 for i in range(2):
     axs.append(fig.add_subplot(2, 1, i+1))
+received = True
 
 def animate(i):
-    global data, fig, axs, labels
+    global data, fig, axs, labels, received
 
     # receive data from socket
     while connection.poll(0.001):
         buffer = connection.recv()
+
+        if buffer is "reset":
+            data = np.zeros((0, data.shape[1]))
+
         if isinstance(buffer, np.ndarray):
             data = np.append(data, buffer, axis=0)
             data = data[-5000:]
 
-    # plot received data
-    if axs is not None:
+        received = True
+
+    if received:
+        received = False
+        # plot received data
         colors = plt.rcParams["axes.prop_cycle"]()
         for i in range(2):
             color = next(colors)["color"]
@@ -45,7 +53,6 @@ def animate(i):
                 axs[i].axvline(x=b, color='red', linestyle='--', alpha=0.7)
 
 
-ani = animation.FuncAnimation(fig, animate, interval=500)
+ani = animation.FuncAnimation(fig, animate, interval=50)
 plt.show()
-fig.close()
 print('Finished')

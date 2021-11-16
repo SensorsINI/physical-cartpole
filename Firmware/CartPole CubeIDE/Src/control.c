@@ -55,6 +55,7 @@ int				positionLimitLeft;
 int				positionLimitRight;
 int				encoderDirection = 1;
 unsigned int	timeSent = 0, timeReceived = 0;
+bool			newReceived = false;
 float 			angle_I = 0, position_I = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
@@ -165,7 +166,7 @@ void CONTROL_Loop(void)
 		angle_mean = angle_sum / angle_averageLen;
 
 	// Detect invalid steps
-	#define MAX_ADC_STEP 40
+	#define MAX_ADC_STEP 30
 	#define MAX_INVALID_STEPS 2
 
 	int invalid_step = 0;
@@ -274,7 +275,11 @@ void CONTROL_Loop(void)
 
         buffer[19] = crc(buffer, 19);
         USART_SendBuffer(buffer, 20);
-        timeSent = TIMER1_getSystemTime_Us();
+
+        if(newReceived) {
+        	newReceived = false;
+        	timeSent = TIMER1_getSystemTime_Us();
+        }
     }
 
 	// Flash LED every second (500 ms on, 500 ms off)
@@ -425,6 +430,7 @@ void CONTROL_BackgroundTask(void)
 								if (pktLen == 6)
 								{
 									timeReceived = TIMER1_getSystemTime_Us();
+									newReceived = true;
 									motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 									if(controlSynch)
 										controlCommand = motorCmd;
