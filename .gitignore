@@ -3,6 +3,6 @@
 /Firmware/Factory Firmware CubeIDE/Debug/Src/
 .DS_Store
 /.idea
-/Firmware/Original CartPole CubeIDE/.settings/language.settings.xml
-/Firmware/Original CartPole CubeIDE/Debug/makefile
-/Firmware/Original CartPole CubeIDE/Debug/Startup/startup_stm32f103c8tx.o
+/Firmware/CartPole CubeIDE/.settings/language.settings.xml
+/Firmware/CartPole CubeIDE/Debug/makefile
+/Firmware/CartPole CubeIDE/Debug/Startup/startup_stm32f103c8tx.o
