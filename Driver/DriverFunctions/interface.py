@@ -64,7 +64,12 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
         self.prevPktNum = 1000
-        return self._receive_reply(CMD_CALIBRATE, 4, CALIBRATE_TIMEOUT) == msg
+
+        reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
+        encoderDirection = struct.unpack('B', bytes(reply[4:5]))
+        self.encoderDirection = encoderDirection
+
+        return True
 
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
