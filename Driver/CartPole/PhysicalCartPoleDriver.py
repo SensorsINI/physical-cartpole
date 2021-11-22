@@ -255,7 +255,7 @@ class PhysicalCartPoleDriver:
                 print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
                 if self.loggingEnabled:
                     try:
-                        self.csvfilename, self.csvfile, self.csvwriter = csv_init()
+                        self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
                         print("\n Started self.logging data to " + self.csvfilename)
                     except Exception as e:
                         self.loggingEnabled = False
