@@ -152,6 +152,8 @@ class controller_lqr(template_controller):
         print("m Toggle measurement")
         print("j Switch joystick control mode")
         print("b Print angle measurement from sensor")
+        print("6 Enable/Disable live plot")
+        print("5 Interrupts for histogram plot")
         print("***********************************")
 
     def keyboard_input(self, c):
