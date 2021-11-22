@@ -20,8 +20,8 @@
 #define CONTROL_ANGLE_KP                200.0f
 #define CONTROL_ANGLE_KI                0
 #define CONTROL_ANGLE_KD                200.0f
-#define CONTROL_ANGLE_AVERAGE_LEN		10  //16        // Number of samples to average over to determine angular displacement (max is 32)
-#define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US  200
+#define CONTROL_ANGLE_AVERAGE_LEN		20  //16        // Number of samples to average over to determine angular displacement (max is 32)
+#define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US  100
 
 #define CONTROL_POSITION_SET_POINT      0
 #define CONTROL_POSITION_SMOOTHING      1 // 0.2f        // 0 to 1.0 (1.0 disables smoothing)
