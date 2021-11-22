@@ -299,7 +299,7 @@ void CONTROL_BackgroundTask(void)
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
-	static int				lastRead = 0;
+	static unsigned int    lastRead = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
