@@ -167,7 +167,7 @@ class PhysicalCartPoleDriver:
 
             self.set_target_position()
 
-            if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
+            if self.controlEnabled:
                 self.lastControlTime = self.timeNow
                 self.calculatedMotorCmd = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
                 self.calculatedMotorCmd *= MOTOR_FULL_SCALE
@@ -447,14 +447,15 @@ class PhysicalCartPoleDriver:
         # clip motor to  limits - we clip it to the half of the max power
         # This assures both: safety against burning the motor and keeping motor in its linear range
         # NEVER TRY TO RUN IT WITH
-        actualMotorCmd = int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd > 0.6 * MOTOR_MAX_PWM else actualMotorCmd
-        actualMotorCmd = -int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd < -0.6 * MOTOR_MAX_PWM else actualMotorCmd
+        max = 0.6 # was 0.6 before
+        actualMotorCmd = int(max * MOTOR_MAX_PWM) if actualMotorCmd > max * MOTOR_MAX_PWM else actualMotorCmd
+        actualMotorCmd = -int(max * MOTOR_MAX_PWM) if actualMotorCmd < -max * MOTOR_MAX_PWM else actualMotorCmd
 
         return -actualMotorCmd
 
     def safety_switch_off(self, actualMotorCmd):
         # Temporary safety switch off if goes to the boundary
-        if abs(self.position_centered_unconverted) > 0.9 * (POSITION_ENCODER_RANGE // 2):
+        if abs(self.position_centered_unconverted) > 0.98 * (POSITION_ENCODER_RANGE // 2):
             self.controlEnabled = False
             self.controller.controller_reset()
             self.danceEnabled = False
@@ -487,7 +488,7 @@ class PhysicalCartPoleDriver:
                 address = ('localhost', 6000)
                 self.live_connection = Client(address)
             else:
-                self.live_connection.send("reset")
+                self.live_connection.send('reset')
 
         if hasattr(self, 'live_connection'):
             if self.live_buffer_index < BUFFER_LENGTH:

@@ -145,7 +145,7 @@ def E_pot_cost(angle):
 def distance_difference_cost(position, target_position):
     """Compute penalty for distance of cart to the target position"""
     return ((position - target_position) / (2.0 * TrackHalfLength)) ** 2 + (
-        np.abs(position) > 0.95 * TrackHalfLength
+        np.abs(position) > 0.9 * TrackHalfLength
     ) * 1.0e6  # Soft constraint: Do not crash into border
 
 
@@ -162,7 +162,7 @@ def penalize_deviation(cc, u):
     I, J = cc.shape
     for i in range(I):
         for j in range(J):
-            if np.abs(u[i, j]) > 1.0:
+            if np.abs(u[i, j]) > 0.5:
                 cc[i, j] = 1.0e5
     return cc
 
@@ -286,7 +286,7 @@ def q(
     # rterm = 1.0e4 * np.sum((delta_u[:,1:] - delta_u[:,:-1]) ** 2, axis=1, keepdims=True)
 
     # Penalize if control deviation is outside constraint set.
-    cc[np.abs(u + delta_u) > 1.0] = 1.0e5
+    cc[np.abs(u + delta_u) > 0.5] = 1.0e5
 
     q = dd + ep + ekp + ekc + cc + ccrc
 
