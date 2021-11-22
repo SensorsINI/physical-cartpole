@@ -362,6 +362,8 @@ class controller_mppi(template_controller):
 
     def __init__(self):
 
+        self.controller_name = 'mppi'
+
         """Random number generator"""
         SEED = config["controller"]["mppi"]["SEED"]
         if SEED == "None":
