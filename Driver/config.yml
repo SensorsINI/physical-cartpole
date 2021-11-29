@@ -6,12 +6,12 @@ controller:
     num_rollouts: 200                      # Number of Monte Carlo samples
     update_every: 1                     # Cost weighted update of inputs every ... steps
     predictor_type: "Euler"               # One of ["Euler", "NeuralNet"]
-    dd_weight: 120.0
-    ep_weight: 50000.0
-    ekp_weight: 0.01
-    ekc_weight: 5.0
-    cc_weight: 1.0
-    ccrc_weight: 1.0
+    dd_weight: 120.0          # distance difference cost
+    ep_weight: 50000.0        # potential energy pole
+    ekp_weight: 0.01          # kinetic energy pole
+    ekc_weight: 5.0           # kinetic energy cart
+    cc_weight: 1.0            # control cost
+    ccrc_weight: 1.0          # control change rate cost
     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
     R: 1.0                                # How much to punish Q
@@ -20,7 +20,7 @@ controller:
     SQRTRHOINV: 0.01                      # Sampling variance
     GAMMA: 1.00                           # Future cost discount
     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    LOGGING: False                        # Collect and show detailed insights into the controller's behavior
+    LOGGING: True                        # Collect and show detailed insights into the controller's behavior
     WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle
   custom_mpc_scipy:
     DT: 0.1

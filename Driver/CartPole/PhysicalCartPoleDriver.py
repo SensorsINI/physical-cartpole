@@ -251,7 +251,7 @@ class PhysicalCartPoleDriver:
                     self.danceEnabled = True
                 print("\nself.danceEnabled= {0}".format(self.danceEnabled))
             elif c == 'l':
-                self.loggingEnabled = ~self.loggingEnabled
+                self.loggingEnabled = not self.loggingEnabled
                 print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
                 if self.loggingEnabled:
                     try:
@@ -263,15 +263,19 @@ class PhysicalCartPoleDriver:
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
+
+                if self.controller.controller_name is 'mppi':
+                    if not self.loggingEnabled:
+                        self.controller.controller_report()
+                    self.controller.logging = self.loggingEnabled
+
             elif c == 'u':  # toggle firmware control
                 self.firmwareControl = not self.firmwareControl
                 print("Firmware Control", self.firmwareControl)
                 self.InterfaceInstance.control_mode(self.firmwareControl)
             elif c == 'k':
+                self.controlEnabled = not self.controlEnabled
                 if self.controlEnabled is False:
-                    self.controlEnabled = True
-                else:
-                    self.controlEnabled = False
                     self.controller.controller_reset()
                     self.calculatedMotorCmd = 0
                 self.danceEnabled = False

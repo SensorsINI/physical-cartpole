@@ -21,7 +21,6 @@ def wrap_angle_rad(angle: float) -> float:
     return angle
 
 
-@jit(nopython=True, cache=True, fastmath=True)
 def wrap_angle_rad_inplace(angle: np.ndarray) -> None:
     Modulo = np.fmod(angle, 2 * np.pi)  # positive modulo
     neg_wrap, pos_wrap = Modulo < -np.pi, Modulo > np.pi

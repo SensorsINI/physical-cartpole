@@ -5,9 +5,9 @@ Based on Williams, Aldrich, Theodorou (2015)
 
 # Uncomment if you want to get interactive plots for MPPI in Pycharm on MacOS
 # On other OS you have to chose a different interactive backend.
-# from matplotlib import use
-# # # use('TkAgg')
-# use('macOSX')
+from matplotlib import use
+use('TkAgg')
+#use('macOSX')
 
 import copy
 
@@ -144,7 +144,7 @@ def E_pot_cost(angle):
 @jit(nopython=True, cache=True, fastmath=True)
 def distance_difference_cost(position, target_position):
     """Compute penalty for distance of cart to the target position"""
-    return ((position - target_position) / (2.0 * TrackHalfLength)) ** 2 + (
+    return (np.abs(position - target_position) / (2.0 * TrackHalfLength)) ** 2 + (
         np.abs(position) > 0.9 * TrackHalfLength
     ) * 1.0e6  # Soft constraint: Do not crash into border
 
@@ -162,7 +162,7 @@ def penalize_deviation(cc, u):
     I, J = cc.shape
     for i in range(I):
         for j in range(J):
-            if np.abs(u[i, j]) > 0.5:
+            if np.abs(u[i, j]) > 1:
                 cc[i, j] = 1.0e5
     return cc
 
@@ -186,6 +186,7 @@ def trajectory_rollouts(
     delta_u: np.ndarray,
     u_prev: np.ndarray,
     target_position: np.float32,
+    logging
 ):
     """Sample thousands of rollouts using system model. Compute cost-weighted control update. Log states and costs if specified.
 
@@ -228,7 +229,7 @@ def trajectory_rollouts(
         np.mean(ccrc),
     )
 
-    if LOGGING:
+    if logging:
         LOGS.get("cost_breakdown").get("cost_dd").append(np.mean(dd, 0))
         LOGS.get("cost_breakdown").get("cost_ep").append(np.mean(ep, 0))
         LOGS.get("cost_breakdown").get("cost_ekp").append(np.mean(ekp, 0))
@@ -374,6 +375,8 @@ class controller_mppi(template_controller):
         self.positionErr = 0.0
         self.ANGLE_TARGET = 0.0
 
+        self.logging = False
+
 
         global dd_weight, ep_weight, ekp_weight, ekc_weight, cc_weight
         dd_weight = dd_weight * (1 + dd_noise * self.rng_mppi.uniform(-1.0, 1.0))
@@ -513,13 +516,14 @@ class controller_mppi(template_controller):
                 self.delta_u,
                 self.u_prev,
                 self.target_position,
+                self.logging
             )
 
             # Update inputs with weighted perturbations
             update_inputs(self.u, self.S_tilde_k, self.delta_u)
 
             # Log states and costs incurred for plotting later
-            if LOGGING:
+            if self.logging:
                 LOGS.get("cost_to_go").append(np.copy(self.S_tilde_k))
                 LOGS.get("inputs").append(np.copy(self.u))
 
@@ -541,7 +545,7 @@ class controller_mppi(template_controller):
                     )[0, ...]
                 LOGS.get("nominal_rollouts").append(np.copy(rollout_trajectory[:-1, :]))
 
-        if LOGGING:
+        if self.logging:
             LOGS.get("trajectory").append(np.copy(self.s))
             LOGS.get("target_trajectory").append(np.copy(target_position))
 
@@ -611,7 +615,7 @@ class controller_mppi(template_controller):
         print('*** Controller Informations here ***')
 
     def controller_report(self):
-        if LOGGING:
+        if self.logging and LOGS.get("cost_to_go"):
             ### Plot the average state cost per iteration
             ctglgs = np.stack(
                 LOGS.get("cost_to_go"), axis=0
@@ -647,32 +651,32 @@ class controller_mppi(template_controller):
             time_axis = update_every * dt * np.arange(start=0, stop=NUM_ITERATIONS)
 
             plt.figure(num=3, figsize=(16, 9))
-            plt.plot(
+            plt.semilogy(
                 time_axis,
                 np.sum(LOGS.get("cost_breakdown").get("cost_dd"), axis=-1),
                 label="Distance difference cost",
             )
-            plt.plot(
+            plt.semilogy(
                 time_axis,
                 np.sum(LOGS.get("cost_breakdown").get("cost_ep"), axis=-1),
                 label="E_pot cost",
             )
-            plt.plot(
+            plt.semilogy(
                 time_axis,
                 np.sum(LOGS.get("cost_breakdown").get("cost_ekp"), axis=-1),
                 label="E_kin_pole cost",
             )
-            plt.plot(
+            plt.semilogy(
                 time_axis,
                 np.sum(LOGS.get("cost_breakdown").get("cost_ekc"), axis=-1),
                 label="E_kin_cart cost",
             )
-            plt.plot(
+            plt.semilogy(
                 time_axis,
                 np.sum(LOGS.get("cost_breakdown").get("cost_cc"), axis=-1),
                 label="Control cost",
             )
-            plt.plot(
+            plt.semilogy(
                 time_axis,
                 np.sum(LOGS.get("cost_breakdown").get("cost_ccrc"), axis=-1),
                 label="Control change rate cost",
@@ -696,7 +700,7 @@ class controller_mppi(template_controller):
                 mc_rollouts = np.shape(angles)[0]
                 horizon_length = np.shape(angles)[1]
                 # Loop over all MC rollouts
-                for i in range(0, 2000, 5):
+                for i in range(0, num_rollouts, 5):
                     ax_position.plot(
                         (update_every * iteration + np.arange(0, horizon_length)) * dt,
                         positions[i, :],
@@ -706,7 +710,7 @@ class controller_mppi(template_controller):
                             0.0,
                             (1 - 0.3 * costs[i]) ** 2,
                             0.0,
-                            0.02 * (1 - 0.3 * costs[i]) ** 2,
+                            0.15 * (1 - 0.3 * costs[i]) ** 2,
                         ),
                     )
                     ax_angle.plot(
@@ -718,7 +722,7 @@ class controller_mppi(template_controller):
                             0.0,
                             (1 - 0.3 * costs[i]) ** 2,
                             0.0,
-                            0.02 * (1 - 0.3 * costs[i]) ** 2,
+                            0.15 * (1 - 0.3 * costs[i]) ** 2,
                         ),
                     )
 
