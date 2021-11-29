@@ -369,6 +369,11 @@ class controller_mppi(template_controller):
         self.rng_mppi = Generator(SFC64(SEED))
         self.rng_mppi_rnn = Generator(SFC64(SEED*2)) # There are some random numbers used at warm up of rnn only. Separate rng prevents a shift
 
+        self.controller_name = 'mppi'
+        self.angleErr = 0.0
+        self.positionErr = 0.0
+        self.ANGLE_TARGET = 0.0
+
 
         global dd_weight, ep_weight, ekp_weight, ekc_weight, cc_weight
         dd_weight = dd_weight * (1 + dd_noise * self.rng_mppi.uniform(-1.0, 1.0))
