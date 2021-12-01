@@ -3,7 +3,7 @@
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
 # todo fix get and set params (for chip interface), must be compatible with sensor readings
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
-
+import math
 import time
 import numpy as np
 
@@ -84,6 +84,7 @@ class PhysicalCartPoleDriver:
 
         self.angle_raw = 0.0
         self.position_raw = 0.0
+        self.angleD_raw = 0.0
 
         self.anglePrev = 0.0
         self.positionPrev = 0.0
@@ -171,7 +172,7 @@ class PhysicalCartPoleDriver:
                 self.lastControlTime = self.timeNow
                 self.calculatedMotorCmd = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
                 self.calculatedMotorCmd *= MOTOR_FULL_SCALE
-                self.calculatedMotorCmd = int(self.calculatedMotorCmd)
+                self.calculatedMotorCmd = int(self.calculatedMotorCmd) if not math.isnan(self.calculatedMotorCmd) else 0
 
             self.joystick_action()
 
@@ -372,16 +373,15 @@ class PhysicalCartPoleDriver:
         angle = wrap_angle_rad(angle)
 
         # Time self.measurement
-        self.timeNow = time.time()
-        self.deltaTime = self.timeNow - self.lastTime
-        if self.deltaTime == 0:
-            self.deltaTime = 1e-6
-        self.lastTime = self.timeNow
-        self.elapsedTime = self.timeNow - self.startTime
+        self.deltaTime = self.sent - self.lastTime
+        if self.deltaTime < 1e-6:
+            self.deltaTime = 5*1e-3
+        self.lastTime = self.sent
+        self.elapsedTime = self.sent
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = wrap_angle_rad(self.angleD_raw * ANGLE_NORMALIZATION_FACTOR) / self.deltaTime  # rad/self.s
-        positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
+        angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.deltaTime
+        positionDerivative = (position - self.positionPrev) / self.deltaTime
 
         # Keep values of angle and position for next timestep, for smoothing and derivative calculation
         self.anglePrev = angle
@@ -509,10 +509,10 @@ class PhysicalCartPoleDriver:
             if self.live_buffer_index < BUFFER_LENGTH:
                 self.live_buffer[self.live_buffer_index, :] = np.array([
                     self.sent,
-                    #self.angle_raw,
-                    #self.angleD_raw,
-                    self.s[ANGLE_IDX],
-                    self.s[ANGLED_IDX],
+                    self.angle_raw,
+                    self.angleD_raw,
+                    #self.s[ANGLE_IDX],
+                    #self.s[ANGLED_IDX],
                     self.s[POSITION_IDX] * 100,
                     self.s[POSITIOND_IDX] * 100,
                     self.calculatedMotorCmd,
@@ -520,22 +520,22 @@ class PhysicalCartPoleDriver:
                 ])
                 self.live_buffer_index += 1
             else:
-                #print(self.live_buffer)
                 self.live_connection.send(self.live_buffer)
                 self.live_buffer_index = 0
                 self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if False or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
+        if True or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
+                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, position raw:{:}, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
+                            self.position_raw,
                             self.calculatedMotorCmd,
                             self.deltaTime * 1000,
                             (self.received-self.sent) * 1000,
