@@ -47,8 +47,8 @@ P_GLOBALS = SimpleNamespace()  # "p" like parameters
 P_GLOBALS.m = 0.087  # mass of pole, kg # Checked by Antonio & Tobi
 P_GLOBALS.M = 0.230  # mass of cart, kg # Checked by Antonio
 P_GLOBALS.L = 0.395/2.0  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
-P_GLOBALS.u_max = 6.21  # max force produced by the motor, N # Checked by Marcin
-P_GLOBALS.M_fric = 6.34  # cart friction on track, N/m/s # Checked by Marcin
+P_GLOBALS.u_max = 2.62  # max force produced by the motor, N # Checked by Marcin
+P_GLOBALS.M_fric = 4.77  # cart friction on track, N/m/s # Checked by Marcin
 P_GLOBALS.J_fric = 2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
 P_GLOBALS.v_max = 0.8  # max DC motor speed, m/s, in absense of friction, used for motor back EMF model # TODO: not implemented in model, but needed for MPC
 
