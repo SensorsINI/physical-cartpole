@@ -25,6 +25,8 @@ class Interface:
         self.start = None
         self.end = None
 
+        self.encoderDirection = None
+
     def open(self, port, baud):
         self.port = port
         self.baud = baud
@@ -66,8 +68,8 @@ class Interface:
         self.prevPktNum = 1000
 
         reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
-        encoderDirection = struct.unpack('B', bytes(reply[4:5]))
-        self.encoderDirection = encoderDirection
+        encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
+        self.encoderDirection = encoderDirection  # Serves to identify motor
 
         return True
 
