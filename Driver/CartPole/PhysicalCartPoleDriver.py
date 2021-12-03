@@ -139,7 +139,15 @@ class PhysicalCartPoleDriver:
         self.stick, self.joystickMode = setup_joystick()
 
         if CALIBRATE:
+            global MOTOR
             POSITION_OFFSET = calibrate(self.InterfaceInstance)
+            if self.InterfaceInstance.encoderDirection == 1:
+                MOTOR = 'POLOLU'
+            elif self.InterfaceInstance.encoderDirection == -1:
+                MOTOR = 'ORIGINAL'
+            else:
+                raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
+            print('Detected motor: {}'.format(MOTOR))
 
         try:
             self.controller.loadparams()
@@ -283,8 +291,16 @@ class PhysicalCartPoleDriver:
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0} \r\n".format(self.controlEnabled))
             elif c == 'K':
+                global MOTOR
                 self.controlEnabled = False
                 POSITION_OFFSET = calibrate(self.InterfaceInstance)
+                if self.InterfaceInstance.encoderDirection == 1:
+                    MOTOR = 'POLOLU'
+                elif self.InterfaceInstance.encoderDirection == -1:
+                    MOTOR = 'ORIGINAL'
+                else:
+                    raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
+                print('Detected motor: {}'.format(MOTOR))
             elif c == 'h' or c == '?':
                 self.controller.print_help()
             # Fine tune angle deviation
