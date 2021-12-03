@@ -263,17 +263,17 @@ class PhysicalCartPoleDriver:
                     self.danceEnabled = True
                 print("\nself.danceEnabled= {0}".format(self.danceEnabled))
             elif c == 'l':
-                self.loggingEnabled = ~self.loggingEnabled
-                print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
-                if self.loggingEnabled:
+                if not self.loggingEnabled:
                     try:
                         self.csvfilename, self.csvfile, self.csvwriter = csv_init()
+                        self.loggingEnabled = True
                         print("\n Started self.logging data to " + self.csvfilename)
                     except Exception as e:
                         self.loggingEnabled = False
                         print("\n" + str(e) + ": Exception opening self.csvfile; self.logging disabled \r\n")
                 else:
                     self.csvfile.close()
+                    self.loggingEnabled = False
                     print("\n Stopped self.logging data to " + self.csvfilename)
             elif c == 'u':  # toggle firmware control
                 self.firmwareControl = not self.firmwareControl
