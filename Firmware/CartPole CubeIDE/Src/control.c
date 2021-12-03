@@ -499,6 +499,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	int pos;
 	int diff;
 	float fDiff;
+	static unsigned char	buffer[30];
 
 	__disable_irq();
 	MOTOR_Stop();
@@ -533,7 +534,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 		positionLimitRight = pos;
 
 		// if we don't move enough, must have hit limit
-	} while(abs(diff) > 10);
+	} while(abs(diff) > 5);
 
 	MOTOR_Stop();
 
@@ -562,7 +563,14 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	MOTOR_Stop();
 
 	SYS_DelayMS(100);
-	USART_SendBuffer(buff, len);
+
+    buffer[ 0] = SERIAL_SOF;
+    buffer[ 1] = CMD_CALIBRATE;
+    buffer[ 2] = 5;
+    *((signed char *)&buffer[3]) = (signed char)encoderDirection;
+    buffer[4] = crc(buffer, 4);
+    USART_SendBuffer(buffer, 5);
+
 	isCalibrated = true;
 	Led_Enable(false);
 	__enable_irq();
