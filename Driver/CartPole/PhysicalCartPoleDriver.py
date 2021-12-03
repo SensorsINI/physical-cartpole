@@ -83,6 +83,8 @@ class PhysicalCartPoleDriver:
         self.csvfilename = None
         self.csvwriter = None
 
+        self.Q = 0.0 # Motor command normed to be in a range -1 to 1
+
         self.angle_raw = 0.0
         self.position_raw = 0.0
 
@@ -97,7 +99,7 @@ class PhysicalCartPoleDriver:
 
         self.target_position = 0.0
 
-        self.calculatedMotorCmd = 0
+        self.actualMotorCmd = 0
 
         self.s = create_cartpole_state()
 
@@ -183,22 +185,18 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
                 self.lastControlTime = self.timeNow
-                self.calculatedMotorCmd = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
-                self.calculatedMotorCmd *= MOTOR_FULL_SCALE
-                self.calculatedMotorCmd = int(self.calculatedMotorCmd)
+                self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
 
             self.joystick_action()
 
             self.measurement_action()
 
-            # We save motor input BEFORE processing which should linearize (perceived) motor model
-            actualMotorCmd = self.get_actualMotorCmd()
+            self.get_motor_command()
 
             if self.measurement.is_idle():  # switch off boundary safety when self.measurement mode is active.
-                actualMotorCmd = self.safety_switch_off(actualMotorCmd)
+                self.safety_switch_off()
 
-            self.InterfaceInstance.set_motor(actualMotorCmd)
-            # TODO Take notice that the csv file is saving the self.calculatedMotorCmd and not the actualMotorCmd. The actualMotorCmd is after safety switching, and motor linearization of the motor input value (self.calculatedMotorCmd).
+            self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
             if self.loggingEnabled:
                 self.write_csv_row()
@@ -243,19 +241,19 @@ class PhysicalCartPoleDriver:
                 print("\nDecreased ANGLE_SMOOTHING {0}".format(self.angle_smoothing))
             elif c == '.':  # zero motor
                 self.controlEnabled = False
-                self.calculatedMotorCmd = 0
+                self.Q = 0
                 self.manualMotorSetting = False
-                print('\r actual motor command after .', self.calculatedMotorCmd)
+                print('\r Normed motor command after .', self.Q)
             elif c == ',':  # left
                 self.controlEnabled = False
-                self.calculatedMotorCmd -= 100
+                self.Q -= 0.01
                 self.manualMotorSetting = True
-                print('\r actual motor command after ,', self.calculatedMotorCmd)
+                print('\r Normed motor command after ,', self.Q)
             elif c == '/':  # right
                 self.controlEnabled = False
-                self.calculatedMotorCmd += 100
+                self.Q += 0.01
                 self.manualMotorSetting = True
-                print('\r actual motor command after /', self.calculatedMotorCmd)
+                print('\r Normed motor command after /', self.Q)
             elif c == 'D':
                 # We want the sinusoid to start at predictable (0) position
                 if self.danceEnabled is True:
@@ -287,7 +285,7 @@ class PhysicalCartPoleDriver:
                 else:
                     self.controlEnabled = False
                     self.controller.controller_reset()
-                    self.calculatedMotorCmd = 0
+                    self.Q = 0
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0} \r\n".format(self.controlEnabled))
             elif c == 'K':
@@ -451,65 +449,83 @@ class PhysicalCartPoleDriver:
                 if self.controlEnabled:
                     ...
                 else:
-                    self.calculatedMotorCmd = 0
+                    self.Q = 0.0
         else:
             self.stickPos = get_stick_position(self.stick)
             self.stickPos = self.stickPos * POSITION_FULL_SCALE_N * POSITION_NORMALIZATION_FACTOR
             self.stickControl = True
-            self.calculatedMotorCmd = motorCmd_from_joystick(self.joystickMode, self.stickPos, self.s[POSITION_IDX])
+            self.Q = motorCmd_from_joystick(self.joystickMode, self.stickPos, self.s[POSITION_IDX])
 
     def measurement_action(self):
         if not self.measurement.is_idle():
             try:
                 self.measurement.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.timeNow)
-                self.calculatedMotorCmd = self.measurement.motor
+                self.Q = self.measurement.Q
             except TimeoutError as e:
                 self.log.warning(f'timeout in self.measurement: {e}')
 
-    def get_actualMotorCmd(self):
+    def get_motor_command(self):
 
-        # TODO: It is not fully clear if it is the right place for the following line
-        #   I would prefer to have it before "linearization" and after clipping, but lin. goes before clipping
-        #   And I didn't want to have clipping twice (maybe I should?)
-        actualMotorCmd = self.calculatedMotorCmd
+        self.actualMotorCmd = self.Q
+        if MOTOR_DYNAMICS_CORRECTED:
 
-        # A manual calibration to linearize around origin
-        #  Model_velocity.py in CartPole simulator is the script to determine these values
-        # The change dependent on velocity sign is motivated theory of classical friction
-        if actualMotorCmd != 0:
-            if np.sign(self.s[POSITIOND_IDX]) > 0:
-                actualMotorCmd += 387
-            elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                actualMotorCmd -= 330
+            self.actualMotorCmd = self.Q
 
-        # clip motor to  limits - we clip it to the half of the max power
-        # This assures both: safety against burning the motor and keeping motor in its linear range
-        # NEVER TRY TO RUN IT WITH
-        actualMotorCmd = int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd > 0.6 * MOTOR_MAX_PWM else actualMotorCmd
-        actualMotorCmd = -int(0.6 * MOTOR_MAX_PWM) if actualMotorCmd < -0.6 * MOTOR_MAX_PWM else actualMotorCmd
+            # Use Model_velocity_bidirectional.py to determine the margins and correction factor below
 
-        return -actualMotorCmd
+            # # We cut the region which is linear
+            # # In fact you don't need - it it is already ensured that Q -1 to 1 corresponds to linear range
+            # self.actualMotorCmd = 1.0 if self.actualMotorCmd > 1.0 else self.actualMotorCmd
+            # self.actualMotorCmd = -1.0 if self.actualMotorCmd < -1.0 else self.actualMotorCmd
 
-    def safety_switch_off(self, actualMotorCmd):
+            # The change dependent on velocity sign is motivated theory of classical friction
+            if MOTOR == 'POLOLU':
+                self.actualMotorCmd *= 4307.69
+                if self.actualMotorCmd != 0:
+                    if np.sign(self.s[POSITIOND_IDX]) > 0:
+                        self.actualMotorCmd += 398.69
+                    elif np.sign(self.s[POSITIOND_IDX]) < 0:
+                        self.actualMotorCmd -= 342.53
+            else:
+                self.actualMotorCmd *= 4916.29
+                if self.actualMotorCmd != 0:
+                    if np.sign(self.s[POSITIOND_IDX]) > 0:
+                        self.actualMotorCmd += 266.77
+                    elif np.sign(self.s[POSITIOND_IDX]) < 0:
+                        self.actualMotorCmd -= 250.80
+
+
+        else:
+            self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
+            pass
+
+        # Convert to motor encoder units
+        self.actualMotorCmd = int(self.actualMotorCmd)
+        # Check if motor power in safe boundaries, not to burn it in case you have an error before or not-corrected option
+        # NEVER RUN IT WITHOUT IT
+        self.actualMotorCmd = MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd > MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
+        self.actualMotorCmd = -MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd < -MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
+
+        self.actualMotorCmd = -self.actualMotorCmd
+
+    def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
         if abs(self.position_centered_unconverted) > 0.9 * (POSITION_ENCODER_RANGE // 2):
             self.controlEnabled = False
             self.controller.controller_reset()
             self.danceEnabled = False
-            actualMotorCmd = 0
+            self.actualMotorCmd = 0
         else:
             pass
-        return actualMotorCmd
 
     def write_csv_row(self):
-        Q = self.calculatedMotorCmd / MOTOR_FULL_SCALE
         self.csvwriter.writerow(
             [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
              self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
              self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
              self.target_position, self.controller.positionErr, self.controller.angleCmd,
-             self.controller.positionCmd, self.calculatedMotorCmd, Q,
-             self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
+             self.controller.positionCmd, self.actualMotorCmd, self.Q,
+             self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, self.Q**2,
              self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
 
     def plot_live(self):
@@ -547,7 +563,7 @@ class PhysicalCartPoleDriver:
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
-                            self.calculatedMotorCmd,
+                            self.actualMotorCmd,
                             self.deltaTime * 1000,
                             (self.received-self.sent) * 1000,
                             (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000)

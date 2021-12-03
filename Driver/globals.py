@@ -1,5 +1,9 @@
 import math
 import logging
+
+MOTOR = 'ORIGINAL'  # It will be overwritten by each calibration
+MOTOR_DYNAMICS_CORRECTED = True
+
 LOGGING_LEVEL = logging.INFO
 PRINT_PERIOD_MS = 100  # shows state every this many ms
 
@@ -18,7 +22,7 @@ PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the expe
 JSON_PATH = 'Json/'
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
-MOTOR_MAX_PWM = int(round(0.95 * MOTOR_FULL_SCALE))
+MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
 
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
@@ -46,11 +50,8 @@ POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH/POSITION_ENCODER_RANGE # 0.00008497
 
 POSITION_TARGET = 0.0  # meters
 
-JOYSTICK_SCALING = MOTOR_MAX_PWM  # how much joystick value -1:1 should be scaled to motor command
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
-# TODO: What is this? POSITION_ENCODER_RANGE and POSITION_FULL_SCALE_N cancel each other
-JOYSTICK_POSITION_KP= 4 * JOYSTICK_SCALING * POSITION_ENCODER_RANGE / TRACK_LENGTH / POSITION_FULL_SCALE_N # proportional gain constant for joystick position control.
-# it is set so that a position error of E in cart position units results in motor command E*JOYSTICK_POSITION_KP
+JOYSTICK_POSITION_KP = 4.0
 
 import platform
 import subprocess
