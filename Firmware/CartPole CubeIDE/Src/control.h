@@ -10,18 +10,24 @@
 #define CONTROL_MOTOR_MAX_SPEED         ((int)(0.95 * MOTOR_FULL_SCALE + 0.5))
 
 // Defaults
-#define CONTROL_ANGLE_SET_POINT			3148 // for unit 2 from aliexpress // for unit 1 from ali 3383 // set it to exactly the vertical position of the pendulum, by printing values and then averaging them
+// set it to exactly the vertical position of the pendulum, by printing values and then averaging them
+// old values: right 3148, left: 3383
+#define CONTROL_ANGLE_SET_POINT	    	3140 // left cartpole
+//#define CONTROL_ANGLE_SET_POINT	    	3150 // right cartpole
+
+
 #define CONTROL_ANGLE_SMOOTHING         1.0f        // 0 to 1.0 (1.0 disables smoothing)
 #define CONTROL_ANGLE_KP                200.0f
 #define CONTROL_ANGLE_KI                0
 #define CONTROL_ANGLE_KD                200.0f
 #define CONTROL_ANGLE_AVERAGE_LEN		20  //16        // Number of samples to average over to determine angular displacement (max is 32)
+#define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US  100
 
 #define CONTROL_POSITION_SET_POINT      0
 #define CONTROL_POSITION_SMOOTHING      1 // 0.2f        // 0 to 1.0 (1.0 disables smoothing)
-#define CONTROL_POSITION_KP             10.0 //20.0f
+#define CONTROL_POSITION_KP             4.0 //20.0f
 #define CONTROL_POSITION_KI             0
-#define CONTROL_POSITION_KD             100.0 //300.0f
+#define CONTROL_POSITION_KD             20.0 //300.0f
 #define CONTROL_POSITION_PERIOD_MS      20 // 25
 
 void CONTROL_Init(void);

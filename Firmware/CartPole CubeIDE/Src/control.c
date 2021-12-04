@@ -41,7 +41,7 @@ int 			controlLatencyUs = 0;		// used to simulate Latency
 bool			controlLatencyEnable = false;
 int	 			controlLatencyTimestampUs = 0;
 int 			controlCommand = 0;
-bool			controlSynch = false;
+bool			controlSynch = true;		// apply motor command at next loop
 bool            isCalibrated = true;
 unsigned short  ledPeriod;
 int  			angleSamples[64];
@@ -54,7 +54,8 @@ int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
 int				encoderDirection = 1;
-float      		timeSent = 0, timeReceived = 0;
+unsigned int	timeSent = 0, timeReceived = 0;
+bool			newReceived = false;
 float 			angle_I = 0, position_I = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
@@ -93,9 +94,9 @@ void CONTROL_ToggleState(void)
 const int ADC_RANGE = 4096;
 
 int wrapLocal(int angle) {
-    if (angle >= ADC_RANGE)
+    if (angle >= ADC_RANGE/2)
 		return angle - ADC_RANGE;
-	if (angle < 0)
+	if (angle <= -ADC_RANGE/2)
 		return angle + ADC_RANGE;
 	else
 		return angle;
@@ -137,6 +138,8 @@ void CONTROL_Loop(void)
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
 	static int 				prevAngle = 0;
+	static int 				angleD = 0;
+	static unsigned char    frozen = 0;
 	int 					angle, angleErr;
 	short 					positionRaw, position, positionErr;
 	float 					angleErrDiff;
@@ -163,7 +166,7 @@ void CONTROL_Loop(void)
 		angle_mean = angle_sum / angle_averageLen;
 
 	// Detect invalid steps
-	#define MAX_ADC_STEP 10
+	#define MAX_ADC_STEP 30
 	#define MAX_INVALID_STEPS 2
 
 	int invalid_step = 0;
@@ -179,12 +182,16 @@ void CONTROL_Loop(void)
 	}
 
 	// Anomaly Detection: discard buffer if too many invalid steps (allow 2 for 1 outlier/popcorn noise)
-	if (invalid_step <= MAX_INVALID_STEPS)
-		prevAngle = angle = angle_mean;
-	else
+	if (invalid_step <= MAX_INVALID_STEPS) {
+		angle = angle_mean;
+		angleD = wrapLocal(angle - prevAngle) / (1 + frozen);
+		prevAngle = angle;
+		frozen = 0;
+	}
+	else {
 		angle = prevAngle;
-
-
+		frozen ++;
+	}
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position    = (positionRaw - positionCentre);
@@ -193,11 +200,7 @@ void CONTROL_Loop(void)
 	if (controlEnabled)	{
 		// Angle PD control
         angleErr = angle - angle_setPoint;
-		if (angle_smoothing < 1.0)
-			angleErrDiff = (angle_smoothing*angleErr) + ((1.0 - angle_smoothing)*angleErrPrev);
-		else
-			angleErrDiff = angleErr - angleErrPrev;
-		angleErrPrev = angleErr;
+        angleErrDiff = angleD;
 		angleCmd	 = -(angle_KP*angleErr + angle_KD*angleErrDiff);
 
 		// Position PD control
@@ -261,21 +264,22 @@ void CONTROL_Loop(void)
         //float latency = timeSent - timeReceived;
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;
-        buffer[ 2] = 19;
+        buffer[ 2] = 20;
         buffer[ 3] = packetCnt++;
         *((short *)&buffer[4]) = angle;
-        *((short *)&buffer[6]) = position;
-        *((short *)&buffer[8]) = (short)command;
-        *((float *)&buffer[10]) = timeSent;
-        *((float *)&buffer[14]) = timeReceived;
+        *((short *)&buffer[6]) = angleD;
+        *((short *)&buffer[8]) = position;
+        *((unsigned char *)&buffer[10]) = frozen;
+        *((unsigned int *)&buffer[11]) = timeSent;
+        *((unsigned int *)&buffer[15]) = timeReceived;
 
-    	/*for (i = 1; i <= angle_averageLen; i++) {
-            *((float *)&buffer[18+2*i]) = angleSamples[(angle_averageLen + angleSampIndex - i) % angle_averageLen];
-    	}*/
+        buffer[19] = crc(buffer, 19);
+        USART_SendBuffer(buffer, 20);
 
-        buffer[18] = crc(buffer, 18);
-        USART_SendBuffer(buffer, 19);
-        timeSent = TIMER1_getSystemTime();
+        if(newReceived) {
+        	newReceived = false;
+        	timeSent = TIMER1_getSystemTime_Us();
+        }
     }
 
 	// Flash LED every second (500 ms on, 500 ms off)
@@ -295,19 +299,19 @@ void CONTROL_BackgroundTask(void)
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
-	static int				lastRead = 0;
+	static unsigned int    lastRead = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	int now = TIMER1_getSystemTime_Us();
+	unsigned long now = TIMER1_getSystemTime_Us();
 
 	// int-overflow after 1h
 	if (now < lastRead) {
 		lastRead = now;
 	}
-	// read every 200us
-	else if (now > lastRead + 100) {
+	// read every 100us
+	else if (now > lastRead + CONTROL_ANGLE_MEASUREMENT_INTERVAL_US) {
 		// conversion takes 18us
 		angleSamples[angleSampIndex] = ANGLE_Read();
 
@@ -425,7 +429,8 @@ void CONTROL_BackgroundTask(void)
 							{
 								if (pktLen == 6)
 								{
-									timeReceived = TIMER1_getSystemTime();
+									timeReceived = TIMER1_getSystemTime_Us();
+									newReceived = true;
 									motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 									if(controlSynch)
 										controlCommand = motorCmd;
@@ -517,7 +522,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 		positionLimitLeft = pos;
 
 		// if we don't move enough, must have hit limit
-	} while(abs(diff) > 10);
+	} while(abs(diff) > 8);
 
 	MOTOR_Stop();
 	Led_Enable(false);
@@ -534,7 +539,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 		positionLimitRight = pos;
 
 		// if we don't move enough, must have hit limit
-	} while(abs(diff) > 5);
+	} while(abs(diff) > 8);
 
 	MOTOR_Stop();
 

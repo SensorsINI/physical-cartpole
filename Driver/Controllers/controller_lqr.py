@@ -10,6 +10,8 @@ from Controllers.template_controller import template_controller
 from CartPole.state_utilities import create_cartpole_state, cartpole_state_varname_to_index
 from CartPole.cartpole_model import cartpole_jacobian, u_max, s0
 
+from globals import *
+
 class controller_lqr(template_controller):
     def __init__(self):
         # From https://github.com/markwmuller/controlpy/blob/master/controlpy/synthesis.py#L8
@@ -33,6 +35,14 @@ class controller_lqr(template_controller):
         # Calculate Jacobian around equilibrium
         # Set point around which the Jacobian should be linearized
         # It can be here either pole up (all zeros) or pole down
+
+        self.controller_name = 'lqr'
+
+        self.angleErr = 0.0
+        self.positionErr = 0.0
+
+        self.ANGLE_TARGET = 0.0
+
         s = s0
         s[cartpole_state_varname_to_index('position')] = 0.0
         s[cartpole_state_varname_to_index('positionD')] = 0.0
@@ -46,8 +56,8 @@ class controller_lqr(template_controller):
         self.B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
 
         # Cost matrices for LQR controller
-        self.Q = np.diag([2000, 0.01, 8000, 10])  # How much to punish x, v, theta, omega
-        self.R = 100.5 # How much to punish the input
+        self.Q = np.diag([0.0, 0.0, 0.0, 0.0])  # How much to punish x, v, theta, omega
+        self.R = 100.0 # How much to punish the input
 
         # first, try to solve the ricatti equation
         # FIXME: Import needs to be different for some reason than in simulator.
@@ -86,8 +96,12 @@ class controller_lqr(template_controller):
 
     def step(self, s: np.ndarray, target_position: np.ndarray, time=None):
 
+        self.positionErr = (s[cartpole_state_varname_to_index('position')] - target_position)
+        self.angleErr = (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET)
+
+
         state = np.array(
-            [[s[cartpole_state_varname_to_index('position')] - target_position], [s[cartpole_state_varname_to_index('positionD')]], [s[cartpole_state_varname_to_index('angle')]], [s[cartpole_state_varname_to_index('angleD')]]])
+            [[s[cartpole_state_varname_to_index('position')] - target_position], [s[cartpole_state_varname_to_index('positionD')]], [s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET], [s[cartpole_state_varname_to_index('angleD')]]])
 
         motorCmd = np.asscalar(np.dot(-self.K, state))
         # self.motorcmd_save.append(motorCmd)
@@ -124,11 +138,12 @@ class controller_lqr(template_controller):
         print("K trigger motor position calibration")
         print("=/- increase/decrease (fine tune) angle deviation value")
         print("[/] increase/decrease position target")
-        print("4/3 increase/decrease input penalization")
-        print("2/1 increase/decrease position penalization")
-        print("w/q increase/decrease velocity penalization")
-        print("s/a increase/decrease angle penalization")
-        print("x/z increase/decrease angular velocity penalization")
+        print("2/1 increase/decrease input penalization")
+        print("w/q increase/decrease position penalization")
+        print("s/a increase/decrease velocity penalization")
+        print("r/e increase/decrease angle penalization")
+        print("f/d increase/decrease angular velocity penalization")
+        print("z/x angle smoothing")
         print("p print LQR parameters")
         print("l toggle logging data")
         print("S/L Save/Load param values from disk")
@@ -137,60 +152,58 @@ class controller_lqr(template_controller):
         print("m Toggle measurement")
         print("j Switch joystick control mode")
         print("b Print angle measurement from sensor")
+        print("6 Enable/Disable live plot")
+        print("5 Interrupts for histogram plot")
         print("***********************************")
 
     def keyboard_input(self, c):
         if c == 'p':
             self.printparams()
 
-        elif c == '4': # Increase input penalization
-            if self.R == 0:
-                self.R = 1e-5
-            else:
-                self.R *= 10
+        elif c == '2': # Increase input penalization
+            self.R = inc(self.R)
             self.update()
             print("\nIncreased input penalization to {:}".format(self.R))
-
-        elif c == '3': # Decrease input penalization
-            if self.R == 1e-5:
-                self.R = 0
-            else:
-                self.R /= 10
+        elif c == '1': # Decrease input penalization
+            self.R = dec(self.R)
             self.update()
             print("\nDecreased input penalization to {:}".format(self.R))
-        elif c == '2': # Increase position penalization
-            self.Q[0][0] *= 10
+        elif c == 'w': # Increase position penalization
+            self.Q[0][0] = inc(self.Q[0][0])
             self.update()
             print("\nIncreased position penalization {:}".format(self.Q[0][0]))
-        elif c == '1': # Decrease position penalization
-            self.Q[0][0] /= 10
+        elif c == 'q': # Decrease position penalization
+            self.Q[0][0] = dec(self.Q[0][0])
             self.update()
             print("\nDecreased position penalization {:}".format(self.Q[0][0]))
-        elif c == 'w': # Increase velocity penalization
-            self.Q[1][1] *= 10
+        elif c == 's': # Increase velocity penalization
+            self.Q[1][1] = inc(self.Q[1][1])
             self.update()
             print("\nIncreased velocity penalization {:}".format(self.Q[1][1]))
-        elif c == 'q': # Decrease velocity penalization
-            self.Q[1][1] /= 10
+        elif c == 'a': # Decrease velocity penalization
+            self.Q[1][1] = dec(self.Q[1][1])
             self.update()
             print("\nDecreased velocity penalization {:}".format(self.Q[1][1]))
-        elif c == 's': # Increase angle penalization
-            self.Q[2][2] *= 10
+        elif c == 'r': # Increase angle penalization
+            self.Q[2][2] = inc(self.Q[2][2])
             self.update()
             print("\nIncreased angle penalization {:}".format(self.Q[2][2]))
-        elif c == 'a': # Decrease angle penalization
-            self.Q[2][2] /= 10
+        elif c == 'e': # Decrease angle penalization
+            self.Q[2][2] = dec(self.Q[2][2])
             self.update()
             print("\nDecreased angle penalization {:}".format(self.Q[2][2]))
-        elif c == 'x': # Increase angular velocity penalization
-            self.Q[3][3] *= 10
+        elif c == 'f': # Increase angular velocity penalization
+            self.Q[3][3] = inc(self.Q[3][3])
             self.update()
             print("\nIncreased angular velocity penalization {:}".format(self.Q[3][3]))
-        elif c == 'z': # Decrease angular velocity penalization
-            self.Q[3][3] /= 10
+        elif c == 'd': # Decrease angular velocity penalization
+            self.Q[3][3] = dec(self.Q[3][3])
             self.update()
             print("\nDecreased angular velocity penalization {:}".format(self.Q[3][3]))
 
     def controller_reset(self):
+        self.angleErr = 0.0
+        self.positionErr = 0.0
         Q = 0
+
         return Q

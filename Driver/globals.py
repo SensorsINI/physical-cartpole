@@ -28,8 +28,7 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
-# ANGLE_HANGING = 1019  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING = 1199 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING = 1210 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
 #ANGLE_HANGING = 1024 # right cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 if ANGLE_HANGING < ANGLE_ADC_RANGE/2:
@@ -39,6 +38,9 @@ else:
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.11999999999999998 # adjust from key commands such that upright angle error is minimized
+
+print(f'Angle Down: {ANGLE_HANGING}')
+print(f'Angle Up: {int(ANGLE_HANGING + ANGLE_DEVIATION - ANGLE_DEVIATION_FINETUNE / ANGLE_NORMALIZATION_FACTOR)+4096}')
 
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE

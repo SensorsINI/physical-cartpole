@@ -183,7 +183,7 @@ class PhysicalCartPoleDriver:
 
             self.set_target_position()
 
-            if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
+            if self.controlEnabled:
                 self.lastControlTime = self.timeNow
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
 
@@ -265,7 +265,7 @@ class PhysicalCartPoleDriver:
             elif c == 'l':
                 if not self.loggingEnabled:
                     try:
-                        self.csvfilename, self.csvfile, self.csvwriter = csv_init()
+                        self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name=self.controller.controller_name)
                         self.loggingEnabled = True
                         print("\n Started self.logging data to " + self.csvfilename)
                     except Exception as e:
@@ -303,11 +303,11 @@ class PhysicalCartPoleDriver:
                 self.controller.print_help()
             # Fine tune angle deviation
             elif c == '=':
-                ANGLE_DEVIATION_FINETUNE += 0.01
+                ANGLE_DEVIATION_FINETUNE += 0.002
                 print("\nIncreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
             # Decrease Target Angle
             elif c == '-':
-                ANGLE_DEVIATION_FINETUNE -= 0.01
+                ANGLE_DEVIATION_FINETUNE -= 0.002
                 print("\nDecreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
 
             # Increase Target Position
@@ -355,7 +355,7 @@ class PhysicalCartPoleDriver:
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
                     self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                    (angle, _, _, _, _) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
@@ -373,6 +373,7 @@ class PhysicalCartPoleDriver:
 
             elif c == '6':
                 self.livePlotEnabled = not self.livePlotEnabled
+                self.livePlotReset = True
                 print(f"\nLive Plot: {self.livePlotEnabled}")
 
             # Exit
@@ -384,11 +385,9 @@ class PhysicalCartPoleDriver:
 
         # This function will block at the rate of the control loop
         self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-        (self.angle_raw, self.position_raw, self.command, self.sent, self.received) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.frozen, self.sent, self.received) = self.InterfaceInstance.read_state()
 
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
-        # position encoder count is grows to right facing cart for stock motor, grows to left for Pololu motor
-        # Hence we revert sign for Pololu
         self.position_centered_unconverted = -self.position_centered_unconverted
 
         # Convert position and angle to physical units
@@ -396,8 +395,6 @@ class PhysicalCartPoleDriver:
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Filter
-
-        angle = angle * (self.angle_smoothing) + (1 - self.angle_smoothing) * self.anglePrev
         angle = wrap_angle_rad(angle)
 
         # Time self.measurement
@@ -409,7 +406,7 @@ class PhysicalCartPoleDriver:
         self.elapsedTime = self.timeNow - self.startTime
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = wrap_angle_rad(angle - self.anglePrev) / self.deltaTime  # rad/self.s
+        angleDerivative = wrap_angle_rad(self.angleD_raw * ANGLE_NORMALIZATION_FACTOR) / self.deltaTime  # rad/self.s
         positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
 
         # Keep values of angle and position for next timestep, for smoothing and derivative calculation
@@ -518,31 +515,52 @@ class PhysicalCartPoleDriver:
             pass
 
     def write_csv_row(self):
-        self.csvwriter.writerow(
-            [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
-             self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-             self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
-             self.target_position, self.controller.positionErr, self.controller.angleCmd,
-             self.controller.positionCmd, self.actualMotorCmd, self.Q,
-             self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, self.Q**2,
-             self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
+        if self.controller.controller_name == 'PD':
+            self.csvwriter.writerow(
+                [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                 self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
+                 self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
+                 self.target_position, self.controller.positionErr, self.controller.angleCmd,
+                 self.controller.positionCmd, self.actualMotorCmd, self.Q,
+                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
+                 self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
+        else:
+            self.csvwriter.writerow(
+                [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                 self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
+                 self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
+                 self.target_position, self.controller.positionErr, 'NA', 'NA', self.actualMotorCmd, self.Q,
+                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
+                 self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
+
 
     def plot_live(self):
         BUFFER_LENGTH = 5
-        BUFFER_WIDTH = 3
+        BUFFER_WIDTH = 7
 
-        if not hasattr(self, 'live_connection'):
-            address = ('localhost', 6000)
-            self.live_connection = Client(address)
+        if not hasattr(self, 'livePlotReset') or self.livePlotReset:
+            self.livePlotReset = False
             self.live_buffer_index = 0
             self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
-        else:
+
+            if not hasattr(self, 'live_connection'):
+                address = ('localhost', 6000)
+                self.live_connection = Client(address)
+            else:
+                self.live_connection.send('reset')
+
+        if hasattr(self, 'live_connection'):
             if self.live_buffer_index < BUFFER_LENGTH:
                 self.live_buffer[self.live_buffer_index, :] = np.array([
                     self.sent,
-                    self.angle_raw,
+                    #self.angle_raw,
+                    #self.angleD_raw,
                     self.s[ANGLE_IDX],
-                    #self.s[POSITION_IDX] * 100,
+                    self.s[ANGLED_IDX],
+                    self.s[POSITION_IDX] * 100,
+                    self.s[POSITIOND_IDX] * 100,
+                    self.calculatedMotorCmd,
+                    self.frozen,
                 ])
                 self.live_buffer_index += 1
             else:

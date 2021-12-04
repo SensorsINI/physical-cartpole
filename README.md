@@ -13,6 +13,9 @@ The new firmware built during the workshop enables the following features:
 * KEIL MDK development environment.
 * STLink debugger.
 
+Preferable way to install python packages:
+`pip install -r requirements.txt` in a conda env or pip venv.
+
 # Notes
 ## Modes of Operation
 

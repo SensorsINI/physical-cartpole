@@ -59,6 +59,14 @@ def csv_init(csv_name=None, controller_name=None):
 
         writer.writerow(['#'])
 
+        #TODO: find real values here. This is needed for brunton plot.
+        writer.writerow(['#'])
+        writer.writerow(['# Time intervals dt:'])
+        writer.writerow(['# Simulation: 0.002 s'])
+        writer.writerow(['# Controller update: 0.01 s'])
+        writer.writerow(['# Saving: 0.01 s'])
+        writer.writerow(['#'])
+
         writer.writerow(['# Units:'])
         writer.writerow(['# time: s'])
         writer.writerow(['# deltaTimeMs: ms'])
@@ -92,7 +100,7 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['#'])
 
         writer.writerow(
-            ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
+            ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angleD_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
                 'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + [
                 'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['received'] + ['latency']  + ['pythonLatency'] + ['additional_latency'])
 

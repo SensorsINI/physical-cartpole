@@ -7,8 +7,10 @@ import glob
 import os
 
 list_of_files = glob.glob('../ExperimentRecordings/*.csv')
+print(list_of_files)
 list_of_files.sort(key=os.path.getctime, reverse=True)
-file = list_of_files[6]
+latest_file = list_of_files[0]
+file = '../ExperimentRecordings/cartpole-2021-11-02-15-10-29 swinging.csv'
 data = pd.read_csv(file, comment='#')
 
 data = data[['angle', 'angle_raw']][0:2000]
