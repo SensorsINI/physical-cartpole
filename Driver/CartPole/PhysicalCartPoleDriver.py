@@ -102,7 +102,7 @@ class PhysicalCartPoleDriver:
         self.actualMotorCmd = 0
 
         self.s = create_cartpole_state()
-        self.s_template = np.array([0.0, 0.0, 0.0, 0.0])
+        self.s_template = create_cartpole_state()
 
         self.terminate_experiment = False
 
@@ -186,7 +186,7 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
                 self.lastControlTime = self.timeNow
-                self.s = self.s_template
+                self.s[...] = self.s_template[...]
                 self.s_template += 0.01
                 if self.s_template[0] > 1:
                     self.quit_experiment()
