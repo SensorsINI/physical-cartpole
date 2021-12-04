@@ -98,7 +98,7 @@ class controller_PD(template_controller):
         self.angleCmd = -self.ANGLE_KP * self.angleErr - self.ANGLE_KD * angleErrDiff - self.ANGLE_KI * self.angleErr_integral*(CONTROL_PERIOD_MS/1.0e3)  # if too CCW (pos error), move cart left
 
         motorCmd = self.angleCmd + self.positionCmd  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
-        return motorCmd*2.37
+        return motorCmd
 
     def printparams(self):
         print("\nAngle PID Control Parameters")
