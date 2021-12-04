@@ -283,11 +283,11 @@ class PhysicalCartPoleDriver:
                 self.controller.print_help()
             # Fine tune angle deviation
             elif c == '=':
-                ANGLE_DEVIATION_FINETUNE += 0.01
+                ANGLE_DEVIATION_FINETUNE += 0.002
                 print("\nIncreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
             # Decrease Target Angle
             elif c == '-':
-                ANGLE_DEVIATION_FINETUNE -= 0.01
+                ANGLE_DEVIATION_FINETUNE -= 0.002
                 print("\nDecreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
 
             # Increase Target Position
