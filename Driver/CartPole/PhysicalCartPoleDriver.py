@@ -57,8 +57,8 @@ class PhysicalCartPoleDriver:
         self.manualMotorSetting = False
 
         self.danceEnabled = False
-        self.danceAmpl = 0.1  # m
-        self.dancePeriodS = 20.0
+        self.danceAmpl = 0.10  # m
+        self.dancePeriodS = 5.0
         self.dance_start_time = 0.0
 
         self.loggingEnabled = False
@@ -510,7 +510,7 @@ class PhysicalCartPoleDriver:
 
     def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
-        if abs(self.position_centered_unconverted) > 0.9 * (POSITION_ENCODER_RANGE // 2):
+        if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
             self.controlEnabled = False
             self.controller.controller_reset()
             self.danceEnabled = False
