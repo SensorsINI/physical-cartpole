@@ -4,7 +4,7 @@
 #include "sys.h"
 #include "motor.h"
 
-#define CONTROL_LOOP_PERIOD_MS	        20
+#define CONTROL_LOOP_PERIOD_MS	        5
 #define CONTROL_SAFETY_ANGLE_MIN        2148
 #define CONTROL_SAFETY_ANGLE_MAX        3996
 #define CONTROL_MOTOR_MAX_SPEED         ((int)(0.95 * MOTOR_FULL_SCALE + 0.5))
