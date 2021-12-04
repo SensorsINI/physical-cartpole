@@ -99,6 +99,7 @@ class PhysicalCartPoleDriver:
         self.calculatedMotorCmd = 0
 
         self.s = create_cartpole_state()
+        self.s_template = np.array([0.0, 0.0, 0.0, 0.0])
 
         self.terminate_experiment = False
 
@@ -169,6 +170,10 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled:
                 self.lastControlTime = self.timeNow
+                self.s = self.s_template
+                self.s_template += 0.01
+                if self.s_template[0] > 1:
+                    self.quit_experiment()
                 self.calculatedMotorCmd = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
                 self.calculatedMotorCmd *= MOTOR_FULL_SCALE
                 self.calculatedMotorCmd = int(self.calculatedMotorCmd)
