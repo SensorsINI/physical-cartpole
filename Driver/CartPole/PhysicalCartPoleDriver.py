@@ -102,6 +102,7 @@ class PhysicalCartPoleDriver:
         self.actualMotorCmd = 0
 
         self.s = create_cartpole_state()
+        self.s_template = np.array([0.0, 0.0, 0.0, 0.0])
 
         self.terminate_experiment = False
 
@@ -185,6 +186,10 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled and self.timeNow - self.lastControlTime >= CONTROL_PERIOD_MS * .001:
                 self.lastControlTime = self.timeNow
+                self.s = self.s_template
+                self.s_template += 0.01
+                if self.s_template[0] > 1:
+                    self.quit_experiment()
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
 
             self.joystick_action()
@@ -196,7 +201,7 @@ class PhysicalCartPoleDriver:
             if self.measurement.is_idle():  # switch off boundary safety when self.measurement mode is active.
                 self.safety_switch_off()
 
-            self.InterfaceInstance.set_motor(self.actualMotorCmd)
+            self.InterfaceInstance.set_motor(0)
 
             if self.loggingEnabled:
                 self.write_csv_row()
