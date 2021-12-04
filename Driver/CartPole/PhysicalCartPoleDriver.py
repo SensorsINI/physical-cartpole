@@ -99,7 +99,7 @@ class PhysicalCartPoleDriver:
         self.calculatedMotorCmd = 0
 
         self.s = create_cartpole_state()
-        self.s_template = np.array([0.0, 0.0, 0.0, 0.0])
+        self.s_template = create_cartpole_state()
 
         self.terminate_experiment = False
 
@@ -170,7 +170,7 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled:
                 self.lastControlTime = self.timeNow
-                self.s = self.s_template
+                self.s[...] = self.s_template[...]
                 self.s_template += 0.01
                 if self.s_template[0] > 1:
                     self.quit_experiment()
@@ -478,7 +478,7 @@ class PhysicalCartPoleDriver:
                  self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                  self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
                  self.target_position, self.controller.positionErr, self.controller.angleCmd,
-                 self.controller.positionCmd, self.actualMotorCmd, Q,
+                 self.controller.positionCmd, actualMotorCmd, Q,
                  self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
                  self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start])
         else:
