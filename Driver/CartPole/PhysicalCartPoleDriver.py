@@ -188,7 +188,7 @@ class PhysicalCartPoleDriver:
             if self.measurement.is_idle():  # switch off boundary safety when self.measurement mode is active.
                 actualMotorCmd = self.safety_switch_off(actualMotorCmd)
 
-            self.InterfaceInstance.set_motor(actualMotorCmd)
+            self.InterfaceInstance.set_motor(0)
             # TODO Take notice that the csv file is saving the self.calculatedMotorCmd and not the actualMotorCmd. The actualMotorCmd is after safety switching, and motor linearization of the motor input value (self.calculatedMotorCmd).
 
             if self.loggingEnabled:
