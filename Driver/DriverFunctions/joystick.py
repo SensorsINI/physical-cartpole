@@ -2,7 +2,7 @@
 import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
-from globals import JOYSTICK_POSITION_KP, POSITION_NORMALIZATION_FACTOR
+from globals import JOYSTICK_POSITION_KP, TRACK_LENGTH
 
 
 def setup_joystick():
@@ -41,9 +41,9 @@ def motorCmd_from_joystick(joystickMode, stickPos, position):
     if joystickMode == 'speed':
         Q = stickPos
     elif joystickMode == 'position':
-        position_normed = position/POSITION_NORMALIZATION_FACTOR
+        position_normed = position/TRACK_LENGTH
         normed_distance_difference = 0.5*(stickPos - position_normed)
-        Q = int(normed_distance_difference * JOYSTICK_POSITION_KP)
+        Q = normed_distance_difference * JOYSTICK_POSITION_KP
     else:
         error_string = 'Unknown joystick mode: {}'.format(joystickMode)
         raise NameError(error_string)

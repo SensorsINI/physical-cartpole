@@ -452,7 +452,6 @@ class PhysicalCartPoleDriver:
                     self.Q = 0.0
         else:
             self.stickPos = get_stick_position(self.stick)
-            self.stickPos = self.stickPos * POSITION_FULL_SCALE_N * POSITION_NORMALIZATION_FACTOR
             self.stickControl = True
             self.Q = motorCmd_from_joystick(self.joystickMode, self.stickPos, self.s[POSITION_IDX])
 
