@@ -11,11 +11,9 @@ from DriverFunctions.json_helpers import get_new_json_filename
 
 from globals import dec, inc, JSON_PATH
 
-CONTROL_PERIOD_MS = 2
-
 # PID params from json
 PARAMS_JSON_FILE = JSON_PATH + 'control_PD.json'
- #PARAMS_JSON_FILE = JSON_PATH + 'control-factory.json'
+# PARAMS_JSON_FILE = JSON_PATH + 'control-factory.json'
 
 class controller_PD(template_controller):
     def __init__(self):
@@ -57,10 +55,11 @@ class controller_PD(template_controller):
     def step(self, s, target_position, time=None):
         # This diffFactor was before strangely - dt was a sampling time
 
+        factor = 0.002
         if self.time_last is None:
             diffFactor = 1.0
         else:
-            diffFactor = CONTROL_PERIOD_MS / (time - self.time_last) / 1000
+            diffFactor = factor / (time - self.time_last)
 
         self.time_last = time
 
@@ -71,10 +70,10 @@ class controller_PD(template_controller):
         self.positionErrPrev = self.positionErr
         self.positionErr_integral += self.positionErr
         if self.POSITION_KI > 0.0:
-            if self.positionErr_integral > 1.0/(CONTROL_PERIOD_MS/1.0e3)/self.POSITION_KI:
-                self.positionErr_integral = 1.0/(CONTROL_PERIOD_MS/1.0e3)/self.POSITION_KI
-            elif self.positionErr_integral < -1.0/(CONTROL_PERIOD_MS/1.0e3)/self.POSITION_KI:
-                self.positionErr_integral = -1.0/(CONTROL_PERIOD_MS/1.0e3)/self.POSITION_KI
+            if self.positionErr_integral > 1.0/factor/self.POSITION_KI:
+                self.positionErr_integral = 1.0/factor/self.POSITION_KI
+            elif self.positionErr_integral < -1.0/factor/self.POSITION_KI:
+                self.positionErr_integral = -1.0/factor/self.POSITION_KI
 
         # Naive solution: if too positive (too right), move left (minus on positionCmd),
         # but this does not produce correct control.
@@ -84,20 +83,20 @@ class controller_PD(template_controller):
         # End result is that sign of positionCmd is flipped
         # KD term with "-" resists the motion
         # KP and KI with "-" acts attractive towards the target position
-        self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff + self.POSITION_KI * self.positionErr_integral*(CONTROL_PERIOD_MS/1.0e3)
+        self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff + self.POSITION_KI * self.positionErr_integral*factor
 
         self.angleErr = (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET)
         angleErrDiff = (self.angleErr - self.angleErrPrev) * diffFactor  # correct for actual sample interval; if interval is too long, reduce diff error
         self.angleErrPrev = self.angleErr
         self.angleErr_integral += self.angleErr
         if self.ANGLE_KI > 0.0:
-            if self.angleErr_integral > 1.0/(CONTROL_PERIOD_MS/1.0e3)/self.ANGLE_KI:
-                self.angleErr_integral = 1.0/(CONTROL_PERIOD_MS/1.0e3)/self.ANGLE_KI
-            elif self.angleErr_integral < -1.0/(CONTROL_PERIOD_MS/1.0e3)/self.ANGLE_KI:
-                self.angleErr_integral = -1.0/(CONTROL_PERIOD_MS/1.0e3)/self.ANGLE_KI
+            if self.angleErr_integral > 1.0/factor/self.ANGLE_KI:
+                self.angleErr_integral = 1.0/factor/self.ANGLE_KI
+            elif self.angleErr_integral < -1.0/factor/self.ANGLE_KI:
+                self.angleErr_integral = -1.0/factor/self.ANGLE_KI
         # Assuming gains are positive, error growing to the "right" (around zero in upright position , this means in fact angle gets negative), causes motor to move to the right
         # iff a term below has - sign
-        self.angleCmd = -self.ANGLE_KP * self.angleErr - self.ANGLE_KD * angleErrDiff - self.ANGLE_KI * self.angleErr_integral*(CONTROL_PERIOD_MS/1.0e3)  # if too CCW (pos error), move cart left
+        self.angleCmd = -self.ANGLE_KP * self.angleErr - self.ANGLE_KD * angleErrDiff - self.ANGLE_KI * self.angleErr_integral*factor  # if too CCW (pos error), move cart left
 
         motorCmd = self.angleCmd + self.positionCmd  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
         return motorCmd
