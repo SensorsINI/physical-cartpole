@@ -58,7 +58,7 @@ class PhysicalCartPoleDriver:
 
         self.danceEnabled = False
         self.danceAmpl = 0.10  # m
-        self.dancePeriodS = 5.0
+        self.dancePeriodS = 8.0
         self.dance_start_time = 0.0
 
         self.loggingEnabled = False
@@ -329,6 +329,7 @@ class PhysicalCartPoleDriver:
                     self.measurement.stop()
             elif c == 'j':
                 if self.joystickMode is None:
+                    self.stick, self.joystickMode = setup_joystick()
                     self.log.warning('no joystick')
                 elif self.joystickMode == 'not active':
                     self.joystickMode = 'speed'
@@ -571,7 +572,7 @@ class PhysicalCartPoleDriver:
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if False or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
+        if False or self.printCount >= PRINT_PERIOD:
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"

@@ -5,7 +5,7 @@ MOTOR = 'ORIGINAL'  # It will be overwritten by each calibration
 MOTOR_DYNAMICS_CORRECTED = True
 
 LOGGING_LEVEL = logging.INFO
-PRINT_PERIOD_MS = 100  # shows state every this many ms
+PRINT_PERIOD = 50  # shows state in terminal every this many control updates
 
 LIVE_PLOT = False
 
@@ -14,7 +14,6 @@ CALIBRATE = False  # If True calibration will be run at start-up of the program
 # because limits are determined during this calibration
 
 CONTROLLER_NAME = 'PD'
-CONTROL_PERIOD_MS = 2  # It was 25 originally, we changed it to 5 - marcin & asude
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored

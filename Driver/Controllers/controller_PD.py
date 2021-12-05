@@ -9,7 +9,9 @@ from Controllers.template_controller import template_controller
 from CartPole.state_utilities import cartpole_state_varname_to_index
 from DriverFunctions.json_helpers import get_new_json_filename
 
-from globals import *
+from globals import dec, inc, JSON_PATH
+
+CONTROL_PERIOD_MS = 2
 
 # PID params from json
 PARAMS_JSON_FILE = JSON_PATH + 'control_PD.json'
