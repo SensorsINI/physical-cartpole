@@ -29,7 +29,7 @@ def animate(i):
     while connection.poll(0.001):
         buffer = connection.recv()
 
-        if buffer is 'reset':
+        if buffer == 'reset':
             data = np.zeros((0, data.shape[1]))
             print('reset received')
 
