@@ -294,8 +294,12 @@ class PhysicalCartPoleDriver:
                 POSITION_OFFSET = calibrate(self.InterfaceInstance)
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
+                    if ANGLE_HANGING_DEFAULT:
+                        angle_constants_update(ANGLE_HANGING_POLOLU)
                 elif self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'ORIGINAL'
+                    if ANGLE_HANGING_DEFAULT:
+                        angle_constants_update(ANGLE_HANGING_ORIGINAL)
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
                 print('Detected motor: {}'.format(MOTOR))
@@ -352,6 +356,7 @@ class PhysicalCartPoleDriver:
                 print('Additional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == 'b':
+                global ANGLE_HANGING_DEFAULT
                 angle_average = 0
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
@@ -360,14 +365,9 @@ class PhysicalCartPoleDriver:
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
-                ANGLE_HANGING = angle_average
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
-
-                # update angle deviation according to ANGLE_HANGING update
-                if ANGLE_HANGING < ANGLE_ADC_RANGE / 2:
-                    ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
-                else:
-                    ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+                angle_constants_update(angle_average)
+                ANGLE_HANGING_DEFAULT = False
 
             elif c == '5':
                 subprocess.call(["python", "DataAnalysis/state_analysis.py"])
