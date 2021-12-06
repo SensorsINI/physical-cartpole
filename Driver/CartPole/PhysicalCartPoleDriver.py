@@ -220,7 +220,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION
+        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
         if self.kbAvailable & self.kb.kbhit():
             c = self.kb.getch()
             # Keys used in self.controller: 1,2,3,4,p, =, -, w, q, self.s, a, x, z, r, e, f, d, v, c, S, L, b, j
@@ -356,7 +356,6 @@ class PhysicalCartPoleDriver:
                 print('Additional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == 'b':
-                global ANGLE_HANGING_DEFAULT
                 angle_average = 0
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
