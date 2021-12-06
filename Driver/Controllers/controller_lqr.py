@@ -97,7 +97,6 @@ class controller_lqr(template_controller):
         eigVals = np.linalg.eigvals(self.A - np.dot(self.B, K))
 
         self.K = K
-        print(self.K)
         self.X = X
         self.eigVals = eigVals
 
