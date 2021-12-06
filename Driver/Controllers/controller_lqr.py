@@ -11,6 +11,9 @@ from CartPole.state_utilities import ANGLE_IDX, ANGLED_IDX, POSITION_IDX, POSITI
 from CartPole.cartpole_model import u_max, s0
 from CartPole.cartpole_jacobian import cartpole_jacobian
 
+import json
+from DriverFunctions.json_helpers import get_new_json_filename
+
 import yaml
 
 from globals import dec, inc
@@ -53,29 +56,14 @@ class controller_lqr(template_controller):
         u = 0.0
 
         jacobian = cartpole_jacobian(s, u)
-        A = jacobian[:, :-1]
-        B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
+        self.A = jacobian[:, :-1]
+        self.B = np.reshape(jacobian[:, -1], newshape=(4, 1)) * u_max
 
         # Cost matrices for LQR controller
         self.Q = Q  # How much to punish x, v, theta, omega
         self.R = R  # How much to punish Q
 
-        # first, try to solve the ricatti equation
-        X = solve_continuous_are(A, B, self.Q, self.R)
-
-        # compute the LQR gain
-        if np.array(self.R).ndim == 0:
-            Ri = 1.0 / self.R
-        else:
-            Ri = np.linalg.inv(self.R)
-
-        K = np.dot(Ri, (np.dot(B.T, X)))
-
-        eigVals = np.linalg.eigvals(A - np.dot(B, K))
-
-        self.K = K
-        self.X = X
-        self.eigVals = eigVals
+        self.update()
 
     def step(self, s: np.ndarray, target_position: np.ndarray, time=None):
 
@@ -93,6 +81,25 @@ class controller_lqr(template_controller):
             pass
 
         return Q
+
+    def update(self):
+        # first, try to solve the ricatti equation
+        X = solve_continuous_are(self.A, self.B, self.Q, self.R)
+
+        # compute the LQR gain
+        if np.array(self.R).ndim == 0:
+            Ri = 1.0 / self.R
+        else:
+            Ri = np.linalg.inv(self.R)
+
+        K = np.dot(Ri, (np.dot(self.B.T, X)))
+
+        eigVals = np.linalg.eigvals(self.A - np.dot(self.B, K))
+
+        self.K = K
+        print(self.K)
+        self.X = X
+        self.eigVals = eigVals
 
     def printparams(self):
         print("Q  - STATE COST MATRIX: ".format(self.Q))
@@ -124,7 +131,7 @@ class controller_lqr(template_controller):
         print("z/x angle smoothing")
         print("p print LQR parameters")
         print("l toggle logging data")
-        print("S/L Save/Load param values from disk")
+        print("S Save param values to disk")
         print("D Toggle dance mode")
         print(",./ Turn on motor left zero right")
         print("m Toggle measurement")
@@ -133,6 +140,23 @@ class controller_lqr(template_controller):
         print("6 Enable/Disable live plot")
         print("5 Interrupts for histogram plot")
         print("***********************************")
+
+    def loadparams(self):
+
+        self.Q = np.diag(config["controller"]["lqr"]["Q"])
+        self.R = config["controller"]["lqr"]["R"]
+        self.update()
+
+    def saveparams(self):
+        json_filepath = get_new_json_filename(self.controller_name)
+        print(f"\nSaving parameters to {json_filepath}")
+
+        p = {}
+        p['R'] = float(self.R)
+        Q_list = [float(self.Q[0, 0]), float(self.Q[1, 1]), float(self.Q[2, 2]), float(self.Q[3, 3])]
+        p['Q'] = Q_list
+        with open(json_filepath, 'w') as f:
+            json.dump(p, f)
 
     def keyboard_input(self, c):
         if c == 'p':
@@ -178,6 +202,8 @@ class controller_lqr(template_controller):
             self.Q[3][3] = dec(self.Q[3][3])
             self.update()
             print("\nDecreased angular velocity penalization {:}".format(self.Q[3][3]))
+        elif c == 'S':
+            self.saveparams()
 
     def controller_reset(self):
         pass
