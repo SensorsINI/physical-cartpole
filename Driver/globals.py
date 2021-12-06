@@ -13,7 +13,7 @@ CALIBRATE = False  # If True calibration will be run at start-up of the program
 # important to calibrate if running standalone to avoid motor burnout
 # because limits are determined during this calibration
 
-CONTROLLER_NAME = 'PD'
+CONTROLLER_NAME = 'PID'
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored

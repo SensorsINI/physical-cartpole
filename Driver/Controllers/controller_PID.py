@@ -1,9 +1,30 @@
 """
 A PD controller for the Cartpole using CartpoleSimulator conventions
+
+        We checked that factory-firmware gain values are not working great for our hardware
+        Hence we do not provide values recomputed to our software
+        Instead we provide a set of values working good with our software at out hardware.
+        I leave control-factory.json, but I don't think this is trustworthy.
+
+        Comment of Tobi for position:
+        "Naive solution: if too positive (too right), move left (minus on Q_position),
+        but this does not produce correct control.
+        The correct strategy is that if cart is too positive (too right),
+        produce lean to the left by introducing a positive set point angle leaning slightly to left,
+        i.e. more positve position_error makes more positive effective ANGLE_TARGET
+        End result is that sign of Q_position is flipped
+        KD term with "-" resists the motion
+        KP and KI with "-" acts attractive towards the target position"
+
+        Comment of Tobi for angle:
+        "Assuming gains are positive,
+        error growing to the "right"
+        (around zero in upright position, this means in fact angle gets negative),
+        causes motor to move to the right
+        iff a term below has - sign"
 """
 
 import json
-from datetime import datetime
 
 from Controllers.template_controller import template_controller
 from CartPole.state_utilities import cartpole_state_varname_to_index
@@ -11,95 +32,180 @@ from DriverFunctions.json_helpers import get_new_json_filename
 
 from globals import dec, inc, JSON_PATH
 
-# PID params from json
-PARAMS_JSON_FILE = JSON_PATH + 'control_PD.json'
-# PARAMS_JSON_FILE = JSON_PATH + 'control-factory.json'
+import numpy as np
 
-class controller_PD(template_controller):
+# PID params from json
+PARAMS_JSON_FILE = JSON_PATH + 'control_PID.json'
+
+# Sensitivity for PID gains - these are hardcoded multiplicative factors for PID gains
+# They help to keep gains in json files in user-friendly magnitude.
+# To start with a working solution we recommend that whichever sensitivity factor you change,
+# you also change the corresponding gain in json file you intend to use
+# E.g. if you multiply here 
+# For transparency we recommend that you only change sensitivity gains by powers of 10.
+sensitivity_pP_gain = 1.0
+sensitivity_pI_gain = 1.0
+sensitivity_pD_gain = 0.01
+
+sensitivity_aP_gain = 1.0
+sensitivity_aI_gain = 1.0
+sensitivity_aD_gain = 0.01
+
+class controller_PID(template_controller):
     def __init__(self):
 
-        self.controller_name = 'PD'
+        self.controller_name = 'PID'
         self.time_last = None
 
-        self.positionErrPrev = 0.0
-        self.angleErrPrev = 0.0
+        self.PARAMS_JSON_FILE = PARAMS_JSON_FILE
 
-        self.angleErr_integral = 0.0
-        self.positionErr_integral = 0.0
+        ########################################################################################################
 
-        self.motorCmd = 0
-
-        self.angleErr = 0.0
-        self.positionErr = 0.0
-
-        self.angleCmd = 0.0
-        self.positionCmd = 0.0
-
-        self.ANGLE_TARGET = 0.0
-
-        self.ANGLE_KP = 0.0
-        self.ANGLE_KD = 0.0
-        self.ANGLE_KI = 0.0
+        # Position PID
 
         self.POSITION_TARGET = 0
 
+        # Errors
+        self.position_error = 0.0
+        self.position_error_integral = 0.0
+        self.position_error_diff = 0.0
+
+        self.position_error_previous = None
+
+        # Gains
         self.POSITION_KP = 0.0
         self.POSITION_KD = 0.0
         self.POSITION_KI = 0.0
 
-        self.PARAMS_JSON_FILE = PARAMS_JSON_FILE
+        # "Cost" components:
+        # gain * error(or error integral or error difference) * sensitivity factor (see at the top of the file)
+        self.pP = 0.0
+        self.pI = 0.0
+        self.pD = 0.0
 
-        self.time_last = None
+        # Motor command - position-PID contribution
+        self.Q_position = 0.0
+
+        ########################################################################################################
+        
+        # Angle PID
+
+        self.ANGLE_TARGET = 0.0
+
+        # Errors
+        self.angle_error = 0.0
+        self.angle_error_integral = 0.0
+        self.angle_error_diff = 0.0
+
+        self.angle_error_previous = None
+
+        # Gains
+        self.ANGLE_KP = 0.0
+        self.ANGLE_KD = 0.0
+        self.ANGLE_KI = 0.0
+
+        # "Cost" components:
+        # gain * error(or error integral or error difference) * sensitivity factor (see at the top of the file)
+        self.aP = 0.0
+        self.aI = 0.0
+        self.aD = 0.0
+
+        # Motor command - angle-PID contribution
+        self.Q_angle = 0.0
+
+        ########################################################################################################
+
+        # Final motor command - sum of angle-PID and position-PID motor commands
+        self.Q = 0
 
 
     def step(self, s, target_position, time=None):
-        # This diffFactor was before strangely - dt was a sampling time
-
-        factor = 0.002
-        if self.time_last is None:
-            diffFactor = 1.0
-        else:
-            diffFactor = factor / (time - self.time_last)
-
-        self.time_last = time
 
         self.POSITION_TARGET = target_position
 
-        self.positionErr = (s[cartpole_state_varname_to_index('position')] - target_position)
-        positionErrDiff = (self.positionErr - self.positionErrPrev) * diffFactor
-        self.positionErrPrev = self.positionErr
-        self.positionErr_integral += self.positionErr
+        ########################################################################################################
+
+        # Time
+
+        if self.time_last is None:
+            time_difference = 0.0
+        else:
+            time_difference = time - self.time_last
+
+        # Ignore time difference if the difference very big
+        # (it would harm integral gain if appears as error and otherwise the system is anyway not stable)
+        if time_difference > 0.1:
+            time_difference = 0.0
+
+        self.time_last = time
+
+        ########################################################################################################
+
+        # Position PID
+
+        # Error
+        self.position_error = (s[cartpole_state_varname_to_index('position')] - target_position)
+
+        # Error difference
+        if time_difference > 0.0001 and (self.position_error_previous is not None):
+            self.position_error_diff = (self.position_error - self.position_error_previous) / time_difference
+        else:
+            self.position_error_diff = 0.0
+
+        self.position_error_previous = self.position_error
+
+        # Error integral
         if self.POSITION_KI > 0.0:
-            if self.positionErr_integral > 1.0/factor/self.POSITION_KI:
-                self.positionErr_integral = 1.0/factor/self.POSITION_KI
-            elif self.positionErr_integral < -1.0/factor/self.POSITION_KI:
-                self.positionErr_integral = -1.0/factor/self.POSITION_KI
+            self.position_error_integral += self.position_error * time_difference
+            self.position_error_integral = np.clip(self.position_error_integral, -1.0/self.POSITION_KI, 1.0/self.POSITION_KI)  # Makes sure pI is not bigger than 1.0. KI regulates rather the rate of then max value
+        else:
+            self.position_error_integral = 0.0
 
-        # Naive solution: if too positive (too right), move left (minus on positionCmd),
-        # but this does not produce correct control.
-        # The correct strategy is that if cart is too positive (too right),
-        # produce lean to the left by introducing a positive set point angle leaning slightly to left,
-        # i.e. more positve positionErr makes more positive effective ANGLE_TARGET
-        # End result is that sign of positionCmd is flipped
-        # KD term with "-" resists the motion
-        # KP and KI with "-" acts attractive towards the target position
-        self.positionCmd = self.POSITION_KP * self.positionErr + self.POSITION_KD * positionErrDiff + self.POSITION_KI * self.positionErr_integral*factor
+        # "Cost" components
+        # We split the "cost" components to allow separate printing helping to understand which components are relevant
+        self.pP = self.POSITION_KP * self.position_error * sensitivity_pP_gain
+        self.pI = self.POSITION_KI * self.position_error_integral * sensitivity_pI_gain
+        self.pD = self.POSITION_KD * self.position_error_diff * sensitivity_pD_gain
 
-        self.angleErr = (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET)
-        angleErrDiff = (self.angleErr - self.angleErrPrev) * diffFactor  # correct for actual sample interval; if interval is too long, reduce diff error
-        self.angleErrPrev = self.angleErr
-        self.angleErr_integral += self.angleErr
+        # Motor command - position-PID contribution
+        self.Q_position = self.pP + self.pI + self.pD
+
+        ########################################################################################################
+
+        # Angle PID
+
+        # Error
+        self.angle_error = (s[cartpole_state_varname_to_index('angle')] - self.ANGLE_TARGET)
+
+        # Error difference
+        if time_difference > 0.0001 and (self.angle_error_previous is not None):
+            self.angle_error_diff = (self.angle_error - self.angle_error_previous) / time_difference # correct for actual sample interval; if interval is too long, reduce diff error
+        else:
+            self.angle_error_diff = 0.0
+
+        self.angle_error_previous = self.angle_error
+
+        # Error integral
         if self.ANGLE_KI > 0.0:
-            if self.angleErr_integral > 1.0/factor/self.ANGLE_KI:
-                self.angleErr_integral = 1.0/factor/self.ANGLE_KI
-            elif self.angleErr_integral < -1.0/factor/self.ANGLE_KI:
-                self.angleErr_integral = -1.0/factor/self.ANGLE_KI
-        # Assuming gains are positive, error growing to the "right" (around zero in upright position , this means in fact angle gets negative), causes motor to move to the right
-        # iff a term below has - sign
-        self.angleCmd = -self.ANGLE_KP * self.angleErr - self.ANGLE_KD * angleErrDiff - self.ANGLE_KI * self.angleErr_integral*factor  # if too CCW (pos error), move cart left
+            self.angle_error_integral += self.angle_error * time_difference
+            self.angle_error_integral = np.clip(self.angle_error_integral, -1.0/self.ANGLE_KI, 1.0/self.ANGLE_KI)
+        else:
+            self.angle_error_integral = 0.0
 
-        motorCmd = self.angleCmd + self.positionCmd  # change to plus for original, check that when cart is displayed, the KP term for cart position leans cart the correct direction
-        return motorCmd
+        # "Cost" components
+        # We split the "cost" components to allow separate printing helping to understand which components are relevant
+        self.aP = self.ANGLE_KP * self.angle_error * sensitivity_aP_gain
+        self.aI = self.ANGLE_KI * self.angle_error_integral * sensitivity_aI_gain
+        self.aD = self.ANGLE_KD * self.angle_error_diff * sensitivity_aD_gain
+
+        # Motor command - angle-PID contribution
+        self.Q_angle = -self.aP - self.aI  - self.aD   # if too CCW (pos error), move cart left
+
+        ########################################################################################################
+
+        self.Q = self.Q_angle + self.Q_position
+
+        return self.Q
 
     def printparams(self):
         print("\nAngle PID Control Parameters")
@@ -221,18 +327,11 @@ class controller_PD(template_controller):
         print("***********************************")
 
     def controller_reset(self):
+
         self.time_last = None
 
-        self.positionErrPrev = 0.0
-        self.angleErrPrev = 0.0
+        self.position_error_previous = None
+        self.angle_error_previous = None
 
-        self.positionErr_integral = 0.0
-        self.angleErr_integral = 0.0
-
-        self.motorCmd = 0
-
-        self.angleErr = 0.0
-        self.positionErr = 0.0
-
-        self.angleCmd = 0.0
-        self.positionCmd = 0.0
+        self.position_error_integral = 0.0
+        self.angle_error_integral = 0.0

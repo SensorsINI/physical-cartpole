@@ -516,7 +516,7 @@ class PhysicalCartPoleDriver:
             pass
 
     def write_csv_row(self):
-        if self.controller.controller_name == 'PD':
+        if self.controller.controller_name == 'PID':
             self.csvwriter.writerow(
                 [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                  self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
