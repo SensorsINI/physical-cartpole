@@ -106,6 +106,10 @@ plt.show()
 # u_max = M*a
 # M_fric = M*b
 
+print()
+print('a: {}'.format(a))
+print('b: {}'.format(b))
+
 m_total = (230 + 87 + 1)/1000.0
 u_max = m_total*a
 M_fric = m_total*b
