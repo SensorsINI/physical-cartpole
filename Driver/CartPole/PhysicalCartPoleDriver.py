@@ -528,8 +528,8 @@ class PhysicalCartPoleDriver:
             self.csvwriter.writerow(
                 [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                  self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-                 self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
-                 self.target_position, self.controller.positionErr, 'NA', 'NA', self.actualMotorCmd, self.Q,
+                 self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
+                 self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd, self.Q,
                  self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, self.Q**2,
                  self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
 
