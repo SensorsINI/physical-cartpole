@@ -33,9 +33,10 @@ import subprocess, multiprocessing, platform
 from multiprocessing.connection import Client
 from CartPole.latency_adder import LatencyAdder
 
+import tensorflow as tf
+
 class PhysicalCartPoleDriver:
     def __init__(self):
-
         self.InterfaceInstance = Interface()
 
         self.controller, _, _ = set_controller(controller_name=CONTROLLER_NAME)
@@ -185,7 +186,9 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled:
                 self.lastControlTime = self.timeNow
+                #start = time.time()
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
+                #print("step:", time.time() - start)
 
             self.joystick_action()
 
@@ -506,7 +509,7 @@ class PhysicalCartPoleDriver:
 
     def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
-        if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
+        if abs(self.position_centered_unconverted) > 0.98 * (POSITION_ENCODER_RANGE // 2):
             self.controlEnabled = False
             self.controller.controller_reset()
             self.danceEnabled = False
@@ -559,7 +562,7 @@ class PhysicalCartPoleDriver:
                     self.s[ANGLED_IDX],
                     self.s[POSITION_IDX] * 100,
                     self.s[POSITIOND_IDX] * 100,
-                    self.calculatedMotorCmd,
+                    self.actualMotorCmd,
                     self.frozen,
                 ])
                 self.live_buffer_index += 1
@@ -571,7 +574,7 @@ class PhysicalCartPoleDriver:
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if False or self.printCount >= PRINT_PERIOD:
+        if True or self.printCount >= PRINT_PERIOD:
             self.printCount = 0
             self.positionErr = self.s[POSITION_IDX] - self.target_position
             # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"

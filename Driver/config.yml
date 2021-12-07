@@ -1,11 +1,11 @@
 controller:
   mppi:
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
-    num_rollouts: 200                      # Number of Monte Carlo samples
+    dt: 0.02                               # sec
+    mpc_horizon: 1                      # sec
+    num_rollouts: 2000                      # Number of Monte Carlo samples
     update_every: 1                     # Cost weighted update of inputs every ... steps
-    predictor_type: "Euler"               # One of ["Euler", "NeuralNet"]
+    predictor_type: "NeuralNet"               # One of ["Euler", "NeuralNet"]
     dd_weight: 120.0
     ep_weight: 50000.0
     ekp_weight: 0.01
@@ -14,7 +14,7 @@ controller:
     ccrc_weight: 1.0
     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
+    R: 0.0                                # How much to punish Q
     LBD: 100.0                            # Cost parameter lambda
     NU: 1000.0                            # Exploration variance
     SQRTRHOINV: 0.01                      # Sampling variance

@@ -259,8 +259,11 @@ void CONTROL_Loop(void)
 	}
 
 	// Send latest state to the PC
-    if (streamEnable)
+	static int slowdown = 0;
+    if (streamEnable && ++slowdown>CONTROL_SLOWDOWN)
     {
+    	slowdown = 0;
+
         //float latency = timeSent - timeReceived;
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;

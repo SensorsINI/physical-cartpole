@@ -46,6 +46,7 @@ from scipy.interpolate import interp1d
 from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import (
     predictor_autoregressive_tf,
 )
+import time
 
 from Controllers.template_controller import template_controller
 
@@ -207,7 +208,9 @@ def trajectory_rollouts(
     initial_state = np.tile(s, (num_rollouts, 1))
 
     predictor.setup(initial_state=initial_state, prediction_denorm=True)
+   # start = time.time()
     s_horizon = predictor.predict(u + delta_u)[:, :, : len(STATE_INDICES)]
+   # print("predict:", time.time() - start)
 
     # Compute stage costs
     cost_increment, dd, ep, ekp, ekc, cc, ccrc = q(
@@ -589,7 +592,8 @@ class controller_mppi(template_controller):
         Q_update = np.tile(Q, (num_rollouts, 1))
         predictor.update_internal_state(Q_update)
 
-        return Q  # normed control input in the range [-1,1]
+        return 0
+        #return Q  # normed control input in the range [-1,1]
 
     def update_control_vector(self):
         """
