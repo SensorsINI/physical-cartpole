@@ -1,5 +1,6 @@
 import math
 import logging
+import numpy as np
 
 MOTOR = 'ORIGINAL'  # It will be overwritten by each calibration
 MOTOR_DYNAMICS_CORRECTED = True
@@ -28,28 +29,29 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1210 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1167 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_ORIGINAL = 1025  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  #  If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
                                 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
                                 # At the beginning always default angle hanging for default motor specified in globals is loaded
-ANGLE_HANGING = None
-ANGLE_DEVIATION = None
-def angle_constants_update(new_angle_hanging):
-    global ANGLE_HANGING, ANGLE_DEVIATION
+ANGLE_HANGING = np.array(0.0)
+ANGLE_DEVIATION = np.array(0.0)
 
-    ANGLE_HANGING = new_angle_hanging
+def angle_constants_update(new_angle_hanging):
+
     # update angle deviation according to ANGLE_HANGING update
-    if ANGLE_HANGING < ANGLE_ADC_RANGE / 2:
-        ANGLE_DEVIATION = - ANGLE_HANGING - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
+    if new_angle_hanging < ANGLE_ADC_RANGE / 2:
+        angle_deviation = - new_angle_hanging - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
     else:
-        ANGLE_DEVIATION = - ANGLE_HANGING + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+        angle_deviation = - new_angle_hanging + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+
+    return new_angle_hanging, angle_deviation
 
 if MOTOR == 'ORIGINAL':
-    angle_constants_update(ANGLE_HANGING_ORIGINAL)
+    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
 elif MOTOR == 'POLOLU':
-    angle_constants_update(ANGLE_HANGING_POLOLU)
+    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.11999999999999998 # adjust from key commands such that upright angle error is minimized

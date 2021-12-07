@@ -295,11 +295,11 @@ class PhysicalCartPoleDriver:
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
                     if ANGLE_HANGING_DEFAULT:
-                        angle_constants_update(ANGLE_HANGING_POLOLU)
+                        ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
                 elif self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'ORIGINAL'
                     if ANGLE_HANGING_DEFAULT:
-                        angle_constants_update(ANGLE_HANGING_ORIGINAL)
+                        ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
                 print('Detected motor: {}'.format(MOTOR))
@@ -365,7 +365,7 @@ class PhysicalCartPoleDriver:
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
-                angle_constants_update(angle_average)
+                ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
                 ANGLE_HANGING_DEFAULT = False
 
             elif c == '5':
