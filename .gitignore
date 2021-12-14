@@ -1,8 +1,11 @@
 /Driver/ExperimentRecordings/
-/Firmware/CartPole CubeIDE/Debug/Src/
-/Firmware/Factory Firmware CubeIDE/Debug/Src/
 .DS_Store
 /.idea
+/Firmware/CartPole CubeIDE/Debug/Src/
 /Firmware/CartPole CubeIDE/.settings/language.settings.xml
 /Firmware/CartPole CubeIDE/Debug/makefile
 /Firmware/CartPole CubeIDE/Debug/Startup/startup_stm32f103c8tx.o
+/Firmware/FactoryFirmware CubeIDE/Debug/Src/
+/Firmware/FactoryFirmware CubeIDE/.settings/language.settings.xml
+/Firmware/FactoryFirmware CubeIDE/Debug/makefile
+/Firmware/FactoryFirmware CubeIDE/Debug/Startup/startup_stm32f103c8tx.o
