@@ -4,6 +4,7 @@
 "./Src/key.o"
 "./Src/led.o"
 "./Src/main.o"
+"./Src/median_filter.o"
 "./Src/motor.o"
 "./Src/sys.o"
 "./Src/timer.o"

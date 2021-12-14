@@ -1,0 +1,2409 @@
+Archive member included to satisfy reference by file (symbol)
+
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+                              /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o (exit)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+                              /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o) (_global_impure_ptr)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+                              /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o (__libc_init_array)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+                              /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o (memset)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldf3.o)
+                              ./Src/BALANCE/CONTROL/control.o (__aeabi_dmul)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_mulsf3.o)
+                              ./Src/BALANCE/CONTROL/control.o (__aeabi_fmul)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubdf3.o)
+                              ./Src/BALANCE/CONTROL/control.o (__aeabi_dadd)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivdf3.o)
+                              ./Src/HARDWARE/ADC/adc.o (__aeabi_ddiv)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixdfsi.o)
+                              ./Src/HARDWARE/ADC/adc.o (__aeabi_d2iz)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_truncdfsf2.o)
+                              ./Src/BALANCE/CONTROL/control.o (__aeabi_d2f)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubsf3.o)
+                              ./Src/BALANCE/CONTROL/control.o (__aeabi_fsub)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivsf3.o)
+                              ./Src/SYSTEM/usart/usart.o (__aeabi_fdiv)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_cmpsf2.o)
+                              ./Src/BALANCE/show/show.o (__aeabi_fcmpeq)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixsfsi.o)
+                              ./Src/BALANCE/CONTROL/control.o (__aeabi_f2iz)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixunssfsi.o)
+                              ./Src/BALANCE/show/show.o (__aeabi_f2uiz)
+/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+                              /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o) (_exit)
+
+Allocating common symbols
+Common symbol       size              file
+
+Position_Target     0x1               ./Src/BALANCE/CONTROL/control.o
+delay_flag          0x1               ./Src/USER/Minibalance.o
+delay_50            0x1               ./Src/USER/Minibalance.o
+Voltage             0x4               ./Src/USER/Minibalance.o
+Vol                 0x4               ./Src/BALANCE/show/show.o
+temp                0x1               ./Src/BALANCE/show/show.o
+Flag_Target         0x1               ./Src/BALANCE/CONTROL/control.o
+i                   0x1               ./Src/BALANCE/show/show.o
+Encoder             0x4               ./Src/USER/Minibalance.o
+Send_Count          0x1               ./Src/BALANCE/show/show.o
+Moto                0x4               ./Src/USER/Minibalance.o
+Position_Pwm        0x4               ./Src/BALANCE/CONTROL/control.o
+__stdout            0x68              ./Src/SYSTEM/usart/usart.o
+Angle_Balance       0x4               ./Src/USER/Minibalance.o
+OLED_GRAM           0x400             ./Src/HARDWARE/OLED/oled.o
+Balance_Pwm         0x4               ./Src/BALANCE/CONTROL/control.o
+
+Discarded input sections
+
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+ .data          0x0000000000000000        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+ .text          0x0000000000000000       0x7c /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .ARM.extab     0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .ARM.exidx     0x0000000000000000       0x10 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .ARM.attributes
+                0x0000000000000000       0x1b /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/CONTROL/control.o
+ .text          0x0000000000000000        0x0 ./Src/BALANCE/CONTROL/control.o
+ .data          0x0000000000000000        0x0 ./Src/BALANCE/CONTROL/control.o
+ .bss           0x0000000000000000        0x0 ./Src/BALANCE/CONTROL/control.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .text          0x0000000000000000        0x0 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .data          0x0000000000000000        0x0 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .bss           0x0000000000000000        0x0 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/BALANCE/show/show.o
+ .text          0x0000000000000000        0x0 ./Src/BALANCE/show/show.o
+ .data          0x0000000000000000        0x0 ./Src/BALANCE/show/show.o
+ .bss           0x0000000000000000        0x0 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/BALANCE/show/show.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/BALANCE/show/show.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ADC/adc.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/ADC/adc.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/ADC/adc.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ADC/adc.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/ENCODER/encoder.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/ENCODER/encoder.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/ENCODER/encoder.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/ENCODER/encoder.o
+ .text.Encoder_Init_TIM2
+                0x0000000000000000      0x144 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/ENCODER/encoder.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/EXTI/exti.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/EXTI/exti.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/EXTI/exti.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/EXTI/exti.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/KEY/key.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/KEY/key.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/KEY/key.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/KEY/key.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/LED/LED.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/LED/LED.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/LED/LED.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/LED/LED.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/MOTOR/motor.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/MOTOR/motor.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/MOTOR/motor.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/MOTOR/motor.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/OLED/oled.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/OLED/oled.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/OLED/oled.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/OLED/oled.o
+ .text.OLED_Display_On
+                0x0000000000000000       0x20 ./Src/HARDWARE/OLED/oled.o
+ .text.OLED_Display_Off
+                0x0000000000000000       0x20 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/OLED/oled.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/HARDWARE/TIMER/timer.o
+ .text          0x0000000000000000        0x0 ./Src/HARDWARE/TIMER/timer.o
+ .data          0x0000000000000000        0x0 ./Src/HARDWARE/TIMER/timer.o
+ .bss           0x0000000000000000        0x0 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/HARDWARE/TIMER/timer.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/delay/delay.o
+ .text          0x0000000000000000        0x0 ./Src/SYSTEM/delay/delay.o
+ .data          0x0000000000000000        0x0 ./Src/SYSTEM/delay/delay.o
+ .bss           0x0000000000000000        0x0 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/delay/delay.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/sys/sys.o
+ .text          0x0000000000000000        0x0 ./Src/SYSTEM/sys/sys.o
+ .data          0x0000000000000000        0x0 ./Src/SYSTEM/sys/sys.o
+ .bss           0x0000000000000000        0x0 ./Src/SYSTEM/sys/sys.o
+ .text.WFI_SET  0x0000000000000000        0xe ./Src/SYSTEM/sys/sys.o
+ .text.INTX_DISABLE
+                0x0000000000000000        0xe ./Src/SYSTEM/sys/sys.o
+ .text.INTX_ENABLE
+                0x0000000000000000        0xe ./Src/SYSTEM/sys/sys.o
+ .text.MSR_MSP  0x0000000000000000       0x18 ./Src/SYSTEM/sys/sys.o
+ .text.Sys_Standby
+                0x0000000000000000       0x54 ./Src/SYSTEM/sys/sys.o
+ .text.Sys_Soft_Reset
+                0x0000000000000000       0x1c ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/sys/sys.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/SYSTEM/usart/usart.o
+ .text          0x0000000000000000        0x0 ./Src/SYSTEM/usart/usart.o
+ .data          0x0000000000000000        0x0 ./Src/SYSTEM/usart/usart.o
+ .bss           0x0000000000000000        0x0 ./Src/SYSTEM/usart/usart.o
+ .text._sys_exit
+                0x0000000000000000       0x12 ./Src/SYSTEM/usart/usart.o
+ .text.fputc    0x0000000000000000       0x34 ./Src/SYSTEM/usart/usart.o
+ .text.usart1_send
+                0x0000000000000000       0x34 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/SYSTEM/usart/usart.o
+ COMMON         0x0000000000000000       0x68 ./Src/SYSTEM/usart/usart.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .group         0x0000000000000000        0xc ./Src/USER/Minibalance.o
+ .text          0x0000000000000000        0x0 ./Src/USER/Minibalance.o
+ .data          0x0000000000000000        0x0 ./Src/USER/Minibalance.o
+ .bss           0x0000000000000000        0x0 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0xaa2 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x56 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x8e ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x51 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0x103 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x6a ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0x1df ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0x69f ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000     0x7def ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0xfa ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x28 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x46 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x18 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x3c ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x97 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0x339 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0xfd ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x43 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x34 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x58 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x71 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0x12a ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x52 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x22 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x40 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0xd5 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x1c ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x3d ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000      0x145 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x2e ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x10 ./Src/USER/Minibalance.o
+ .debug_macro   0x0000000000000000       0x16 ./Src/USER/Minibalance.o
+ .text          0x0000000000000000       0x14 ./Startup/startup_stm32f103c8tx.o
+ .data          0x0000000000000000        0x0 ./Startup/startup_stm32f103c8tx.o
+ .bss           0x0000000000000000        0x0 ./Startup/startup_stm32f103c8tx.o
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+ .text.exit     0x0000000000000000       0x28 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+ .debug_frame   0x0000000000000000       0x28 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+ .ARM.attributes
+                0x0000000000000000       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-exit.o)
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .data._impure_ptr
+                0x0000000000000000        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .data.impure_data
+                0x0000000000000000       0x60 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .rodata._global_impure_ptr
+                0x0000000000000000        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .ARM.attributes
+                0x0000000000000000       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-impure.o)
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+ .text.memset   0x0000000000000000       0x10 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+ .debug_frame   0x0000000000000000       0x20 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+ .ARM.attributes
+                0x0000000000000000       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-memset.o)
+ .text          0x0000000000000000      0x254 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldf3.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldf3.o)
+ .debug_frame   0x0000000000000000       0x30 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldf3.o)
+ .ARM.attributes
+                0x0000000000000000       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldf3.o)
+ .text          0x0000000000000000      0x168 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_mulsf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_mulsf3.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_mulsf3.o)
+ .debug_frame   0x0000000000000000       0x24 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_mulsf3.o)
+ .ARM.attributes
+                0x0000000000000000       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_mulsf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubdf3.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubdf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivdf3.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivdf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixdfsi.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixdfsi.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_truncdfsf2.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_truncdfsf2.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubsf3.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubsf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivsf3.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivsf3.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_cmpsf2.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_cmpsf2.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixsfsi.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixsfsi.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixunssfsi.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixunssfsi.o)
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+ .text._exit    0x0000000000000000        0x2 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+ .debug_frame   0x0000000000000000       0x20 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+ .ARM.attributes
+                0x0000000000000000       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a(_exit.o)
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtend.o
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtend.o
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtend.o
+ .eh_frame      0x0000000000000000        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtend.o
+ .ARM.attributes
+                0x0000000000000000       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtend.o
+ .text          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+ .data          0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+ .bss           0x0000000000000000        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+RAM              0x0000000020000000 0x0000000000005000 xrw
+FLASH            0x0000000008000000 0x0000000000010000 xr
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+LOAD ./Src/BALANCE/CONTROL/control.o
+LOAD ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+LOAD ./Src/BALANCE/show/show.o
+LOAD ./Src/HARDWARE/ADC/adc.o
+LOAD ./Src/HARDWARE/ENCODER/encoder.o
+LOAD ./Src/HARDWARE/EXTI/exti.o
+LOAD ./Src/HARDWARE/KEY/key.o
+LOAD ./Src/HARDWARE/LED/LED.o
+LOAD ./Src/HARDWARE/MOTOR/motor.o
+LOAD ./Src/HARDWARE/OLED/oled.o
+LOAD ./Src/HARDWARE/TIMER/timer.o
+LOAD ./Src/SYSTEM/delay/delay.o
+LOAD ./Src/SYSTEM/sys/sys.o
+LOAD ./Src/SYSTEM/usart/usart.o
+LOAD ./Src/USER/Minibalance.o
+LOAD ./Startup/startup_stm32f103c8tx.o
+START GROUP
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libm.a
+END GROUP
+START GROUP
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a
+END GROUP
+START GROUP
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a
+END GROUP
+START GROUP
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libnosys.a
+END GROUP
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtend.o
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+                0x0000000020005000                _estack = (ORIGIN (RAM) + LENGTH (RAM))
+                0x0000000000000200                _Min_Heap_Size = 0x200
+                0x0000000000000400                _Min_Stack_Size = 0x400
+
+.isr_vector     0x0000000008000000      0x130
+                0x0000000008000000                . = ALIGN (0x4)
+ *(.isr_vector)
+ .isr_vector    0x0000000008000000      0x130 ./Startup/startup_stm32f103c8tx.o
+                0x0000000008000000                g_pfnVectors
+                0x0000000008000130                . = ALIGN (0x4)
+
+.text           0x0000000008000130     0x33d4
+                0x0000000008000130                . = ALIGN (0x4)
+ *(.text)
+ .text          0x0000000008000130       0x40 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+ .text          0x0000000008000170      0x378 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubdf3.o)
+                0x0000000008000170                __aeabi_drsub
+                0x0000000008000178                __subdf3
+                0x0000000008000178                __aeabi_dsub
+                0x000000000800017c                __aeabi_dadd
+                0x000000000800017c                __adddf3
+                0x00000000080003f4                __aeabi_ui2d
+                0x00000000080003f4                __floatunsidf
+                0x0000000008000414                __floatsidf
+                0x0000000008000414                __aeabi_i2d
+                0x0000000008000438                __extendsfdf2
+                0x0000000008000438                __aeabi_f2d
+                0x000000000800047c                __aeabi_ul2d
+                0x000000000800047c                __floatundidf
+                0x000000000800048c                __aeabi_l2d
+                0x000000000800048c                __floatdidf
+ .text          0x00000000080004e8      0x424 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivdf3.o)
+                0x00000000080004e8                __aeabi_dmul
+                0x00000000080004e8                __muldf3
+                0x000000000800073c                __aeabi_ddiv
+                0x000000000800073c                __divdf3
+ .text          0x000000000800090c       0x50 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixdfsi.o)
+                0x000000000800090c                __fixdfsi
+                0x000000000800090c                __aeabi_d2iz
+ .text          0x000000000800095c       0xa0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_truncdfsf2.o)
+                0x000000000800095c                __aeabi_d2f
+                0x000000000800095c                __truncdfsf2
+ .text          0x00000000080009fc      0x21c /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubsf3.o)
+                0x00000000080009fc                __aeabi_frsub
+                0x0000000008000a04                __aeabi_fsub
+                0x0000000008000a04                __subsf3
+                0x0000000008000a08                __aeabi_fadd
+                0x0000000008000a08                __addsf3
+                0x0000000008000b68                __aeabi_ui2f
+                0x0000000008000b68                __floatunsisf
+                0x0000000008000b70                __floatsisf
+                0x0000000008000b70                __aeabi_i2f
+                0x0000000008000b8c                __aeabi_ul2f
+                0x0000000008000b8c                __floatundisf
+                0x0000000008000b9c                __aeabi_l2f
+                0x0000000008000b9c                __floatdisf
+ .text          0x0000000008000c18      0x2a0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivsf3.o)
+                0x0000000008000c18                __mulsf3
+                0x0000000008000c18                __aeabi_fmul
+                0x0000000008000d80                __divsf3
+                0x0000000008000d80                __aeabi_fdiv
+ .text          0x0000000008000eb8       0xec /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_cmpsf2.o)
+                0x0000000008000eb8                __gesf2
+                0x0000000008000eb8                __gtsf2
+                0x0000000008000ec0                __ltsf2
+                0x0000000008000ec0                __lesf2
+                0x0000000008000ec8                __nesf2
+                0x0000000008000ec8                __eqsf2
+                0x0000000008000ec8                __cmpsf2
+                0x0000000008000f28                __aeabi_cfrcmple
+                0x0000000008000f30                __aeabi_cfcmpeq
+                0x0000000008000f30                __aeabi_cfcmple
+                0x0000000008000f40                __aeabi_fcmpeq
+                0x0000000008000f54                __aeabi_fcmplt
+                0x0000000008000f68                __aeabi_fcmple
+                0x0000000008000f7c                __aeabi_fcmpge
+                0x0000000008000f90                __aeabi_fcmpgt
+ .text          0x0000000008000fa4       0x4c /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixsfsi.o)
+                0x0000000008000fa4                __fixsfsi
+                0x0000000008000fa4                __aeabi_f2iz
+ .text          0x0000000008000ff0       0x40 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixunssfsi.o)
+                0x0000000008000ff0                __aeabi_f2uiz
+                0x0000000008000ff0                __fixunssfsi
+ *(.text*)
+ .text.TIM1_UP_IRQHandler
+                0x0000000008001030      0x114 ./Src/BALANCE/CONTROL/control.o
+                0x0000000008001030                TIM1_UP_IRQHandler
+ .text.balance  0x0000000008001144       0x88 ./Src/BALANCE/CONTROL/control.o
+                0x0000000008001144                balance
+ *fill*         0x00000000080011cc        0x4 
+ .text.Position
+                0x00000000080011d0      0x120 ./Src/BALANCE/CONTROL/control.o
+                0x00000000080011d0                Position
+ .text.Set_Pwm  0x00000000080012f0       0x4c ./Src/BALANCE/CONTROL/control.o
+                0x00000000080012f0                Set_Pwm
+ .text.Xianfu_Pwm
+                0x000000000800133c       0x40 ./Src/BALANCE/CONTROL/control.o
+                0x000000000800133c                Xianfu_Pwm
+ .text.Key      0x000000000800137c       0xb4 ./Src/BALANCE/CONTROL/control.o
+                0x000000000800137c                Key
+ .text.Turn_Off
+                0x0000000008001430       0xa8 ./Src/BALANCE/CONTROL/control.o
+                0x0000000008001430                Turn_Off
+ .text.myabs    0x00000000080014d8       0x26 ./Src/BALANCE/CONTROL/control.o
+                0x00000000080014d8                myabs
+ .text.Float2Byte
+                0x00000000080014fe       0x52 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+                0x00000000080014fe                Float2Byte
+ .text.DataScope_Get_Channel_Data
+                0x0000000008001550       0xe8 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+                0x0000000008001550                DataScope_Get_Channel_Data
+ .text.DataScope_Data_Generate
+                0x0000000008001638       0xd4 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+                0x0000000008001638                DataScope_Data_Generate
+ .text.oled_show
+                0x000000000800170c      0x508 ./Src/BALANCE/show/show.o
+                0x000000000800170c                oled_show
+ .text.DataScope
+                0x0000000008001c14       0x9c ./Src/BALANCE/show/show.o
+                0x0000000008001c14                DataScope
+ .text.Baterry_Adc_Init
+                0x0000000008001cb0      0x13c ./Src/HARDWARE/ADC/adc.o
+                0x0000000008001cb0                Baterry_Adc_Init
+ .text.Get_Adc  0x0000000008001dec       0x50 ./Src/HARDWARE/ADC/adc.o
+                0x0000000008001dec                Get_Adc
+ *fill*         0x0000000008001e3c        0x4 
+ .text.Get_battery_volt
+                0x0000000008001e40       0x84 ./Src/HARDWARE/ADC/adc.o
+                0x0000000008001e40                Get_battery_volt
+ .text.Angle_Adc_Init
+                0x0000000008001ec4      0x13c ./Src/HARDWARE/ADC/adc.o
+                0x0000000008001ec4                Angle_Adc_Init
+ .text.Get_Adc_Average
+                0x0000000008002000       0x52 ./Src/HARDWARE/ADC/adc.o
+                0x0000000008002000                Get_Adc_Average
+ *fill*         0x0000000008002052        0x2 
+ .text.Encoder_Init_TIM4
+                0x0000000008002054      0x118 ./Src/HARDWARE/ENCODER/encoder.o
+                0x0000000008002054                Encoder_Init_TIM4
+ .text.Read_Encoder
+                0x000000000800216c       0x64 ./Src/HARDWARE/ENCODER/encoder.o
+                0x000000000800216c                Read_Encoder
+ .text.TIM4_IRQHandler
+                0x00000000080021d0       0x24 ./Src/HARDWARE/ENCODER/encoder.o
+                0x00000000080021d0                TIM4_IRQHandler
+ .text.TIM2_IRQHandler
+                0x00000000080021f4       0x26 ./Src/HARDWARE/ENCODER/encoder.o
+                0x00000000080021f4                TIM2_IRQHandler
+ .text.EXTI_Init
+                0x000000000800221a       0x4c ./Src/HARDWARE/EXTI/exti.o
+                0x000000000800221a                EXTI_Init
+ *fill*         0x0000000008002266        0x2 
+ .text.EXTI9_5_IRQHandler
+                0x0000000008002268       0x80 ./Src/HARDWARE/EXTI/exti.o
+                0x0000000008002268                EXTI9_5_IRQHandler
+ .text.EXTI15_10_IRQHandler
+                0x00000000080022e8      0x23c ./Src/HARDWARE/EXTI/exti.o
+                0x00000000080022e8                EXTI15_10_IRQHandler
+ .text.KEY_Init
+                0x0000000008002524       0x88 ./Src/HARDWARE/KEY/key.o
+                0x0000000008002524                KEY_Init
+ .text.click_N_Double
+                0x00000000080025ac      0x104 ./Src/HARDWARE/KEY/key.o
+                0x00000000080025ac                click_N_Double
+ .text.LED_Init
+                0x00000000080026b0       0x44 ./Src/HARDWARE/LED/LED.o
+                0x00000000080026b0                LED_Init
+ .text.Led_Flash
+                0x00000000080026f4       0x50 ./Src/HARDWARE/LED/LED.o
+                0x00000000080026f4                Led_Flash
+ .text.MiniBalance_Motor_Init
+                0x0000000008002744       0x3c ./Src/HARDWARE/MOTOR/motor.o
+                0x0000000008002744                MiniBalance_Motor_Init
+ .text.MiniBalance_PWM_Init
+                0x0000000008002780       0xdc ./Src/HARDWARE/MOTOR/motor.o
+                0x0000000008002780                MiniBalance_PWM_Init
+ .text.OLED_Refresh_Gram
+                0x000000000800285c       0x70 ./Src/HARDWARE/OLED/oled.o
+                0x000000000800285c                OLED_Refresh_Gram
+ .text.OLED_WR_Byte
+                0x00000000080028cc       0x7c ./Src/HARDWARE/OLED/oled.o
+                0x00000000080028cc                OLED_WR_Byte
+ .text.OLED_Clear
+                0x0000000008002948       0x4c ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002948                OLED_Clear
+ .text.OLED_DrawPoint
+                0x0000000008002994       0xb0 ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002994                OLED_DrawPoint
+ .text.OLED_ShowChar
+                0x0000000008002a44       0xe4 ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002a44                OLED_ShowChar
+ .text.oled_pow
+                0x0000000008002b28       0x36 ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002b28                oled_pow
+ *fill*         0x0000000008002b5e        0x2 
+ .text.OLED_ShowNumber
+                0x0000000008002b60       0xdc ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002b60                OLED_ShowNumber
+ .text.OLED_ShowString
+                0x0000000008002c3c       0x64 ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002c3c                OLED_ShowString
+ .text.OLED_Init
+                0x0000000008002ca0      0x148 ./Src/HARDWARE/OLED/oled.o
+                0x0000000008002ca0                OLED_Init
+ .text.Timer1_Init
+                0x0000000008002de8       0x74 ./Src/HARDWARE/TIMER/timer.o
+                0x0000000008002de8                Timer1_Init
+ .text.delay_init
+                0x0000000008002e5c       0x50 ./Src/SYSTEM/delay/delay.o
+                0x0000000008002e5c                delay_init
+ .text.delay_us
+                0x0000000008002eac       0x5c ./Src/SYSTEM/delay/delay.o
+                0x0000000008002eac                delay_us
+ .text.delay_ms
+                0x0000000008002f08       0x60 ./Src/SYSTEM/delay/delay.o
+                0x0000000008002f08                delay_ms
+ .text.MY_NVIC_SetVectorTable
+                0x0000000008002f68       0x2c ./Src/SYSTEM/sys/sys.o
+                0x0000000008002f68                MY_NVIC_SetVectorTable
+ .text.MY_NVIC_PriorityGroupConfig
+                0x0000000008002f94       0x54 ./Src/SYSTEM/sys/sys.o
+                0x0000000008002f94                MY_NVIC_PriorityGroupConfig
+ .text.MY_NVIC_Init
+                0x0000000008002fe8       0xa4 ./Src/SYSTEM/sys/sys.o
+                0x0000000008002fe8                MY_NVIC_Init
+ .text.Ex_NVIC_Config
+                0x000000000800308c       0xd8 ./Src/SYSTEM/sys/sys.o
+                0x000000000800308c                Ex_NVIC_Config
+ .text.MYRCC_DeInit
+                0x0000000008003164       0x80 ./Src/SYSTEM/sys/sys.o
+                0x0000000008003164                MYRCC_DeInit
+ .text.JTAG_Set
+                0x00000000080031e4       0x4c ./Src/SYSTEM/sys/sys.o
+                0x00000000080031e4                JTAG_Set
+ .text.Stm32_Clock_Init
+                0x0000000008003230       0xb0 ./Src/SYSTEM/sys/sys.o
+                0x0000000008003230                Stm32_Clock_Init
+ .text.uart_init
+                0x00000000080032e0       0xf0 ./Src/SYSTEM/usart/usart.o
+                0x00000000080032e0                uart_init
+ .text.main     0x00000000080033d0       0x80 ./Src/USER/Minibalance.o
+                0x00000000080033d0                main
+ .text.Reset_Handler
+                0x0000000008003450       0x50 ./Startup/startup_stm32f103c8tx.o
+                0x0000000008003450                Reset_Handler
+ .text.Default_Handler
+                0x00000000080034a0        0x2 ./Startup/startup_stm32f103c8tx.o
+                0x00000000080034a0                DMA2_Channel3_IRQHandler
+                0x00000000080034a0                TIM8_TRG_COM_IRQHandler
+                0x00000000080034a0                TIM8_CC_IRQHandler
+                0x00000000080034a0                DebugMon_Handler
+                0x00000000080034a0                TIM1_CC_IRQHandler
+                0x00000000080034a0                HardFault_Handler
+                0x00000000080034a0                TIM6_IRQHandler
+                0x00000000080034a0                SysTick_Handler
+                0x00000000080034a0                PVD_IRQHandler
+                0x00000000080034a0                SDIO_IRQHandler
+                0x00000000080034a0                PendSV_Handler
+                0x00000000080034a0                NMI_Handler
+                0x00000000080034a0                EXTI3_IRQHandler
+                0x00000000080034a0                USB_HP_CAN_TX_IRQHandler
+                0x00000000080034a0                EXTI0_IRQHandler
+                0x00000000080034a0                I2C2_EV_IRQHandler
+                0x00000000080034a0                UsageFault_Handler
+                0x00000000080034a0                ADC1_2_IRQHandler
+                0x00000000080034a0                SPI1_IRQHandler
+                0x00000000080034a0                CAN_SCE_IRQHandler
+                0x00000000080034a0                TAMPER_IRQHandler
+                0x00000000080034a0                TIM8_UP_IRQHandler
+                0x00000000080034a0                DMA2_Channel2_IRQHandler
+                0x00000000080034a0                DMA1_Channel4_IRQHandler
+                0x00000000080034a0                USART3_IRQHandler
+                0x00000000080034a0                RTC_IRQHandler
+                0x00000000080034a0                DMA1_Channel7_IRQHandler
+                0x00000000080034a0                UART5_IRQHandler
+                0x00000000080034a0                ADC3_IRQHandler
+                0x00000000080034a0                CAN_RX1_IRQHandler
+                0x00000000080034a0                DMA2_Channel1_IRQHandler
+                0x00000000080034a0                I2C1_EV_IRQHandler
+                0x00000000080034a0                DMA1_Channel6_IRQHandler
+                0x00000000080034a0                UART4_IRQHandler
+                0x00000000080034a0                TIM3_IRQHandler
+                0x00000000080034a0                RCC_IRQHandler
+                0x00000000080034a0                TIM1_TRG_COM_IRQHandler
+                0x00000000080034a0                DMA1_Channel1_IRQHandler
+                0x00000000080034a0                Default_Handler
+                0x00000000080034a0                TIM7_IRQHandler
+                0x00000000080034a0                TIM5_IRQHandler
+                0x00000000080034a0                SPI2_IRQHandler
+                0x00000000080034a0                USB_LP_CAN_RX0_IRQHandler
+                0x00000000080034a0                MemManage_Handler
+                0x00000000080034a0                SVC_Handler
+                0x00000000080034a0                DMA1_Channel5_IRQHandler
+                0x00000000080034a0                EXTI4_IRQHandler
+                0x00000000080034a0                DMA1_Channel3_IRQHandler
+                0x00000000080034a0                FSMC_IRQHandler
+                0x00000000080034a0                WWDG_IRQHandler
+                0x00000000080034a0                TIM1_BRK_IRQHandler
+                0x00000000080034a0                EXTI1_IRQHandler
+                0x00000000080034a0                RTCAlarm_IRQHandler
+                0x00000000080034a0                DMA2_Channel4_5_IRQHandler
+                0x00000000080034a0                USART2_IRQHandler
+                0x00000000080034a0                I2C2_ER_IRQHandler
+                0x00000000080034a0                DMA1_Channel2_IRQHandler
+                0x00000000080034a0                TIM8_BRK_IRQHandler
+                0x00000000080034a0                FLASH_IRQHandler
+                0x00000000080034a0                BusFault_Handler
+                0x00000000080034a0                USART1_IRQHandler
+                0x00000000080034a0                SPI3_IRQHandler
+                0x00000000080034a0                I2C1_ER_IRQHandler
+                0x00000000080034a0                EXTI2_IRQHandler
+ *fill*         0x00000000080034a2        0x2 
+ .text.__libc_init_array
+                0x00000000080034a4       0x48 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+                0x00000000080034a4                __libc_init_array
+ *(.glue_7)
+ .glue_7        0x00000000080034ec        0x0 linker stubs
+ *(.glue_7t)
+ .glue_7t       0x00000000080034ec        0x0 linker stubs
+ *(.eh_frame)
+ .eh_frame      0x00000000080034ec        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+ *(.init)
+ .init          0x00000000080034ec        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+                0x00000000080034ec                _init
+ .init          0x00000000080034f0        0x8 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+ *(.fini)
+ .fini          0x00000000080034f8        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+                0x00000000080034f8                _fini
+ .fini          0x00000000080034fc        0x8 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+                0x0000000008003504                . = ALIGN (0x4)
+                0x0000000008003504                _etext = .
+
+.vfp11_veneer   0x0000000008003504        0x0
+ .vfp11_veneer  0x0000000008003504        0x0 linker stubs
+
+.v4_bx          0x0000000008003504        0x0
+ .v4_bx         0x0000000008003504        0x0 linker stubs
+
+.iplt           0x0000000008003504        0x0
+ .iplt          0x0000000008003504        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+
+.rodata         0x0000000008003504      0xaa8
+                0x0000000008003504                . = ALIGN (0x4)
+ *(.rodata)
+ .rodata        0x0000000008003504       0x41 ./Src/BALANCE/show/show.o
+ *(.rodata*)
+ *fill*         0x0000000008003545        0x3 
+ .rodata.oled_asc2_1206
+                0x0000000008003548      0x474 ./Src/HARDWARE/OLED/oled.o
+                0x0000000008003548                oled_asc2_1206
+ .rodata.oled_asc2_1608
+                0x00000000080039bc      0x5f0 ./Src/HARDWARE/OLED/oled.o
+                0x00000000080039bc                oled_asc2_1608
+                0x0000000008003fac                . = ALIGN (0x4)
+
+.rel.dyn        0x0000000008003fac        0x0
+ .rel.iplt      0x0000000008003fac        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+
+.ARM.extab      0x0000000008003fac        0x0
+                0x0000000008003fac                . = ALIGN (0x4)
+ *(.ARM.extab* .gnu.linkonce.armextab.*)
+                0x0000000008003fac                . = ALIGN (0x4)
+
+.ARM            0x0000000008003fac        0x0
+                0x0000000008003fac                . = ALIGN (0x4)
+                0x0000000008003fac                __exidx_start = .
+ *(.ARM.exidx*)
+                0x0000000008003fac                __exidx_end = .
+                0x0000000008003fac                . = ALIGN (0x4)
+
+.preinit_array  0x0000000008003fac        0x0
+                0x0000000008003fac                . = ALIGN (0x4)
+                0x0000000008003fac                PROVIDE (__preinit_array_start = .)
+ *(.preinit_array*)
+                0x0000000008003fac                PROVIDE (__preinit_array_end = .)
+                0x0000000008003fac                . = ALIGN (0x4)
+
+.init_array     0x0000000008003fac        0x4
+                0x0000000008003fac                . = ALIGN (0x4)
+                0x0000000008003fac                PROVIDE (__init_array_start = .)
+ *(SORT_BY_NAME(.init_array.*))
+ *(.init_array*)
+ .init_array    0x0000000008003fac        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+                0x0000000008003fb0                PROVIDE (__init_array_end = .)
+                0x0000000008003fb0                . = ALIGN (0x4)
+
+.fini_array     0x0000000008003fb0        0x4
+                0x0000000008003fb0                . = ALIGN (0x4)
+                [!provide]                        PROVIDE (__fini_array_start = .)
+ *(SORT_BY_NAME(.fini_array.*))
+ *(.fini_array*)
+ .fini_array    0x0000000008003fb0        0x4 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+                [!provide]                        PROVIDE (__fini_array_end = .)
+                0x0000000008003fb4                . = ALIGN (0x4)
+                0x0000000008003fb4                _sidata = LOADADDR (.data)
+
+.data           0x0000000020000000       0x2c load address 0x0000000008003fb4
+                0x0000000020000000                . = ALIGN (0x4)
+                0x0000000020000000                _sdata = .
+ *(.data)
+ *(.data*)
+ .data.Flag_Stop
+                0x0000000020000000        0x1 ./Src/USER/Minibalance.o
+                0x0000000020000000                Flag_Stop
+ *fill*         0x0000000020000001        0x3 
+ .data.Position_Zero
+                0x0000000020000004        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000004                Position_Zero
+ .data.Balance_KP
+                0x0000000020000008        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000008                Balance_KP
+ .data.Balance_KD
+                0x000000002000000c        0x4 ./Src/USER/Minibalance.o
+                0x000000002000000c                Balance_KD
+ .data.Position_KP
+                0x0000000020000010        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000010                Position_KP
+ .data.Position_KD
+                0x0000000020000014        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000014                Position_KD
+ .data.Menu     0x0000000020000018        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000018                Menu
+ .data.Amplitude1
+                0x000000002000001c        0x4 ./Src/USER/Minibalance.o
+                0x000000002000001c                Amplitude1
+ .data.Amplitude2
+                0x0000000020000020        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000020                Amplitude2
+ .data.Amplitude3
+                0x0000000020000024        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000024                Amplitude3
+ .data.Amplitude4
+                0x0000000020000028        0x4 ./Src/USER/Minibalance.o
+                0x0000000020000028                Amplitude4
+ *(.RamFunc)
+ *(.RamFunc*)
+                0x000000002000002c                . = ALIGN (0x4)
+                0x000000002000002c                _edata = .
+
+.igot.plt       0x000000002000002c        0x0 load address 0x0000000008003fe0
+ .igot.plt      0x000000002000002c        0x0 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+                0x000000002000002c                . = ALIGN (0x4)
+
+.bss            0x000000002000002c      0x4ac load address 0x0000000008003fe0
+                0x000000002000002c                _sbss = .
+                0x000000002000002c                __bss_start__ = _sbss
+ *(.bss)
+ .bss           0x000000002000002c       0x1c /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+ *(.bss*)
+ .bss.Last_Bias.6237
+                0x0000000020000048        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.D_Bias.6238
+                0x000000002000004c        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.Position_Least.6247
+                0x0000000020000050        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.Position_Bias.6245
+                0x0000000020000054        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.Last_Position.6244
+                0x0000000020000058        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.Position_Differential.6246
+                0x000000002000005c        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.Position_PWM.6243
+                0x0000000020000060        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.tmp.6259  0x0000000020000064        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.flag.6260
+                0x0000000020000068        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.count.6261
+                0x000000002000006c        0x4 ./Src/BALANCE/CONTROL/control.o
+ .bss.count.6266
+                0x0000000020000070        0x1 ./Src/BALANCE/CONTROL/control.o
+ *fill*         0x0000000020000071        0x3 
+ .bss.DataScope_OutPut_Buffer
+                0x0000000020000074       0x2a ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+                0x0000000020000074                DataScope_OutPut_Buffer
+ .bss.Forever_count.6218
+                0x000000002000009e        0x2 ./Src/HARDWARE/KEY/key.o
+ .bss.flag_key.6214
+                0x00000000200000a0        0x1 ./Src/HARDWARE/KEY/key.o
+ .bss.count_key.6215
+                0x00000000200000a1        0x1 ./Src/HARDWARE/KEY/key.o
+ .bss.double_key.6216
+                0x00000000200000a2        0x1 ./Src/HARDWARE/KEY/key.o
+ *fill*         0x00000000200000a3        0x1 
+ .bss.count_single.6217
+                0x00000000200000a4        0x2 ./Src/HARDWARE/KEY/key.o
+ *fill*         0x00000000200000a6        0x2 
+ .bss.temp.6214
+                0x00000000200000a8        0x4 ./Src/HARDWARE/LED/LED.o
+ .bss.fac_us    0x00000000200000ac        0x1 ./Src/SYSTEM/delay/delay.o
+ *fill*         0x00000000200000ad        0x1 
+ .bss.fac_ms    0x00000000200000ae        0x2 ./Src/SYSTEM/delay/delay.o
+ *(COMMON)
+ COMMON         0x00000000200000b0        0xc ./Src/BALANCE/CONTROL/control.o
+                0x00000000200000b0                Position_Target
+                0x00000000200000b1                Flag_Target
+                0x00000000200000b4                Position_Pwm
+                0x00000000200000b8                Balance_Pwm
+ COMMON         0x00000000200000bc        0x7 ./Src/BALANCE/show/show.o
+                0x00000000200000bc                Vol
+                0x00000000200000c0                temp
+                0x00000000200000c1                i
+                0x00000000200000c2                Send_Count
+ *fill*         0x00000000200000c3        0x1 
+ COMMON         0x00000000200000c4      0x400 ./Src/HARDWARE/OLED/oled.o
+                0x00000000200000c4                OLED_GRAM
+ COMMON         0x00000000200004c4       0x14 ./Src/USER/Minibalance.o
+                0x00000000200004c4                delay_flag
+                0x00000000200004c5                delay_50
+                0x00000000200004c8                Voltage
+                0x00000000200004cc                Encoder
+                0x00000000200004d0                Moto
+                0x00000000200004d4                Angle_Balance
+                0x00000000200004d8                . = ALIGN (0x4)
+                0x00000000200004d8                _ebss = .
+                0x00000000200004d8                __bss_end__ = _ebss
+
+._user_heap_stack
+                0x00000000200004d8      0x600 load address 0x0000000008003fe0
+                0x00000000200004d8                . = ALIGN (0x8)
+                [!provide]                        PROVIDE (end = .)
+                [!provide]                        PROVIDE (_end = .)
+                0x00000000200006d8                . = (. + _Min_Heap_Size)
+ *fill*         0x00000000200004d8      0x200 
+                0x0000000020000ad8                . = (. + _Min_Stack_Size)
+ *fill*         0x00000000200006d8      0x400 
+                0x0000000020000ad8                . = ALIGN (0x8)
+
+/DISCARD/
+ libc.a(*)
+ libm.a(*)
+ libgcc.a(*)
+
+.ARM.attributes
+                0x0000000000000000       0x29
+ *(.ARM.attributes)
+ .ARM.attributes
+                0x0000000000000000       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crti.o
+ .ARM.attributes
+                0x000000000000001d       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtbegin.o
+ .ARM.attributes
+                0x000000000000004a       0x2d ./Src/BALANCE/CONTROL/control.o
+ .ARM.attributes
+                0x0000000000000077       0x2d ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .ARM.attributes
+                0x00000000000000a4       0x2d ./Src/BALANCE/show/show.o
+ .ARM.attributes
+                0x00000000000000d1       0x2d ./Src/HARDWARE/ADC/adc.o
+ .ARM.attributes
+                0x00000000000000fe       0x2d ./Src/HARDWARE/ENCODER/encoder.o
+ .ARM.attributes
+                0x000000000000012b       0x2d ./Src/HARDWARE/EXTI/exti.o
+ .ARM.attributes
+                0x0000000000000158       0x2d ./Src/HARDWARE/KEY/key.o
+ .ARM.attributes
+                0x0000000000000185       0x2d ./Src/HARDWARE/LED/LED.o
+ .ARM.attributes
+                0x00000000000001b2       0x2d ./Src/HARDWARE/MOTOR/motor.o
+ .ARM.attributes
+                0x00000000000001df       0x2d ./Src/HARDWARE/OLED/oled.o
+ .ARM.attributes
+                0x000000000000020c       0x2d ./Src/HARDWARE/TIMER/timer.o
+ .ARM.attributes
+                0x0000000000000239       0x2d ./Src/SYSTEM/delay/delay.o
+ .ARM.attributes
+                0x0000000000000266       0x2d ./Src/SYSTEM/sys/sys.o
+ .ARM.attributes
+                0x0000000000000293       0x2d ./Src/SYSTEM/usart/usart.o
+ .ARM.attributes
+                0x00000000000002c0       0x2d ./Src/USER/Minibalance.o
+ .ARM.attributes
+                0x00000000000002ed       0x21 ./Startup/startup_stm32f103c8tx.o
+ .ARM.attributes
+                0x000000000000030e       0x2d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+ .ARM.attributes
+                0x000000000000033b       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubdf3.o)
+ .ARM.attributes
+                0x0000000000000358       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivdf3.o)
+ .ARM.attributes
+                0x0000000000000375       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixdfsi.o)
+ .ARM.attributes
+                0x0000000000000392       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_truncdfsf2.o)
+ .ARM.attributes
+                0x00000000000003af       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubsf3.o)
+ .ARM.attributes
+                0x00000000000003cc       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivsf3.o)
+ .ARM.attributes
+                0x00000000000003e9       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_cmpsf2.o)
+ .ARM.attributes
+                0x0000000000000406       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixsfsi.o)
+ .ARM.attributes
+                0x0000000000000423       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixunssfsi.o)
+ .ARM.attributes
+                0x0000000000000440       0x1d /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/crtn.o
+OUTPUT(FactoryFirmware CubeIDE.elf elf32-littlearm)
+LOAD linker stubs
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libm.a
+LOAD /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a
+
+.debug_info     0x0000000000000000     0xc0ab
+ .debug_info    0x0000000000000000      0xf52 ./Src/BALANCE/CONTROL/control.o
+ .debug_info    0x0000000000000f52      0x127 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_info    0x0000000000001079      0xbc3 ./Src/BALANCE/show/show.o
+ .debug_info    0x0000000000001c3c      0xdaf ./Src/HARDWARE/ADC/adc.o
+ .debug_info    0x00000000000029eb      0xfbb ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_info    0x00000000000039a6      0xc4d ./Src/HARDWARE/EXTI/exti.o
+ .debug_info    0x00000000000045f3      0xc3f ./Src/HARDWARE/KEY/key.o
+ .debug_info    0x0000000000005232      0xbf3 ./Src/HARDWARE/LED/LED.o
+ .debug_info    0x0000000000005e25      0xe3c ./Src/HARDWARE/MOTOR/motor.o
+ .debug_info    0x0000000000006c61      0xf10 ./Src/HARDWARE/OLED/oled.o
+ .debug_info    0x0000000000007b71      0xef1 ./Src/HARDWARE/TIMER/timer.o
+ .debug_info    0x0000000000008a62      0xb9e ./Src/SYSTEM/delay/delay.o
+ .debug_info    0x0000000000009600     0x118d ./Src/SYSTEM/sys/sys.o
+ .debug_info    0x000000000000a78d      0xd97 ./Src/SYSTEM/usart/usart.o
+ .debug_info    0x000000000000b524      0xb65 ./Src/USER/Minibalance.o
+ .debug_info    0x000000000000c089       0x22 ./Startup/startup_stm32f103c8tx.o
+
+.debug_abbrev   0x0000000000000000     0x1ee4
+ .debug_abbrev  0x0000000000000000      0x2b1 ./Src/BALANCE/CONTROL/control.o
+ .debug_abbrev  0x00000000000002b1       0xe8 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_abbrev  0x0000000000000399      0x1df ./Src/BALANCE/show/show.o
+ .debug_abbrev  0x0000000000000578      0x253 ./Src/HARDWARE/ADC/adc.o
+ .debug_abbrev  0x00000000000007cb      0x23a ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_abbrev  0x0000000000000a05      0x1e0 ./Src/HARDWARE/EXTI/exti.o
+ .debug_abbrev  0x0000000000000be5      0x1f9 ./Src/HARDWARE/KEY/key.o
+ .debug_abbrev  0x0000000000000dde      0x1f7 ./Src/HARDWARE/LED/LED.o
+ .debug_abbrev  0x0000000000000fd5      0x1e6 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_abbrev  0x00000000000011bb      0x280 ./Src/HARDWARE/OLED/oled.o
+ .debug_abbrev  0x000000000000143b      0x1f1 ./Src/HARDWARE/TIMER/timer.o
+ .debug_abbrev  0x000000000000162c      0x208 ./Src/SYSTEM/delay/delay.o
+ .debug_abbrev  0x0000000000001834      0x281 ./Src/SYSTEM/sys/sys.o
+ .debug_abbrev  0x0000000000001ab5      0x255 ./Src/SYSTEM/usart/usart.o
+ .debug_abbrev  0x0000000000001d0a      0x1c8 ./Src/USER/Minibalance.o
+ .debug_abbrev  0x0000000000001ed2       0x12 ./Startup/startup_stm32f103c8tx.o
+
+.debug_aranges  0x0000000000000000      0x398
+ .debug_aranges
+                0x0000000000000000       0x58 ./Src/BALANCE/CONTROL/control.o
+ .debug_aranges
+                0x0000000000000058       0x30 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_aranges
+                0x0000000000000088       0x28 ./Src/BALANCE/show/show.o
+ .debug_aranges
+                0x00000000000000b0       0x40 ./Src/HARDWARE/ADC/adc.o
+ .debug_aranges
+                0x00000000000000f0       0x40 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_aranges
+                0x0000000000000130       0x30 ./Src/HARDWARE/EXTI/exti.o
+ .debug_aranges
+                0x0000000000000160       0x28 ./Src/HARDWARE/KEY/key.o
+ .debug_aranges
+                0x0000000000000188       0x28 ./Src/HARDWARE/LED/LED.o
+ .debug_aranges
+                0x00000000000001b0       0x28 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_aranges
+                0x00000000000001d8       0x70 ./Src/HARDWARE/OLED/oled.o
+ .debug_aranges
+                0x0000000000000248       0x20 ./Src/HARDWARE/TIMER/timer.o
+ .debug_aranges
+                0x0000000000000268       0x30 ./Src/SYSTEM/delay/delay.o
+ .debug_aranges
+                0x0000000000000298       0x80 ./Src/SYSTEM/sys/sys.o
+ .debug_aranges
+                0x0000000000000318       0x38 ./Src/SYSTEM/usart/usart.o
+ .debug_aranges
+                0x0000000000000350       0x20 ./Src/USER/Minibalance.o
+ .debug_aranges
+                0x0000000000000370       0x28 ./Startup/startup_stm32f103c8tx.o
+
+.debug_ranges   0x0000000000000000      0x2a0
+ .debug_ranges  0x0000000000000000       0x48 ./Src/BALANCE/CONTROL/control.o
+ .debug_ranges  0x0000000000000048       0x20 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_ranges  0x0000000000000068       0x18 ./Src/BALANCE/show/show.o
+ .debug_ranges  0x0000000000000080       0x30 ./Src/HARDWARE/ADC/adc.o
+ .debug_ranges  0x00000000000000b0       0x30 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_ranges  0x00000000000000e0       0x20 ./Src/HARDWARE/EXTI/exti.o
+ .debug_ranges  0x0000000000000100       0x18 ./Src/HARDWARE/KEY/key.o
+ .debug_ranges  0x0000000000000118       0x18 ./Src/HARDWARE/LED/LED.o
+ .debug_ranges  0x0000000000000130       0x18 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_ranges  0x0000000000000148       0x60 ./Src/HARDWARE/OLED/oled.o
+ .debug_ranges  0x00000000000001a8       0x10 ./Src/HARDWARE/TIMER/timer.o
+ .debug_ranges  0x00000000000001b8       0x20 ./Src/SYSTEM/delay/delay.o
+ .debug_ranges  0x00000000000001d8       0x70 ./Src/SYSTEM/sys/sys.o
+ .debug_ranges  0x0000000000000248       0x28 ./Src/SYSTEM/usart/usart.o
+ .debug_ranges  0x0000000000000270       0x10 ./Src/USER/Minibalance.o
+ .debug_ranges  0x0000000000000280       0x20 ./Startup/startup_stm32f103c8tx.o
+
+.debug_macro    0x0000000000000000     0xc65d
+ .debug_macro   0x0000000000000000      0x287 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000287      0xaa2 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000d29       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000d39       0x56 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000d8f       0x22 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000db1       0x22 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000dd3       0x8e ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000e61       0x51 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000eb2      0x103 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000000fb5       0x6a ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000101f      0x1df ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x00000000000011fe      0x69f ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000189d     0x7def ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000968c       0xfa ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009786       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009796       0x28 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x00000000000097be       0x46 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009804       0x52 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009856       0x18 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000986e       0x3c ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x00000000000098aa       0x34 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x00000000000098de       0x16 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x00000000000098f4       0x97 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000998b      0x339 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009cc4       0xfd ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009dc1       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009dd1       0x16 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009de7       0x43 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009e2a       0x34 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009e5e       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009e6e       0x58 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009ec6       0x71 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009f37       0x1c ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x0000000000009f53      0x12a ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a07d       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a08d       0x1c ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a0a9       0x52 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a0fb       0x22 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a11d       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a12d       0x40 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a16d       0xd5 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a242       0x1c ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a25e       0x3d ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a29b       0x16 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a2b1      0x145 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a3f6       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a406       0x2e ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a434       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a444       0x16 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a45a       0x10 ./Src/BALANCE/CONTROL/control.o
+ .debug_macro   0x000000000000a46a       0x1b ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_macro   0x000000000000a485      0x27c ./Src/BALANCE/show/show.o
+ .debug_macro   0x000000000000a701      0x283 ./Src/HARDWARE/ADC/adc.o
+ .debug_macro   0x000000000000a984      0x283 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_macro   0x000000000000ac07      0x282 ./Src/HARDWARE/EXTI/exti.o
+ .debug_macro   0x000000000000ae89      0x282 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x000000000000b10b       0x22 ./Src/HARDWARE/KEY/key.o
+ .debug_macro   0x000000000000b12d      0x283 ./Src/HARDWARE/LED/LED.o
+ .debug_macro   0x000000000000b3b0      0x282 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x000000000000b632       0x28 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_macro   0x000000000000b65a      0x2ce ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x000000000000b928       0x40 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x000000000000b968       0x16 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x000000000000b97e       0x35 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x000000000000b9b3       0x16 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x000000000000b9c9       0x29 ./Src/HARDWARE/OLED/oled.o
+ .debug_macro   0x000000000000b9f2      0x27c ./Src/HARDWARE/TIMER/timer.o
+ .debug_macro   0x000000000000bc6e      0x283 ./Src/SYSTEM/delay/delay.o
+ .debug_macro   0x000000000000bef1      0x278 ./Src/SYSTEM/sys/sys.o
+ .debug_macro   0x000000000000c169      0x27c ./Src/SYSTEM/usart/usart.o
+ .debug_macro   0x000000000000c3e5      0x278 ./Src/USER/Minibalance.o
+
+.debug_line     0x0000000000000000     0xc25c
+ .debug_line    0x0000000000000000      0xf14 ./Src/BALANCE/CONTROL/control.o
+ .debug_line    0x0000000000000f14      0x15f ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_line    0x0000000000001073      0xdcc ./Src/BALANCE/show/show.o
+ .debug_line    0x0000000000001e3f      0xe06 ./Src/HARDWARE/ADC/adc.o
+ .debug_line    0x0000000000002c45      0xd9a ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_line    0x00000000000039df      0xdb3 ./Src/HARDWARE/EXTI/exti.o
+ .debug_line    0x0000000000004792      0xd54 ./Src/HARDWARE/KEY/key.o
+ .debug_line    0x00000000000054e6      0xd00 ./Src/HARDWARE/LED/LED.o
+ .debug_line    0x00000000000061e6      0xcdf ./Src/HARDWARE/MOTOR/motor.o
+ .debug_line    0x0000000000006ec5      0xfd7 ./Src/HARDWARE/OLED/oled.o
+ .debug_line    0x0000000000007e9c      0xcb9 ./Src/HARDWARE/TIMER/timer.o
+ .debug_line    0x0000000000008b55      0xd6c ./Src/SYSTEM/delay/delay.o
+ .debug_line    0x00000000000098c1      0xf04 ./Src/SYSTEM/sys/sys.o
+ .debug_line    0x000000000000a7c5      0xd53 ./Src/SYSTEM/usart/usart.o
+ .debug_line    0x000000000000b518      0xcc0 ./Src/USER/Minibalance.o
+ .debug_line    0x000000000000c1d8       0x84 ./Startup/startup_stm32f103c8tx.o
+
+.debug_str      0x0000000000000000    0x3770f
+ .debug_str     0x0000000000000000    0x36b09 ./Src/BALANCE/CONTROL/control.o
+                                      0x36daa (size before relaxing)
+ .debug_str     0x0000000000036b09       0x85 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+                                       0x2e6f (size before relaxing)
+ .debug_str     0x0000000000036b8e       0x4d ./Src/BALANCE/show/show.o
+                                      0x36bc8 (size before relaxing)
+ .debug_str     0x0000000000036bdb      0x125 ./Src/HARDWARE/ADC/adc.o
+                                      0x36c55 (size before relaxing)
+ .debug_str     0x0000000000036d00      0x349 ./Src/HARDWARE/ENCODER/encoder.o
+                                      0x36feb (size before relaxing)
+ .debug_str     0x0000000000037049       0x6b ./Src/HARDWARE/EXTI/exti.o
+                                      0x36e51 (size before relaxing)
+ .debug_str     0x00000000000370b4       0x70 ./Src/HARDWARE/KEY/key.o
+                                      0x36bf6 (size before relaxing)
+ .debug_str     0x0000000000037124       0x24 ./Src/HARDWARE/LED/LED.o
+                                      0x36bbd (size before relaxing)
+ .debug_str     0x0000000000037148       0x4a ./Src/HARDWARE/MOTOR/motor.o
+                                      0x36ce7 (size before relaxing)
+ .debug_str     0x0000000000037192      0x208 ./Src/HARDWARE/OLED/oled.o
+                                      0x36d8b (size before relaxing)
+ .debug_str     0x000000000003739a       0x2a ./Src/HARDWARE/TIMER/timer.o
+                                      0x36f7a (size before relaxing)
+ .debug_str     0x00000000000373c4       0x6b ./Src/SYSTEM/delay/delay.o
+                                      0x36ba0 (size before relaxing)
+ .debug_str     0x000000000003742f      0x227 ./Src/SYSTEM/sys/sys.o
+                                      0x36de0 (size before relaxing)
+ .debug_str     0x0000000000037656       0x69 ./Src/SYSTEM/usart/usart.o
+                                      0x36c57 (size before relaxing)
+ .debug_str     0x00000000000376bf       0x1f ./Src/USER/Minibalance.o
+                                      0x36b3b (size before relaxing)
+ .debug_str     0x00000000000376de       0x31 ./Startup/startup_stm32f103c8tx.o
+                                         0x9d (size before relaxing)
+
+.comment        0x0000000000000000       0x53
+ .comment       0x0000000000000000       0x53 ./Src/BALANCE/CONTROL/control.o
+                                         0x54 (size before relaxing)
+ .comment       0x0000000000000053       0x54 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .comment       0x0000000000000053       0x54 ./Src/BALANCE/show/show.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/ADC/adc.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/ENCODER/encoder.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/EXTI/exti.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/KEY/key.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/LED/LED.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/MOTOR/motor.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/OLED/oled.o
+ .comment       0x0000000000000053       0x54 ./Src/HARDWARE/TIMER/timer.o
+ .comment       0x0000000000000053       0x54 ./Src/SYSTEM/delay/delay.o
+ .comment       0x0000000000000053       0x54 ./Src/SYSTEM/sys/sys.o
+ .comment       0x0000000000000053       0x54 ./Src/SYSTEM/usart/usart.o
+ .comment       0x0000000000000053       0x54 ./Src/USER/Minibalance.o
+
+.debug_frame    0x0000000000000000      0xcf4
+ .debug_frame   0x0000000000000000      0x138 ./Src/BALANCE/CONTROL/control.o
+ .debug_frame   0x0000000000000138       0x84 ./Src/BALANCE/DataScope_DP/DataScope_DP.o
+ .debug_frame   0x00000000000001bc       0x50 ./Src/BALANCE/show/show.o
+ .debug_frame   0x000000000000020c       0xbc ./Src/HARDWARE/ADC/adc.o
+ .debug_frame   0x00000000000002c8       0xb0 ./Src/HARDWARE/ENCODER/encoder.o
+ .debug_frame   0x0000000000000378       0x68 ./Src/HARDWARE/EXTI/exti.o
+ .debug_frame   0x00000000000003e0       0x58 ./Src/HARDWARE/KEY/key.o
+ .debug_frame   0x0000000000000438       0x58 ./Src/HARDWARE/LED/LED.o
+ .debug_frame   0x0000000000000490       0x54 ./Src/HARDWARE/MOTOR/motor.o
+ .debug_frame   0x00000000000004e4      0x198 ./Src/HARDWARE/OLED/oled.o
+ .debug_frame   0x000000000000067c       0x34 ./Src/HARDWARE/TIMER/timer.o
+ .debug_frame   0x00000000000006b0       0x88 ./Src/SYSTEM/delay/delay.o
+ .debug_frame   0x0000000000000738      0x1dc ./Src/SYSTEM/sys/sys.o
+ .debug_frame   0x0000000000000914       0xb0 ./Src/SYSTEM/usart/usart.o
+ .debug_frame   0x00000000000009c4       0x2c ./Src/USER/Minibalance.o
+ .debug_frame   0x00000000000009f0       0x2c /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc_nano.a(lib_a-init.o)
+ .debug_frame   0x0000000000000a1c       0xac /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubdf3.o)
+ .debug_frame   0x0000000000000ac8       0x50 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivdf3.o)
+ .debug_frame   0x0000000000000b18       0x24 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixdfsi.o)
+ .debug_frame   0x0000000000000b3c       0x24 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_truncdfsf2.o)
+ .debug_frame   0x0000000000000b60       0x4c /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_addsubsf3.o)
+ .debug_frame   0x0000000000000bac       0x38 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_muldivsf3.o)
+ .debug_frame   0x0000000000000be4       0xc8 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_cmpsf2.o)
+ .debug_frame   0x0000000000000cac       0x24 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixsfsi.o)
+ .debug_frame   0x0000000000000cd0       0x24 /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.macos64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a(_arm_fixunssfsi.o)
