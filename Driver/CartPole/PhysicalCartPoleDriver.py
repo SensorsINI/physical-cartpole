@@ -107,9 +107,13 @@ class PhysicalCartPoleDriver:
         self.stickPos = None
         self.stickControl = None
 
-        self.command = None
-        self.sent = None
-        self.received = None
+        self.command = 0
+        self.sent = 0
+        self.lastSent = 0
+        self.latency = 0
+
+        self.total = 0
+        self.latency_too_high = 0
 
     def run(self):
         self.setup()
@@ -144,6 +148,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
+        self.InterfaceInstance.set_control_config(CONTROL_PERIOD_MS, CONTROL_SYNC, 0)
 
         try:
             self.controller.printparams()
@@ -330,7 +335,7 @@ class PhysicalCartPoleDriver:
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
                     self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-                    (angle, _, _, _, _, _) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
@@ -359,37 +364,35 @@ class PhysicalCartPoleDriver:
     def get_state_and_time_measurement(self):
 
         # This function will block at the rate of the control loop
-        self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
-        (self.angle_raw, self.angleD_raw, self.position_raw, self.frozen, self.sent, self.received) = self.InterfaceInstance.read_state()
+        self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.command, self.frozen, self.sent, self.latency) = self.InterfaceInstance.read_state()
 
-        self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
-        self.position_centered_unconverted = -self.position_centered_unconverted
+        self.position_centered_unconverted = -(self.position_raw - POSITION_OFFSET)
 
         # Convert position and angle to physical units
-        angle = (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+        angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
-        # Filter
-        angle = wrap_angle_rad(angle)
 
         # Time self.measurement
-        self.deltaTime = self.sent - self.lastTime
+        self.deltaTime = self.sent - self.lastSent
         if self.deltaTime < 1e-6:
-            self.deltaTime = 5*1e-3
-        self.lastTime = self.sent
+            self.deltaTime = 1e-6
+        self.lastSent = self.sent
         self.elapsedTime = self.sent
+
+        self.total += 1
+        if self.latency > CONTROL_PERIOD_MS * 1e-3:
+            self.latency_too_high += 1
+            #print(f'\nWarning: Latency ({self.latency*1000:.3f}ms) biggern than Control Period ({CONTROL_PERIOD_MS}ms). Ratio: {self.latency_too_high}/{self.total} = {100*self.latency_too_high/self.total:.2f}%')
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
         angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.deltaTime
         positionDerivative = (position - self.positionPrev) / self.deltaTime
 
-        # Keep values of angle and position for next timestep, for smoothing and derivative calculation
+        # Keep values of angle and position for next timestep, for derivative calculation
         self.anglePrev = angle
         self.positionPrev = position
-
-        #    # Filtering of derivatives
-        #    angleDerivative = angleDerivative*angleD_smoothing + (1-angleD_smoothing)*self.angleDPrev
-        #    self.angleDPrev = angleDerivative
 
         # Pack the state into interface acceptable for the self.controller
         self.s[POSITION_IDX] = position
@@ -479,7 +482,7 @@ class PhysicalCartPoleDriver:
                  self.target_position, self.controller.positionErr, self.controller.angleCmd,
                  self.controller.positionCmd, self.calculatedMotorCmd, Q,
                  self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
-                 self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start])
+                 self.sent, self.latency, self.InterfaceInstance.end-self.InterfaceInstance.start])
         else:
             self.csvwriter.writerow(
                 [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
@@ -487,7 +490,7 @@ class PhysicalCartPoleDriver:
                  self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angleErr,
                  self.target_position, self.controller.positionErr, 'NA', 'NA', self.calculatedMotorCmd, Q,
                  self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, Q**2,
-                 self.sent, self.received, self.received-self.sent, self.InterfaceInstance.end-self.InterfaceInstance.start])
+                 self.sent, self.latency, self.InterfaceInstance.end-self.InterfaceInstance.start])
 
 
     def plot_live(self):
@@ -526,20 +529,20 @@ class PhysicalCartPoleDriver:
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if True or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
+        if False or self.printCount >= (PRINT_PERIOD_MS / CONTROL_PERIOD_MS):
             self.printCount = 0
-            self.positionErr = self.s[POSITION_IDX] - self.target_position
-            # print("\r a {:+6.3f}rad  p {:+6.3f}cm pErr {:+6.3f}cm aCmd {:+6d} pCmd {:+6d} mCmd {:+6d} dt {:.3f}ms  self.stick {:.3f}:{} meas={}        \r"
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, position raw:{:}, command:{:+d}, delta time:{:.3f}ms, latency:{:.3f} ms, python latency:{:.3f} ms"
+                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, position raw:{:}, command:{:+d}, latency:{:.3f} ms, python latency:{:.3f} ms, Latency Violations: {:}/{:} = {:.2f}%           "
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
                             self.position_raw,
-                            self.calculatedMotorCmd,
-                            self.deltaTime * 1000,
-                            (self.received-self.sent) * 1000,
-                            (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000)
+                            self.command,
+                            self.latency * 1000,
+                            (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000,
+                            self.latency_too_high,
+                            self.total,
+                            100*self.latency_too_high/self.total)
                 , end='')
         
 

@@ -11,7 +11,7 @@ def calibrate(CartPoleInstance):
         print("Failed to connect to device. Terminate program.")
         CartPoleInstance.close()
         exit()
-    (_, _, POSITION_OFFSET, _, _, _) = CartPoleInstance.read_state()
+    (_, _, POSITION_OFFSET, _, _, _, _) = CartPoleInstance.read_state()
     print("Done calibrating")
 
     return POSITION_OFFSET
