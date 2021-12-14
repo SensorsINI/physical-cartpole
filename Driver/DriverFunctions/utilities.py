@@ -5,17 +5,6 @@ But the ultimate aim is to have this file empty and all functions assigned to so
 
 import sys
 
-def calibrate(CartPoleInstance):
-    print("Calibrating motor position.... ")
-    if not CartPoleInstance.calibrate():
-        print("Failed to connect to device. Terminate program.")
-        CartPoleInstance.close()
-        exit()
-    (_, _, POSITION_OFFSET, _, _, _, _) = CartPoleInstance.read_state()
-    print("Done calibrating")
-
-    return POSITION_OFFSET
-
 
 def terminal_check():
     if sys.stdin.isatty():

@@ -60,7 +60,7 @@ def animate(i):
                 axs[i, 0].axvline(x=b, color='red', linestyle='--', alpha=0.7)
 
             # Histogramm
-            if label is 'angleD':
+            if label == 'angleD':
                 axs[i, 1].hist(_data, bins=50, label=label, color=color)
                 axs[i, 1].set_ylabel('occurences')
                 axs[i, 1].set_xlabel(label)
