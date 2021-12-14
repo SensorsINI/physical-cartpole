@@ -10,7 +10,7 @@ PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the expe
 LIVE_PLOT = False
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'PID'
+CONTROLLER_NAME = 'PD'
 CONTROL_PERIOD_MS = 5
 CONTROL_SYNC = False
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
