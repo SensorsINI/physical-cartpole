@@ -260,7 +260,7 @@ void CONTROL_Loop(void)
 
 	// Send latest state to the PC
 	static int slowdown = 0;
-    if (streamEnable && ++slowdown>CONTROL_SLOWDOWN)
+    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN)
     {
     	slowdown = 0;
 
