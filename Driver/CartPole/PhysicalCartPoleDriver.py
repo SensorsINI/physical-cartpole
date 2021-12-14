@@ -388,18 +388,17 @@ class PhysicalCartPoleDriver:
         angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
-
         # Time self.measurement
         self.deltaTime = self.sent - self.lastSent
         if self.deltaTime < 1e-6:
             self.deltaTime = 1e-6
         self.lastSent = self.sent
-        self.elapsedTime = self.sent
+        self.elapsedTime = time.time()
+        self.timeNow = time.time()
 
         self.total += 1
         if self.latency > CONTROL_PERIOD_MS * 1e-3:
             self.latency_too_high += 1
-            #print(f'\nWarning: Latency ({self.latency*1000:.3f}ms) biggern than Control Period ({CONTROL_PERIOD_MS}ms). Ratio: {self.latency_too_high}/{self.total} = {100*self.latency_too_high/self.total:.2f}%')
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
         angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.deltaTime

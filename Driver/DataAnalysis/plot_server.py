@@ -8,7 +8,6 @@ matplotlib.use('TkAgg')
 address = ('localhost', 6000)     # family is deduced to be 'AF_INET'
 listener = Listener(address)
 
-print('Listening ...')
 connection = listener.accept()
 print(f'Connected to: {listener.last_accepted}')
 
@@ -27,12 +26,8 @@ def animate(i):
     global data, fig, axs, labels, received
 
     # receive data from socket
-    while connection.poll(0.1):
+    while connection.poll(0.01):
         buffer = connection.recv()
-
-        if buffer == 'reset':
-            data = np.zeros((0, data.shape[1]))
-            print('reset received')
 
         if isinstance(buffer, np.ndarray):
             data = np.append(data, buffer, axis=0)
@@ -67,6 +62,6 @@ def animate(i):
                 axs[i, 1].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
 
 
-ani = animation.FuncAnimation(fig, animate, interval=50)
+ani = animation.FuncAnimation(fig, animate, interval=100)
 plt.show()
 print('Finished')

@@ -231,6 +231,23 @@ void CONTROL_Loop(void)
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position    = (positionRaw - positionCentre);
 
+
+	// Position PD control
+	if (++positionPeriodCnt >= position_ctrlPeriod) {
+		positionPeriodCnt = 0;
+
+		// IIR Filter for Position
+		if(position_smoothing < 1.0)
+			position = (position_smoothing*position) + (1.0 - position_smoothing)*positionPrev;
+		positionD = position - positionPrev;
+		positionPrev	= position;
+
+		// Position PID control
+		positionErr = position - position_setPoint;
+		positionErrDiff = positionD;
+		position_I += positionErr;
+	}
+
 	// Microcontroller Control Routine
 	if (controlEnabled)	{
 		// Angle PID control
@@ -239,22 +256,7 @@ void CONTROL_Loop(void)
         angle_I += angleErr;
 		angleCmd	 = (angle_KP*angleErr + angle_KI*angleI + angle_KD*angleErrDiff);
 
-		// Position PD control
-		if (++positionPeriodCnt >= position_ctrlPeriod) {
-			positionPeriodCnt = 0;
-
-			// IIR Filter for Position
-			if(position_smoothing < 1.0)
-				position = (position_smoothing*position) + (1.0 - position_smoothing)*positionPrev;
-			positionD = position - positionPrev;
-			positionPrev	= position;
-
-			// Position PID control
-			positionErr = position - position_setPoint;
-			positionErrDiff = positionD;
-			position_I += positionErr;
-			positionCmd = (position_KP*positionErr + position_KI*position_I + position_KD*positionErrDiff);
-		}
+		positionCmd = (position_KP*positionErr + position_KI*position_I + position_KD*positionErrDiff);
 
 		// Limit the motor speed
 		command = - angleCmd - positionCmd;

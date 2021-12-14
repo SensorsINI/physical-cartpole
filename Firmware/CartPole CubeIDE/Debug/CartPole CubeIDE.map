@@ -663,18 +663,19 @@ LOAD /opt/st/stm32cubeide_1.7.0_2/plugins/com.st.stm32cube.ide.mcu.externaltools
                 0x0000000008001268                wrapLocal
  *fill*         0x00000000080012b6        0x2 
  .text.CONTROL_Loop
-                0x00000000080012b8      0x608 ./Src/control.o
+                0x00000000080012b8      0x604 ./Src/control.o
                 0x00000000080012b8                CONTROL_Loop
  .text.CONTROL_BackgroundTask
-                0x00000000080018c0      0x308 ./Src/control.o
-                0x00000000080018c0                CONTROL_BackgroundTask
+                0x00000000080018bc      0x308 ./Src/control.o
+                0x00000000080018bc                CONTROL_BackgroundTask
  .text.cmd_Ping
-                0x0000000008001bc8       0x22 ./Src/control.o
-                0x0000000008001bc8                cmd_Ping
- *fill*         0x0000000008001bea        0x2 
+                0x0000000008001bc4       0x22 ./Src/control.o
+                0x0000000008001bc4                cmd_Ping
+ *fill*         0x0000000008001be6        0x2 
  .text.cmd_StreamOutput
-                0x0000000008001bec       0x24 ./Src/control.o
-                0x0000000008001bec                cmd_StreamOutput
+                0x0000000008001be8       0x24 ./Src/control.o
+                0x0000000008001be8                cmd_StreamOutput
+ *fill*         0x0000000008001c0c        0x4 
  .text.cmd_Calibrate
                 0x0000000008001c10      0x23c ./Src/control.o
                 0x0000000008001c10                cmd_Calibrate
@@ -1064,11 +1065,11 @@ LOAD /opt/st/stm32cubeide_1.7.0_2/plugins/com.st.stm32cube.ide.mcu.externaltools
  *fill*         0x00000000200000c9        0x3 
  .bss.angleD.5843
                 0x00000000200000cc        0x4 ./Src/control.o
- .bss.angleI.5844
-                0x00000000200000d0        0x4 ./Src/control.o
- .bss.angleCmd.5835
-                0x00000000200000d4        0x4 ./Src/control.o
  .bss.positionPrev.5845
+                0x00000000200000d0        0x4 ./Src/control.o
+ .bss.angleI.5844
+                0x00000000200000d4        0x4 ./Src/control.o
+ .bss.angleCmd.5835
                 0x00000000200000d8        0x4 ./Src/control.o
  .bss.positionCmd.5836
                 0x00000000200000dc        0x4 ./Src/control.o
@@ -1199,19 +1200,19 @@ LOAD /opt/st/stm32cubeide_1.7.0_2/plugins/com.st.stm32cube.ide.mcu.externaltools
 LOAD /opt/st/stm32cubeide_1.7.0_2/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.linux64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libm.a
 LOAD /opt/st/stm32cubeide_1.7.0_2/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.9-2020-q2-update.linux64_2.0.0.202105311346/tools/bin/../lib/gcc/arm-none-eabi/9.3.1/thumb/v7-m/nofp/libgcc.a
 
-.debug_info     0x0000000000000000     0x3ca8
+.debug_info     0x0000000000000000     0x3ca6
  .debug_info    0x0000000000000000      0x362 ./Src/angle.o
- .debug_info    0x0000000000000362     0x1314 ./Src/control.o
- .debug_info    0x0000000000001676      0x5ab ./Src/encoder.o
- .debug_info    0x0000000000001c21      0x461 ./Src/key.o
- .debug_info    0x0000000000002082      0x206 ./Src/led.o
- .debug_info    0x0000000000002288       0xbc ./Src/main.o
- .debug_info    0x0000000000002344      0x19f ./Src/median_filter.o
- .debug_info    0x00000000000024e3      0x476 ./Src/motor.o
- .debug_info    0x0000000000002959      0x747 ./Src/sys.o
- .debug_info    0x00000000000030a0      0x5f2 ./Src/timer.o
- .debug_info    0x0000000000003692      0x5f4 ./Src/usart.o
- .debug_info    0x0000000000003c86       0x22 ./Startup/startup_stm32f103c8tx.o
+ .debug_info    0x0000000000000362     0x1312 ./Src/control.o
+ .debug_info    0x0000000000001674      0x5ab ./Src/encoder.o
+ .debug_info    0x0000000000001c1f      0x461 ./Src/key.o
+ .debug_info    0x0000000000002080      0x206 ./Src/led.o
+ .debug_info    0x0000000000002286       0xbc ./Src/main.o
+ .debug_info    0x0000000000002342      0x19f ./Src/median_filter.o
+ .debug_info    0x00000000000024e1      0x476 ./Src/motor.o
+ .debug_info    0x0000000000002957      0x747 ./Src/sys.o
+ .debug_info    0x000000000000309e      0x5f2 ./Src/timer.o
+ .debug_info    0x0000000000003690      0x5f4 ./Src/usart.o
+ .debug_info    0x0000000000003c84       0x22 ./Startup/startup_stm32f103c8tx.o
 
 .debug_abbrev   0x0000000000000000      0xea3
  .debug_abbrev  0x0000000000000000      0x130 ./Src/angle.o

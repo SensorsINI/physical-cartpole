@@ -55,7 +55,7 @@ elif MOTOR == 'POLOLU':
     ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.132 # adjust from key commands such that upright angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0.146 # adjust from key commands such that upright angle error is minimized
 
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
@@ -85,7 +85,9 @@ ratio = 1.05
 
 
 def inc(param):
-    if param < 2:
+    if param < 0.2:
+        param = round(param + 0.01, 2)
+    elif param < 2:
         param = round(param + 0.1, 1)
     else:
         old = param
@@ -96,7 +98,9 @@ def inc(param):
 
 
 def dec(param):
-    if param < 2:
+    if param < 0.2:
+        param =  max(0, round(param - 0.01, 2))
+    elif param < 2:
         param = max(0, round(param - 0.1, 1))
     else:
         old = param
