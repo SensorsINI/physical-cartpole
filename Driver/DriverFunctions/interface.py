@@ -28,6 +28,8 @@ class Interface:
         self.angle_raw_prev = 0
         self.angleD = 0
 
+        self.encoderDirection = None
+
     def open(self, port, baud):
         self.port = port
         self.baud = baud
@@ -67,7 +69,12 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
         self.prevPktNum = 1000
-        return self._receive_reply(CMD_CALIBRATE, 4, CALIBRATE_TIMEOUT) == msg
+
+        reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
+        encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
+        self.encoderDirection = encoderDirection  # Serves to identify motor
+
+        return True
 
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]

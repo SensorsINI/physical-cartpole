@@ -9,7 +9,7 @@ PyQt5
 tk
 sympy
 sklearn
-PyYAML==5.4.1
-numba==0.53.1
-tqdm==4.61.1
+PyYAML
+numba
+tqdm
 tensorflow

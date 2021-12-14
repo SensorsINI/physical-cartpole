@@ -82,12 +82,12 @@ def _cartpole_ode (ca, sa, angleD, positionD, u,
             ) / A
     )
 
-    # Making m go to 0 and setting J_fric=0 (fine for pole without mass)
-    # positionDD = (u_max/M)*Q-(M_fric/M)*positionD
-    # Compare this with positionDD = a*Q-b*positionD
-    # u_max = M*a = 0.230*19.6 = 4.5, 0.317*19.6 = 6.21, (Second option is if I account for pole mass)
-    # M_fric = M*b = 0.230*20 = 4.6, 0.317*20 = 6.34
-    # From experiment b = 20, a = 28
+        # Making m go to 0 and setting J_fric=0 (fine for pole without mass)
+        # positionDD = (u_max/M)*Q-(M_fric/M)*positionD
+        # Compare this with positionDD = a*Q-b*positionD
+        # u_max = M*a (you should take M+m if you made the measurement with pole attached)
+        # M_fric = M*b
+
     angleDD = (
             (
                     g * sa + positionDD * ca + T_fric / (m * L)

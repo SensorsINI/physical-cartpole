@@ -557,6 +557,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	int pos;
 	int diff;
 	float fDiff;
+	static unsigned char	buffer[30];
 
 	__disable_irq();
 	MOTOR_Stop();
@@ -622,7 +623,14 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	angle_setPoint = encoderDirection==1 ? CONTROL_ANGLE_SET_POINT_LEFT : CONTROL_ANGLE_SET_POINT_RIGHT;
 
 	SYS_DelayMS(100);
-	USART_SendBuffer(buff, len);
+
+    buffer[ 0] = SERIAL_SOF;
+    buffer[ 1] = CMD_CALIBRATE;
+    buffer[ 2] = 5;
+    *((signed char *)&buffer[3]) = (signed char)encoderDirection;
+    buffer[4] = crc(buffer, 4);
+    USART_SendBuffer(buffer, 5);
+
 	isCalibrated = true;
 	Led_Enable(false);
 	__enable_irq();
