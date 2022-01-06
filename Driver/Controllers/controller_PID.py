@@ -35,7 +35,7 @@ from globals import dec, inc, JSON_PATH
 import numpy as np
 
 # PID params from json
-PARAMS_JSON_FILE = JSON_PATH + 'control_PID2.json'
+PARAMS_JSON_FILE = JSON_PATH + 'control_PID.json'
 
 # Sensitivity for PID gains - these are hardcoded multiplicative factors for PID gains
 # They help to keep gains in json files in user-friendly magnitude.
