@@ -7,7 +7,8 @@ import numpy as np
 LOGGING_LEVEL = logging.INFO
 PRINT_PERIOD = 10  # shows state in terminal every this many control updates
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
-LIVE_PLOT = False
+LIVE_PLOT = True
+LIVE_PLOT_UNITS = 'metric' # choose 'raw' or 'metric'
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'PID'
@@ -17,12 +18,13 @@ PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'POLOLU'  # It will be overwritten by each calibration
+MOTOR = 'ORIGINAL'  # It will be overwritten by each calibration
 MOTOR_DYNAMICS_CORRECTED = True
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
 
+##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
@@ -56,6 +58,7 @@ elif MOTOR == 'POLOLU':
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.13799999999999998 # adjust from key commands such that upright angle error is minimized
 
+##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 POSITION_ENCODER_RANGE = 4660  # This is an empirical approximation # seems to be 4164 now

@@ -11,9 +11,11 @@ listener = Listener(address)
 connection = listener.accept()
 print(f'Connected to: {listener.last_accepted}')
 
-labels = ['angle', 'angleD', 'position', 'positionD', 'calculatedMotorCmd']
+labels_raw = ['angle_raw', 'angleD_raw', 'position_raw', 'positionD', 'actualMotorCmd']
+labels_metric = ['angle', 'angleD', 'position', 'positionD', 'Q']
 data = np.zeros((0, 7))
 
+metric = 'raw'
 
 fig, axs = plt.subplots(5, 2, figsize=(16,9), gridspec_kw={'width_ratios': [3, 1]})
 fig.subplots_adjust(hspace=0.5)
@@ -23,11 +25,17 @@ fig.canvas.manager.set_window_title('Live Plot')
 received = False
 
 def animate(i):
-    global data, fig, axs, labels, received
+    global data, fig, axs, labels, received, metric
 
     # receive data from socket
     while connection.poll(0.01):
         buffer = connection.recv()
+
+        if isinstance(buffer, str):
+            if buffer == 'raw':
+                metric = 'raw'
+            elif buffer == 'metric':
+                metric = 'metric'
 
         if isinstance(buffer, np.ndarray):
             data = np.append(data, buffer, axis=0)
@@ -42,7 +50,7 @@ def animate(i):
 
         for i in range(data.shape[1]-2):
             _data = data[:, i+1]
-            label = labels[i]
+            label = labels_raw[i] if metric == 'raw' else labels_metric[i]
             color = next(colors)["color"]
 
             # Timeline

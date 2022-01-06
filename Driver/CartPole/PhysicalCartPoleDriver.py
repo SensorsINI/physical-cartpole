@@ -540,22 +540,32 @@ class PhysicalCartPoleDriver:
             if not hasattr(self, 'live_connection'):
                 address = ('localhost', 6000)
                 self.live_connection = Client(address)
+                self.live_connection.send(LIVE_PLOT_UNITS)
             else:
-                self.live_connection.send('reset')
+                self.live_connection.send(LIVE_PLOT_UNITS)
 
         if hasattr(self, 'live_connection'):
             if self.live_buffer_index < BUFFER_LENGTH:
-                self.live_buffer[self.live_buffer_index, :] = np.array([
-                    self.sent,
-                    #self.angle_raw,
-                    #self.angleD_raw,
-                    self.s[ANGLE_IDX],
-                    self.s[ANGLED_IDX],
-                    self.s[POSITION_IDX] * 100,
-                    self.s[POSITIOND_IDX] * 100,
-                    self.actualMotorCmd,
-                    self.frozen,
-                ])
+                if LIVE_PLOT_UNITS == 'raw':
+                    self.live_buffer[self.live_buffer_index, :] = np.array([
+                        self.sent,
+                        self.angle_raw,
+                        self.angleD_raw,
+                        self.position_raw,
+                        self.s[POSITIOND_IDX] * 100,
+                        self.actualMotorCmd,
+                        self.frozen,
+                    ])
+                else:
+                    self.live_buffer[self.live_buffer_index, :] = np.array([
+                        self.sent,
+                        self.s[ANGLE_IDX],
+                        self.s[ANGLED_IDX],
+                        self.s[POSITION_IDX] * 100,
+                        self.s[POSITIOND_IDX] * 100,
+                        self.Q,
+                        self.frozen,
+                    ])
                 self.live_buffer_index += 1
             else:
                 self.live_connection.send(self.live_buffer)
@@ -567,7 +577,7 @@ class PhysicalCartPoleDriver:
         if False or self.printCount >= PRINT_PERIOD:
             self.printCount = 0
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.2f}cm, position raw:{:}, command:{:+d}, delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%           "
+                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.2f}cm, position raw:{:}, command:{:+05d}, delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%           "
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
