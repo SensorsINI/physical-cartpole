@@ -1,7 +1,5 @@
-# TODO Why after calibration Cartpole is not at 0 position?
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
-# todo fix get and set params (for chip interface), must be compatible with sensor readings
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
 import math
 import time
@@ -16,7 +14,7 @@ from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.interface import Interface
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.measure import StepResponseMeasurement
-from DriverFunctions.utilities import calibrate, terminal_check
+from DriverFunctions.utilities import terminal_check
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPole.state_utilities import create_cartpole_state
@@ -97,6 +95,8 @@ class PhysicalCartPoleDriver:
         self.angleErr = 0.0
         self.positionErr = 0.0  # for printing even if not controlling
 
+        self.position_offset = 0
+
         self.target_position = 0.0
 
         self.actualMotorCmd = 0
@@ -128,8 +128,6 @@ class PhysicalCartPoleDriver:
         self.quit_experiment()
 
     def setup(self):
-
-        global POSITION_OFFSET
 
         # check that we are running from terminal, otherwise we cannot control it
         terminal_check()
@@ -270,7 +268,7 @@ class PhysicalCartPoleDriver:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
 
-                if self.controller.controller_name is 'mppi':
+                if self.controller.controller_name == 'mppi':
                     if not self.loggingEnabled:
                         self.controller.controller_report()
                     self.controller.logging = self.loggingEnabled
@@ -287,9 +285,14 @@ class PhysicalCartPoleDriver:
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0} \r\n".format(self.controlEnabled))
             elif c == 'K':
-                global MOTOR
+                global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
                 self.controlEnabled = False
-                POSITION_OFFSET = calibrate(self.InterfaceInstance)
+
+                print("Calibrating motor position.... ")
+                self.InterfaceInstance.calibrate()
+                (_, _, self.position_offset, _, _, _, _) = self.InterfaceInstance.read_state()
+                print("Done calibrating")
+
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
                     if ANGLE_HANGING_DEFAULT:
@@ -357,9 +360,7 @@ class PhysicalCartPoleDriver:
                 angle_average = 0
                 number_of_measurements = 100
                 for _ in range(number_of_measurements):
-                    self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
                     (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
-                    # print('Sensor reading to adjust ANGLE_HANGING', angle)
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
                 print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
@@ -383,15 +384,11 @@ class PhysicalCartPoleDriver:
         # This function will block at the rate of the control loop
         (self.angle_raw, self.angleD_raw, self.position_raw, self.command, self.frozen, self.sent, self.latency) = self.InterfaceInstance.read_state()
 
-        self.position_centered_unconverted = self.position_raw - POSITION_OFFSET
-        self.position_centered_unconverted = -self.position_centered_unconverted
+        self.position_centered_unconverted = -(self.position_raw - self.position_offset)
 
         # Convert position and angle to physical units
-        angle = (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE
+        angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
-
-        # Filter
-        angle = wrap_angle_rad(angle)
 
         # Time self.measurement
         self.timeNow = time.time()
@@ -400,18 +397,17 @@ class PhysicalCartPoleDriver:
             self.deltaTime = 1e-6
         self.lastTime = self.timeNow
         self.elapsedTime = self.timeNow - self.startTime
-        
+
+        # Latency Violations
         self.total += 1
         if self.latency > CONTROL_PERIOD_MS * 1e-3:
             self.latency_too_high += 1
-            # print(f'\nWarning: Latency ({self.latency*1000:.3f}ms) biggern than Control Period ({CONTROL_PERIOD_MS}ms). Ratio: {self.latency_too_high}/{self.total} = {100*self.latency_too_high/self.total:.2f}%')
-
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = wrap_angle_rad(self.angleD_raw * ANGLE_NORMALIZATION_FACTOR) / self.deltaTime  # rad/self.s
+        angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.deltaTime  # rad/self.s
         positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
 
-        # Keep values of angle and position for next timestep, for smoothing and derivative calculation
+        # Keep values of angle and position for next timestep for derivative calculation
         self.anglePrev = angle
         self.positionPrev = position
 
@@ -571,12 +567,13 @@ class PhysicalCartPoleDriver:
         if False or self.printCount >= PRINT_PERIOD:
             self.printCount = 0
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.3f}cm, position raw:{:}, command:{:+d}, latency:{:.3f} ms, python latency:{:.3f} ms, Latency Violations: {:}/{:} = {:.2f}%           "
+                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.2f}cm, position raw:{:}, command:{:+d}, delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%           "
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
                             self.position_raw,
                             self.actualMotorCmd,
+                            self.deltaTime * 1000,
                             self.latency * 1000,
                             (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000,
                             self.latency_too_high,
