@@ -144,17 +144,6 @@ class PhysicalCartPoleDriver:
 
         self.stick, self.joystickMode = setup_joystick()
 
-        if CALIBRATE:
-            global MOTOR
-            POSITION_OFFSET = calibrate(self.InterfaceInstance)
-            if self.InterfaceInstance.encoderDirection == 1:
-                MOTOR = 'POLOLU'
-            elif self.InterfaceInstance.encoderDirection == -1:
-                MOTOR = 'ORIGINAL'
-            else:
-                raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
-            print('Detected motor: {}'.format(MOTOR))
-
         try:
             self.controller.loadparams()
         except AttributeError:
@@ -391,9 +380,7 @@ class PhysicalCartPoleDriver:
                 self.terminate_experiment = True
 
     def get_state_and_time_measurement(self):
-
         # This function will block at the rate of the control loop
-        self.InterfaceInstance.clear_read_buffer()  # if we don't clear read buffer, state output piles up in serial buffer #TODO
         (self.angle_raw, self.angleD_raw, self.position_raw, self.command, self.frozen, self.sent, self.latency) = self.InterfaceInstance.read_state()
 
         self.position_centered_unconverted = self.position_raw - POSITION_OFFSET

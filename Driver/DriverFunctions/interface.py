@@ -68,7 +68,6 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        self.prevPktNum = 1000
 
         reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
         self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
@@ -148,13 +147,8 @@ class Interface:
             return angle
 
     def read_state(self):
+        self.clear_read_buffer()
         reply = self._receive_reply(CMD_STATE, 17, READ_STATE_TIMEOUT)
-
-        # Verify packet sequence 
-        #if self.prevPktNum != 1000:
-        #    if ((reply[3] - self.prevPktNum) & 0xFF) > 1:
-        #        print("WARNING -- Skipped packets [prev={0} now={1}]".format(self.prevPktNum, reply[3]))
-        #self.prevPktNum = reply[3]
 
         (angle, position, command, frozen, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
 

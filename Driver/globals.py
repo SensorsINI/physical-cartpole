@@ -2,26 +2,23 @@ import math
 import logging
 import numpy as np
 
-MOTOR = 'ORIGINAL'  # It will be overwritten by each calibration
-MOTOR_DYNAMICS_CORRECTED = True
 
+##### Logging and Recordings #####
 LOGGING_LEVEL = logging.INFO
-PRINT_PERIOD = 50  # shows state in terminal every this many control updates
-
+PRINT_PERIOD = 10  # shows state in terminal every this many control updates
+PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
 LIVE_PLOT = False
 
-CALIBRATE = False  # If True calibration will be run at start-up of the program
-# important to calibrate if running standalone to avoid motor burnout
-# because limits are determined during this calibration
-
+##### Controller Settings #####
 CONTROLLER_NAME = 'PID'
 CONTROL_PERIOD_MS = 5
 CONTROL_SYNC = False
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
-
-PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
-
 JSON_PATH = 'Json/'
+
+##### Motor Settings #####
+MOTOR = 'POLOLU'  # It will be overwritten by each calibration
+MOTOR_DYNAMICS_CORRECTED = True
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
@@ -41,6 +38,7 @@ ANGLE_HANGING = np.array(0.0)
 ANGLE_DEVIATION = np.array(0.0)
 
 def angle_constants_update(new_angle_hanging):
+    global ANGLE_ADC_RANGE
 
     # update angle deviation according to ANGLE_HANGING update
     if new_angle_hanging < ANGLE_ADC_RANGE / 2:
@@ -58,9 +56,6 @@ elif MOTOR == 'POLOLU':
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.13799999999999998 # adjust from key commands such that upright angle error is minimized
 
-print(f'Angle Down: {ANGLE_HANGING}')
-print(f'Angle Up: {int(ANGLE_HANGING + ANGLE_DEVIATION - ANGLE_DEVIATION_FINETUNE / ANGLE_NORMALIZATION_FACTOR)+4096}')
-
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 POSITION_ENCODER_RANGE = 4660  # This is an empirical approximation # seems to be 4164 now
@@ -74,6 +69,8 @@ POSITION_TARGET = 0.0  # meters
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 JOYSTICK_POSITION_KP = 4.0
 
+
+##### Serial Port #####
 import platform
 import subprocess
 SERIAL_PORT = None
@@ -88,7 +85,9 @@ ratio = 1.05
 
 
 def inc(param):
-    if param < 2:
+    if param < 0.2:
+        param = round(param + 0.01, 2)
+    elif param < 2:
         param = round(param + 0.1, 1)
     else:
         old = param
@@ -99,7 +98,9 @@ def inc(param):
 
 
 def dec(param):
-    if param < 2:
+    if param < 0.2:
+        param =  max(0, round(param - 0.01, 2))
+    elif param < 2:
         param = max(0, round(param - 0.1, 1))
     else:
         old = param
