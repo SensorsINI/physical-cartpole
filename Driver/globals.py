@@ -7,8 +7,13 @@ import numpy as np
 LOGGING_LEVEL = logging.INFO
 PRINT_PERIOD = 10  # shows state in terminal every this many control updates
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
-LIVE_PLOT = True
-LIVE_PLOT_UNITS = 'metric' # choose 'raw' or 'metric'
+
+##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
+LIVE_PLOT = False
+LIVE_PLOT_UNITS = 'metric'      # choose 'raw' or 'metric'
+LIVE_PLOT_KEEPSAMPLES = 5000
+LIVE_PLOT_TIMELINES = list(range(5))       # deactivate plots for performance, for all use list(range(5))
+LIVE_PLOT_HISTOGRAMMS = list(range(5))     # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'PID'
@@ -18,8 +23,8 @@ PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'ORIGINAL'  # It will be overwritten by each calibration
-MOTOR_DYNAMICS_CORRECTED = True
+MOTOR = 'ORIGINAL'              # Overwritten when calibrated
+MOTOR_DYNAMICS_CORRECTED = True # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
@@ -36,24 +41,6 @@ ANGLE_HANGING_ORIGINAL = 1025  # right cartpole # Value from sensor when pendulu
 ANGLE_HANGING_DEFAULT = True  #  If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
                                 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
                                 # At the beginning always default angle hanging for default motor specified in globals is loaded
-ANGLE_HANGING = np.array(0.0)
-ANGLE_DEVIATION = np.array(0.0)
-
-def angle_constants_update(new_angle_hanging):
-    global ANGLE_ADC_RANGE
-
-    # update angle deviation according to ANGLE_HANGING update
-    if new_angle_hanging < ANGLE_ADC_RANGE / 2:
-        angle_deviation = - new_angle_hanging - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
-    else:
-        angle_deviation = - new_angle_hanging + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
-
-    return new_angle_hanging, angle_deviation
-
-if MOTOR == 'ORIGINAL':
-    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
-elif MOTOR == 'POLOLU':
-    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.13799999999999998 # adjust from key commands such that upright angle error is minimized
@@ -87,6 +74,26 @@ SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled an
 ratio = 1.05
 
 
+##### Wrong Place ##### #TODO: remove functions and calculations from parameter file
+ANGLE_HANGING = np.array(0.0) #TODO: best would be to have theses as class variables in CartPoleDriver
+ANGLE_DEVIATION = np.array(0.0)
+
+def angle_constants_update(new_angle_hanging):
+    global ANGLE_ADC_RANGE
+
+    # update angle deviation according to ANGLE_HANGING update
+    if new_angle_hanging < ANGLE_ADC_RANGE / 2:
+        angle_deviation = - new_angle_hanging - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
+    else:
+        angle_deviation = - new_angle_hanging + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+
+    return new_angle_hanging, angle_deviation
+
+if MOTOR == 'ORIGINAL':
+    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
+elif MOTOR == 'POLOLU':
+    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
+
 def inc(param):
     if param < 0.2:
         param = round(param + 0.01, 2)
@@ -98,7 +105,6 @@ def inc(param):
         if param == old:
             param += 1
     return param
-
 
 def dec(param):
     if param < 0.2:

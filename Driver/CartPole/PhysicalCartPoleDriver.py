@@ -346,11 +346,11 @@ class PhysicalCartPoleDriver:
                     self.joystickMode = 'not active'
                     self.log.info(f'set joystick to {self.joystickMode} mode')
 
-            elif c == '8':
+            elif c == '9':
                 self.additional_latency += 0.002
                 print('Additional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
-            elif c == '7':
+            elif c == '0':
                 self.additional_latency -= 0.002
                 if self.additional_latency < 0.0:
                     self.additional_latency = 0.0
@@ -373,7 +373,13 @@ class PhysicalCartPoleDriver:
             elif c == '6':
                 self.livePlotEnabled = not self.livePlotEnabled
                 self.livePlotReset = True
-                print(f"\nLive Plot: {self.livePlotEnabled}")
+                print(f'\nLive Plot Enabled: {self.livePlotEnabled}')
+
+            elif c == '7':
+                self.live_connection.send('save')
+
+            elif c == '8':
+                self.live_connection.send('reset')
 
             # Exit
             elif ord(c) == 27:  # ESC

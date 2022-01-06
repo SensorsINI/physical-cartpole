@@ -13,8 +13,8 @@
 // set it to exactly the vertical position of the pendulum, by printing values and then averaging them
 
 #define CONTROL_ANGLE_SET_POINT	    3110	// factory default
-#define CONTROL_ANGLE_SET_POINT_POLULU	    3160	// left cartpole
-#define CONTROL_ANGLE_SET_POINT_ORIGINAL	3164	// right cartpole
+#define CONTROL_ANGLE_SET_POINT_POLULU	    3160
+#define CONTROL_ANGLE_SET_POINT_ORIGINAL	3163
 
 #define CONTROL_ANGLE_SMOOTHING         1.0f        // 0 to 1.0 (1.0 disables smoothing)
 #define CONTROL_ANGLE_KP                200.0f
