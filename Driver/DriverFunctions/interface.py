@@ -126,7 +126,6 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        self.end = time.time()
 
     def set_control_config(self, controlLoopPeriodMs, controlSync, controlLatencyUs):
         msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 11]

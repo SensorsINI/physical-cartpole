@@ -30,6 +30,7 @@ from globals import *
 import subprocess, multiprocessing, platform
 from multiprocessing.connection import Client
 from CartPole.latency_adder import LatencyAdder
+import sys
 
 class PhysicalCartPoleDriver:
     def __init__(self):
@@ -49,6 +50,8 @@ class PhysicalCartPoleDriver:
 
         self.printCount = 0
         self.printCount2 = 0
+
+        self.new_console_output = True
 
         self.controlEnabled = False
         self.firmwareControl = False
@@ -133,7 +136,6 @@ class PhysicalCartPoleDriver:
         terminal_check()
 
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
-        # setup_serial_connection(self.InterfaceInstance, SERIAL_PORT=SERIAL_PORT)
 
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
@@ -150,7 +152,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
-        self.InterfaceInstance.set_control_config(CONTROL_PERIOD_MS, CONTROL_SYNC, 0)
+        #self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
 
         try:
             self.controller.printparams()
@@ -178,29 +180,37 @@ class PhysicalCartPoleDriver:
             if self.controlEnabled:
                 self.lastControlTime = self.timeNow
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
+            else:
+                self.lastControlTime = self.sent
+                self.actualMotorCmd = self.command
+                self.Q = self.command
 
             self.joystick_action()
 
             self.measurement_action()
 
-            self.get_motor_command()
+            if self.controlEnabled:
+                self.get_motor_command()
 
-            if self.measurement.is_idle():  # switch off boundary safety when self.measurement mode is active.
+            if self.measurement.is_idle() and self.controlEnabled:
                 self.safety_switch_off()
 
-            self.InterfaceInstance.set_motor(self.actualMotorCmd)
+            if self.controlEnabled:
+                self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
+            # Plotting and Logging
             if self.loggingEnabled:
                 self.write_csv_row()
 
             if self.livePlotEnabled:
                 self.plot_live()
 
-            # Print output
             self.write_current_data_to_terminal()
 
             if self.terminate_experiment:
                 break
+
+            self.end = time.time()
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
@@ -214,6 +224,8 @@ class PhysicalCartPoleDriver:
     def keyboard_input(self):
         global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
         if self.kbAvailable & self.kb.kbhit():
+            self.new_console_output = True
+
             c = self.kb.getch()
             # Keys used in self.controller: 1,2,3,4,p, =, -, w, q, self.s, a, x, z, r, e, f, d, v, c, S, L, b, j
             try:
@@ -235,17 +247,17 @@ class PhysicalCartPoleDriver:
                 self.controlEnabled = False
                 self.Q = 0
                 self.manualMotorSetting = False
-                print('\r Normed motor command after .', self.Q)
+                print('\nNormed motor command after .', self.Q)
             elif c == ',':  # left
                 self.controlEnabled = False
                 self.Q -= 0.01
                 self.manualMotorSetting = True
-                print('\r Normed motor command after ,', self.Q)
+                print('\nNormed motor command after ,', self.Q)
             elif c == '/':  # right
                 self.controlEnabled = False
                 self.Q += 0.01
                 self.manualMotorSetting = True
-                print('\r Normed motor command after /', self.Q)
+                print('\nNormed motor command after /', self.Q)
             elif c == 'D':
                 # We want the sinusoid to start at predictable (0) position
                 if self.danceEnabled is True:
@@ -275,7 +287,7 @@ class PhysicalCartPoleDriver:
 
             elif c == 'u':  # toggle firmware control
                 self.firmwareControl = not self.firmwareControl
-                print("Firmware Control", self.firmwareControl)
+                print("\nFirmware Control", self.firmwareControl)
                 self.InterfaceInstance.control_mode(self.firmwareControl)
             elif c == 'k':
                 self.controlEnabled = not self.controlEnabled
@@ -288,7 +300,7 @@ class PhysicalCartPoleDriver:
                 global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
                 self.controlEnabled = False
 
-                print("Calibrating motor position.... ")
+                print("\nCalibrating motor position.... ")
                 self.InterfaceInstance.calibrate()
                 (_, _, self.position_offset, _, _, _, _) = self.InterfaceInstance.read_state()
                 print("Done calibrating")
@@ -303,30 +315,30 @@ class PhysicalCartPoleDriver:
                         ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
-                print('Detected motor: {}'.format(MOTOR))
+                print('\nDetected motor: {}'.format(MOTOR))
             elif c == 'h' or c == '?':
                 self.controller.print_help()
             # Fine tune angle deviation
             elif c == '=':
                 ANGLE_DEVIATION_FINETUNE += 0.002
-                print("\nIncreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
+                print("\nIncreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
             # Decrease Target Angle
             elif c == '-':
                 ANGLE_DEVIATION_FINETUNE -= 0.002
-                print("\nDecreased angle deviation fine tune value to {0}\n".format(ANGLE_DEVIATION_FINETUNE))
+                print("\nDecreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
 
             # Increase Target Position
             elif c == ']':
                 POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
                 if POSITION_TARGET > 0.8 * (POSITION_ENCODER_RANGE // 2):
                     POSITION_TARGET = 0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nIncreased target position to {0} cm\n".format(POSITION_TARGET * 100))
+                print("\nIncreased target position to {0} cm".format(POSITION_TARGET * 100))
             # Decrease Target Position
             elif c == '[':
                 POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
                 if POSITION_TARGET < -0.8 * (POSITION_ENCODER_RANGE // 2):
                     POSITION_TARGET = -0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nDecreased target position to {0} cm\n".format(POSITION_TARGET * 100))
+                print("\nDecreased target position to {0} cm".format(POSITION_TARGET * 100))
             elif c == 'm':  # toggle self.measurement
                 if self.measurement.is_idle():
                     self.measurement.start()
@@ -348,13 +360,13 @@ class PhysicalCartPoleDriver:
 
             elif c == '9':
                 self.additional_latency += 0.002
-                print('Additional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
+                print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == '0':
                 self.additional_latency -= 0.002
                 if self.additional_latency < 0.0:
                     self.additional_latency = 0.0
-                print('Additional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
+                print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == 'b':
                 angle_average = 0
@@ -363,7 +375,7 @@ class PhysicalCartPoleDriver:
                     (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
-                print('Hanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
+                print('\nHanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
                 ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
                 ANGLE_HANGING_DEFAULT = False
 
@@ -405,9 +417,10 @@ class PhysicalCartPoleDriver:
         self.elapsedTime = self.timeNow - self.startTime
 
         # Latency Violations
-        self.total += 1
-        if self.latency > CONTROL_PERIOD_MS * 1e-3:
-            self.latency_too_high += 1
+        if self.latency > 1e-6:
+            self.total += 1
+            if self.latency > CONTROL_PERIOD_MS * 1e-3:
+                self.latency_too_high += 1
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
         angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.deltaTime  # rad/self.s
@@ -499,7 +512,7 @@ class PhysicalCartPoleDriver:
         self.actualMotorCmd = int(self.actualMotorCmd)
         # Check if motor power in safe boundaries, not to burn it in case you have an error before or not-corrected option
         # NEVER RUN IT WITHOUT IT
-        self.actualMotorCmd = MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd > MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
+        self.actualMotorCmd = MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd > MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd #Todo: use numpy clip
         self.actualMotorCmd = -MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd < -MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
 
         self.actualMotorCmd = -self.actualMotorCmd
@@ -532,7 +545,6 @@ class PhysicalCartPoleDriver:
                  self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd, self.Q,
                  self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, self.Q**2,
                  self.sent, self.latency, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
-
 
     def plot_live(self):
         BUFFER_LENGTH = 5
@@ -569,7 +581,7 @@ class PhysicalCartPoleDriver:
                         self.s[ANGLED_IDX],
                         self.s[POSITION_IDX] * 100,
                         self.s[POSITIOND_IDX] * 100,
-                        self.Q,
+                        self.command / MOTOR_FULL_SCALE,
                         self.frozen,
                     ])
                 self.live_buffer_index += 1
@@ -582,20 +594,33 @@ class PhysicalCartPoleDriver:
         self.printCount += 1
         if False or self.printCount >= PRINT_PERIOD:
             self.printCount = 0
+
+            if not self.new_console_output:
+                print('\033[4A', end='')
+            self.new_console_output = False
+
+            print('\r')
+
+            print("\rMODE:   {}\033[K"
+                    .format('Python Control' if self.controlEnabled else 'Firmware Control')
+                )
+
             print(
-                "\rangle:{:+.3f}rad, angle raw:{:}, position:{:+.2f}cm, position raw:{:}, command:{:+05d}, delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%           "
+                "\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}\033[K"
                     .format(self.s[ANGLE_IDX],
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
                             self.position_raw,
-                            self.actualMotorCmd,
-                            self.deltaTime * 1000,
+                            self.command / MOTOR_FULL_SCALE,
+                            self.command)
+                )
+
+            print(
+                "\rTIMING: delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%\033[K"
+                    .format(self.deltaTime * 1000,
                             self.latency * 1000,
-                            (self.InterfaceInstance.end-self.InterfaceInstance.start) * 1000,
+                            (self.end-self.InterfaceInstance.start) * 1000,
                             self.latency_too_high,
                             self.total,
-                            100*self.latency_too_high/self.total)
-                , end='')
-        
-
-
+                            100*self.latency_too_high/self.total if self.total > 0 else 0)
+                )

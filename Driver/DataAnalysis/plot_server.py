@@ -14,9 +14,7 @@ connection = listener.accept()
 print(f'Connected to: {listener.last_accepted}')
 
 labels_raw = ['angle_raw', 'angleD_raw', 'position_raw', 'positionD', 'actualMotorCmd']
-labels_metric = ['angle', 'angleD', 'position', 'positionD', 'Q']
-units_raw = ['angle_raw', 'angleD_raw', 'position_raw', 'positionD', 'actualMotorCmd']
-units_metric = ['angle', 'angleD', 'position', 'positionD', 'Q']
+labels_metric = ['angle [rad]', 'angleD [rad/s]', 'position [cm]', 'positionD [cm/s]', 'Q ∈ [-1,1]']
 data = np.zeros((0, 7))
 
 metric = 'raw'
@@ -70,11 +68,13 @@ def animate(i):
             if i in LIVE_PLOT_TIMELINES:
                 axs[i, 0].clear()
                 axs[i, 0].set_title(f"Min: {data_row.min():.3f}, Max: {data_row.max():.3f}, Mean: {data_row.mean():.3f}, Std: {data_row.std():.5f}", size=8)
-                axs[i, 0].plot(time, data_row, label=label, marker='.', color=color)
+                axs[i, 0].plot(time, data_row, label=label, marker='.', color=color, markersize=3, linewidth=0.2)
                 axs[i, 0].legend(loc='upper right')
                 axs[i, 0].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
                 for b in data[data[:, -1] > 0, 0]:
                     axs[i, 0].axvline(x=b, color='red', linestyle='--', alpha=0.7)
+                    labels = [item.get_text() for item in ax.get_xticklabels()]
+                    labels[1] = 'Testing'
 
             # Histogramm
             if i in LIVE_PLOT_HISTOGRAMMS:
