@@ -118,6 +118,7 @@ class PhysicalCartPoleDriver:
         self.sent = 0
         self.lastSent = 0
         self.latency = 0
+        self.pythonLatency = 0
 
         self.total = 0
         self.latency_too_high = 0
@@ -215,6 +216,8 @@ class PhysicalCartPoleDriver:
                 break
 
             self.end = time.time()
+            self.pythonLatency = self.end - self.InterfaceInstance.start;
+
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
@@ -319,7 +322,7 @@ class PhysicalCartPoleDriver:
                         ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
-                print('\nDetected motor: {}'.format(MOTOR))
+                print('Detected motor: {}'.format(MOTOR))
             elif c == 'h' or c == '?':
                 self.controller.print_help()
             # Fine tune angle deviation
@@ -624,7 +627,7 @@ class PhysicalCartPoleDriver:
                 "\rTIMING: delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%\033[K"
                     .format(self.deltaTime * 1000,
                             self.latency * 1000,
-                            (self.end-self.InterfaceInstance.start) * 1000,
+                            self.pythonLatency * 1000,
                             self.latency_too_high,
                             self.total,
                             100*self.latency_too_high/self.total if self.total > 0 else 0)
