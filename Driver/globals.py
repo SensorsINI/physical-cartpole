@@ -23,7 +23,7 @@ PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'ORIGINAL'              # Overwritten when calibrated
+MOTOR = 'POLOLU'                # choose 'POLOLU' or 'ORIGINAL'
 MOTOR_DYNAMICS_CORRECTED = True # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
@@ -32,18 +32,18 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
-ANGLE_AVG_LENGTH = 10  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
+ANGLE_AVG_LENGTH = 32   # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1167 # left cartpole # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING_ORIGINAL = 1025  # right cartpole # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_ORIGINAL = 1025   # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  #  If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
                                 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
                                 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.13799999999999998 # adjust from key commands such that upright angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0.138 # adjust from key commands such that upright angle error is minimized
 
 ##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
