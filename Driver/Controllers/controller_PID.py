@@ -1,5 +1,5 @@
 """
-A PD controller for the Cartpole using CartpoleSimulator conventions
+A PID controller for the Cartpole using CartpoleSimulator conventions
 
         We checked that factory-firmware gain values are not working great for our hardware
         Hence we do not provide values recomputed to our software

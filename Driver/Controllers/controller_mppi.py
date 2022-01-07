@@ -5,9 +5,9 @@ Based on Williams, Aldrich, Theodorou (2015)
 
 # Uncomment if you want to get interactive plots for MPPI in Pycharm on MacOS
 # On other OS you have to chose a different interactive backend.
-# from matplotlib import use
-# # # use('TkAgg')
-# use('macOSX')
+from matplotlib import use
+use('TkAgg')
+#use('macOSX')
 
 import copy
 
@@ -24,7 +24,7 @@ from datetime import datetime
 
 from CartPole._CartPole_mathematical_helpers import (
     conditional_decorator,
-    wrap_angle_rad_inplace_no_numba,
+    wrap_angle_rad_inplace,
 )
 from CartPole.cartpole_model import TrackHalfLength
 from CartPole.state_utilities import (
@@ -145,7 +145,7 @@ def E_pot_cost(angle):
 @jit(nopython=True, cache=True, fastmath=True)
 def distance_difference_cost(position, target_position):
     """Compute penalty for distance of cart to the target position"""
-    return ((position - target_position) / (2.0 * TrackHalfLength)) ** 2 + (
+    return 1e1 * (np.abs(position - target_position) / (2.0 * TrackHalfLength)) ** 2 + (
         np.abs(position) > 0.9 * TrackHalfLength
     ) * 1.0e6  # Soft constraint: Do not crash into border
 
@@ -163,14 +163,14 @@ def penalize_deviation(cc, u):
     I, J = cc.shape
     for i in range(I):
         for j in range(J):
-            if np.abs(u[i, j]) > 1.0:
+            if np.abs(u[i, j]) > 0.5:
                 cc[i, j] = 1.0e5
     return cc
 
 
 """Define Predictor"""
 if predictor_type == "Euler":
-    predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=10)
+    predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=1)
 elif predictor_type == "NeuralNet":
     predictor = predictor_autoregressive_tf(
         horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME
@@ -187,6 +187,7 @@ def trajectory_rollouts(
     delta_u: np.ndarray,
     u_prev: np.ndarray,
     target_position: np.float32,
+    logging
 ):
     """Sample thousands of rollouts using system model. Compute cost-weighted control update. Log states and costs if specified.
 
@@ -231,7 +232,7 @@ def trajectory_rollouts(
         np.mean(ccrc),
     )
 
-    if LOGGING:
+    if logging:
         LOGS.get("cost_breakdown").get("cost_dd").append(np.mean(dd, 0))
         LOGS.get("cost_breakdown").get("cost_ep").append(np.mean(ep, 0))
         LOGS.get("cost_breakdown").get("cost_ekp").append(np.mean(ekp, 0))
@@ -289,7 +290,7 @@ def q(
     # rterm = 1.0e4 * np.sum((delta_u[:,1:] - delta_u[:,:-1]) ** 2, axis=1, keepdims=True)
 
     # Penalize if control deviation is outside constraint set.
-    cc[np.abs(u + delta_u) > 1.0] = 1.0e5
+    cc[np.abs(u + delta_u) > 0.5] = 1.0e5
 
     q = dd + ep + ekp + ekc + cc + ccrc
 
@@ -365,14 +366,19 @@ class controller_mppi(template_controller):
 
     def __init__(self):
 
-        self.controller_name = 'mppi'
-
         """Random number generator"""
         SEED = config["controller"]["mppi"]["SEED"]
         if SEED == "None":
             SEED = int((datetime.now() - datetime(1970, 1, 1)).total_seconds()*1000.0)  # Fully random
         self.rng_mppi = Generator(SFC64(SEED))
         self.rng_mppi_rnn = Generator(SFC64(SEED*2)) # There are some random numbers used at warm up of rnn only. Separate rng prevents a shift
+
+        self.controller_name = 'mppi'
+        self.angleErr = 0.0
+        self.positionErr = 0.0
+        self.ANGLE_TARGET = 0.0
+
+        self.logging = False
 
 
         global dd_weight, ep_weight, ekp_weight, ekc_weight, cc_weight
@@ -513,13 +519,14 @@ class controller_mppi(template_controller):
                 self.delta_u,
                 self.u_prev,
                 self.target_position,
+                self.logging
             )
 
             # Update inputs with weighted perturbations
             update_inputs(self.u, self.S_tilde_k, self.delta_u)
 
             # Log states and costs incurred for plotting later
-            if LOGGING:
+            if self.logging:
                 LOGS.get("cost_to_go").append(np.copy(self.S_tilde_k))
                 LOGS.get("inputs").append(np.copy(self.u))
 
@@ -541,7 +548,7 @@ class controller_mppi(template_controller):
                     )[0, ...]
                 LOGS.get("nominal_rollouts").append(np.copy(rollout_trajectory[:-1, :]))
 
-        if LOGGING:
+        if self.logging:
             LOGS.get("trajectory").append(np.copy(self.s))
             LOGS.get("target_trajectory").append(np.copy(target_position))
 
@@ -611,93 +618,99 @@ class controller_mppi(template_controller):
     def print_help(self):
         print('*** Controller Informations here ***')
 
-    def controller_report(self):
-        if LOGGING:
+    def controller_report(self, avg_cost_report=False, detail_cost_report=False, trajectory_report =True):
+        if self.logging and LOGS.get("cost_to_go"):
             ### Plot the average state cost per iteration
             ctglgs = np.stack(
                 LOGS.get("cost_to_go"), axis=0
             )  # ITERATIONS x num_rollouts
             NUM_ITERATIONS = np.shape(ctglgs)[0]
-            time_axis = update_every * dt * np.arange(start=0, stop=np.shape(ctglgs)[0])
-            plt.figure(num=2, figsize=(16, 9))
-            plt.plot(time_axis, np.mean(ctglgs, axis=1))
-            plt.ylabel("Average Running Cost")
-            plt.xlabel("time (s)")
-            plt.title("Cost-to-go per Timestep")
-            plt.show()
+            if avg_cost_report:
+                time_axis = update_every * dt * np.arange(start=0, stop=np.shape(ctglgs)[0])
+                plt.figure(num=2, figsize=(16, 9))
+                plt.plot(time_axis, np.mean(ctglgs, axis=1))
+                plt.ylabel("Average Running Cost")
+                plt.xlabel("time (s)")
+                plt.title("Cost-to-go per Timestep")
+                #plt.show()
 
-            ### Graph the different cost components per iteration
-            LOGS["cost_breakdown"]["cost_dd"] = np.stack(
-                LOGS.get("cost_breakdown").get("cost_dd"), axis=0
-            )  # ITERATIONS x mpc_samples
-            LOGS["cost_breakdown"]["cost_ep"] = np.stack(
-                LOGS.get("cost_breakdown").get("cost_ep"), axis=0
-            )
-            LOGS["cost_breakdown"]["cost_ekp"] = np.stack(
-                LOGS.get("cost_breakdown").get("cost_ekp"), axis=0
-            )
-            LOGS["cost_breakdown"]["cost_ekc"] = np.stack(
-                LOGS.get("cost_breakdown").get("cost_ekc"), axis=0
-            )
-            LOGS["cost_breakdown"]["cost_cc"] = np.stack(
-                LOGS.get("cost_breakdown").get("cost_cc"), axis=0
-            )
-            LOGS["cost_breakdown"]["cost_ccrc"] = np.stack(
-                LOGS.get("cost_breakdown").get("cost_ccrc"), axis=0
-            )
-            time_axis = update_every * dt * np.arange(start=0, stop=NUM_ITERATIONS)
+            if detail_cost_report:
+                ### Graph the different cost components per iteration
+                LOGS["cost_breakdown"]["cost_dd"] = np.stack(
+                    LOGS.get("cost_breakdown").get("cost_dd"), axis=0
+                )  # ITERATIONS x mpc_samples
+                LOGS["cost_breakdown"]["cost_ep"] = np.stack(
+                    LOGS.get("cost_breakdown").get("cost_ep"), axis=0
+                )
+                LOGS["cost_breakdown"]["cost_ekp"] = np.stack(
+                    LOGS.get("cost_breakdown").get("cost_ekp"), axis=0
+                )
+                LOGS["cost_breakdown"]["cost_ekc"] = np.stack(
+                    LOGS.get("cost_breakdown").get("cost_ekc"), axis=0
+                )
+                LOGS["cost_breakdown"]["cost_cc"] = np.stack(
+                    LOGS.get("cost_breakdown").get("cost_cc"), axis=0
+                )
+                LOGS["cost_breakdown"]["cost_ccrc"] = np.stack(
+                    LOGS.get("cost_breakdown").get("cost_ccrc"), axis=0
+                )
+                time_axis = update_every * dt * np.arange(start=0, stop=NUM_ITERATIONS)
 
-            plt.figure(num=3, figsize=(16, 9))
-            plt.plot(
-                time_axis,
-                np.sum(LOGS.get("cost_breakdown").get("cost_dd"), axis=-1),
-                label="Distance difference cost",
-            )
-            plt.plot(
-                time_axis,
-                np.sum(LOGS.get("cost_breakdown").get("cost_ep"), axis=-1),
-                label="E_pot cost",
-            )
-            plt.plot(
-                time_axis,
-                np.sum(LOGS.get("cost_breakdown").get("cost_ekp"), axis=-1),
-                label="E_kin_pole cost",
-            )
-            plt.plot(
-                time_axis,
-                np.sum(LOGS.get("cost_breakdown").get("cost_ekc"), axis=-1),
-                label="E_kin_cart cost",
-            )
-            plt.plot(
-                time_axis,
-                np.sum(LOGS.get("cost_breakdown").get("cost_cc"), axis=-1),
-                label="Control cost",
-            )
-            plt.plot(
-                time_axis,
-                np.sum(LOGS.get("cost_breakdown").get("cost_ccrc"), axis=-1),
-                label="Control change rate cost",
-            )
+                plt.figure(num=3, figsize=(16, 9))
+                plt.semilogy(
+                    time_axis,
+                    np.sum(LOGS.get("cost_breakdown").get("cost_dd"), axis=-1),
+                    label="Distance difference cost",
+                )
+                plt.semilogy(
+                    time_axis,
+                    np.sum(LOGS.get("cost_breakdown").get("cost_ep"), axis=-1),
+                    label="E_pot cost",
+                )
+                plt.semilogy(
+                    time_axis,
+                    np.sum(LOGS.get("cost_breakdown").get("cost_ekp"), axis=-1),
+                    label="E_kin_pole cost",
+                )
+                plt.semilogy(
+                    time_axis,
+                    np.sum(LOGS.get("cost_breakdown").get("cost_ekc"), axis=-1),
+                    label="E_kin_cart cost",
+                )
+                plt.semilogy(
+                    time_axis,
+                    np.sum(LOGS.get("cost_breakdown").get("cost_cc"), axis=-1),
+                    label="Control cost",
+                )
+                plt.semilogy(
+                    time_axis,
+                    np.sum(LOGS.get("cost_breakdown").get("cost_ccrc"), axis=-1),
+                    label="Control change rate cost",
+                )
 
-            plt.ylabel("total horizon cost")
-            plt.xlabel("time (s)")
-            plt.title("Cost component breakdown")
-            plt.legend()
-            plt.show()
+                plt.ylabel("total horizon cost")
+                plt.xlabel("time (s)")
+                plt.title("Cost component breakdown")
+                plt.legend()
+                #plt.show()
 
             ### Draw the trajectory rollouts simulated by MPPI
             def draw_rollouts(
                 angles: np.ndarray,
+                angleDs: np.ndarray,
                 positions: np.ndarray,
+                positionDs: np.ndarray,
                 ax_position: plt.Axes,
+                ax_positionD: plt.Axes,
                 ax_angle: plt.Axes,
+                ax_angleD: plt.Axes,
                 costs: np.ndarray,
                 iteration: int,
             ):
                 mc_rollouts = np.shape(angles)[0]
                 horizon_length = np.shape(angles)[1]
                 # Loop over all MC rollouts
-                for i in range(0, 2000, 5):
+                for i in range(0, num_rollouts, 5):
                     ax_position.plot(
                         (update_every * iteration + np.arange(0, horizon_length)) * dt,
                         positions[i, :],
@@ -707,7 +720,19 @@ class controller_mppi(template_controller):
                             0.0,
                             (1 - 0.3 * costs[i]) ** 2,
                             0.0,
-                            0.02 * (1 - 0.3 * costs[i]) ** 2,
+                            0.15 * (1 - 0.3 * costs[i]) ** 2,
+                        ),
+                    )
+                    ax_positionD.plot(
+                        (update_every * iteration + np.arange(0, horizon_length)) * dt,
+                        positionDs[i, :],
+                        linestyle="-",
+                        linewidth=1,
+                        color=(
+                            0.0,
+                            (1 - 0.3 * costs[i]) ** 2,
+                            0.0,
+                            0.15 * (1 - 0.3 * costs[i]) ** 2,
                         ),
                     )
                     ax_angle.plot(
@@ -719,171 +744,210 @@ class controller_mppi(template_controller):
                             0.0,
                             (1 - 0.3 * costs[i]) ** 2,
                             0.0,
-                            0.02 * (1 - 0.3 * costs[i]) ** 2,
+                            0.15 * (1 - 0.3 * costs[i]) ** 2,
+                        ),
+                    )
+                    ax_angleD.plot(
+                        (update_every * iteration + np.arange(0, horizon_length)) * dt,
+                        angleDs[i, :] * 180.0 / np.pi,
+                        linestyle="-",
+                        linewidth=1,
+                        color=(
+                            0.0,
+                            (1 - 0.3 * costs[i]) ** 2,
+                            0.0,
+                            0.15 * (1 - 0.3 * costs[i]) ** 2,
                         ),
                     )
 
-            # Prepare data
-            # shape(slgs) = ITERATIONS x num_rollouts x mpc_samples x STATE_VARIABLES
-            slgs = np.stack(LOGS.get("states"), axis=0)
-            wrap_angle_rad_inplace_no_numba(slgs[:, :, :, ANGLE_IDX])
-            # shape(iplgs) = ITERATIONS x mpc_horizon
-            iplgs = np.stack(LOGS.get("inputs"), axis=0)
-            # shape(nrlgs) = ITERATIONS x mpc_horizon x STATE_VARIABLES
-            nrlgs = np.stack(LOGS.get("nominal_rollouts"), axis=0)
-            wrap_angle_rad_inplace_no_numba(nrlgs[:, :, ANGLE_IDX])
-            # shape(trjctlgs) = (update_every * ITERATIONS) x STATE_VARIABLES
-            trjctlgs = np.stack(LOGS.get("trajectory")[:-1], axis=0)
-            wrap_angle_rad_inplace_no_numba(trjctlgs[:, ANGLE_IDX])
-            # shape(trgtlgs) = ITERATIONS x [position]
-            trgtlgs = np.stack(LOGS.get("target_trajectory")[:-1], axis=0)
-            # For each rollout, calculate what the nominal trajectory would be using the known true model
-            # This can uncover if the model used makes inaccurate predictions
-            # shape(true_nominal_rollouts) = ITERATIONS x mpc_horizon x [position, positionD, angle, angleD]
-            predictor_ground_truth.setup(
-                np.copy(nrlgs[:, 0, :]), prediction_denorm=True
-            )
-            true_nominal_rollouts = predictor_ground_truth.predict(iplgs)[:, :-1, :]
-            wrap_angle_rad_inplace_no_numba(true_nominal_rollouts[:, :, ANGLE_IDX])
+            if trajectory_report:
+                # Prepare data
+                # shape(slgs) = ITERATIONS x num_rollouts x mpc_samples x STATE_VARIABLES
+                slgs = np.stack(LOGS.get("states"), axis=0)
+                wrap_angle_rad_inplace(slgs[:, :, :, ANGLE_IDX])
+                # shape(iplgs) = ITERATIONS x mpc_horizon
+                iplgs = np.stack(LOGS.get("inputs"), axis=0)
+                # shape(nrlgs) = ITERATIONS x mpc_horizon x STATE_VARIABLES
+                nrlgs = np.stack(LOGS.get("nominal_rollouts"), axis=0)
+                wrap_angle_rad_inplace(nrlgs[:, :, ANGLE_IDX])
+                # shape(trjctlgs) = (update_every * ITERATIONS) x STATE_VARIABLES
+                trjctlgs = np.stack(LOGS.get("trajectory")[:-1], axis=0)
+                wrap_angle_rad_inplace(trjctlgs[:, ANGLE_IDX])
+                # shape(trgtlgs) = ITERATIONS x [position]
+                trgtlgs = np.stack(LOGS.get("target_trajectory")[:-1], axis=0)
+                # For each rollout, calculate what the nominal trajectory would be using the known true model
+                # This can uncover if the model used makes inaccurate predictions
+                # shape(true_nominal_rollouts) = ITERATIONS x mpc_horizon x [position, positionD, angle, angleD]
+                predictor_ground_truth.setup(
+                    np.copy(nrlgs[:, 0, :]), prediction_denorm=True
+                )
+                true_nominal_rollouts = predictor_ground_truth.predict(iplgs)[:, :-1, :]
+                wrap_angle_rad_inplace(true_nominal_rollouts[:, :, ANGLE_IDX])
 
-            # Create figure
-            fig, (ax1, ax2) = plt.subplots(
-                nrows=2,
-                ncols=1,
-                num=5,
-                figsize=(16, 9),
-                sharex=True,
-                gridspec_kw={"bottom": 0.15, "left": 0.1, "right": 0.84, "top": 0.95},
-            )
-
-            # Create time slider
-            slider_axis = plt.axes([0.15, 0.02, 0.7, 0.03])
-            slider = Slider(
-                slider_axis, "timestep", 1, np.shape(slgs)[0], valinit=1, valstep=1
-            )
-
-            # Normalize cost to go to use as opacity in plot
-            # shape(ctglgs) = ITERATIONS x num_rollouts
-            ctglgs = np.divide(ctglgs.T, np.max(np.abs(ctglgs), axis=1)).T
-
-            # This function updates the plot when a new iteration is selected
-            def update_plot(i):
-                # Clear previous iteration plot
-                ax1.clear()
-                ax2.clear()
-
-                # Plot Monte Carlo rollouts
-                draw_rollouts(
-                    slgs[i - 1, :, :, ANGLE_IDX],
-                    slgs[i - 1, :, :, POSITION_IDX],
-                    ax1,
-                    ax2,
-                    ctglgs[i - 1, :],
-                    i - 1,
+                # Create figure
+                fig, (ax1, ax2, ax3, ax4) = plt.subplots(
+                    nrows=4,
+                    ncols=1,
+                    num=5,
+                    figsize=(16, 9),
+                    sharex=True,
+                    gridspec_kw={"bottom": 0.15, "left": 0.1, "right": 0.84, "top": 0.95},
                 )
 
-                # Plot the realized trajectory
-                ax1.plot(
-                    np.arange(0, np.shape(trjctlgs)[0]) * dt,
-                    trjctlgs[:, POSITION_IDX],
-                    alpha=1.0,
-                    linestyle="-",
-                    linewidth=1,
-                    color="g",
-                    label="realized trajectory",
+                # Create time slider
+                slider_axis = plt.axes([0.15, 0.02, 0.7, 0.03])
+                slider = Slider(
+                    slider_axis, "timestep", 1, np.shape(slgs)[0], valinit=1, valstep=1
                 )
-                ax2.plot(
-                    np.arange(0, np.shape(trjctlgs)[0]) * dt,
-                    trjctlgs[:, ANGLE_IDX] * 180.0 / np.pi,
-                    alpha=1.0,
-                    linestyle="-",
-                    linewidth=1,
-                    color="g",
-                    label="realized trajectory",
-                )
-                # Plot target positions
-                ax1.plot(
-                    np.arange(0, np.shape(trgtlgs)[0]) * dt,
-                    trgtlgs,
-                    alpha=1.0,
-                    linestyle="--",
-                    linewidth=1,
-                    color="k",
-                    label="target position",
-                )
-                # Plot trajectory planned by MPPI (= nominal trajectory)
-                ax1.plot(
-                    (update_every * (i - 1) + np.arange(0, np.shape(nrlgs)[1])) * dt,
-                    nrlgs[i - 1, :, POSITION_IDX],
-                    alpha=1.0,
-                    linestyle="-",
-                    linewidth=1,
-                    color="r",
-                    label="nominal trajectory\n(under trained model)",
-                )
-                ax2.plot(
-                    (update_every * (i - 1) + np.arange(0, np.shape(nrlgs)[1])) * dt,
-                    nrlgs[i - 1, :, ANGLE_IDX] * 180.0 / np.pi,
-                    alpha=1.0,
-                    linestyle="-",
-                    linewidth=1,
-                    color="r",
-                    label="nominal trajectory\n(under trained model)",
-                )
-                # Plot the trajectory of rollout with cost-averaged nominal inputs if model were ideal
-                ax1.plot(
-                    (
-                        update_every * (i - 1)
-                        + np.arange(0, np.shape(true_nominal_rollouts)[1])
+
+                # Normalize cost to go to use as opacity in plot
+                # shape(ctglgs) = ITERATIONS x num_rollouts
+                ctglgs = np.divide(ctglgs.T, np.max(np.abs(ctglgs), axis=1)).T
+
+                # This function updates the plot when a new iteration is selected
+                def update_plot(i):
+                    # Clear previous iteration plot
+                    ax1.clear()
+                    ax2.clear()
+                    ax3.clear()
+                    ax4.clear()
+
+                    # Plot Monte Carlo rollouts
+                    draw_rollouts(
+                        slgs[i - 1, :, :, ANGLE_IDX],
+                        slgs[i - 1, :, :, ANGLED_IDX],
+                        slgs[i - 1, :, :, POSITION_IDX],
+                        slgs[i - 1, :, :, POSITIOND_IDX],
+                        ax1,
+                        ax2,
+                        ax3,
+                        ax4,
+                        ctglgs[i - 1, :],
+                        i - 1,
                     )
-                    * dt,
-                    true_nominal_rollouts[i - 1, :, POSITION_IDX],
-                    alpha=1.0,
-                    linestyle="--",
-                    linewidth=1,
-                    color="r",
-                    label="nominal trajectory\n(under true model)",
-                )
-                ax2.plot(
-                    (
-                        update_every * (i - 1)
-                        + np.arange(0, np.shape(true_nominal_rollouts)[1])
+
+                    # Plot the realized trajectory
+                    ax1.plot(
+                        np.arange(0, np.shape(trjctlgs)[0]) * dt,
+                        trjctlgs[:, POSITION_IDX],
+                        alpha=1.0,
+                        linestyle="-",
+                        linewidth=1,
+                        color="g",
+                        label="realized trajectory",
                     )
-                    * dt,
-                    true_nominal_rollouts[i - 1, :, ANGLE_IDX] * 180.0 / np.pi,
-                    alpha=1.0,
-                    linestyle="--",
-                    linewidth=1,
-                    color="r",
-                    label="nominal trajectory\n(under true model)",
-                )
-                # Set axis limits
-                ax1.set_xlim(0, np.shape(trjctlgs)[0] * dt)
-                ax1.set_ylim(-TrackHalfLength * 1.05, TrackHalfLength * 1.05)
-                ax2.set_ylim(-180.0, 180.0)
+                    ax2.plot(
+                        np.arange(0, np.shape(trjctlgs)[0]) * dt,
+                        trjctlgs[:, POSITIOND_IDX] * 180.0 / np.pi,
+                        alpha=1.0,
+                        linestyle="-",
+                        linewidth=1,
+                        color="g",
+                        label="realized trajectory",
+                    )
+                    ax3.plot(
+                        np.arange(0, np.shape(trjctlgs)[0]) * dt,
+                        trjctlgs[:, ANGLE_IDX] * 180.0 / np.pi,
+                        alpha=1.0,
+                        linestyle="-",
+                        linewidth=1,
+                        color="g",
+                        label="realized trajectory",
+                    )
+                    ax4.plot(
+                        np.arange(0, np.shape(trjctlgs)[0]) * dt,
+                        trjctlgs[:, ANGLED_IDX] * 180.0 / np.pi,
+                        alpha=1.0,
+                        linestyle="-",
+                        linewidth=1,
+                        color="g",
+                        label="realized trajectory",
+                    )
+                    # Plot target positions
+                    ax1.plot(
+                        np.arange(0, np.shape(trgtlgs)[0]) * dt,
+                        trgtlgs,
+                        alpha=1.0,
+                        linestyle="--",
+                        linewidth=1,
+                        color="k",
+                        label="target position",
+                    )
+                    # Plot trajectory planned by MPPI (= nominal trajectory)
+                    ax1.plot(
+                        (update_every * (i - 1) + np.arange(0, np.shape(nrlgs)[1])) * dt,
+                        nrlgs[i - 1, :, POSITION_IDX],
+                        alpha=1.0,
+                        linestyle="-",
+                        linewidth=1,
+                        color="r",
+                        label="nominal trajectory\n(under trained model)",
+                    )
+                    ax2.plot(
+                        (update_every * (i - 1) + np.arange(0, np.shape(nrlgs)[1])) * dt,
+                        nrlgs[i - 1, :, ANGLE_IDX] * 180.0 / np.pi,
+                        alpha=1.0,
+                        linestyle="-",
+                        linewidth=1,
+                        color="r",
+                        label="nominal trajectory\n(under trained model)",
+                    )
+                    # Plot the trajectory of rollout with cost-averaged nominal inputs if model were ideal
+                    ax1.plot(
+                        (
+                            update_every * (i - 1)
+                            + np.arange(0, np.shape(true_nominal_rollouts)[1])
+                        )
+                        * dt,
+                        true_nominal_rollouts[i - 1, :, POSITION_IDX],
+                        alpha=1.0,
+                        linestyle="--",
+                        linewidth=1,
+                        color="r",
+                        label="nominal trajectory\n(under true model)",
+                    )
+                    ax2.plot(
+                        (
+                            update_every * (i - 1)
+                            + np.arange(0, np.shape(true_nominal_rollouts)[1])
+                        )
+                        * dt,
+                        true_nominal_rollouts[i - 1, :, ANGLE_IDX] * 180.0 / np.pi,
+                        alpha=1.0,
+                        linestyle="--",
+                        linewidth=1,
+                        color="r",
+                        label="nominal trajectory\n(under true model)",
+                    )
+                    # Set axis limits
+                    ax1.set_xlim(0, np.shape(trjctlgs)[0] * dt)
+                    ax1.set_ylim(-TrackHalfLength * 1.05, TrackHalfLength * 1.05)
+                    ax2.set_ylim(-180.0, 180.0)
 
-                # Set axis labels
-                ax1.set_ylabel("position (m)")
-                ax2.set_ylabel("angle (deg)")
-                ax2.set_xlabel("time (s)", loc="right")
-                ax1.set_title("Monte Carlo Rollouts")
+                    # Set axis labels
+                    ax1.set_ylabel("position (m)")
+                    ax2.set_ylabel("velocity (m/s)")
+                    ax3.set_ylabel("angle (deg)")
+                    ax4.set_ylabel("angular rate (deg/s)")
+                    ax4.set_xlabel("time (s)", loc="right")
+                    ax1.set_title("Monte Carlo Rollouts")
 
-                # Set axis legends
-                ax1.legend(
-                    loc="upper left", fontsize=12, bbox_to_anchor=(1, 0, 0.16, 1)
-                )
-                ax2.legend(
-                    loc="upper left", fontsize=12, bbox_to_anchor=(1, 0, 0.16, 1)
-                )
+                    # Set axis legends
+                    ax1.legend(
+                        loc="upper left", fontsize=12, bbox_to_anchor=(1, 0, 0.16, 1)
+                    )
+                    ax2.legend(
+                        loc="upper left", fontsize=12, bbox_to_anchor=(1, 0, 0.16, 1)
+                    )
 
-            # Draw first iteration
-            update_plot(1)
+                # Draw first iteration
+                update_plot(1)
 
-            # Update plot on slider click
-            slider.on_changed(update_plot)
+                # Update plot on slider click
+                slider.on_changed(update_plot)
 
-            # Show plot
-            plt.show()
+                # Show plot
+                plt.show()
 
     # Optionally: reset the controller after an experiment
     # May be useful for stateful controllers, like these containing RNN,

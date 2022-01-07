@@ -18,7 +18,7 @@ def setup_joystick():
     else:
         stick = None
         joystickMode = None
-        print('no joystick found, only PD control or no control possible')
+        print('no joystick found')
 
     return stick, joystickMode
 

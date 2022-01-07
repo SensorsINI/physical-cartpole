@@ -15,6 +15,7 @@ CMD_GET_ANGLE_CONFIG    = 0xC5
 CMD_SET_POSITION_CONFIG = 0xC6
 CMD_GET_POSITION_CONFIG = 0xC7
 CMD_SET_MOTOR           = 0xC8
+CMD_SET_CONTROL_CONFIG  = 0xC9
 CMD_STATE               = 0xCC
 
 class Interface:
@@ -24,6 +25,8 @@ class Interface:
         self.prevPktNum     = 1000
         self.start = None
         self.end = None
+        self.angle_raw_prev = 0
+        self.angleD = 0
 
         self.encoderDirection = None
 
@@ -65,11 +68,9 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        self.prevPktNum = 1000
 
         reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
-        encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
-        self.encoderDirection = encoderDirection  # Serves to identify motor
+        self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
 
         return True
 
@@ -79,16 +80,14 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
-    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 29]
+    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD):
+        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 24]
         msg += list(struct.pack('h', setPoint))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('f', smoothing))
         msg += list(struct.pack('f', KP))
         msg += list(struct.pack('f', KI))
         msg += list(struct.pack('f', KD))
-        msg += list(struct.pack('i', controlLatencyUs))
-        msg += list(struct.pack('B', controlSynch))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
@@ -99,8 +98,8 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
         reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 29)
-        (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch) = struct.unpack('hHffffiB', bytes(reply[3:20]))
-        return (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch)
+        (setPoint, avgLen, smoothing, KP, KI, KD) = struct.unpack('hHffff', bytes(reply[3:20]))
+        return setPoint, avgLen, smoothing, KP, KI, KD
 
     def set_position_config(self, setPoint, ctrlPeriod_ms, smoothing, KP, KD):
         msg = [SERIAL_SOF, CMD_SET_POSITION_CONFIG, 20]
@@ -120,28 +119,43 @@ class Interface:
         self.device.flush()
         reply = self._receive_reply(CMD_GET_POSITION_CONFIG, 20)
         (setPoint, ctrlPeriod_ms, smoothing, KP, KD) = struct.unpack('hHfff', bytes(reply[3:19]))
-        return (setPoint, ctrlPeriod_ms, smoothing, KP, KD)
+        return setPoint, ctrlPeriod_ms, smoothing, KP, KD
 
     def set_motor(self, speed):
         msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        self.end = time.time()
+
+    def set_control_config(self, controlLoopPeriodMs, controlSync, controlLatencyUs):
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 11]
+        msg += list(struct.pack('H', controlLoopPeriodMs))
+        msg += list(struct.pack('?', controlSync))
+        msg += list(struct.pack('i', controlLatencyUs))
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+        self.device.flush()
+
+    def wrap_local(self, angle):
+        ADC_RANGE = 4096
+        if angle >= ADC_RANGE / 2:
+            return angle - ADC_RANGE
+        elif angle <= -ADC_RANGE / 2:
+            return angle + ADC_RANGE
+        else:
+            return angle
 
     def read_state(self):
-        reply = self._receive_reply(CMD_STATE, 20, READ_STATE_TIMEOUT)
+        self.clear_read_buffer()
+        reply = self._receive_reply(CMD_STATE, 17, READ_STATE_TIMEOUT)
 
-        # Verify packet sequence 
-        if self.prevPktNum != 1000:
-            if ((reply[3] - self.prevPktNum) & 0xFF) > 1:
-                print("WARNING -- Skipped packets [prev={0} now={1}]".format(self.prevPktNum, reply[3]))
-        self.prevPktNum = reply[3]
+        (angle, position, command, frozen, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
 
-        (angle, angleD, position) = struct.unpack('hhh', bytes(reply[4:10]))
-        frozen = struct.unpack('B', bytes(reply[10:11]))[0]
-        sent, received = struct.unpack('II', bytes(reply[11:19]))
-        return angle, angleD, position, frozen, sent/1e6, received/1e6
+        if frozen == 0:
+            self.angleD = self.wrap_local(angle - self.angle_raw_prev)
+        self.angle_raw_prev = angle
+
+        return angle, self.angleD, position, command, frozen, sent/1e6, latency/1e6
 
     def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout
