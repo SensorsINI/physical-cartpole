@@ -16,8 +16,8 @@ LIVE_PLOT_TIMELINES = list(range(5))       # deactivate plots for performance, f
 LIVE_PLOT_HISTOGRAMMS = list(range(5))     # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'PID'
-CONTROL_PERIOD_MS = 5
+CONTROLLER_NAME = 'mppi'
+CONTROL_PERIOD_MS = 20
 CONTROL_SYNC = False
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 JSON_PATH = 'Json/'

@@ -599,7 +599,7 @@ class controller_mppi(template_controller):
         Q_update = np.tile(Q, (num_rollouts, 1))
         predictor.update_internal_state(Q_update)
 
-        return 0
+        return Q
         #return Q  # normed control input in the range [-1,1]
 
     def update_control_vector(self):

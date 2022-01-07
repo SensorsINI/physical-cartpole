@@ -218,7 +218,6 @@ class PhysicalCartPoleDriver:
             self.end = time.time()
             self.pythonLatency = self.end - self.InterfaceInstance.start;
 
-
     def quit_experiment(self):
         # when x hit during loop or other loop exit
         self.InterfaceInstance.set_motor(0)  # turn off motor

@@ -7,7 +7,7 @@
 #define CONTROL_LOOP_PERIOD_MS	        20
 #define CONTROL_SLOWDOWN				1
 #define CONTROL_MOTOR_MAX_SPEED         ((int)(0.95 * MOTOR_FULL_SCALE + 0.5))
-#define CONTROL_SYNC					true
+#define CONTROL_SYNC					false
 #define CONTROL_LATENCY_US				0
 
 

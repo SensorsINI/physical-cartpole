@@ -5,6 +5,7 @@
 #include "usart.h"
 #include "control.h"
 #include "timer.h"
+#include "median_filter.h"
 
 #include <stdlib.h>
 
