@@ -25,7 +25,7 @@
 #define CMD_STATE					0xCC
 
 bool            streamEnable        = false;
-short  			angle_setPoint		= CONTROL_ANGLE_SET_POINT;
+short  			angle_setPoint		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
 unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
 float 			angle_smoothing		= CONTROL_ANGLE_SMOOTHING;
 float 			angle_KP			= CONTROL_ANGLE_KP;
@@ -100,6 +100,14 @@ void CONTROL_ToggleState(void)
 
 const int ADC_RANGE = 4096;
 
+int clip(value, min, max) {
+	if (value > max)
+		return max;
+	if (value < min)
+		return min;
+	return value;
+}
+
 int wrapLocal(int angle) {
     if (angle >= ADC_RANGE/2)
 		return angle - ADC_RANGE;
@@ -147,11 +155,11 @@ void CONTROL_Loop(void)
 	static int 				prevAngle = 0;
 	static int 				pprevAngle = 0, ppprevAngle = 0;
 	static int 				angleD = 0, angleI = 0;
-	static int				positionPrev = 0;
 	#define lastAngleLength 5
 	static unsigned char    frozen = 0;
 	int 					angle, angleErr;
-	short 					positionRaw, position, positionErr, positionD;
+	short 					positionRaw, positionErr, positionD;
+	static short 			position, position_filtered, positionErrPrev, positionPrev;
 	float 					angleErrDiff;
 	float 					positionErrDiff;
 	int   					command;
@@ -222,15 +230,12 @@ void CONTROL_Loop(void)
 		frozen ++;
 	}
 
-
 	angle = angle_mean;
 	angleD = wrapLocal(angle - prevAngle);
 	prevAngle = angle;
 
-
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
-    position    = (positionRaw - positionCentre);
-
+    position = (positionRaw - positionCentre);
 
 	// Microcontroller Control Routine
 	if (controlEnabled)	{
@@ -240,20 +245,18 @@ void CONTROL_Loop(void)
         angle_I += angleErr;
 		angleCmd	 = (angle_KP*angleErr + angle_KI*angleI + angle_KD*angleErrDiff);
 
-
-		// Position PD control
+		// Position PID control
 		if (++positionPeriodCnt >= position_ctrlPeriod) {
 			positionPeriodCnt = 0;
 
 			// IIR Filter for Position
 			if(position_smoothing < 1.0)
-				position = (position_smoothing*position) + (1.0 - position_smoothing)*positionPrev;
-			positionD = position - positionPrev;
-			positionPrev	= position;
+				position_filtered = (position_smoothing*position) + (1.0 - position_smoothing)*position_filtered;
 
 			// Position PID control
-			positionErr = position - position_setPoint;
-			positionErrDiff = positionD;
+			positionErr = position_filtered - position_setPoint;
+			positionErrDiff = positionErr - positionErrPrev;
+			positionErrPrev = positionErr;
 			position_I += positionErr;
 			positionCmd = (position_KP*positionErr + position_KI*position_I + position_KD*positionErrDiff);
 		}
@@ -304,6 +307,8 @@ void CONTROL_Loop(void)
     {
     	if(timeReceived > 0 && timeSent > 0 && newReceived) {
         	latency = timeReceived - timeSent;
+    	} else {
+    		latency = 0;
     	}
 
         buffer[ 0] = SERIAL_SOF;
