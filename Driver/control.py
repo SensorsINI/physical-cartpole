@@ -10,4 +10,7 @@ subprocess.Popen("python3 DataAnalysis/plot_server.py", shell=True)
 PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver()
 PhysicalCartPoleDriverInstance.run()
 
-subprocess.check_output("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True)
+try:
+    subprocess.check_output("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True)
+except:
+    pass
