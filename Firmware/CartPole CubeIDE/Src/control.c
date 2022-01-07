@@ -100,7 +100,7 @@ void CONTROL_ToggleState(void)
 
 const int ADC_RANGE = 4096;
 
-int clip(value, min, max) {
+int clip(int value, int min, int max) {
 	if (value > max)
 		return max;
 	if (value < min)
