@@ -42,6 +42,7 @@ from matplotlib.widgets import Slider
 from numba import jit
 from numpy.random import SFC64, Generator
 from SI_Toolkit_ApplicationSpecificFiles.predictor_ODE import predictor_ODE
+from SI_Toolkit_ApplicationSpecificFiles.predictor_ODE_tf import predictor_ODE_tf
 from scipy.interpolate import interp1d
 from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import (
     predictor_autoregressive_tf,
@@ -170,15 +171,13 @@ def penalize_deviation(cc, u):
 
 """Define Predictor"""
 if predictor_type == "Euler":
-    predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=1)
+    predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=2)
+elif predictor_type == "EulerTF":
+    predictor = predictor_ODE_tf(horizon=mpc_samples, dt=dt, intermediate_steps=2)
 elif predictor_type == "NeuralNet":
-    predictor = predictor_autoregressive_tf(
-        horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME
-    )
+    predictor = predictor_autoregressive_tf(horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME)
 
-predictor_ground_truth = predictor_ODE(
-    horizon=mpc_samples, dt=dt, intermediate_steps=10
-)
+predictor_ground_truth = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=10)
 
 def trajectory_rollouts(
     s: np.ndarray,
