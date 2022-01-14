@@ -39,13 +39,13 @@ def animate(i):
                 metric = 'metric'
             elif buffer == 'reset':
                 data = np.zeros((0, 7))
-                print('\nLive Plot Reset')
+                print('\nLive Plot Reset\n\n\n\n')
             elif buffer == 'save':
                 filepath = PATH_TO_EXPERIMENT_RECORDINGS + CONTROLLER_NAME + str(datetime.now().strftime('_%Y-%m-%d_%H-%M-%S'))
                 np.savetxt(filepath+'.csv', data, delimiter=",", header=",".join(['firmware time']+(labels_raw if metric == 'raw' else labels_metric)+['frozen']))
                 plt.savefig(filepath+'.pdf')
                 print(f'\nLive Plot saved: {filepath}.pdf')
-                print(f'\nLive Data saved: {filepath}.csv')
+                print(f'Live Data saved: {filepath}.csv\n\n\n\n')
 
         if isinstance(buffer, np.ndarray):
             data = np.append(data, buffer, axis=0)
@@ -67,7 +67,7 @@ def animate(i):
             # Timeline
             if i in LIVE_PLOT_TIMELINES:
                 axs[i, 0].clear()
-                axs[i, 0].set_title(f"Min: {data_row.min():.3f}, Max: {data_row.max():.3f}, Mean: {data_row.mean():.3f}, Std: {data_row.std():.5f}", size=8)
+                axs[i, 0].set_title(f"Min={data_row.min():.3f}, Max={data_row.max():.3f}, Mean={data_row.mean():.3f}, Std={data_row.std():.5f}, N={data_row.size}", size=8)
                 axs[i, 0].plot(time, data_row, label=label, marker='.', color=color, markersize=3, linewidth=0.2)
                 axs[i, 0].legend(loc='upper right')
                 axs[i, 0].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)

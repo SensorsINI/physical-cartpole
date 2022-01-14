@@ -55,7 +55,7 @@ class PhysicalCartPoleDriver:
 
         self.new_console_output = True
 
-        self.controlEnabled = False
+        self.controlEnabled = True
         self.firmwareControl = False
         self.manualMotorSetting = False
 
@@ -77,7 +77,6 @@ class PhysicalCartPoleDriver:
         self.lastTime = None
         self.lastControlTime = None
         self.timeNow = None
-        self.deltaTime = None
         self.elapsedTime = None
 
         self.measurement = StepResponseMeasurement()
@@ -117,11 +116,18 @@ class PhysicalCartPoleDriver:
         self.command = 0
         self.sent = 0
         self.lastSent = 0
-        self.latency = 0
-        self.pythonLatency = 0
 
-        self.total = 0
-        self.latency_too_high = 0
+        self.delta_time = 0
+        self.delta_time_buffer = np.zeros((0))
+        self.firmware_latency = 0
+        self.firmware_latency_buffer = np.zeros((0))
+        self.python_latency = 0
+        self.python_latency_buffer = np.zeros((0))
+        self.controller_steptime = 0
+        self.controller_steptime_buffer = np.zeros((0))
+
+        self.total_iterations = 0
+        self.latency_violations = 0
 
         # Artificially adding latency
         self.additional_latency = 0.0
@@ -155,7 +161,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
-        #self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
+        self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
 
         try:
             self.controller.printparams()
@@ -182,10 +188,12 @@ class PhysicalCartPoleDriver:
 
             if self.controlEnabled:
                 self.lastControlTime = self.timeNow
-                #start = time.time()
+                start = time.time()
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
-                #print("step:", time.time() - start)
+                if self.total_iterations > 0:
+                    self.controller_steptime = time.time() - start
             else:
+                # set values from firmware for logging
                 self.lastControlTime = self.sent
                 self.actualMotorCmd = self.command
                 self.Q = self.command
@@ -197,10 +205,9 @@ class PhysicalCartPoleDriver:
             if self.controlEnabled:
                 self.get_motor_command()
 
-            if self.measurement.is_idle() and self.controlEnabled:
-                self.safety_switch_off()
+                if self.measurement.is_idle():
+                    self.safety_switch_off()
 
-            if self.controlEnabled:
                 self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
             # Plotting and Logging
@@ -216,7 +223,7 @@ class PhysicalCartPoleDriver:
                 break
 
             self.end = time.time()
-            self.pythonLatency = self.end - self.InterfaceInstance.start;
+            self.python_latency = self.end - self.InterfaceInstance.start;
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
@@ -297,11 +304,16 @@ class PhysicalCartPoleDriver:
                 self.InterfaceInstance.control_mode(self.firmwareControl)
             elif c == 'k':
                 self.controlEnabled = not self.controlEnabled
+                self.delta_time_buffer = np.zeros((0))
+                self.firmware_latency_buffer = np.zeros((0))
+                self.python_latency_buffer_buffer = np.zeros((0))
+                self.controller_steptime_buffer = np.zeros((0))
                 if self.controlEnabled is False:
                     self.controller.controller_reset()
                     self.Q = 0
+                    self.InterfaceInstance.set_motor(0)
                 self.danceEnabled = False
-                print("\nself.controlEnabled= {0} \r\n".format(self.controlEnabled))
+                print("\nself.controlEnabled= {0}".format(self.controlEnabled))
             elif c == 'K':
                 global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
                 self.controlEnabled = False
@@ -394,10 +406,12 @@ class PhysicalCartPoleDriver:
                 print(f'\nLive Plot Enabled: {self.livePlotEnabled}')
 
             elif c == '7':
-                self.live_connection.send('save')
+                if hasattr(self, 'live_connection'):
+                    self.live_connection.send('save')
 
             elif c == '8':
-                self.live_connection.send('reset')
+                if hasattr(self, 'live_connection'):
+                    self.live_connection.send('reset')
 
             # Exit
             elif ord(c) == 27:  # ESC
@@ -406,7 +420,7 @@ class PhysicalCartPoleDriver:
 
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, self.angleD_raw, self.position_raw, self.command, self.frozen, self.sent, self.latency) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.command, self.frozen, self.sent, self.firmware_latency) = self.InterfaceInstance.read_state()
 
         self.position_centered_unconverted = -(self.position_raw - self.position_offset)
 
@@ -416,21 +430,21 @@ class PhysicalCartPoleDriver:
 
         # Time self.measurement
         self.timeNow = time.time()
-        self.deltaTime = self.timeNow - self.lastTime
-        if self.deltaTime == 0:
-            self.deltaTime = 1e-6
+        self.delta_time = self.timeNow - self.lastTime
+        if self.delta_time == 0:
+            self.delta_time = 1e-6
         self.lastTime = self.timeNow
         self.elapsedTime = self.timeNow - self.startTime
 
         # Latency Violations
-        if self.latency > 1e-6:
-            self.total += 1
-            if self.latency > CONTROL_PERIOD_MS * 1e-3:
-                self.latency_too_high += 1
+        if self.firmware_latency > 1e-6:
+            self.total_iterations += 1
+            if self.firmware_latency > CONTROL_PERIOD_MS * 1e-3:
+                self.latency_violations += 1
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.deltaTime  # rad/self.s
-        positionDerivative = (position - self.positionPrev) / self.deltaTime  # m/self.s
+        angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.delta_time  # rad/self.s
+        positionDerivative = (position - self.positionPrev) / self.delta_time  # m/self.s
 
         # Keep values of angle and position for next timestep for derivative calculation
         self.anglePrev = angle
@@ -536,21 +550,21 @@ class PhysicalCartPoleDriver:
     def write_csv_row(self):
         if self.controller.controller_name == 'PID':
             self.csvwriter.writerow(
-                [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                  self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                  self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angle_error,
                  self.target_position, self.controller.position_error, self.controller.Q_angle,
                  self.controller.Q_position, self.actualMotorCmd, self.Q,
-                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, self.Q**2,
-                 self.sent, self.latency, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
+                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q ** 2,
+                 self.sent, self.firmware_latency, self.InterfaceInstance.end - self.InterfaceInstance.start, self.additional_latency])
         else:
             self.csvwriter.writerow(
-                [self.elapsedTime, self.deltaTime * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                  self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                  self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                  self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd, self.Q,
-                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX]**2, (self.s[POSITION_IDX] - self.target_position)**2, self.Q**2,
-                 self.sent, self.latency, self.InterfaceInstance.end-self.InterfaceInstance.start, self.additional_latency])
+                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q ** 2,
+                 self.sent, self.firmware_latency, self.InterfaceInstance.end - self.InterfaceInstance.start, self.additional_latency])
 
     def plot_live(self):
         BUFFER_LENGTH = 5
@@ -599,7 +613,18 @@ class PhysicalCartPoleDriver:
 
     def write_current_data_to_terminal(self):
         self.printCount += 1
-        if False or self.printCount >= PRINT_PERIOD:
+
+        # Averaging
+        self.delta_time_buffer = np.append(self.delta_time_buffer, self.delta_time)
+        self.delta_time_buffer = self.delta_time_buffer[-PRINT_AVERAGING_LENGTH:]
+        self.firmware_latency_buffer = np.append(self.firmware_latency_buffer, self.firmware_latency)
+        self.firmware_latency_buffer = self.firmware_latency_buffer[-PRINT_AVERAGING_LENGTH:]
+        self.python_latency_buffer = np.append(self.python_latency_buffer, self.python_latency)
+        self.python_latency_buffer = self.python_latency_buffer[-PRINT_AVERAGING_LENGTH:]
+        self.controller_steptime_buffer = np.append(self.controller_steptime_buffer, self.controller_steptime)
+        self.controller_steptime_buffer = self.controller_steptime_buffer[-PRINT_AVERAGING_LENGTH:]
+
+        if True or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
             if not self.new_console_output:
@@ -608,10 +633,19 @@ class PhysicalCartPoleDriver:
 
             print('\r')
 
-            print("\rMODE:   {}\033[K"
-                    .format('Python Control' if self.controlEnabled else 'Firmware Control')
+            ############  Mode  ############
+            print("\rMODE:   {} (Period={}ms, Synch={}), Controller ({}, Horizon={}, Rollouts={}) \033[K"
+                .format(
+                    'Python Control' if self.controlEnabled else 'Firmware Control',
+                    CONTROL_PERIOD_MS,
+                    CONTROL_SYNC,
+                    CONTROLLER_NAME,
+                    self.controller.mpc_samples,
+                    self.controller.num_rollouts,
                 )
+            )
 
+            ############  State  ############
             print(
                 "\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}\033[K"
                     .format(self.s[ANGLE_IDX],
@@ -622,12 +656,27 @@ class PhysicalCartPoleDriver:
                             self.command)
                 )
 
+            ############  Timing  ############
             print(
-                "\rTIMING: delta time:{:.2f} ms,  latency:{:.2f} ms, python latency:{:.2f} ms, latency violations: {:}/{:} = {:.2f}%\033[K"
-                    .format(self.deltaTime * 1000,
-                            self.latency * 1000,
-                            self.pythonLatency * 1000,
-                            self.latency_too_high,
-                            self.total,
-                            100*self.latency_too_high/self.total if self.total > 0 else 0)
+                "\rTIMING: delta time (mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}), firmware latency (mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}), controller steptime (mean={:.2f}ms std={:.2f}ms, max={:.2f}ms, size={}), latency violations: {:}/{:} = {:.2f}%\033[K"
+                    .format(
+                    self.delta_time_buffer.mean() * 1000,
+                    self.delta_time_buffer.std() * 1000,
+                    self.delta_time_buffer.max() * 1000,
+                    self.delta_time_buffer.size,
+
+                    self.firmware_latency_buffer.mean() * 1000,
+                    self.firmware_latency_buffer.std() * 1000,
+                    self.firmware_latency_buffer.max() * 1000,
+                    self.firmware_latency_buffer.size,
+
+                    self.controller_steptime_buffer.mean() * 1000,
+                    self.controller_steptime_buffer.std() * 1000,
+                    self.controller_steptime_buffer.max() * 1000,
+                    self.controller_steptime_buffer.size,
+
+                    self.latency_violations,
+                    self.total_iterations,
+                    100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
+                    )
                 )

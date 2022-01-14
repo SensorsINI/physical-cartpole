@@ -5,8 +5,9 @@ import numpy as np
 
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.INFO
-PRINT_PERIOD = 10  # shows state in terminal every this many control updates
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
+PRINT_PERIOD_MS = 10  # shows state in terminal every this many control updates
+PRINT_AVERAGING_LENGTH = 100
 
 ##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
 LIVE_PLOT = False
@@ -16,8 +17,8 @@ LIVE_PLOT_TIMELINES = list(range(5))       # deactivate plots for performance, f
 LIVE_PLOT_HISTOGRAMMS = list(range(5))     # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mppi'
-CONTROL_PERIOD_MS = 20
+CONTROLLER_NAME = 'mppi'     # e.g. 'PID', 'mppi'
+CONTROL_PERIOD_MS = 20       # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = False
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 JSON_PATH = 'Json/'
