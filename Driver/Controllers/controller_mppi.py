@@ -404,6 +404,9 @@ class controller_mppi(template_controller):
         self.delta_u = np.zeros((num_rollouts, mpc_samples), dtype=np.float32)
         self.S_tilde_k = np.zeros((num_rollouts), dtype=np.float32)
 
+        self.num_rollouts = num_rollouts
+        self.mpc_samples = mpc_samples
+
         self.wash_out_len = WASH_OUT_LEN
         self.warm_up_countdown = self.wash_out_len
         try:
@@ -599,6 +602,7 @@ class controller_mppi(template_controller):
         Q_update = np.tile(Q, (num_rollouts, 1))
         predictor.update_internal_state(Q_update)
 
+        #return 0
         return Q
         #return Q  # normed control input in the range [-1,1]
 
