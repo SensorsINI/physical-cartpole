@@ -13,11 +13,11 @@ void TIMER1_Init(unsigned int _periodMS)
 	cbTimer1 = 0;
 
 	RCC->APB2ENR	|= 1<<11;					// TIM1 clock enable
- 	TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
-	TIM1->PSC		 = 72;						// The prescaler 7200 gets the count clock of 1Mhz.
-	TIM1->DIER		|= 1<<0;   					// Enable update interrupt
-	TIM1->DIER		|= 1<<6;   					// Enable triggered interrupt
-	TIM1->CR1		|= 0x01;					// Enable timer
+	TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
+ 	TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
+ 	TIM1->DIER		|= 1<<0;   					// Enable update interrupt
+ 	TIM1->DIER		|= 1<<6;   					// Enable triggered interrupt
+ 	TIM1->CR1		|= 0x01;					// Enable timer
 	SYS_NVIC_Init(1, 1, TIM1_UP_IRQn, 2);
 }  
 
@@ -25,7 +25,17 @@ void TIMER1_ChangePeriod(unsigned int _periodMS)
 {
 	timer_resets = 0;
 	periodMS = _periodMS;
- 	TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
+
+	if (periodMS < 60) {
+		TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
+		TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
+	}
+	else {
+		unsigned int slowdown = (periodMS / 60 + 1);
+
+		TIM1->ARR		 = (periodMS * 1000 / slowdown) - 1;	// Setting counter automatic reload value
+		TIM1->PSC		 = 72 * slowdown;						// The prescaler 72 gets the count clock of 1Mhz.
+	}
 }
 
 void TIMER1_SetCallback(TIMER1_Callback cb)
@@ -49,7 +59,7 @@ void TIM1_UP_IRQHandler(void)
 	if(TIM1->SR & 0x0001)
 	{
         timer_resets += 1;
-		TIM1->SR &= ~(1<<0);
+        TIM1->SR &= ~(1<<0);
 		if (cbTimer1) {
 			cbTimer1();
 		}
