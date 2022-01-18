@@ -155,7 +155,7 @@ class Interface:
             self.angleD = self.wrap_local(angle - self.angle_raw_prev)
         self.angle_raw_prev = angle
 
-        return angle, self.angleD, position, command, frozen, sent/1e6, latency/1e6
+        return angle, self.angleD, position, command, frozen, sent/1e6, latency/1e5
 
     def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout

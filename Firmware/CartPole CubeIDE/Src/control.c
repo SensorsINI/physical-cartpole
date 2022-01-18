@@ -322,7 +322,8 @@ void CONTROL_Loop(void)
         *((short *)&buffer[7]) = command;
         *((unsigned char *)&buffer[9]) = frozen;
         *((unsigned int *)&buffer[10]) = timeMeasured;
-        *((unsigned short *)&buffer[14]) = (unsigned short)latency;
+        *((unsigned short *)&buffer[14]) = (unsigned short)(latency / 10);
+        // latency maximum: 10 * 65'535 Us = 653ms
 
         buffer[16] = crc(buffer, 16);
         USART_SendBuffer(buffer, 17);

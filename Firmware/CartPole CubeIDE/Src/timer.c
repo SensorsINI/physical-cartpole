@@ -3,6 +3,7 @@
 TIMER1_Callback cbTimer1;
 long timer_resets = 0;
 unsigned int periodMS = 0;
+unsigned int slowdown = 1;
 
 // Timer base is configured to be 1MHz (resolution of 1us)
 // periodMS sets the period of the interrupt in ms (max value is 6553 ms)
@@ -27,11 +28,13 @@ void TIMER1_ChangePeriod(unsigned int _periodMS)
 	periodMS = _periodMS;
 
 	if (periodMS < 60) {
+		slowdown = 1;
+
 		TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
 		TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
 	}
 	else {
-		unsigned int slowdown = (periodMS / 60 + 1);
+		slowdown = (periodMS / 60 + 1);
 
 		TIM1->ARR		 = (periodMS * 1000 / slowdown) - 1;	// Setting counter automatic reload value
 		TIM1->PSC		 = 72 * slowdown;						// The prescaler 72 gets the count clock of 1Mhz.
@@ -45,12 +48,12 @@ void TIMER1_SetCallback(TIMER1_Callback cb)
 
 // Timer base is configured to be 1MHz (resolution of 1us)
 float TIMER1_getSystemTime() {
-    return ((float)timer_resets + (TIM1->SR ? 1.0 : 0.0)) * 1e-3 * periodMS + ((float)TIM1->CNT) * 1e-6;
+    return ((float)timer_resets + (TIM1->SR ? 1.0 : 0.0)) * 1e-3 * periodMS + ((float)TIM1->CNT) * 1e-6 * slowdown;
 }
 
 // unsigned long max value: 4'294'967'295us = 4'294.967'295s ~ 60min
 unsigned int TIMER1_getSystemTime_Us() {
-    return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * periodMS + TIM1->CNT;
+    return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * periodMS + TIM1->CNT * slowdown;
 }
 
 // Timer 1 interrupt handler

@@ -134,6 +134,10 @@ class PhysicalCartPoleDriver:
         self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency)
         self.s_delayed = np.copy(self.s)
 
+
+        #options = tf.profiler.experimental.ProfilerOptions(host_tracer_level=3, python_tracer_level=1, device_tracer_level=1)
+        #tf.profiler.experimental.start('tf_logs')
+
     def run(self):
         self.setup()
         self.run_experiment()
@@ -190,8 +194,9 @@ class PhysicalCartPoleDriver:
                 self.lastControlTime = self.timeNow
                 start = time.time()
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
-                if self.total_iterations > 0:
-                    self.controller_steptime = time.time() - start
+                performance_measurement[0] = time.time() - start
+                self.controller_steptime = time.time() - start
+                self.Q = 0;
             else:
                 # set values from firmware for logging
                 self.lastControlTime = self.sent
@@ -312,6 +317,7 @@ class PhysicalCartPoleDriver:
                     self.controller.controller_reset()
                     self.Q = 0
                     self.InterfaceInstance.set_motor(0)
+                    #tf.profiler.experimental.stop()
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0}".format(self.controlEnabled))
             elif c == 'K':
@@ -431,7 +437,7 @@ class PhysicalCartPoleDriver:
         # Time self.measurement
         self.timeNow = time.time()
         self.delta_time = self.timeNow - self.lastTime
-        if self.delta_time == 0:
+        if self.delta_time == 0 or self.lastTime == None:
             self.delta_time = 1e-6
         self.lastTime = self.timeNow
         self.elapsedTime = self.timeNow - self.startTime
@@ -564,7 +570,7 @@ class PhysicalCartPoleDriver:
                  self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                  self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd, self.Q,
                  self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q ** 2,
-                 self.sent, self.firmware_latency, self.InterfaceInstance.end - self.InterfaceInstance.start, self.additional_latency])
+                 self.sent, self.firmware_latency, self.python_latency, self.additional_latency])
 
     def plot_live(self):
         BUFFER_LENGTH = 5
@@ -615,20 +621,25 @@ class PhysicalCartPoleDriver:
         self.printCount += 1
 
         # Averaging
-        self.delta_time_buffer = np.append(self.delta_time_buffer, self.delta_time)
-        self.delta_time_buffer = self.delta_time_buffer[-PRINT_AVERAGING_LENGTH:]
-        self.firmware_latency_buffer = np.append(self.firmware_latency_buffer, self.firmware_latency)
-        self.firmware_latency_buffer = self.firmware_latency_buffer[-PRINT_AVERAGING_LENGTH:]
-        self.python_latency_buffer = np.append(self.python_latency_buffer, self.python_latency)
-        self.python_latency_buffer = self.python_latency_buffer[-PRINT_AVERAGING_LENGTH:]
-        self.controller_steptime_buffer = np.append(self.controller_steptime_buffer, self.controller_steptime)
-        self.controller_steptime_buffer = self.controller_steptime_buffer[-PRINT_AVERAGING_LENGTH:]
+        if self.total_iterations > 1:
+            self.delta_time_buffer = np.append(self.delta_time_buffer, self.delta_time)
+            self.delta_time_buffer = self.delta_time_buffer[-PRINT_AVERAGING_LENGTH:]
+            self.firmware_latency_buffer = np.append(self.firmware_latency_buffer, self.firmware_latency)
+            self.firmware_latency_buffer = self.firmware_latency_buffer[-PRINT_AVERAGING_LENGTH:]
+            self.python_latency_buffer = np.append(self.python_latency_buffer, self.python_latency)
+            self.python_latency_buffer = self.python_latency_buffer[-PRINT_AVERAGING_LENGTH:]
+            self.controller_steptime_buffer = np.append(self.controller_steptime_buffer, self.controller_steptime)
+            self.controller_steptime_buffer = self.controller_steptime_buffer[-PRINT_AVERAGING_LENGTH:]
+
+            global performance_measurement, performance_measurement_buffer
+            performance_measurement_buffer = np.append(performance_measurement_buffer, np.expand_dims(performance_measurement, axis=1), axis=1)
+            performance_measurement_buffer = performance_measurement_buffer[:, -PRINT_AVERAGING_LENGTH:]
 
         if True or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
             if not self.new_console_output:
-                print('\033[4A', end='')
+                print('\033[5A', end='')
             self.new_console_output = False
 
             print('\r')
@@ -640,8 +651,8 @@ class PhysicalCartPoleDriver:
                     CONTROL_PERIOD_MS,
                     CONTROL_SYNC,
                     CONTROLLER_NAME,
-                    self.controller.mpc_samples,
-                    self.controller.num_rollouts,
+                    self.controller.mpc_samples if CONTROLLER_NAME=='mppi' else '',
+                    self.controller.num_rollouts if CONTROLLER_NAME=='mppi' else '',
                 )
             )
 
@@ -657,26 +668,48 @@ class PhysicalCartPoleDriver:
                 )
 
             ############  Timing  ############
-            print(
-                "\rTIMING: delta time (mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}), firmware latency (mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}), controller steptime (mean={:.2f}ms std={:.2f}ms, max={:.2f}ms, size={}), latency violations: {:}/{:} = {:.2f}%\033[K"
-                    .format(
-                    self.delta_time_buffer.mean() * 1000,
-                    self.delta_time_buffer.std() * 1000,
-                    self.delta_time_buffer.max() * 1000,
-                    self.delta_time_buffer.size,
+            if self.total_iterations > 1:
+                print(
+                    "\rTIMING: delta time [mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}], firmware latency [mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}], python latency [mean={:.2f}ms std={:.2f}ms, max={:.2f}ms, size={}], latency violations: {:}/{:} = {:.2f}%\033[K"
+                        .format(
+                        self.delta_time_buffer.mean() * 1000,
+                        self.delta_time_buffer.std() * 1000,
+                        self.delta_time_buffer.max() * 1000,
+                        self.delta_time_buffer.size,
 
-                    self.firmware_latency_buffer.mean() * 1000,
-                    self.firmware_latency_buffer.std() * 1000,
-                    self.firmware_latency_buffer.max() * 1000,
-                    self.firmware_latency_buffer.size,
+                        self.firmware_latency_buffer.mean() * 1000,
+                        self.firmware_latency_buffer.std() * 1000,
+                        self.firmware_latency_buffer.max() * 1000,
+                        self.firmware_latency_buffer.size,
 
-                    self.controller_steptime_buffer.mean() * 1000,
-                    self.controller_steptime_buffer.std() * 1000,
-                    self.controller_steptime_buffer.max() * 1000,
-                    self.controller_steptime_buffer.size,
+                        self.python_latency_buffer.mean() * 1000,
+                        self.python_latency_buffer.std() * 1000,
+                        self.python_latency_buffer.max() * 1000,
+                        self.python_latency_buffer.size,
 
-                    self.latency_violations,
-                    self.total_iterations,
-                    100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
+                        self.latency_violations,
+                        self.total_iterations,
+                        100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
+                        )
                     )
-                )
+            else:
+                print('')
+
+            ############  Performance  ############
+            if self.total_iterations > 1:
+                performance = ''
+                for i in range(performance_measurement.size):
+                    if performance_measurement_buffer.shape[1] > 1 and performance_measurement_buffer[i].mean() > 0:
+                        performance += ' {}(mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}),'.format(
+                            i,
+                            performance_measurement_buffer[i,:].mean() * 1000,
+                            performance_measurement_buffer[i,:].std() * 1000,
+                            performance_measurement_buffer[i,:].max() * 1000,
+                            performance_measurement_buffer[i,:].size
+                        )
+
+                np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.3f" % x))
+                print("\rPERFORMANCE: "+str((performance_measurement_buffer.mean(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
+            else:
+                print('')
+

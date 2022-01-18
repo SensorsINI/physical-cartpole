@@ -47,9 +47,11 @@ from scipy.interpolate import interp1d
 from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import (
     predictor_autoregressive_tf,
 )
-import time
 
 from Controllers.template_controller import template_controller
+
+from globals import *
+import time as global_time
 
 from others.p_globals import L
 
@@ -208,9 +210,10 @@ def trajectory_rollouts(
     initial_state = np.tile(s, (num_rollouts, 1))
 
     predictor.setup(initial_state=initial_state, prediction_denorm=True)
-   # start = time.time()
+
+    start = global_time.time()
     s_horizon = predictor.predict(u + delta_u)[:, :, : len(STATE_INDICES)]
-   # print("predict:", time.time() - start)
+    performance_measurement[2] = global_time.time() - start
 
     # Compute stage costs
     cost_increment, dd, ep, ekp, ekc, cc, ccrc = q(
@@ -514,6 +517,7 @@ class controller_mppi(template_controller):
             self.S_tilde_k = np.zeros_like(self.S_tilde_k, dtype=np.float32)
 
             # Run parallel trajectory rollouts for different input perturbations
+            start = global_time.time()
             self.S_tilde_k = trajectory_rollouts(
                 self.s,
                 self.S_tilde_k,
@@ -523,6 +527,7 @@ class controller_mppi(template_controller):
                 self.target_position,
                 self.logging
             )
+            performance_measurement[1] = global_time.time() - start
 
             # Update inputs with weighted perturbations
             update_inputs(self.u, self.S_tilde_k, self.delta_u)

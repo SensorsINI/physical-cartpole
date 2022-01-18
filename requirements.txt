@@ -12,4 +12,5 @@ sklearn
 PyYAML
 numba
 tqdm
+tensorboard_plugin_profile
 tensorflow==2.4.0
