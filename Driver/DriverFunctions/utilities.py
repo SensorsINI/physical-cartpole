@@ -7,9 +7,6 @@ import sys
 
 
 def terminal_check():
-    if sys.stdin.isatty():
-        # running interactively
-        print('Running interactively from an interactive terminal, ok')
-    else:
+    if not sys.stdin.isatty():
         print('Run from an interactive terminal to allow keyboard input')
         quit()

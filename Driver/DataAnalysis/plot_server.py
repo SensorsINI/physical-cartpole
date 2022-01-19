@@ -73,7 +73,7 @@ def animate(i):
                 axs[i, 0].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
                 for b in data[data[:, -1] > 0, 0]:
                     axs[i, 0].axvline(x=b, color='red', linestyle='--', alpha=0.7)
-                    labels = [item.get_text() for item in ax.get_xticklabels()]
+                    labels = [item.get_text() for item in axs[i, 0].get_xticklabels()]
                     labels[1] = 'Testing'
 
             # Histogramm

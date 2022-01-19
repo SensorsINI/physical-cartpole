@@ -2,7 +2,7 @@
 
 TIMER1_Callback cbTimer1;
 long timer_resets = 0;
-unsigned int periodMS = 0;
+unsigned int periodMS = 5;
 unsigned int slowdown = 1;
 
 // Timer base is configured to be 1MHz (resolution of 1us)

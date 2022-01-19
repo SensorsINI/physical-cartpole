@@ -115,7 +115,7 @@ class PhysicalCartPoleDriver:
 
         self.command = 0
         self.sent = 0
-        self.lastSent = 0
+        self.lastSent = None
 
         self.delta_time = 0
         self.delta_time_buffer = np.zeros((0))
@@ -196,7 +196,7 @@ class PhysicalCartPoleDriver:
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
                 performance_measurement[0] = time.time() - start
                 self.controller_steptime = time.time() - start
-                self.Q = 0;
+                #self.Q = 0;
             else:
                 # set values from firmware for logging
                 self.lastControlTime = self.sent
@@ -436,11 +436,14 @@ class PhysicalCartPoleDriver:
 
         # Time self.measurement
         self.timeNow = time.time()
-        self.delta_time = self.timeNow - self.lastTime
-        if self.delta_time == 0 or self.lastTime == None:
-            self.delta_time = 1e-6
         self.lastTime = self.timeNow
         self.elapsedTime = self.timeNow - self.startTime
+
+        if self.lastSent is not None:
+            self.delta_time = self.sent - self.lastSent
+        else:
+            self.delta_time = 1e-6
+        self.lastSent = self.sent
 
         # Latency Violations
         if self.firmware_latency > 1e-6:
@@ -639,77 +642,64 @@ class PhysicalCartPoleDriver:
             self.printCount = 0
 
             if not self.new_console_output:
-                print('\033[5A', end='')
+                print('\033[6A', end='')
             self.new_console_output = False
 
             print('\r')
 
             ############  Mode  ############
-            print("\rMODE:   {} (Period={}ms, Synch={}), Controller ({}, Horizon={}, Rollouts={}) \033[K"
+            if self.controlEnabled:
+                if CONTROLLER_NAME=='mppi':
+                    mode='MODE: mppi (Period={}ms, Synch={}, Horizon={}, Rollouts={})'.format(CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.mpc_samples, self.controller.num_rollouts)
+                else:
+                    mode='MODE: {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
+            else:
+                mode = 'MODE: Firmware'
+            print("\r" + mode +  '\033[K')
+
+            ############  State  ############
+            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}\033[K"
                 .format(
-                    'Python Control' if self.controlEnabled else 'Firmware Control',
-                    CONTROL_PERIOD_MS,
-                    CONTROL_SYNC,
-                    CONTROLLER_NAME,
-                    self.controller.mpc_samples if CONTROLLER_NAME=='mppi' else '',
-                    self.controller.num_rollouts if CONTROLLER_NAME=='mppi' else '',
+                    self.s[ANGLE_IDX],
+                    self.angle_raw,
+                    self.s[POSITION_IDX] * 100,
+                    self.position_raw,
+                    self.command / MOTOR_FULL_SCALE,
+                    self.command
                 )
             )
 
-            ############  State  ############
-            print(
-                "\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}\033[K"
-                    .format(self.s[ANGLE_IDX],
-                            self.angle_raw,
-                            self.s[POSITION_IDX] * 100,
-                            self.position_raw,
-                            self.command / MOTOR_FULL_SCALE,
-                            self.command)
-                )
-
             ############  Timing  ############
             if self.total_iterations > 1:
-                print(
-                    "\rTIMING: delta time [mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}], firmware latency [mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}], python latency [mean={:.2f}ms std={:.2f}ms, max={:.2f}ms, size={}], latency violations: {:}/{:} = {:.2f}%\033[K"
-                        .format(
+                print("\rTIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%\033[K"
+                    .format(
                         self.delta_time_buffer.mean() * 1000,
                         self.delta_time_buffer.std() * 1000,
-                        self.delta_time_buffer.max() * 1000,
-                        self.delta_time_buffer.size,
 
                         self.firmware_latency_buffer.mean() * 1000,
                         self.firmware_latency_buffer.std() * 1000,
-                        self.firmware_latency_buffer.max() * 1000,
-                        self.firmware_latency_buffer.size,
 
                         self.python_latency_buffer.mean() * 1000,
                         self.python_latency_buffer.std() * 1000,
-                        self.python_latency_buffer.max() * 1000,
-                        self.python_latency_buffer.size,
+
+                        self.controller_steptime_buffer.mean() * 1000,
+                        self.controller_steptime_buffer.std() * 1000,
 
                         self.latency_violations,
                         self.total_iterations,
                         100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
-                        )
                     )
+                )
             else:
                 print('')
 
             ############  Performance  ############
             if self.total_iterations > 1:
-                performance = ''
-                for i in range(performance_measurement.size):
-                    if performance_measurement_buffer.shape[1] > 1 and performance_measurement_buffer[i].mean() > 0:
-                        performance += ' {}(mean={:.2f}ms, std={:.2f}ms, max={:.2f}ms, size={}),'.format(
-                            i,
-                            performance_measurement_buffer[i,:].mean() * 1000,
-                            performance_measurement_buffer[i,:].std() * 1000,
-                            performance_measurement_buffer[i,:].max() * 1000,
-                            performance_measurement_buffer[i,:].size
-                        )
-
-                np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.3f" % x))
-                print("\rPERFORMANCE: "+str((performance_measurement_buffer.mean(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
+                np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.2f" % x))
+                print("\rPERFORMANCE: σ="+str((performance_measurement_buffer.std(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
+                np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.2f" % x))
+                print("\rPERFORMANCE: μ="+str((performance_measurement_buffer.mean(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
             else:
+                print('')
                 print('')
 

@@ -1,15 +1,15 @@
 import subprocess
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 from CartPole.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 import tensorflow as tf
 
-try:
-    output = subprocess.check_output("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True)
-except:
-    pass
+subprocess.call("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True, stdout=open(os.devnull, 'wb'))
 subprocess.Popen("python3 DataAnalysis/plot_server.py", shell=True)
 
-tf.keras.backend.clear_session()
-tf.config.optimizer.set_jit(False) # Enable XLA.
+
+#tf.keras.backend.clear_session()
+#tf.config.optimizer.set_jit(True) # Enable XLA.
 
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 

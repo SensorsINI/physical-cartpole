@@ -44,6 +44,8 @@ from CartPole.state_utilities import (
     STATE_VARIABLES
 )
 import yaml, os
+from globals import *
+import time as global_time
 config = yaml.load(open(os.path.join('SI_Toolkit_ApplicationSpecificFiles', 'config.yml'), 'r'), Loader=yaml.FullLoader)
 
 PATH_TO_NORMALIZATION_INFO = config['paths']['PATH_TO_EXPERIMENT_FOLDERS'] + config['paths']['path_to_experiment'] + "NormalizationInfo/"
@@ -145,10 +147,13 @@ class predictor_ODE:
 
         self.write_outputs(0)
 
+
+        start = global_time.time()
         for k in range(self.horizon):
             # State update
             self.next_state(k, pole_half_length=pole_half_length)
             self.write_outputs(k+1)
+        performance_measurement[3] = global_time.time() - start
 
         # out_array = np.transpose(self.output, axes=(2,0,1))
         # if not self.batch_mode: self.output = np.squeeze(self.output)

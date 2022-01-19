@@ -7,13 +7,6 @@ Based on Williams, Aldrich, Theodorou (2015)
 # On other OS you have to chose a different interactive backend.
 from matplotlib import use
 use('TkAgg')
-#use('macOSX')
-
-import copy
-
-from others.p_globals import (
-    k, M, m, g, J_fric, M_fric, L, v_max, u_max, controlDisturbance, controlBias, TrackHalfLength,
-)
 
 import os
 
@@ -142,7 +135,6 @@ def E_kin_pol(angleD):
 def E_pot_cost(angle):
     """Compute penalty for not balancing pole upright (penalize large angles)"""
     return 0.25 * (1.0 - np.cos(angle)) ** 2
-    # return angle ** 2
 
 
 @jit(nopython=True, cache=True, fastmath=True)
@@ -173,7 +165,7 @@ def penalize_deviation(cc, u):
 
 """Define Predictor"""
 if predictor_type == "Euler":
-    predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=2)
+    predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=10)
 elif predictor_type == "EulerTF":
     predictor = predictor_ODE_tf(horizon=mpc_samples, dt=dt, intermediate_steps=2)
 elif predictor_type == "NeuralNet":
@@ -209,30 +201,23 @@ def trajectory_rollouts(
     """
     initial_state = np.tile(s, (num_rollouts, 1))
 
+    # Setup (0.9ms)
+    start = global_time.time()
     predictor.setup(initial_state=initial_state, prediction_denorm=True)
 
+    # Predict (14.1ms)
     start = global_time.time()
     s_horizon = predictor.predict(u + delta_u)[:, :, : len(STATE_INDICES)]
     performance_measurement[2] = global_time.time() - start
 
-    # Compute stage costs
-    cost_increment, dd, ep, ekp, ekc, cc, ccrc = q(
-        s_horizon[:, 1:, :], u, delta_u, u_prev, target_position
-    )
+    # Compute costs (2.5ms)
+    cost_increment, dd, ep, ekp, ekc, cc, ccrc = q(s_horizon[:, 1:, :], u, delta_u, u_prev, target_position)
     S_tilde_k = np.sum(cost_increment, axis=1)
-    # Compute terminal cost
     S_tilde_k += phi(s_horizon, target_position)
 
-    # Pass costs to GUI popup window
+    # Pass costs to GUI popup window (0.3ms)
     global gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
-    gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc = (
-        np.mean(dd),
-        np.mean(ep),
-        np.mean(ekp),
-        np.mean(ekc),
-        np.mean(cc),
-        np.mean(ccrc),
-    )
+    gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc = (np.mean(dd), np.mean(ep), np.mean(ekp), np.mean(ekc), np.mean(cc), np.mean(ccrc))
 
     if logging:
         LOGS.get("cost_breakdown").get("cost_dd").append(np.mean(dd, 0))
@@ -516,7 +501,7 @@ class controller_mppi(template_controller):
             )  # du ~ N(mean=0, var=1/(rho*dt))
             self.S_tilde_k = np.zeros_like(self.S_tilde_k, dtype=np.float32)
 
-            # Run parallel trajectory rollouts for different input perturbations
+            # Trajectory Rollouts (17.9ms)
             start = global_time.time()
             self.S_tilde_k = trajectory_rollouts(
                 self.s,
@@ -573,22 +558,6 @@ class controller_mppi(template_controller):
         else:
             Q = self.u[0]
 
-        # A snippet of code to switch on and off the controller to cover better the statespace with experimental data
-        # It stops controller when Pole is well stabilized (starting inputing random input)
-        # And re-enables it when angle exceedes 90 deg.
-        # if (abs(self.s[[ANGLE_IDX]]) < 0.01
-        #     and abs(self.s[[POSITION_IDX]]-self.target_position < 0.02)
-        #         and abs(self.s[[ANGLED_IDX]]) < 0.1
-        #             and abs(self.s[[POSITIOND_IDX]]) < 0.05):
-        #     self.control_enabled = False
-        # elif abs(self.s[[ANGLE_IDX]]) > np.pi/2:
-        #     self.control_enabled = True
-        #
-        # if self.control_enabled is True:
-        #     Q = self.u[0]
-        # else:
-        #     Q = np.random.uniform(-1.0, 1.0)
-
         # Add noise on top of the calculated Q value to better explore state space
         Q = np.float32(Q * (1 + p_Q * self.rng_mppi.uniform(-1.0, 1.0)))
         # Clip inputs to allowed range
@@ -600,15 +569,12 @@ class controller_mppi(template_controller):
         # Index-shift inputs
         self.u[:-1] = self.u[1:]
         self.u[-1] = 0
-        # self.u = zeros_like(self.u)
 
-        # Prepare predictor for next timestep
+        # Prepare predictor for next timestep (7.1ms)
         Q_update = np.tile(Q, (num_rollouts, 1))
         predictor.update_internal_state(Q_update)
 
-        #return 0
-        return Q
-        #return Q  # normed control input in the range [-1,1]
+        return Q  # normed control input in the range [-1,1]
 
     def update_control_vector(self):
         """
@@ -621,7 +587,6 @@ class controller_mppi(template_controller):
         u_new[:update_length] = self.u[:update_length]
         self.u = u_new
         self.u_prev = np.copy(self.u)
-
 
     def print_help(self):
         print('*** Controller Informations here ***')
