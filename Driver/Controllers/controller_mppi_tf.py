@@ -46,6 +46,7 @@ from Controllers.template_controller import template_controller
 from globals import *
 import time as global_time
 import time
+import tensorflow as tf
 
 from others.p_globals import L
 
@@ -186,29 +187,25 @@ def trajectory_rollouts(
     """Sample thousands of rollouts using system model. Compute cost-weighted control update. Log states and costs if specified.
 
     :param s: Current state of the system
-    :type s: np.ndarray
     :param S_tilde_k: Placeholder array to store the cost of each rollout trajectory
-    :type S_tile_k: np.ndarray
     :param u: Vector of nominal inputs computed in previous iteration
-    :type u: np.ndarray
     :param delta_u: Array containing all input perturbation samples. Shape (num_rollouts x horizon_steps)
-    :type delta_u: np.ndarray
     :param u_prev: Array with nominal inputs from previous iteration. Used to compute cost of control change
-    :type u_prev: np.ndarray
     :param target_position: Target position where the cart should move to
-    :type target_position: np.float32
 
     :return: S_tilde_k - Array filled with a cost for each rollout trajectory
     """
+    start = global_time.time()
     initial_state = np.tile(s, (num_rollouts, 1))
+    #print(initial_state)
 
     # Setup (0.9ms)
     start = global_time.time()
     predictor.setup(initial_state=initial_state, prediction_denorm=True)
 
-    # Predict (14.1ms)
-    start = global_time.time()
-    s_horizon = predictor.predict(u + delta_u)[:, :, : len(STATE_INDICES)]
+    # Predict (11.31ms)
+    s_horizon = predictor.predict_tf(tf.convert_to_tensor(initial_state), tf.convert_to_tensor(u + delta_u))
+    s_horizon = s_horizon[:, :, : len(STATE_INDICES)]
     performance_measurement[2] = global_time.time() - start
 
     # Compute costs (2.5ms)
@@ -231,6 +228,8 @@ def trajectory_rollouts(
         LOGS.get("states").append(
             np.copy(s_horizon[:, :-1, :])
         )  # num_rollouts x mpc_samples x STATE_VARIABLES
+
+    #os._exit(1)
 
     return S_tilde_k
 
@@ -345,7 +344,7 @@ def update_inputs(u: np.ndarray, S: np.ndarray, delta_u: np.ndarray):
     u += reward_weighted_average(S, delta_u)
 
 
-class controller_mppi(template_controller):
+class controller_mppi_tf(template_controller):
     """Controller implementing the Model Predictive Path Integral method (Williams et al. 2015)
 
     :param template_controller: Superclass describing the basic controller interface

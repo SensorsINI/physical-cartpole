@@ -310,8 +310,6 @@ void CONTROL_Loop(void)
 
     	if(timeReceived > 0 && timeSent > 0 && newReceived) {
         	latency = timeReceived - timeSent;
-    	} else {
-    		latency = 0;
     	}
 
         buffer[ 0] = SERIAL_SOF;

@@ -25,7 +25,8 @@ class Interface:
         self.prevPktNum     = 1000
         self.start = None
         self.end = None
-        self.angle_raw_prev = 0
+        self.angle_prev = None
+        self.frozen_prev = 0
         self.angleD = 0
 
         self.encoderDirection = None
@@ -152,8 +153,12 @@ class Interface:
         (angle, position, command, frozen, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
 
         if frozen == 0:
-            self.angleD = self.wrap_local(angle - self.angle_raw_prev)
-        self.angle_raw_prev = angle
+            if self.angle_prev is None:
+                self.angleD = 0
+            else:
+                self.angleD = self.wrap_local(angle - self.angle_prev) / (self.frozen_prev + 1)
+        self.angle_prev = angle
+        self.frozen_prev = frozen
 
         return angle, self.angleD, position, command, frozen, sent/1e6, latency/1e5
 

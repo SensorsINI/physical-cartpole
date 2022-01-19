@@ -147,7 +147,6 @@ class predictor_ODE:
 
         self.write_outputs(0)
 
-
         start = global_time.time()
         for k in range(self.horizon):
             # State update
