@@ -26,17 +26,17 @@ testing:
 
   #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_mppi_2021-11-29_15-19-18 measurement.csv'
 
-  #TEST_FILE '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-22_01-34-16 20ms swinging.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-22_01-34-16 20ms swinging short.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-21_18-56-13 20ms measurement.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-21_18-56-13 20ms measurement short.csv'
-  TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_mppi-tf_2022-01-24_18-22-03.csv'
+  #TEST_FILE 'ExperimentRecordings/CP_PID_2022-01-22_01-34-16 20ms swinging.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-22_01-34-16 20ms swinging short.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-21_18-56-13 20ms measurement.csv'
+  TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-21_18-56-13 20ms measurement short.csv' # train Friction on this!
+  #TEST_FILE: 'ExperimentRecordings/CP_mppi-tf_2022-01-24_18-22-03.csv'
 
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging medium.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging short.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-20_21-44-38 5ms measurement.csv'
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_PID_2022-01-20_21-44-38 5ms measurement short.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging medium.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging short.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-44-38 5ms measurement.csv'
+  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-44-38 5ms measurement short.csv'
 
 
 

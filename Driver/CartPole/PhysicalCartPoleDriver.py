@@ -678,7 +678,7 @@ class PhysicalCartPoleDriver:
 
         # Averaging
         self.total_iterations += 1
-        if self.total_iterations > 2:
+        if self.total_iterations > 10:
             self.delta_time_buffer = np.append(self.delta_time_buffer, self.delta_time)
             self.delta_time_buffer = self.delta_time_buffer[-PRINT_AVERAGING_LENGTH:]
             self.firmware_latency_buffer = np.append(self.firmware_latency_buffer, self.firmware_latency)
@@ -704,7 +704,7 @@ class PhysicalCartPoleDriver:
             ############  Mode  ############
             if self.controlEnabled:
                 if CONTROLLER_NAME=='mppi':
-                    mode='MODE: mppi (Period={}ms, Synch={}, Horizon={}, Rollouts={})'.format(CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.mpc_samples, self.controller.num_rollouts)
+                    mode='MODE: mppi (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.horizon, self.controller.num_rollouts, self.controller.predictor_type)
                 else:
                     mode='MODE: {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
@@ -725,7 +725,7 @@ class PhysicalCartPoleDriver:
             )
 
             ############  Timing  ############
-            if self.total_iterations > 2:
+            if self.total_iterations > 10:
                 print("\rTIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%\033[K"
                     .format(
                         self.delta_time_buffer.mean() * 1000,
@@ -749,7 +749,7 @@ class PhysicalCartPoleDriver:
                 print('')
 
             ############  Performance  ############
-            if self.total_iterations > 1:
+            if self.total_iterations > 10:
                 np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.2f" % x))
                 print("\rPERFORMANCE: μ="+str((performance_measurement_buffer.mean(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
             else:
