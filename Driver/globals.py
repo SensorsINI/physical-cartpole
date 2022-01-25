@@ -16,15 +16,17 @@ performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
 ##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
 LIVE_PLOT = False
 LIVE_PLOT_UNITS = 'metric'      # choose 'raw' or 'metric'
+LIVE_PLOT_ZERO_ANGLE_DOWN = False
 LIVE_PLOT_KEEPSAMPLES = 5000
 LIVE_PLOT_TIMELINES = list(range(5))       # deactivate plots for performance, for all use list(range(5))
 LIVE_PLOT_HISTOGRAMMS = list(range(5))     # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mppi-tf'     # e.g. 'PID', 'mppi', 'mppi-tf'
-CONTROL_PERIOD_MS = 5       # e.g. 5 for PID or 20 for mppi
-CONTROL_SYNC = True
+CONTROL_PERIOD_MS = 20          # e.g. 5 for PID or 20 for mppi
+CONTROL_SYNC = False            # Delays Input until next Timeslot for more accurate measurements
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
+AUTOSTART = False                # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
@@ -40,7 +42,7 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32   # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU =  1209.82 #1213     # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_ORIGINAL = 1025   # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  #  If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
@@ -48,7 +50,7 @@ ANGLE_HANGING_DEFAULT = True  #  If True default ANGLE_HANGING is loaded for a r
                                 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.138 # adjust from key commands such that upright angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0.134 # adjust from key commands such that upright angle error is minimized
 
 ##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR

@@ -25,9 +25,6 @@ class Interface:
         self.prevPktNum     = 1000
         self.start = None
         self.end = None
-        self.angle_prev = None
-        self.frozen_prev = 0
-        self.angleD = 0
 
         self.encoderDirection = None
 
@@ -137,30 +134,13 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
-    def wrap_local(self, angle):
-        ADC_RANGE = 4096
-        if angle >= ADC_RANGE / 2:
-            return angle - ADC_RANGE
-        elif angle <= -ADC_RANGE / 2:
-            return angle + ADC_RANGE
-        else:
-            return angle
-
     def read_state(self):
         self.clear_read_buffer()
         reply = self._receive_reply(CMD_STATE, 17, READ_STATE_TIMEOUT)
 
-        (angle, position, command, frozen, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
+        (angle, position, command, invalid_steps, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
 
-        if frozen == 0:
-            if self.angle_prev is None:
-                self.angleD = 0
-            else:
-                self.angleD = self.wrap_local(angle - self.angle_prev) / (self.frozen_prev + 1)
-        self.angle_prev = angle
-        self.frozen_prev = frozen
-
-        return angle, self.angleD, position, command, frozen, sent/1e6, latency/1e5
+        return angle, 0, position, command, invalid_steps, sent/1e6, latency/1e5
 
     def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout

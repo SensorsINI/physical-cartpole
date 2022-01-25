@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import glob
 import os
+import seaborn as sns
 
 list_of_files = glob.glob('../ExperimentRecordings/*.csv')
 latest_file = max(list_of_files, key=os.path.getctime)
@@ -28,11 +29,11 @@ bin_num = len(bin_values)
 # gaussian distribution
 x_gauss = np.arange(min_bin-10, max_bin+10, 1)
 y_gauss = stats.norm(mean, std)
-amp = 11000 # amplitude of gaussian -  manually find
+amp = 1 # amplitude of gaussian -  manually find
 
 # plotting
-# plt.scatter(angle_raw_data, np.arange(0, len(angle_raw_data), 1))
-plt.hist(angle_raw_data, bins = bin_values)
+#plt.hist(angle_raw_data, bins = bin_values)
+sns.histplot(data=angle_raw_data, bins=bin_values)
 plt.title('Histogram of raw angle data, bin_num = %i' % bin_num)
-plt.plot(x_gauss, amp*y_gauss.pdf(x_gauss))
+plt.plot(x_gauss, amp*y_gauss.pdf(x_gauss), color='orange')
 plt.show()

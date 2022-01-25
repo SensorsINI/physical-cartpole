@@ -98,7 +98,6 @@ void CONTROL_ToggleState(void)
 	cmd_ControlMode(!controlEnabled);
 }
 
-const int ADC_RANGE = 4096;
 
 int clip(int value, int min, int max) {
 	if (value > max)
@@ -108,6 +107,7 @@ int clip(int value, int min, int max) {
 	return value;
 }
 
+const int ADC_RANGE = 4096;
 int wrapLocal(int angle) {
     if (angle >= ADC_RANGE/2)
 		return angle - ADC_RANGE;
@@ -152,7 +152,7 @@ void CONTROL_Loop(void)
     static unsigned char	packetCnt       = 0;
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
-	static int 				prevAngle = 0;
+	static int 				prevAngle = 0, stableAngle = 0;
 	static int 				pprevAngle = 0, ppprevAngle = 0;
 	static int 				angleD = 0, angleI = 0;
 	#define lastAngleLength 5
@@ -187,52 +187,25 @@ void CONTROL_Loop(void)
 
 	angle_mean = AdvanceMedianFilter(angleSamples, angle_averageLen);
 
-	// Detect invalid steps
-	#define MAX_ADC_STEP 60
-	#define MAX_INVALID_STEPS 0
-	#define PASSTHRU_MARGIN 200
+	angle = angle_mean;
+	angleD = wrapLocal(angle - prevAngle);
+	prevAngle = angle;
 
-	int invalid_step = 0;
 
+	// Anomaly Detection: count invalid buffer steps
+	#define MAX_ADC_STEP 20
+	unsigned char invalid_step = 0;
 	if(angle_averageLen > 1) {
 		for (int i = 0; i < angle_averageLen; i++) {
 			// start at oldest value (since angleSampIndex is not yet overwritten)
 			int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
 			int prev = angleSamples[(angleSampIndex + i + angle_averageLen - 1) % angle_averageLen];
-			//int dt = angleSamplesTimestamp[] - angleSamplesTimestamp
 
 			// previous value for oldest value not existing
-			if(i != 0 && abs(curr-prev) > MAX_ADC_STEP)
+			if(i != 0 && abs(wrapLocal(curr-prev)) > MAX_ADC_STEP)
 				invalid_step++;
 		}
 	}
-
-	// Anomaly Detection: discard buffer if too many invalid steps (allow 2 for 1 outlier/popcorn noise)
-	if (abs(wrapLocal(prevAngle)) > PASSTHRU_MARGIN || invalid_step <= MAX_INVALID_STEPS) {
-		//int diff;
-		//angle = angle_mean;
-		//if(frozen==0)
-		//diff = (11*angle/6 - 3*prevAngle + 3*pprevAngle/2 - ppprevAngle/3);
-		//diff = (3*angle/2 - 2*prevAngle + pprevAngle/2);
-		//diff = (angle - prevAngle);
-		//else
-		//	diff = angle - prevAngle;
-		//frozen=0;
-		//angleD = wrapLocal(diff) / (1 + frozen);
-
-		//ppprevAngle = pprevAngle;
-		//pprevAngle = prevAngle;
-		//prevAngle = angle;
-		frozen = 0;
-	}
-	else {
-		//angle = prevAngle;
-		frozen ++;
-	}
-
-	angle = angle_mean;
-	angleD = wrapLocal(angle - prevAngle);
-	prevAngle = angle;
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position = (positionRaw - positionCentre);
@@ -318,7 +291,7 @@ void CONTROL_Loop(void)
         *((short *)&buffer[3]) = angle;
         *((short *)&buffer[5]) = position;
         *((short *)&buffer[7]) = command;
-        *((unsigned char *)&buffer[9]) = frozen;
+        *((unsigned char *)&buffer[9]) = invalid_step;
         *((unsigned int *)&buffer[10]) = timeMeasured;
         *((unsigned short *)&buffer[14]) = (unsigned short)(latency / 10);
         // latency maximum: 10 * 65'535 Us = 653ms

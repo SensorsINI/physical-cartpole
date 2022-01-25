@@ -6,6 +6,9 @@ import matplotlib
 matplotlib.use('TkAgg')
 from globals import *
 from datetime import datetime
+import math
+import seaborn as sns
+sns.set()
 
 address = ('localhost', 6000)     # family is deduced to be 'AF_INET'
 listener = Listener(address)
@@ -17,7 +20,7 @@ labels_raw = ['angle_raw', 'angleD_raw', 'position_raw', 'positionD', 'actualMot
 labels_metric = ['angle [rad]', 'angleD [rad/s]', 'position [cm]', 'positionD [cm/s]', 'Q ∈ [-1,1]']
 data = np.zeros((0, 7))
 
-metric = 'raw'
+metric = LIVE_PLOT_UNITS
 
 fig, axs = plt.subplots(5, 2, figsize=(16,9), gridspec_kw={'width_ratios': [3, 1]})
 fig.subplots_adjust(hspace=0.5)
@@ -48,6 +51,9 @@ def animate(i):
                 print(f'Live Data saved: {filepath}.csv\n\n\n\n')
 
         if isinstance(buffer, np.ndarray):
+            if LIVE_PLOT_ZERO_ANGLE_DOWN and metric == 'metric':
+                angle = buffer[:, 1] + math.pi
+                buffer[:, 1] = np.arctan2(np.sin(angle), np.cos(angle))
             data = np.append(data, buffer, axis=0)
             data = data[-LIVE_PLOT_KEEPSAMPLES:]
 
@@ -85,6 +91,6 @@ def animate(i):
                 axs[i, 1].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
 
 
-ani = animation.FuncAnimation(fig, animate, interval=20)
+ani = animation.FuncAnimation(fig, animate, interval=50)
 plt.show()
 print('Finished')

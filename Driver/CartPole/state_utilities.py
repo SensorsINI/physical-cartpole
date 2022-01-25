@@ -3,7 +3,7 @@ import numpy as np
 
 
 STATE_VARIABLES = np.sort(
-    ["angle", "angleD", "angle_cos", "angle_sin", "position", "positionD",]
+    ["angle", "angleD", "angle_cos", "angle_sin", "position", "positionD"]
 )
 
 STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}

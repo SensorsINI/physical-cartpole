@@ -5,15 +5,18 @@ matplotlib.use('TkAgg')
 #matplotlib.use('Qt5Agg')
 import glob
 import os
+import seaborn as sns
+sns.set()
 
 list_of_files = glob.glob('../ExperimentRecordings/*.csv')
 print(list_of_files)
 list_of_files.sort(key=os.path.getctime, reverse=True)
 latest_file = list_of_files[0]
-file = '../ExperimentRecordings/cartpole-2021-11-02-15-10-29 swinging.csv'
+file = latest_file
+#file = '../ExperimentRecordings/CP_PID_2022-01-21_23-53-57 20ms swinging.csv'
 data = pd.read_csv(file, comment='#')
 
-data = data[['angle', 'angle_raw']][0:2000]
+data = data[['angle', 'angle_raw', 'angleD', 'angleD_raw', 'invalid_steps', 'frozen']]
 
 fig, axs  = plt.subplots(len(data.columns), 1, figsize=(12, 9))
 fig2, axs2 = plt.subplots(len(data.columns), 1, figsize=(12, 9))
@@ -35,5 +38,5 @@ for i, col_name in enumerate(data):
     axs2[i].plot(data[col_name], label=col_name, marker='.', color=color)
     axs2[i].legend(loc='upper right')
     axs2[i].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
-    
+
 plt.show()

@@ -55,7 +55,7 @@ class PhysicalCartPoleDriver:
 
         self.new_console_output = True
 
-        self.controlEnabled = True
+        self.controlEnabled = AUTOSTART
         self.firmwareControl = False
         self.manualMotorSetting = False
 
@@ -86,13 +86,20 @@ class PhysicalCartPoleDriver:
         self.csvwriter = None
 
         self.Q = 0.0 # Motor command normed to be in a range -1 to 1
+        self.Q_prev = None
 
-        self.angle_raw = 0.0
-        self.position_raw = 0.0
+        self.angle_raw = 0
+        self.angle_raw_stable = None
+        self.angle_raw_prev = None
+        self.andleD_raw = 0
+        self.angleD_raw_stable = None
+        self.angleD_raw_prev = None
+        self.invalid_steps = 0
+        self.frozen = 0
+        self.position_raw = 0
 
         self.anglePrev = 0.0
         self.positionPrev = None
-
         self.angleDPrev = 0.0
         self.positionDPrev = 0.0
 
@@ -104,6 +111,7 @@ class PhysicalCartPoleDriver:
         self.target_position = 0.0
 
         self.actualMotorCmd = 0
+        self.actualMotorCmd_prev = None
 
         self.s = create_cartpole_state()
 
@@ -196,24 +204,26 @@ class PhysicalCartPoleDriver:
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
                 performance_measurement[0] = time.time() - start
                 self.controller_steptime = time.time() - start
+                if AUTOSTART:
+                    self.Q = 0
             else:
                 # set values from firmware for logging
                 self.lastControlTime = self.sent
                 self.actualMotorCmd = self.command
-                self.Q = self.command
+                self.Q = self.command / MOTOR_FULL_SCALE
 
 
             self.joystick_action()
 
             self.measurement_action()
 
-            if self.controlEnabled:
+            if self.controlEnabled or not self.measurement.is_idle():
                 self.get_motor_command()
 
-                if self.measurement.is_idle():
-                    self.safety_switch_off()
+            if self.measurement.is_idle() and self.controlEnabled:
+                self.safety_switch_off()
 
-                self.actualMotorCmd = 0
+            if self.controlEnabled or not self.measurement.is_idle():
                 self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
             # Plotting and Logging
@@ -289,12 +299,7 @@ class PhysicalCartPoleDriver:
                 self.loggingEnabled = not self.loggingEnabled
                 print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
                 if self.loggingEnabled:
-                    try:
-                        self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
-                        print("\n Started self.logging data to " + self.csvfilename)
-                    except Exception as e:
-                        self.loggingEnabled = False
-                        print("\n" + str(e) + ": Exception opening self.csvfile; self.logging disabled \r\n")
+                    self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
@@ -302,7 +307,6 @@ class PhysicalCartPoleDriver:
                 if self.controller.controller_name == 'mppi':
                     if not self.loggingEnabled:
                         self.controller.controller_report()
-                    self.controller.logging = self.loggingEnabled
 
             elif c == 'u':  # toggle firmware control
                 self.firmwareControl = not self.firmwareControl
@@ -310,15 +314,21 @@ class PhysicalCartPoleDriver:
                 self.InterfaceInstance.control_mode(self.firmwareControl)
             elif c == 'k':
                 self.controlEnabled = not self.controlEnabled
+
+                # Reset Performance Buffers
                 self.delta_time_buffer = np.zeros((0))
                 self.firmware_latency_buffer = np.zeros((0))
-                self.python_latency_buffer_buffer = np.zeros((0))
+                self.python_latency_buffer = np.zeros((0))
                 self.controller_steptime_buffer = np.zeros((0))
+                global performance_measurement, performance_measurement_buffer
+                performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
+
                 if self.controlEnabled is False:
-                    self.controller.controller_reset()
                     self.Q = 0
                     self.InterfaceInstance.set_motor(0)
-                    #tf.profiler.experimental.stop()
+                    if self.controller.controller_name == 'mppi-tf':
+                        self.controller.controller_report()
+                    self.controller.controller_reset()
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0}".format(self.controlEnabled))
             elif c == 'K':
@@ -383,7 +393,7 @@ class PhysicalCartPoleDriver:
                     self.joystickMode = 'not active'
                     self.log.info(f'set joystick to {self.joystickMode} mode')
 
-            elif c == '9':
+            elif c == '90':
                 self.additional_latency += 0.002
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
@@ -420,15 +430,46 @@ class PhysicalCartPoleDriver:
                 if hasattr(self, 'live_connection'):
                     self.live_connection.send('reset')
 
+            elif c == '9':
+                global LIVE_PLOT_UNITS
+                LIVE_PLOT_UNITS = 'raw' if LIVE_PLOT_UNITS=='metric' else 'metric'
+                if hasattr(self, 'live_connection'):
+                    self.live_connection.send(LIVE_PLOT_UNITS)
+                    self.live_connection.send('reset')
+
             # Exit
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
                 self.terminate_experiment = True
 
+    def wrap_local(self, angle):
+        ADC_RANGE = 4096
+        if angle >= ADC_RANGE / 2:
+            return angle - ADC_RANGE
+        elif angle <= -ADC_RANGE / 2:
+            return angle + ADC_RANGE
+        else:
+            return angle
+
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, self.angleD_raw, self.position_raw, self.command, self.frozen, self.sent, self.firmware_latency) = self.InterfaceInstance.read_state()
+        (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent, self.firmware_latency) = self.InterfaceInstance.read_state()
         self.position_centered_unconverted = -(self.position_raw - self.position_offset)
+
+        # Process Raw Angle
+
+        if (self.invalid_steps > 5 and self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw_prev)) < 200) or (self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw - self.angle_raw_prev)) > 500):
+            self.frozen += 1
+            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
+            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
+        else:
+            self.angleD_raw = self.wrap_local(self.angle_raw - self.angle_raw_stable) / (self.frozen + 1) if self.angle_raw_stable is not None else 0
+            self.angle_raw_stable = self.angle_raw
+            self.angleD_raw_stable = self.angleD_raw
+            self.frozen = 0
+
+        self.angle_raw_prev = self.angle_raw
+        self.angleD_raw_prev = self.angleD_raw
 
         # Convert position and angle to physical units
         angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
@@ -552,7 +593,12 @@ class PhysicalCartPoleDriver:
     def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
         if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
+            print('\nSafety Switch.')
             self.controlEnabled = False
+            self.InterfaceInstance.set_motor(0)
+            self.new_console_output = 1
+            if self.controller.controller_name == 'mppi-tf':
+                self.controller.controller_report()
             self.controller.controller_reset()
             self.danceEnabled = False
             self.actualMotorCmd = 0
@@ -560,26 +606,30 @@ class PhysicalCartPoleDriver:
             pass
 
     def write_csv_row(self):
-        if self.controller.controller_name == 'PID':
-            self.csvwriter.writerow(
-                [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
-                 self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-                 self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angle_error,
-                 self.target_position, self.controller.position_error, self.controller.Q_angle,
-                 self.controller.Q_position, self.actualMotorCmd, self.Q,
-                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q ** 2,
-                 self.sent, self.firmware_latency, self.InterfaceInstance.end - self.InterfaceInstance.start, self.additional_latency])
-        else:
-            self.csvwriter.writerow(
-                [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
-                 self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-                 self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
-                 self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd, self.Q,
-                 self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q ** 2,
-                 self.sent, self.firmware_latency, self.python_latency, self.additional_latency])
+        if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
+            if self.controller.controller_name == 'PID':
+                self.csvwriter.writerow(
+                    [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                     self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
+                     self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angle_error,
+                     self.target_position, self.controller.position_error, self.controller.Q_angle,
+                     self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
+                     self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen])
+            else:
+                self.csvwriter.writerow(
+                    [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                     self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
+                     self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
+                     self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
+                     self.stickControl, self.stickPos, self.measurement, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen])
+
+        self.actualMotorCmd_prev = self.actualMotorCmd
+        self.Q_prev = self.Q
 
     def plot_live(self):
-        BUFFER_LENGTH = 5
+        BUFFER_LENGTH = 2
         BUFFER_WIDTH = 7
 
         if not hasattr(self, 'livePlotReset') or self.livePlotReset:
@@ -613,7 +663,7 @@ class PhysicalCartPoleDriver:
                         self.s[ANGLED_IDX],
                         self.s[POSITION_IDX] * 100,
                         self.s[POSITIOND_IDX] * 100,
-                        self.command / MOTOR_FULL_SCALE,
+                        self.Q,
                         self.frozen,
                     ])
                 self.live_buffer_index += 1
@@ -646,7 +696,7 @@ class PhysicalCartPoleDriver:
             self.printCount = 0
 
             if not self.new_console_output:
-                print('\033[6A', end='')
+                print('\033[5A', end='')
             self.new_console_output = False
 
             print('\r')
@@ -662,14 +712,15 @@ class PhysicalCartPoleDriver:
             print("\r" + mode +  '\033[K')
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}\033[K"
+            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}\033[K"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
-                    self.command / MOTOR_FULL_SCALE,
-                    self.command
+                    self.Q,
+                    self.actualMotorCmd,
+                    self.invalid_steps
                 )
             )
 
@@ -700,10 +751,13 @@ class PhysicalCartPoleDriver:
             ############  Performance  ############
             if self.total_iterations > 1:
                 np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.2f" % x))
-                print("\rPERFORMANCE: σ="+str((performance_measurement_buffer.std(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
-                np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.2f" % x))
                 print("\rPERFORMANCE: μ="+str((performance_measurement_buffer.mean(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
             else:
                 print('')
-                print('')
+
+            ############  Cost  ############
+            #global gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
+            #print("\rCOST: dd:{}, ep:{}, ekp:{}, ekc:{}, cc:{}, ccrc:{}\033[K".format(
+            #    gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
+            #))
 
