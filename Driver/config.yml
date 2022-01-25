@@ -1,8 +1,8 @@
 controller:
   mppi:
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.03                              # sec
-    mpc_horizon: 1.5                      # sec
+    dt: 0.02                              # sec
+    mpc_horizon: 1.0                      # sec
     num_rollouts: 2000                     # Number of Monte Carlo samples
     predictor_type: "EulerTF"               # One of ["Euler", "EulerTF", "NeuralNet"]
     dd_weight: 200.0          # Distance Difference
