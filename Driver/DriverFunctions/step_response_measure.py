@@ -2,6 +2,12 @@
 # control.py calls update_state() if state is not 'idle'
 import time
 from globals import *
+from CartPole.state_utilities import (
+    ANGLE_IDX,
+    ANGLED_IDX,
+    POSITION_IDX,
+    POSITIOND_IDX,
+)
 
 ACCELERATE_FIRST_TO_LEFT = True
 BIDIRECTIONAL = True
@@ -59,6 +65,9 @@ class StepResponseMeasurement:
 
     def is_idle(self):
         return self.state == 'idle'
+
+    def is_running(self):
+        return not self.is_idle()
 
     def update_state(self, angle: int, position: int, time: float):
         if self.state == 'idle':
@@ -134,4 +143,4 @@ class StepResponseMeasurement:
             return False
 
     def __str__(self):
-        return f'{self.state}:sp:{self.speed}:Q:{self.Q}'
+        return f' Step Response (State:{self.state}, Speed:{self.speed}, Q:{self.Q})'

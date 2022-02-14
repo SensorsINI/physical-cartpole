@@ -16,6 +16,7 @@ CMD_SET_POSITION_CONFIG = 0xC6
 CMD_GET_POSITION_CONFIG = 0xC7
 CMD_SET_MOTOR           = 0xC8
 CMD_SET_CONTROL_CONFIG  = 0xC9
+CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
 
 class Interface:
@@ -134,6 +135,14 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
+    def collect_raw_angle(self, lenght=100, interval_us=100):
+        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,  lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+        self.device.flush()
+        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2*lenght, crc=False, timeout=100)
+        return struct.unpack(str(lenght)+'H', bytes(reply[3:3+2*lenght]))
+
     def read_state(self):
         self.clear_read_buffer()
         reply = self._receive_reply(CMD_STATE, 17, READ_STATE_TIMEOUT)
@@ -142,7 +151,7 @@ class Interface:
 
         return angle, 0, position, command, invalid_steps, sent/1e6, latency/1e5
 
-    def _receive_reply(self, cmd, cmdLen, timeout=None):
+    def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True):
         self.device.timeout = timeout
         self.start = False
 
@@ -167,21 +176,25 @@ class Interface:
                 # print('I am looping! Hurra!')
                 # Message must start with SOF character
                 if self.msg[0] != SERIAL_SOF:
+                    print('\nMissed SERIAL_SOF')
                     del self.msg[0]
                     continue
 
                 # Check command
                 if self.msg[1] != cmd:
+                    print('\nMissed CMD.')
                     del self.msg[0]
                     continue
 
                 # Check message packet length
-                if self.msg[2] != cmdLen:
+                if self.msg[2] != cmdLen and cmdLen < 256:
+                    print('\nWrong Packet Length.')
                     del self.msg[0]
                     continue
 
                 # Verify integrity of message
-                if self.msg[cmdLen-1] != self._crc(self.msg[:cmdLen-1]):
+                if crc and self.msg[cmdLen-1] != self._crc(self.msg[:cmdLen-1]):
+                    print('\nCRC Failed.')
                     del self.msg[0]
                     continue
 

@@ -22,6 +22,7 @@
 #define CMD_GET_POSITION_CONFIG		0xC7
 #define CMD_SET_MOTOR				0xC8
 #define CMD_SET_CONTROL_CONFIG		0xC9
+#define CMD_COLLECT_RAW_ANGLE		0xCA
 #define CMD_STATE					0xCC
 
 bool            streamEnable        = false;
@@ -65,7 +66,7 @@ bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
-static unsigned char txBuffer[32];
+static unsigned char txBuffer[17000];
 
 unsigned char 	crc(const unsigned char * message, unsigned int len);
 bool 			crcIsValid(const unsigned char * buff, unsigned int len, unsigned char crcVal);
@@ -79,6 +80,7 @@ void 			cmd_SetPositionConfig(const unsigned char * config);
 void 			cmd_GetPositionConfig(void);
 void 			cmd_SetMotor(int motorCmd);
 void			cmd_SetControlConfig(const unsigned char * config);
+void			cmd_collectRawAngle(const unsigned short, const unsigned short);
 
 void CONTROL_Init(void)
 {
@@ -475,6 +477,31 @@ void CONTROL_BackgroundTask(void)
 								break;
 							}
 
+							case CMD_COLLECT_RAW_ANGLE:
+							{
+								if (pktLen == 8)
+								{
+									unsigned short length 	   = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
+									unsigned short interval_us = 256 * (unsigned short)rxBuffer[6] + (unsigned short)rxBuffer[5];
+									cmd_CollectRawAngle(length, interval_us);
+								}
+
+								if (pktLen == 6)
+								{
+									motorCmd =
+									timeReceived = TIMER1_getSystemTime_Us();
+									newReceived = true;
+
+									if(controlSync) {
+										controlCommand = motorCmd;
+									} else {
+										cmd_SetMotor(motorCmd);
+									}
+								}
+
+								break;
+							}
+
 							default:
 							{
 								break;
@@ -731,6 +758,46 @@ void cmd_SetMotor(int speed)
 				MOTOR_SetSpeed(speed);
 		}
 	}
+}
+
+void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_US)
+{
+
+	TIMER1_SetCallback(0);
+	MOTOR_Stop();
+	Led_Enable(true);
+
+	txBuffer[ 0] = SERIAL_SOF;
+	txBuffer[ 1] = CMD_COLLECT_RAW_ANGLE;
+	txBuffer[ 2] = 4 + 2*MEASURE_LENGTH;
+
+	unsigned int now = 0, lastRead = 0;
+
+	unsigned int i;
+	for(i=0; i<MEASURE_LENGTH;) {
+		Led_Enable(i % 2);
+		now = TIMER1_getSystemTime_Us();
+
+		// int-overflow after 1h
+		if (now < lastRead) {
+			lastRead = now;
+		}
+		// read every ca. 100us
+		else if (now > lastRead + INTERVAL_US) {
+			// conversion takes 18us
+			*((unsigned short *)&txBuffer[ 3 + 2*i]) = ANGLE_Read();
+			lastRead = now;
+			i++;
+		}
+	}
+	Led_Enable(true);
+
+	//txBuffer[3 + 2*MEASURE_LENGTH] = crc(txBuffer, 3 + 2*MEASURE_LENGTH);
+
+	__disable_irq();
+	USART_SendBuffer(txBuffer, 4 + 2*MEASURE_LENGTH);
+	TIMER1_SetCallback(CONTROL_Loop);
+	__enable_irq();
 }
 
 void cmd_SetControlConfig(const unsigned char * config)

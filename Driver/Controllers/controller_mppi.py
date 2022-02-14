@@ -11,35 +11,26 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
-from datetime import datetime
 import seaborn as sns
 sns.set()
-from CartPole._CartPole_mathematical_helpers import conditional_decorator, wrap_angle_rad_inplace_no_numba
 from CartPole.cartpole_model import TrackHalfLength
 from CartPole.state_utilities import (
-    ANGLE_COS_IDX,
     ANGLE_IDX,
     ANGLED_IDX,
-    ANGLE_SIN_IDX,
     POSITION_IDX,
     POSITIOND_IDX,
-    STATE_VARIABLES,
-    STATE_INDICES,
     create_cartpole_state,
 )
 from matplotlib.widgets import Slider
 from numba import jit
 from numpy.random import SFC64, Generator
 from SI_Toolkit_ApplicationSpecificFiles.predictor_ODE import predictor_ODE
-from SI_Toolkit_ApplicationSpecificFiles.predictor_ODE_tf import predictor_ODE_tf
 from scipy.interpolate import interp1d
 from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import predictor_autoregressive_tf
 from Controllers.template_controller import template_controller
 from globals import *
 import time as global_time
-import time
 import tensorflow as tf
-from others.p_globals import L
 
 config = yaml.load(open(os.path.join("SI_Toolkit_ApplicationSpecificFiles", "config.yml"), "r"), Loader=yaml.FullLoader)
 
@@ -329,7 +320,7 @@ class controller_mppi(template_controller):
 
         if self.logging:
             self.logs.get("rollout_states").append(np.copy(s))
-            self.logs.get("rollout_inputs").append(np.copy(Q))
+            self.logs.get("rollout_inputs").append(np.copy(u + delta_u))
             self.logs.get("rollout_costs").append(np.copy(total_cost))
 
         return rollout_costs
@@ -381,7 +372,7 @@ class controller_mppi(template_controller):
             self.logs.get("nominal_costs").append(np.copy(self.stage_cost(nominal_trajectory[1:,:], self.u, self.u_prev-self.u, target_position)))
             self.logs.get("realized_trajectory").append(np.copy(np.append(self.state, np.expand_dims(self.u[0], axis=0), axis=-1)))
             self.current_cost = self.stage_cost(self.state, self.u[0], self.u_prev[1] - self.u[0], target_position)
-            self.logs.get("realized_costs").append(np.copy())
+            self.logs.get("realized_costs").append(np.copy(self.current_cost))
             self.logs.get("reference_trajectory").append(np.copy(target_position))
 
         Q = self.u[0]

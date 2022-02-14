@@ -1,8 +1,7 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 
-file_path = 'cartpole-2021-11-02-14-26-37.csv'
+file_path = 'ExperimentRecordings/CP_mppi-tf_2022-02-11_16-40-08 20ms swingup.csv'
 
 fontsize_labels = 14
 fontsize_ticks = 12
