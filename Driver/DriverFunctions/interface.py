@@ -68,6 +68,8 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
+        self.clear_read_buffer()
+
         reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
         self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
 
