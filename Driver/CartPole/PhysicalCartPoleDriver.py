@@ -153,7 +153,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
-        #self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
+        self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
 
         try:
             self.controller.printparams()
@@ -183,8 +183,10 @@ class PhysicalCartPoleDriver:
                 self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
             else:
                 self.lastControlTime = self.sent
-                self.actualMotorCmd = self.command
-                self.Q = self.command
+                # self.actualMotorCmd = self.command
+                # self.Q = self.command/MOTOR_FULL_SCALE
+                # self.actualMotorCmd = 0
+                # self.Q = 0.0
 
             self.joystick_action()
 
@@ -295,7 +297,8 @@ class PhysicalCartPoleDriver:
             elif c == 'k':
                 self.controlEnabled = not self.controlEnabled
                 if self.controlEnabled is False:
-                    self.controller.controller_reset()
+                    self.InterfaceInstance.set_motor(0)
+                    self.actualMotorCmd = 0
                     self.Q = 0
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0} \r\n".format(self.controlEnabled))
@@ -526,6 +529,7 @@ class PhysicalCartPoleDriver:
             self.controlEnabled = False
             self.controller.controller_reset()
             self.danceEnabled = False
+            self.InterfaceInstance.set_motor(0)
             self.actualMotorCmd = 0
         else:
             pass
@@ -584,7 +588,7 @@ class PhysicalCartPoleDriver:
                         self.s[ANGLED_IDX],
                         self.s[POSITION_IDX] * 100,
                         self.s[POSITIOND_IDX] * 100,
-                        self.command / MOTOR_FULL_SCALE,
+                        self.Q,
                         self.frozen,
                     ])
                 self.live_buffer_index += 1
@@ -614,8 +618,8 @@ class PhysicalCartPoleDriver:
                             self.angle_raw,
                             self.s[POSITION_IDX] * 100,
                             self.position_raw,
-                            self.command / MOTOR_FULL_SCALE,
-                            self.command)
+                            self.Q,
+                            self.actualMotorCmd)
                 )
 
             print(
