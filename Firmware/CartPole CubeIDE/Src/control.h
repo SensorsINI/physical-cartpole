@@ -18,7 +18,7 @@
 /***** Angle & Position *****/
 #define CONTROL_ANGLE_SMOOTHING		1.0f        	// 0 to 1.0 (1.0 disables smoothing)
 #define CONTROL_ANGLE_AVERAGE_LEN	32  			// Number of samples to average over to determine angular displacement (max is 32)
-#define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US 100
+#define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US 200
 
 #define CONTROL_POSITION_SET_POINT      0
 #define CONTROL_POSITION_SMOOTHING      0.2f 		// 0.2f        // 0 to 1.0 (1.0 disables smoothing)

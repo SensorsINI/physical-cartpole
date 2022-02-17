@@ -130,6 +130,7 @@ class PhysicalCartPoleDriver:
         self.python_latency_buffer = np.zeros((0))
         self.controller_steptime = 0
         self.controller_steptime_buffer = np.zeros((0))
+        self.controlled_iterations = 0
         self.total_iterations = 0
         self.latency_violations = 0
 
@@ -198,12 +199,13 @@ class PhysicalCartPoleDriver:
                 self.controller_steptime = time.time() - start
                 if AUTOSTART:
                     self.Q = 0
+                self.controlled_iterations += 1
             else:
                 # Observing Firmware Control: set values from firmware for logging
                 #self.lastControlTime = self.sent
                 #self.actualMotorCmd = self.command
                 #self.Q = self.command / MOTOR_FULL_SCALE
-                pass
+                self.controlled_iterations = 0
 
             self.joystick_action()
 
@@ -285,13 +287,13 @@ class PhysicalCartPoleDriver:
                 self.loggingEnabled = not self.loggingEnabled
                 print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
                 if self.loggingEnabled:
-                    self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
+                    self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name+'-'+PREDICTOR)
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
 
                 if self.controller.controller_name == 'mppi':
-                    if not self.loggingEnabled:
+                    if not self.loggingEnabled and self.controlled_iterations > 1:
                         self.controller.controller_report()
 
             ##### Control Mode #####
@@ -472,7 +474,7 @@ class PhysicalCartPoleDriver:
 
         # Process Raw Angle
 
-        if (self.invalid_steps > 5 and self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw_prev)) < 200) or (self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw - self.angle_raw_prev)) > 500):
+        if (self.invalid_steps > 5 and self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw_prev)) < 200) or (self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw - self.angle_raw_prev)) > 500 and self.frozen < 3):
             self.frozen += 1
             self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
             self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
@@ -611,7 +613,7 @@ class PhysicalCartPoleDriver:
             self.controlEnabled = False
             self.InterfaceInstance.set_motor(0)
             self.new_console_output = 1
-            if self.controller.controller_name == 'mppi-tf':
+            if self.controller.controller_name == 'mppi-tf' and self.controlled_iterations > 1:
                 self.controller.controller_report()
             self.controller.controller_reset()
             self.danceEnabled = False
@@ -643,7 +645,7 @@ class PhysicalCartPoleDriver:
         self.Q_prev = self.Q
 
     def plot_live(self):
-        BUFFER_LENGTH = 2
+        BUFFER_LENGTH = 5
         BUFFER_WIDTH = 7
 
         if not hasattr(self, 'livePlotReset') or self.livePlotReset:
@@ -692,7 +694,7 @@ class PhysicalCartPoleDriver:
 
         # Averaging
         self.total_iterations += 1
-        if self.total_iterations > 10:
+        if self.total_iterations > 10 and self.controlled_iterations > 10:
             self.delta_time_buffer = np.append(self.delta_time_buffer, self.delta_time)
             self.delta_time_buffer = self.delta_time_buffer[-PRINT_AVERAGING_LENGTH:]
             self.firmware_latency_buffer = np.append(self.firmware_latency_buffer, self.firmware_latency)
@@ -718,7 +720,7 @@ class PhysicalCartPoleDriver:
             ############  Mode  ############
             if self.controlEnabled:
                 if CONTROLLER_NAME=='mppi':
-                    mode='CONTROLLER:   mppi (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.horizon, self.controller.num_rollouts, self.controller.predictor_type)
+                    mode='CONTROLLER:   mppi (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.horizon, self.controller.num_rollouts, PREDICTOR)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
@@ -729,7 +731,7 @@ class PhysicalCartPoleDriver:
             print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}\033[K"
+            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
@@ -737,12 +739,13 @@ class PhysicalCartPoleDriver:
                     self.position_raw,
                     self.Q,
                     self.actualMotorCmd,
-                    self.invalid_steps
+                    self.invalid_steps,
+                    self.frozen
                 )
             )
 
             ############  Timing  ############
-            if self.total_iterations > 10:
+            if self.total_iterations > 10 and self.controlled_iterations > 10:
                 print("\rTIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%\033[K"
                     .format(
                         self.delta_time_buffer.mean() * 1000,

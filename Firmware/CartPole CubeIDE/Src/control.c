@@ -64,6 +64,7 @@ int				encoderDirection	= 1;
 unsigned int	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
 bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
+int 			prevRead = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[17000];
@@ -187,7 +188,8 @@ void CONTROL_Loop(void)
 	else
 		angle_mean = angle_sum / angle_averageLen;*/
 
-	angle_mean = AdvanceMedianFilter(angleSamples, angle_averageLen);
+	angle_mean = ClassicMedianFilter(angleSamples, angle_averageLen);
+	prevRead = 0;
 
 	angle = angle_mean;
 	angleD = wrapLocal(angle - prevAngle);
@@ -326,6 +328,7 @@ void CONTROL_BackgroundTask(void)
 	unsigned int			pktLen;
 	short					motorCmd;
 	static unsigned int    	lastRead = 0;
+	int						read = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
@@ -339,7 +342,10 @@ void CONTROL_BackgroundTask(void)
 	// read every ca. 100us
 	else if (now > lastRead + CONTROL_ANGLE_MEASUREMENT_INTERVAL_US) {
 		// conversion takes 18us
-		angleSamples[angleSampIndex] = ANGLE_Read();
+		read = ANGLE_Read();
+		angleSamples[angleSampIndex] = read;
+		//angleSamples[angleSampIndex] = unwrap(prevRead, read);
+		//prevRead = read;
 
 		angleSamplesTimestamp[angleSampIndex] = now;
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
