@@ -178,7 +178,7 @@ class Interface:
                 # print('I am looping! Hurra!')
                 # Message must start with SOF character
                 if self.msg[0] != SERIAL_SOF:
-                    print('\nMissed SERIAL_SOF')
+                    #print('\nMissed SERIAL_SOF')
                     del self.msg[0]
                     continue
 
