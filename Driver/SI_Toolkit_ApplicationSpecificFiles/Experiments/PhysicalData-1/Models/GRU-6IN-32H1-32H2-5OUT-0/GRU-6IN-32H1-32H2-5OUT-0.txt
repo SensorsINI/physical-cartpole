@@ -1,5 +1,5 @@
 CREATED:
-2022-02-12 at time 19:19:07
+2022-02-16 at time 00:21:32
 
 WITH GIT REVISION:
 cae76a8aff0065c99894ed466d40e20a25ae851b
@@ -20,13 +20,13 @@ TYPE:
 GRU
 
 NORMALIZATION:
-./SI_Toolkit_ApplicationSpecificFiles/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-0/NI_2022-02-12_17-50-58.csv
+./SI_Toolkit_ApplicationSpecificFiles/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-0/NI_2022-02-11_14-57-34.csv
 
 SAMPLING INTERVAL:
 0.02 s
 
 PARENT NET:
-Network trained from scratch
+GRU-6IN-32H1-32H2-5OUT-1
 
 WASH OUT LENGTH:
 10
