@@ -51,7 +51,7 @@ def plot_fft(series, timestep, caption='FFT'):
 
     # plt.title(f'Discrete Fourier Transform of {len(x):,} Samples')
     plt.semilogy(freq, coefficients, linewidth=1, marker='.', markersize=2, label='Blackman FFT')
-    plt.semilogy(freq, gaussian, linewidth=1, label='Gaussian Blur')
+    #plt.semilogy(freq, gaussian, linewidth=1, label='Gaussian Blur')
     # plt.semilogy(freq, savgol, linewidth=1, label='Savitzky-Golay Filter')
     plt.legend()
     plt.xlabel('Frequency in Hz')
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     timeseries = []
     for i in tqdm(range(20)):
-        timeseries.append(np.array(InterfaceInstance.collect_raw_angle(lenght=8000, interval_us=200)))
+        timeseries.append(np.array(InterfaceInstance.collect_raw_angle(lenght=8000, interval_us=100)))
 
-    plot_distribution(np.concatenate(timeseries), caption='Histogram of ADC Output (160\'000 Samples, 5kHz, Pole Up)')
-    plot_fft(timeseries, timestep=200e-6, caption='FFT of ADC Deviation (160\'000 Samples, 5kHz, Pole Up)')
+    plot_distribution(np.concatenate(timeseries), caption='ADC Histogramm')
+    plot_fft(timeseries, timestep=200e-6, caption='ADC FFT')
