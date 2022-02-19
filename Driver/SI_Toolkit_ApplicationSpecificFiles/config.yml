@@ -1,5 +1,5 @@
 modeling:
-  NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-4'
+  NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-6'
   RNN_PATH: './save_tf/'
   PREDICTION_FEATURES_NAMES: ['angle_cos', 'angle_sin', 'angleD', 'position', 'positionD']
 
@@ -26,31 +26,26 @@ testing:
     #'Euler',
     'EulerTF',
     'Pretrained-RNN-1/GRU-6IN-32H1-32H2-5OUT-0',
-    'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-0',
+    #'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-0',
     #'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-1',
     #'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-2',
-    'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-3',
+    #'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-3',
     'PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-4',
   ]
 
-  #TEST_FILE: '/home/jeanninj/Dropbox/physical-cartpole/Driver/ExperimentRecordings/CP_mppi_2021-11-29_15-19-18 measurement.csv'
 
+  TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-11_16-47-00 20ms swingup.csv'
+  #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-21_18-56-13 20ms measurement.csv'
+  #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-21_18-56-13 20ms measurement short.csv'
   #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-22_01-34-16 20ms swinging.csv'
   #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-22_01-34-16 20ms swinging short.csv'
-  #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-21_18-56-13 20ms measurement.csv'
-  #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-21_18-56-13 20ms measurement short.csv' # train Friction on this!
-  #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-11_16-47-00 20ms swingup.csv'
-  #TEST_FILE: 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-12_20-01-58.csv'
-  TEST_FILE: 'SI_Toolkit_ApplicationSpecificFiles/Experiments/PhysicalData-1/Recordings/Train/Experiment-1.csv'
+
+  #TEST_FILE: 'ExperimentRecordings/Results/CP_mppi-tf-Euler_2022-02-15_02-41-29 Stabilizing.csv'
+  #TEST_FILE: 'ExperimentRecordings/Results/CP_mppi-tf-Euler_2022-02-15_20-35-04 Swingup.csv'
+  #TEST_FILE: 'ExperimentRecordings/Results/CP_mppi-tf-RNN_2022-02-15_02-55-52 Stabilizing.csv'
+  #TEST_FILE: 'ExperimentRecordings/Results/CP_PID_2022-02-15_02-14-47 Stabilizing.csv'
+
+  #TEST_FILE: 'SI_Toolkit_ApplicationSpecificFiles/Experiments/PhysicalData-1/Recordings/Train/Experiment-1.csv'
   #TEST_FILE: 'SI_Toolkit_ApplicationSpecificFiles/Experiments/Pretrained-RNN-1/Recordings/Test/Experiment-1.csv'
-  #TEST_FILE: 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-16_04-55-49.csv'
-
-  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging.csv'
-  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging medium.csv'
-  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-17-04 5ms swinging short.csv'
-  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-44-38 5ms measurement.csv'
-  #TEST_FILE: 'ExperimentRecordings/CP_PID_2022-01-20_21-44-38 5ms measurement short.csv'
-
-
 
 
