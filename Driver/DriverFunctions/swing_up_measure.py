@@ -55,7 +55,7 @@ class SwingUpMeasure:
         # Generate Starting Position
         elif self.state == 'start':
             self.Q = 0
-            self.start_position = 0.95 * np.random.uniform(low=-1,high=1) * TrackHalfLength
+            self.start_position = 0.9 * np.random.uniform(low=-1,high=1) * TrackHalfLength
             self.start_angle = np.random.uniform(low=0.5,high=0.8) * np.pi
             self.start_angleD = np.random.uniform(low=0.5,high=0.8) * np.pi
             self.state = 'reset'

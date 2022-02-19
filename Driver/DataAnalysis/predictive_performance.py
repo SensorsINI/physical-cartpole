@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 import os
 import numpy as np
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import predictor_autoregressive_tf
 import tensorflow as tf
@@ -15,25 +16,26 @@ import glob
 sns.set()
 sns.color_palette()
 
-def plot_predictive_performance(file, states, predictors, offsets=[0], title='', horizon=50, figsize=(16,12), fontsize='medium', slider=False, plot_frozen=False, plot_fitted=False):
+
+def plot_predictive_performance(file, states, predictors, offsets=[0], title='', horizon=50, figsize=(16, 12), fontsize='medium', slider=False, plot_frozen=False, plot_fitted=False):
     units = {
-        'angle':r'$\theta$ in rad',
+        'angle': r'$\theta$ in rad',
         'angle_raw': 'raw ADC',
-        'angleD':r'$\dot{\theta}$ in rad/s',
-        'angleD_raw':'raw ADC',
-        'position':'x in m',
-        'positionD':r'$\dot{x}$ in m/s',
-        'Q':'Q ∈ [-1,1]'
+        'angleD': r'$\dot{\theta}$ in rad/s',
+        'angleD_raw': 'raw ADC',
+        'position': 'x in m',
+        'positionD': r'$\dot{x}$ in m/s',
+        'Q': 'Q ∈ [-1,1]'
     }
     limits = [None, None, None, None, None]
     trajectory = pd.read_csv(file, comment='#')
-    time = trajectory['time']-trajectory['time'][0]
+    time = trajectory['time'] - trajectory['time'][0]
     experiment_length = trajectory.shape[0]
     horizon = 50
     colors = ['red', 'green', 'blue', 'orange', 'magenta', 'yellow', 'cyan']
 
     # Calculate Predictions
-    predictions = np.zeros((len(predictors.keys()), experiment_length, horizon+1, 6))
+    predictions = np.zeros((len(predictors.keys()), experiment_length, horizon + 1, 6))
     for i, name in enumerate(predictors):
         predictor = predictors[name]
         Q = np.pad(trajectory['Q'].to_numpy(), pad_width=(0, horizon))
@@ -42,7 +44,7 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
         # Get predictions for whole trajectory
         for timestep in tqdm(range(experiment_length)):
             s_current = tf.convert_to_tensor(s[timestep, :], dtype=tf.float32)
-            Q_current = tf.convert_to_tensor(Q[np.newaxis, timestep:timestep+horizon], dtype=tf.float32)
+            Q_current = tf.convert_to_tensor(Q[np.newaxis, timestep:timestep + horizon], dtype=tf.float32)
             predictions[i, timestep, 0] = s[timestep, :]
             predictions[i, timestep, 1:] = predictor.predict_tf(s_current, Q_current).numpy()
             predictor.update_internal_state_tf(tf.convert_to_tensor(Q_current[:, 0], dtype=tf.float32))
@@ -76,7 +78,7 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
                 for offset in offsets:
                     axs[j].plot(time[offset], trajectory[state][offset], marker='o', markersize=5, color='black', alpha=0.5)
 
-        #Plot Frozen
+        # Plot Frozen
         if plot_frozen and 'frozen' in trajectory:
             frozen = trajectory['frozen'].to_numpy().nonzero()[0]
             if len(frozen) > 0:
@@ -111,18 +113,17 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
         fig.tight_layout()
 
     plt.xlabel('time in s', fontsize=fontsize)
-    pdf = 'ExperimentRecordings/Plots/Predictive Performance - '+title+'.pdf'
+    pdf = 'ExperimentRecordings/Plots/Predictive Performance - ' + title + '.pdf'
     plt.savefig(pdf)
     plt.show()
     if not slider:
         subprocess.call(['evince', pdf])
 
 
-
 if __name__ == "__main__":
     horizon = 50
 
-    #plot_predictive_performance(
+    # plot_predictive_performance(
     #     title='Varying Stepsize',
     #     file = 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-11_16-47-00 20ms swingup.csv',
     #     states = ['angle', 'angleD', 'position', 'positionD'],
@@ -153,23 +154,24 @@ if __name__ == "__main__":
 
     plot_predictive_performance(
         title='Euler & RNN',
-        #file = 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-18_01-25-26 Unsuccesful Swingup.csv',
-        #file = 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-18_01-25-26 Unsuccesful Swingup.csv',
+        # file = 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-18_01-25-26 Unsuccesful Swingup.csv',
+        # file = 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-18_01-25-26 Unsuccesful Swingup.csv',
         file=last_files[0],
-        #file='ExperimentRecordings/Swingups for Training V2/Experiment-0.csv',
-        states = ['angle', 'angleD', 'position', 'positionD', 'Q'],
-        predictors = {
-            'Euler': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10, k=1/3),
-            #'Pretrained RNN': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='Pretrained-RNN-1/GRU-6IN-32H1-32H2-5OUT-0'),
-            #'RNN with Simulation Data (20 Epochs) [GRU-1]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-1'),
-            #'RNN with Physical Data (20 Epochs) [GRU-4]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-4'),
-            #'RNN with Simulation (20 Epochs) + Physical (2 Epochs) [GRU-0]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-0'),
-            #'RNN with Simulation (20 Epochs) + Physical (20 Epochs) [GRU-3]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-3'),
-            #'RNN with Simulation + Physical V1 (20 Epochs) + Physical V2 (10 epochs) [GRU-5]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-5'),
-            'RNN with Simulation + Physical V1 (20 Epochs) + Physical V2 (20 epochs) [GRU-6]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-6'),
+        # file='ExperimentRecordings/Swingups for Training V2/Experiment-0.csv',
+        states=['angle', 'angleD', 'position', 'positionD', 'Q'],
+        predictors={
+            'Euler': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10, k=1 / 3),
+            # 'Pretrained RNN': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='Pretrained-RNN-1/GRU-6IN-32H1-32H2-5OUT-0'),
+            # 'RNN with Simulation Data (20 Epochs) [GRU-1]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-1'),
+            'RNN with Physical V1 (20 Epochs) [GRU-4]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-4'),
+            # 'RNN with Simulation (20 Epochs) + Physical V1 (2 Epochs) [GRU-0]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-0'),
+            # 'RNN with Simulation (20 Epochs) + Physical V1 (20 Epochs) [GRU-3]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-3'),
+            # 'RNN with Simulation + Physical V1 (20 Epochs) + Physical V2 (10 epochs) [GRU-5]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-5'),
+            # 'RNN with Simulation + Physical V1 (20 Epochs) + Physical V2 (20 epochs) [GRU-6]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-6'),
+            'RNN with Physical V2 (20 Epochs) [GRU-7]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-7'),
         },
-        offsets = [237],
+        offsets=[237],
         slider=True,
-        plot_frozen = True,
-        plot_fitted = True
+        plot_frozen=True,
+        plot_fitted=True
     )
