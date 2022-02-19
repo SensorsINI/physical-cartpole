@@ -17,7 +17,8 @@ class template_controller(ABC):
     # Optionally: A method called after an experiment.
     # May be used to print some statistics about controller performance (e.g. number of iter. to converge)
     def controller_report(self):
-        raise NotImplementedError
+        #raise NotImplementedError
+        pass
 
     # Optionally: reset the controller after an experiment
     # May be useful for stateful controllers, like these containing RNN,

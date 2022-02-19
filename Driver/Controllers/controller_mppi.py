@@ -31,6 +31,8 @@ from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import predictor_aut
 from Controllers.template_controller import template_controller
 from globals import *
 import time as global_time
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 import tensorflow as tf
 
 config = yaml.load(open(os.path.join("SI_Toolkit_ApplicationSpecificFiles", "config.yml"), "r"), Loader=yaml.FullLoader)
@@ -55,6 +57,7 @@ gui_dd = gui_ep = gui_ekp = gui_ekc = gui_cc = gui_ccrc = np.zeros(1, dtype=np.f
 """MPPI constants"""
 R = config["controller"][CONTROLLER_CONFIG]["R"]
 LBD = config["controller"][CONTROLLER_CONFIG]["LBD"]
+GAMMA = config["controller"][CONTROLLER_CONFIG]["GAMMA"]
 NU = config["controller"][CONTROLLER_CONFIG]["NU"]
 SQRTRHODTINV = config["controller"][CONTROLLER_CONFIG]["SQRTRHOINV"] * (1 / np.math.sqrt(dt))
 #GAMMA = config["controller"][CONTROLLER_CONFIG]["GAMMA"]
@@ -85,8 +88,8 @@ def E_kin_pol(angleD):
 @jit(nopython=True, cache=True, fastmath=True)
 def E_pot_pole(angle):
     """Compute penalty for not balancing pole upright (penalize large angles)"""
-    #return 0.25 * (1.0 - np.cos(angle)) ** 2
-    return angle ** 2 / 10
+    return 0.25 * (1.0 - np.cos(angle)) ** 2
+    #return angle ** 2 / 10
 
 
 @jit(nopython=True, cache=True, fastmath=True)
@@ -160,10 +163,8 @@ class controller_mppi(template_controller):
         self.logging_stage_cost = config["controller"][CONTROLLER_CONFIG]["logging"]["stage_cost"]
         self.logging_cost_to_go_breakdown = config["controller"][CONTROLLER_CONFIG]["logging"]["cost_to_go_breakdown"]
         self.logging_average_cost_to_go = config["controller"][CONTROLLER_CONFIG]["logging"]["average_cost_to_go"]
-        self.logging_trajectories = config["controller"][CONTROLLER_CONFIG]["logging"]["trajectories"]
-
-        if self.logging_trajectories:
-            use('TkAgg')
+        self.logging_trajectory = config["controller"][CONTROLLER_CONFIG]["logging"]["trajectory"]
+        self.logging_rollouts = config["controller"][CONTROLLER_CONFIG]["logging"]["rollouts"]
 
         # Cost Weights
         self.dd_weight = config["controller"][CONTROLLER_CONFIG]["stage_cost"]["dd_weight"] * (1 + dd_noise * self.rng_mppi.uniform(-1.0, 1.0))
@@ -176,8 +177,10 @@ class controller_mppi(template_controller):
         self.border_threshold = config["controller"][CONTROLLER_CONFIG]["stage_cost"]["border_threshold"]
         self.terminal_angle_weight = config["controller"][CONTROLLER_CONFIG]["terminal_cost"]["angle"]
         self.terminal_position_weight = config["controller"][CONTROLLER_CONFIG]["terminal_cost"]["position"]
+        self.swing_through_weight = config["controller"][CONTROLLER_CONFIG]["terminal_cost"]["swing_through"]
         self.terminal_goal_angle = config["controller"][CONTROLLER_CONFIG]["terminal_goal"]["angle"]
         self.terminal_goal_position = config["controller"][CONTROLLER_CONFIG]["terminal_goal"]["position"]
+
 
         # State of the cart
         self.state = create_cartpole_state()
@@ -194,6 +197,8 @@ class controller_mppi(template_controller):
         self.num_rollouts = num_rollouts
         self.horizon = mpc_samples
         self.predictor_type = predictor_type
+
+        self.gamma = (GAMMA ** np.arange(self.horizon))
 
         # Logging
         self.logs = {
@@ -288,12 +293,13 @@ class controller_mppi(template_controller):
         total_cost, dd, ep, ekp, ekc, cc, ccrc, border = self.stage_cost(s, u, delta_u, target_position)
         terminal_cost = self.terminal_cost(s, target_position)
         rollout_costs = np.sum(total_cost, axis=1) + terminal_cost
+        #rollout_costs = np.dot(total_cost, self.gamma) + terminal_cost
 
         # Pass costs to GUI popup window (0.3ms)
         global gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
         gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc = (np.mean(dd), np.mean(ep), np.mean(ekp), np.mean(ekc), np.mean(cc), np.mean(ccrc))
 
-        if self.logging_trajectories:
+        if self.logging_rollouts:
             self.logs.get("rollout_states").append(s)
             self.logs.get("rollout_inputs").append(u + delta_u)
             self.logs.get("rollout_costs").append(total_cost)
@@ -316,7 +322,7 @@ class controller_mppi(template_controller):
         return total_cost, dd, ep, ekp, ekc, cc, ccrc, border
 
     def sigmoid(self, x):
-        return 1/(1 + np.exp(-20 * x))
+        return 1/(1 + np.exp(-50 * x))
 
     def terminal_cost(self, s, target_position):
         """Calculate terminal cost of a set of trajectories
@@ -331,11 +337,22 @@ class controller_mppi(template_controller):
         :param target_position: Target position to move the cart to
         :return: One terminal cost per rollout
         """
-        terminal_states = s[:, -1, :]
-        #terminal_cost = self.terminal_angle_weight * (np.abs(terminal_states[:, ANGLE_IDX]) > (self.terminal_goal_angle * np.pi))
-        #terminal_cost += self.terminal_position_weight * (np.abs(terminal_states[:, POSITION_IDX] - target_position) > self.terminal_goal_position * TrackHalfLength)
-        terminal_cost = self.terminal_angle_weight * self.sigmoid(np.abs(terminal_states[:, ANGLE_IDX]) - (self.terminal_goal_angle * np.pi))
-        terminal_cost += self.terminal_position_weight * self.sigmoid(np.abs(terminal_states[:, POSITION_IDX] - target_position) - self.terminal_goal_position * TrackHalfLength)
+        #SWING_THROUGH_HORIZON = 8
+        #initial_angle = s[:, 0, ANGLE_IDX]
+        #middle_angle = s[:, -SWING_THROUGH_HORIZON, ANGLE_IDX]
+        terminal_angle = s[:, -1, ANGLE_IDX]
+        terminal_position = s[:, -1, ANGLE_IDX]
+        #mean_speed = np.mean(s[:, -SWING_THROUGH_HORIZON:, ANGLED_IDX], axis=1)
+
+        terminal_cost = self.terminal_angle_weight * np.where(np.abs(terminal_angle) > (self.terminal_goal_angle * np.pi), 1, 0)
+        terminal_cost += self.terminal_position_weight * np.where(np.abs(terminal_position - target_position) > self.terminal_goal_position * TrackHalfLength, 1, 0)
+
+        # Punish Fast Swing Throughts (Changed Sign according to Average Speed & Level of Average Speed)
+        #through_zero = np.where(2*np.sign(middle_angle)+np.sign(terminal_angle)+np.sign(mean_speed)==0, 1, 0)
+        #terminal_cost += self.swing_through_weight * np.where(through_zero & (np.abs(terminal_angle) > 0.3), 1, 0) * np.abs(mean_speed)
+
+        #terminal_cost = self.terminal_angle_weight * self.sigmoid(np.abs(terminal_states[:, ANGLE_IDX]) - (self.terminal_goal_angle * np.pi))
+        #terminal_cost += self.terminal_position_weight * self.sigmoid(np.abs(terminal_states[:, POSITION_IDX] - target_position) - self.terminal_goal_position * TrackHalfLength)
 
         return terminal_cost
 
@@ -364,11 +381,15 @@ class controller_mppi(template_controller):
         # Update inputs with weighted perturbations
         self.rollout_u = self.u + self.delta_u
         self.u = update_inputs(self.u, self.rollout_costs, self.delta_u)
+        #self.u = self.rollout_u[np.argmin(self.rollout_costs)]
         self.u = np.clip(self.u, -1.0, 1.0, dtype=np.float32)
 
-        # Nominal Realization for Plotting
-        if self.logging_trajectories:
+        # Realized Trajectory
+        if self.logging_trajectory or self.logging_rollouts:
             self.logs.get("realized_trajectory").append(np.append(self.state, np.expand_dims(self.u[0], axis=0), axis=-1))
+
+        # Rollouts
+        if self.logging_rollouts:
             self.logs.get("reference_trajectory").append(target_position)
             self.current_cost = self.stage_cost(self.state, self.u[0], self.u_prev[1] - self.u[0], target_position)
             self.logs.get("realized_costs").append(self.current_cost)
@@ -410,27 +431,112 @@ class controller_mppi(template_controller):
         print('*** Controller Informations here ***')
 
     def controller_report(self):
-        print('\nCreating Plots.')
+        # Trajectory
+        if self.logging_trajectory:
+            realized_states = np.stack(self.logs.get("realized_trajectory"), axis=0)
+            realized_trajectories = realized_states[:, [ANGLE_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX, -1]].T
+            fig, axs = plt.subplots(len(realized_trajectories), 1, num=1, sharex=True, figsize=(8,12))
+            units = [r'$\theta$ in rad', r'$\dot{\theta}$ in rad/s', 'x in m', r'$\dot{x}$ in m/s', 'Q ∈ [-1,1]']
+            time_axis = dt * np.arange(start=0, stop=np.shape(realized_trajectories[0])[0])
 
-        if self.logging_trajectories:
+            for j, realized_trajectory in enumerate(realized_trajectories):
+                axs[j].clear()
+                axs[j].plot(time_axis, realized_trajectory, label='Physical Trajectory', marker='.', markersize=2, linewidth=1, linestyle='--', color='black', alpha=0.5)
+                axs[j].set_title(units[j])
+                axs[j].tick_params(axis='both', which='major')
+                axs[j].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5, alpha=0.5)
+
+            fig.tight_layout()
+            plt.xlabel('time in s')
+            plt.show()
+
+        ### Average Cost to Go
+        if self.logging_average_cost_to_go:
+            average_cost_to_go = np.stack(self.logs.get("average_cost_to_go"), axis=0)
+            time_axis = dt * np.arange(start=0, stop=np.shape(average_cost_to_go)[0])
+            plt.figure(num=3)
+            plt.semilogy(time_axis, average_cost_to_go, marker='.', markersize=8)
+            plt.title("Average Cost-to-go (over all rollouts)")
+            plt.xlabel("time in s")
+            plt.ylabel("Cost")
+            plt.legend(fontsize='xx-small')
+            plt.show()
+
+        ### Cost to Go Breakdown
+        if self.logging_cost_to_go_breakdown:
+            cost_to_go_breakdown = np.stack(self.logs.get("cost_to_go_breakdown"), axis=0)
+            time_axis = dt * np.arange(start=0, stop=np.shape(cost_to_go_breakdown)[0])
+            labels = ['Total Cost to Go', 'Terminal Cost', 'Cart Distance', 'Pole Potential', 'Pole Kinetic', 'Cart Kinetic', 'Control Cost', 'Control Change Rate', 'Border Safety']
+
+            plt.figure(num=4)
+            for i in range(9):
+                if cost_to_go_breakdown[:, i].max() > 1:
+                    plt.semilogy(time_axis, cost_to_go_breakdown[:, i], label=labels[i], marker='.', markersize=2, linewidth=1)
+            plt.title("Cost-to-go Breakdown (of selected rollout)")
+            plt.xlabel("time in s")
+            plt.ylabel("Cost")
+            plt.legend(loc='lower left', fontsize='xx-small')
+            plt.show()
+
+        ### Stage Cost Breakdown
+        if self.logging_stage_cost:
+            realized_costs = np.stack(self.logs.get("stage_cost_breakdown"), axis=0)
+            time_axis = dt * np.arange(start=0, stop=len(realized_costs[:, 0]))
+            labels = ['Total Cost', 'Cart Distance', 'Pole Potential', 'Pole Kinetic', 'Cart Kinetic', 'Control Cost', 'Control Change Rate', 'Border Safety']
+
+            plt.figure(num=5)
+            for i in range(8):
+                if realized_costs[:, i].max() > 1:
+                    plt.semilogy(time_axis, realized_costs[:, i], label=labels[i], marker='.', markersize=2, linewidth=1)
+
+            plt.title("Stage Cost Breakdown (of realized states)")
+            plt.xlabel("time in s")
+            plt.ylabel("Cost")
+            plt.legend(loc='lower left', fontsize='xx-small')
+            plt.show()
+
+        # Rollouts
+        if self.logging_rollouts:
+            use('TkAgg')
+
             ## Plot Trajectories
             rollout_states = np.stack(self.logs.get("rollout_states"), axis=0)
             rollout_inputs = np.stack(self.logs.get("rollout_inputs"), axis=0)
             rollout_costs = np.stack(self.logs.get("rollout_costs"), axis=0)
             rollout_index = np.stack(self.logs.get("rollout_index"), axis=0)
 
+            realized_states = np.stack(self.logs.get("realized_trajectory"), axis=0)
+            realized_costs = np.stack(self.logs.get("realized_costs"), axis=0)
+
+            if False:
+                post_pred = predictor_autoregressive_tf(horizon=mpc_samples, batch_size=1, net_name=NET_NAME)
+                experiment_length = trajectory.shape[0]
+
+                # Calculate Predictions
+                predictions = np.zeros((len(predictors.keys()), experiment_length, horizon + 1, 6))
+                for i, name in enumerate(predictors):
+                    predictor = predictors[name]
+                    Q = np.pad(trajectory['Q'].to_numpy(), pad_width=(0, horizon))
+                    s = trajectory[['angle', 'angleD', 'angle_cos', 'angle_sin', 'position', 'positionD']].to_numpy()
+
+                    # Get predictions for whole trajectory
+                    for timestep in tqdm(range(experiment_length)):
+                        s_current = tf.convert_to_tensor(s[timestep, :], dtype=tf.float32)
+                        Q_current = tf.convert_to_tensor(Q[np.newaxis, timestep:timestep + horizon], dtype=tf.float32)
+                        predictions[i, timestep, 0] = s[timestep, :]
+                        predictions[i, timestep, 1:] = predictor.predict_tf(s_current, Q_current).numpy()
+                        predictor.update_internal_state_tf(tf.convert_to_tensor(Q_current[:, 0], dtype=tf.float32))
+
             nominal_states = rollout_states[np.arange(rollout_states.shape[0]), rollout_index, ...].squeeze()
             nominal_costs = rollout_costs[np.arange(rollout_costs.shape[0]), rollout_index, ...].squeeze()
             nominal_inputs = rollout_inputs[np.arange(rollout_inputs.shape[0]), rollout_index, ...].squeeze()
 
-            realized_states = np.stack(self.logs.get("realized_trajectory"), axis=0)
-            realized_costs = np.stack(self.logs.get("realized_costs"), axis=0)
 
             reference_trajectory = np.stack(self.logs.get("reference_trajectory")[:-1], axis=0)
             cost_to_go = np.stack(self.logs.get("cost_to_go"), axis=0)
 
             # Create figure
-            fig, axs = plt.subplots(nrows=6, ncols=1, num=1, sharex=True, gridspec_kw={"bottom": 0.15, "left": 0.1, "right": 0.84, "top": 0.95}, figsize=(16, 12))
+            fig, axs = plt.subplots(nrows=6, ncols=1, num=2, sharex=True, gridspec_kw={"bottom": 0.15, "left": 0.1, "right": 0.84, "top": 0.95}, figsize=(16, 12))
 
 
             # Create time slider
@@ -440,11 +546,12 @@ class controller_mppi(template_controller):
             # Normalize cost to go to use as opacity in plot
             cost_to_go = np.divide(cost_to_go.T, np.max(np.abs(cost_to_go), axis=1)).T
 
+
             # This function updates the plot when a new iteration is selected
             def update_plot(i):
-                rollouts = [rollout_states[i - 1, :, :, POSITION_IDX], rollout_states[i - 1, :, :, POSITIOND_IDX], rollout_states[i - 1, :, :, ANGLE_IDX], rollout_states[i - 1, :, :, ANGLED_IDX], rollout_inputs[i - 1], rollout_costs[i - 1]]
-                realized_trajectories = [realized_states[:, POSITION_IDX], realized_states[:, POSITIOND_IDX], realized_states[:, ANGLE_IDX], realized_states[:, ANGLED_IDX], realized_states[:, -1], realized_costs[..., 0]]
-                nominal_trajectories = [nominal_states[i - 1, :, POSITION_IDX], nominal_states[i - 1, :, POSITIOND_IDX], nominal_states[i - 1, :, ANGLE_IDX], nominal_states[i - 1, :, ANGLED_IDX], nominal_inputs[i - 1, :], nominal_costs[i - 1]]
+                rollouts = [rollout_states[i - 1, :, :, ANGLE_IDX], rollout_states[i - 1, :, :, ANGLED_IDX], rollout_states[i - 1, :, :, POSITION_IDX], rollout_states[i - 1, :, :, POSITIOND_IDX], rollout_inputs[i - 1], rollout_costs[i - 1]]
+                realized_trajectories = [realized_states[:, ANGLE_IDX], realized_states[:, ANGLED_IDX], realized_states[:, POSITION_IDX], realized_states[:, POSITIOND_IDX], realized_states[:, -1], realized_costs[..., 0]]
+                nominal_trajectories = [nominal_states[i - 1, :, ANGLE_IDX], nominal_states[i - 1, :, ANGLED_IDX], nominal_states[i - 1, :, POSITION_IDX], nominal_states[i - 1, :, POSITIOND_IDX], nominal_inputs[i - 1, :], nominal_costs[i - 1]]
 
                 for j, ax in enumerate(axs):
                     ax.clear()
@@ -456,7 +563,7 @@ class controller_mppi(template_controller):
 
                     # Rollouts (for current slider position)
                     rollout = rollouts[j]
-                    for l in range(0, self.num_rollouts, 5):
+                    for l in range(0, self.num_rollouts, 20):
                         ax.plot(
                             (iteration + np.arange(0, self.horizon)) * dt,
                             rollout[l, :],
@@ -480,15 +587,15 @@ class controller_mppi(template_controller):
                     )
 
                 # Limits
-                axs[0].set_xlim(0, np.shape(realized_states)[0] * dt)
-                axs[0].set_ylim(-TrackHalfLength * 1.05, TrackHalfLength * 1.05)
+                #axs[0].set_xlim(0, np.shape(realized_states)[0] * dt)
+                #axs[0].set_ylim(-TrackHalfLength * 1.05, TrackHalfLength * 1.05)
 
                 # Labels
                 axs[0].set_title("Monte Carlo Rollouts")
-                axs[0].set_ylabel("position (m)", fontsize='x-small')
-                axs[1].set_ylabel("velocity (m/s)", fontsize='x-small')
-                axs[2].set_ylabel("angle (deg)", fontsize='x-small')
-                axs[3].set_ylabel("angular rate (deg/s)", fontsize='x-small')
+                axs[0].set_ylabel("angle (deg)", fontsize='x-small')
+                axs[1].set_ylabel("angular rate (deg/s)", fontsize='x-small')
+                axs[2].set_ylabel("position (m)", fontsize='x-small')
+                axs[3].set_ylabel("velocity (m/s)", fontsize='x-small')
                 axs[4].set_ylabel("input Q ∈ [-1,1]", fontsize='x-small')
                 axs[5].set_ylabel("total cost", fontsize='x-small')
                 axs[5].set_xlabel("time (s)", fontsize='small')
@@ -498,51 +605,6 @@ class controller_mppi(template_controller):
 
             update_plot(1)
             slider.on_changed(update_plot)
-            plt.show()
-
-        ### Average Cost to Go
-        if self.logging_average_cost_to_go:
-            average_cost_to_go = np.stack(self.logs.get("average_cost_to_go"), axis=0)
-            time_axis = dt * np.arange(start=0, stop=np.shape(average_cost_to_go)[0])
-            plt.figure(num=2)
-            plt.semilogy(time_axis, average_cost_to_go, marker='.', markersize=8)
-            plt.title("Average Cost-to-go (over all rollouts)")
-            plt.xlabel("time in s")
-            plt.ylabel("Cost")
-            plt.legend(fontsize='xx-small')
-            plt.show()
-
-        ### Cost to Go Breakdown
-        if self.logging_cost_to_go_breakdown:
-            cost_to_go_breakdown = np.stack(self.logs.get("cost_to_go_breakdown"), axis=0)
-            time_axis = dt * np.arange(start=0, stop=np.shape(cost_to_go_breakdown)[0])
-            labels = ['Total Cost to Go', 'Terminal Cost', 'Cart Distance', 'Pole Potential', 'Pole Kinetic', 'Cart Kinetic', 'Control Cost', 'Control Change Rate', 'Border Safety']
-
-            plt.figure(num=3)
-            for i in range(9):
-                if cost_to_go_breakdown[:, i].max() > 1:
-                    plt.semilogy(time_axis, cost_to_go_breakdown[:, i], label=labels[i], marker='.', markersize=2, linewidth=1)
-            plt.title("Cost-to-go Breakdown (of selected rollout)")
-            plt.xlabel("time in s")
-            plt.ylabel("Cost")
-            plt.legend(loc='lower left', fontsize='xx-small')
-            plt.show()
-
-        ### Stage Cost Breakdown
-        if self.logging_stage_cost:
-            realized_costs = np.stack(self.logs.get("stage_cost_breakdown"), axis=0)
-            time_axis = dt * np.arange(start=0, stop=len(realized_costs[:, 0]))
-            labels = ['Total Cost', 'Cart Distance', 'Pole Potential', 'Pole Kinetic', 'Cart Kinetic', 'Control Cost', 'Control Change Rate', 'Border Safety']
-
-            plt.figure(num=4)
-            for i in range(8):
-                if realized_costs[:, i].max() > 1:
-                    plt.semilogy(time_axis, realized_costs[:, i], label=labels[i], marker='.', markersize=2, linewidth=1)
-
-            plt.title("Stage Cost Breakdown (of realized states)")
-            plt.xlabel("time in s")
-            plt.ylabel("Cost")
-            plt.legend(loc='lower left', fontsize='xx-small')
             plt.show()
 
         self.logs = {

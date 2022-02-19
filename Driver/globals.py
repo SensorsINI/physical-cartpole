@@ -5,7 +5,7 @@ import numpy as np
 
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR
-PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
+PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/Swingup New/'  # Path where the experiments data is stored
 PRINT_PERIOD_MS = 10  # shows state in terminal every this many control updates
 PRINT_AVERAGING_LENGTH = 500
 
@@ -22,9 +22,9 @@ LIVE_PLOT_TIMELINES = list(range(5))       # deactivate plots for performance, f
 LIVE_PLOT_HISTOGRAMMS = list(range(5))     # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mppi'     # e.g. 'PID', 'mppi'
+CONTROLLER_NAME = 'PID'     # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'Euler'     # e.g. 'Euler', 'RNN'
-CONTROL_PERIOD_MS = 20 if CONTROLLER_NAME == 'mppi' else 5         # e.g. 5 for PID or 20 for mppi
+CONTROL_PERIOD_MS = 5 if CONTROLLER_NAME == 'PID' else 20         # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = False            # Delays Input until next Timeslot for more accurate measurements
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 AUTOSTART = False                # Autostarts Zero-Controller for Performance Measurement
