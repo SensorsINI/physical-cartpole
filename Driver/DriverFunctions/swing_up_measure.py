@@ -92,6 +92,7 @@ class SwingUpMeasure:
                 self.counter_swingup += 1
                 self.driver.controlEnabled = False
                 self.Q = 0
+                self.driver.controller.controller_report()
 
                 if self.counter_swingup >= NUMBER_OF_SWINGUPS:
                     self.state = 'idle'
