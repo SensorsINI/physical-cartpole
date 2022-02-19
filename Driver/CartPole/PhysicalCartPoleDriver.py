@@ -33,6 +33,9 @@ from multiprocessing.connection import Client
 import sys
 import tensorflow as tf
 
+import warnings
+warnings.simplefilter('ignore', np.RankWarning)
+
 class PhysicalCartPoleDriver:
     def __init__(self):
 
@@ -92,8 +95,13 @@ class PhysicalCartPoleDriver:
         self.andleD_raw = 0
         self.angleD_raw_stable = None
         self.angleD_raw_prev = None
+        self.angleD_raw_buffer = np.zeros((0))
+        self.angle_raw_sensor = None
+        self.angleD_raw_sensor = None
+        self.angle_raw_sensor_prev = None
         self.invalid_steps = 0
         self.frozen = 0
+        self.fitted = 0
         self.position_raw = 0
         self.anglePrev = 0.0
         self.positionPrev = None
@@ -173,7 +181,8 @@ class PhysicalCartPoleDriver:
         except AttributeError:
             print('printparams not implemented for this self.controller.')
 
-        self.controller.print_help()
+        if hasattr(self.controller, 'print_help'):
+            self.controller.print_help()
 
         self.startTime = time.time()
         self.lastTime = self.startTime
@@ -472,8 +481,8 @@ class PhysicalCartPoleDriver:
         (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent, self.firmware_latency) = self.InterfaceInstance.read_state()
         self.position_centered_unconverted = -(self.position_raw - self.position_offset)
 
-        # Process Raw Angle
 
+        # Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
         if (self.invalid_steps > 5 and self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw_prev)) < 200) or (self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw - self.angle_raw_prev)) > 500 and self.frozen < 3):
             self.frozen += 1
             self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
@@ -484,6 +493,33 @@ class PhysicalCartPoleDriver:
             self.angleD_raw_stable = self.angleD_raw
             self.frozen = 0
 
+        self.angle_raw_sensor = self.angle_raw
+        self.angleD_raw_sensor = self.angleD_raw
+
+        # Polyfit AngleD if filled buffer and inside Anomaly (close to 0 and small angleD_raw)
+        MAX_BUFFER_LENGTH = 10 # 10 * 20ms = 200ms
+        if len(self.angleD_raw_buffer) >= 2:
+            p = np.polyfit(x=np.arange(len(self.angleD_raw_buffer)), y=self.angleD_raw_buffer, deg=2)
+            self.angleD_fitted = np.polyval(p=p, x=len(self.angleD_raw_buffer))
+            if abs(self.wrap_local(self.angle_raw_prev)) < 200 and self.fitted < 3 and len(self.angleD_raw_buffer) >= MAX_BUFFER_LENGTH:
+                if abs(self.angleD_fitted) < 500 and (abs(self.wrap_local(self.angleD_fitted - self.angleD_raw)) > (20 + 12 * self.fitted) or abs(self.wrap_local(self.angle_raw_prev-self.angle_raw)) < 25 or abs(self.wrap_local(self.angleD_raw_prev-self.angleD_raw)) > 25):
+                    self.fitted += 1
+                    self.angleD_raw = self.angleD_fitted
+                else:
+                    if self.fitted:
+                        self.angleD_raw_buffer = np.zeros((0))
+                    self.fitted = 0
+            else:
+                if self.fitted:
+                    self.angleD_raw_buffer = np.zeros((0))
+                self.fitted = 0
+        else:
+            self.fitted = 0
+
+        self.angleD_raw_buffer = np.append(self.angleD_raw_buffer, self.angleD_raw)
+        self.angleD_raw_buffer = self.angleD_raw_buffer[-(MAX_BUFFER_LENGTH+self.fitted):]
+
+        # Save previous Values
         self.angle_raw_prev = self.angle_raw
         self.angleD_raw_prev = self.angleD_raw
 
@@ -613,9 +649,11 @@ class PhysicalCartPoleDriver:
             self.controlEnabled = False
             self.InterfaceInstance.set_motor(0)
             self.new_console_output = 1
-            if self.controller.controller_name == 'mppi-tf' and self.controlled_iterations > 1:
+
+            if hasattr(self.controller, 'controller_report') and self.controlled_iterations > 1:
                 self.controller.controller_report()
-            self.controller.controller_reset()
+            if hasattr(self.controller, 'controller_reset'):
+                self.controller.controller_reset()
             self.danceEnabled = False
             self.actualMotorCmd = 0
         else:
@@ -631,7 +669,7 @@ class PhysicalCartPoleDriver:
                      self.target_position, self.controller.position_error, self.controller.Q_angle,
                      self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen])
+                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
             else:
                 self.csvwriter.writerow(
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
@@ -639,7 +677,7 @@ class PhysicalCartPoleDriver:
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                      self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen])
+                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q
@@ -711,7 +749,7 @@ class PhysicalCartPoleDriver:
         if True or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
-            if not self.new_console_output:
+            if True and not self.new_console_output:
                 print('\033[5A', end='')
             self.new_console_output = False
 
