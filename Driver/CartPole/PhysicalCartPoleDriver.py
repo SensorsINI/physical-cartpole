@@ -32,6 +32,7 @@ import subprocess, multiprocessing, platform
 from multiprocessing.connection import Client
 import sys
 import tensorflow as tf
+import serial
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
@@ -146,6 +147,9 @@ class PhysicalCartPoleDriver:
         self.additional_latency = 0.0
         self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency)
         self.s_delayed = np.copy(self.s)
+
+        self.arduino_serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)
+        self.arduino_serial_port.write(b'1')
 
     def run(self):
         self.setup()

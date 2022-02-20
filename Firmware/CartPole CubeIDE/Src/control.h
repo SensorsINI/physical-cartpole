@@ -12,7 +12,7 @@
 
 
 /***** Angle Set Point *****/
-#define CONTROL_ANGLE_SET_POINT_POLULU	    3355
+#define CONTROL_ANGLE_SET_POINT_POLULU	    3342 //3355
 #define CONTROL_ANGLE_SET_POINT_ORIGINAL	3163
 
 /***** Angle & Position *****/
