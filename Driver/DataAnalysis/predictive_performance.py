@@ -59,7 +59,7 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
 
     def plot_all(offsets):
         if not isinstance(offsets, list):
-            offsets = [offsets]
+            offsets = [int(offsets)]
 
         for j, state in enumerate(states):
             axs[j].clear()
