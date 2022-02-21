@@ -1,7 +1,7 @@
 #include "timer.h"
 
 TIMER1_Callback cbTimer1;
-long timer_resets = 0;
+unsigned long timer_resets = 0;
 unsigned int periodMS = 5;
 unsigned int slowdown = 1;
 
@@ -52,8 +52,8 @@ float TIMER1_getSystemTime() {
 }
 
 // unsigned long max value: 4'294'967'295us = 4'294.967'295s ~ 60min
-unsigned int TIMER1_getSystemTime_Us() {
-    return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * periodMS + TIM1->CNT * slowdown;
+unsigned long TIMER1_getSystemTime_Us() {
+    return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * (unsigned long)periodMS + TIM1->CNT * slowdown;
 }
 
 // Timer 1 interrupt handler

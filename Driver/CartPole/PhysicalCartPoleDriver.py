@@ -33,9 +33,20 @@ from multiprocessing.connection import Client
 import sys
 import tensorflow as tf
 import serial
+from numba import jit
+from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
+
+
+@jit(nopython=False, cache=True, fastmath=True)
+def polyfit(buffer):
+    p = fit_poly(np.arange(len(buffer)), buffer, 2)
+    return eval_polynomial(p, len(buffer))
+    #p = np.polyfit(x=np.arange(len(buffer)), y=buffer, deg=2)
+    #return np.polyval(p=p, x=len(buffer))
+
 
 class PhysicalCartPoleDriver:
     def __init__(self):
@@ -100,6 +111,7 @@ class PhysicalCartPoleDriver:
         self.angle_raw_sensor = None
         self.angleD_raw_sensor = None
         self.angle_raw_sensor_prev = None
+        self.angleD_fitted = None
         self.invalid_steps = 0
         self.frozen = 0
         self.fitted = 0
@@ -501,27 +513,27 @@ class PhysicalCartPoleDriver:
         self.angleD_raw_sensor = self.angleD_raw
 
         # Polyfit AngleD if filled buffer and inside Anomaly (close to 0 and small angleD_raw)
-        MAX_BUFFER_LENGTH = 10 # 10 * 20ms = 200ms
-        if len(self.angleD_raw_buffer) >= 2:
-            p = np.polyfit(x=np.arange(len(self.angleD_raw_buffer)), y=self.angleD_raw_buffer, deg=2)
-            self.angleD_fitted = np.polyval(p=p, x=len(self.angleD_raw_buffer))
-            if abs(self.wrap_local(self.angle_raw_prev)) < 200 and self.fitted < 3 and len(self.angleD_raw_buffer) >= MAX_BUFFER_LENGTH:
-                if abs(self.angleD_fitted) < 500 and (abs(self.wrap_local(self.angleD_fitted - self.angleD_raw)) > (20 + 12 * self.fitted) or abs(self.wrap_local(self.angle_raw_prev-self.angle_raw)) < 25 or abs(self.wrap_local(self.angleD_raw_prev-self.angleD_raw)) > 25):
-                    self.fitted += 1
-                    self.angleD_raw = self.angleD_fitted
+        if POLYFIT_ANGLED:
+            MAX_BUFFER_LENGTH = 10 # 10 * 20ms = 200ms
+            if len(self.angleD_raw_buffer) >= 2:
+                self.angleD_fitted = polyfit(self.angleD_raw_buffer)
+                if abs(self.wrap_local(self.angle_raw_prev)) < 200 and self.fitted < 3 and len(self.angleD_raw_buffer) >= MAX_BUFFER_LENGTH:
+                    if abs(self.angleD_fitted) < 500 and (abs(self.wrap_local(self.angleD_fitted - self.angleD_raw)) > (20 + 12 * self.fitted) or abs(self.wrap_local(self.angle_raw_prev-self.angle_raw)) < 25 or abs(self.wrap_local(self.angleD_raw_prev-self.angleD_raw)) > 25):
+                        self.fitted += 1
+                        self.angleD_raw = self.angleD_fitted
+                    else:
+                        if self.fitted:
+                            self.angleD_raw_buffer = np.zeros((0))
+                        self.fitted = 0
                 else:
                     if self.fitted:
                         self.angleD_raw_buffer = np.zeros((0))
                     self.fitted = 0
             else:
-                if self.fitted:
-                    self.angleD_raw_buffer = np.zeros((0))
                 self.fitted = 0
-        else:
-            self.fitted = 0
 
-        self.angleD_raw_buffer = np.append(self.angleD_raw_buffer, self.angleD_raw)
-        self.angleD_raw_buffer = self.angleD_raw_buffer[-(MAX_BUFFER_LENGTH+self.fitted):]
+            self.angleD_raw_buffer = np.append(self.angleD_raw_buffer, self.angleD_raw)
+            self.angleD_raw_buffer = self.angleD_raw_buffer[-(MAX_BUFFER_LENGTH+self.fitted):]
 
         # Save previous Values
         self.angle_raw_prev = self.angle_raw
@@ -543,9 +555,8 @@ class PhysicalCartPoleDriver:
         self.lastSent = self.sent
 
         # Latency Violations
-        if self.firmware_latency > 1e-6:
-            if self.firmware_latency > CONTROL_PERIOD_MS * 1e-3:
-                self.latency_violations += 1
+        if self.delta_time > 1.1 * CONTROL_PERIOD_MS * 1e-3:
+            self.latency_violations += 1
 
         # Calculating derivatives (cart velocity and angular velocity of the pole)
         angleDerivative = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR / self.delta_time  # rad/self.s
@@ -631,7 +642,6 @@ class PhysicalCartPoleDriver:
                     elif np.sign(self.s[POSITIOND_IDX]) < 0:
                         self.actualMotorCmd -= 250.80
 
-
         else:
             self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
             pass
@@ -673,7 +683,7 @@ class PhysicalCartPoleDriver:
                      self.target_position, self.controller.position_error, self.controller.Q_angle,
                      self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
             else:
                 self.csvwriter.writerow(
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
@@ -681,7 +691,7 @@ class PhysicalCartPoleDriver:
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                      self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q

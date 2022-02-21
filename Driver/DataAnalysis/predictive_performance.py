@@ -61,22 +61,9 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
         if not isinstance(offsets, list):
             offsets = [offsets]
 
-        # Plot Trajectory
         for j, state in enumerate(states):
             axs[j].clear()
-            axs[j].plot(time, trajectory[state], label='Physical Trajectory', marker='.', markersize=2, linewidth=1, linestyle='--', color='black', alpha=0.5)
-            if state == 'angle_raw' and 'angle_raw_sensor' in trajectory:
-                axs[j].plot(time, trajectory['angle_raw_sensor'], label='Sensor', marker='.', markersize=2, linewidth=1, linestyle='--', color='blue', alpha=0.5)
-            if state == 'angleD_raw' and 'angleD_raw_sensor' in trajectory:
-                axs[j].plot(time, trajectory['angleD_raw_sensor'], label='Sensor', marker='.', markersize=2, linewidth=1, linestyle='--', color='blue', alpha=0.5)
-            if state == 'angleD_raw' and 'angleD_fitted' in trajectory:
-                axs[j].plot(time, trajectory['angleD_fitted'], label='Fitted', marker='.', markersize=2, linewidth=1, linestyle='--', color='green', alpha=0.5)
-            axs[j].set_title(units[state], fontsize=fontsize)
-            axs[j].tick_params(axis='both', which='major', labelsize=fontsize)
-            axs[j].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5, alpha=0.5)
-            if state != 'Q':
-                for offset in offsets:
-                    axs[j].plot(time[offset], trajectory[state][offset], marker='o', markersize=5, color='black', alpha=0.5)
+            axs[j].plot(time, trajectory[state], linewidth=1, linestyle='-', color='black', alpha=0.5)
 
         # Plot Frozen
         if plot_frozen and 'frozen' in trajectory:
@@ -102,6 +89,22 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
                     if state in indexes:
                         axs[j].plot(time[offset:offset + horizon + 1], predictions[i, offset, :, indexes[state]], label=name if k == 0 else None, marker='.', markersize=2, linewidth=1, linestyle='--', color=colors[i])
 
+        # Plot Trajectory
+        for j, state in enumerate(states):
+            axs[j].plot(time, trajectory[state], label='Physical Trajectory', marker='x', markersize=3, linewidth=0, linestyle='', color='black', alpha=1)
+            if state == 'angle_raw' and 'angle_raw_sensor' in trajectory:
+                axs[j].plot(time, trajectory['angle_raw_sensor'], label='Sensor', marker='.', markersize=2, linewidth=1, linestyle='--', color='blue', alpha=0.5)
+            if state == 'angleD_raw' and 'angleD_raw_sensor' in trajectory:
+                axs[j].plot(time, trajectory['angleD_raw_sensor'], label='Sensor', marker='.', markersize=2, linewidth=1, linestyle='--', color='blue', alpha=0.5)
+            if state == 'angleD_raw' and 'angleD_fitted' in trajectory:
+                axs[j].plot(time, trajectory['angleD_fitted'], label='Fitted', marker='.', markersize=2, linewidth=1, linestyle='--', color='green', alpha=0.5)
+            axs[j].set_title(units[state], fontsize=fontsize)
+            axs[j].tick_params(axis='both', which='major', labelsize=fontsize)
+            axs[j].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5, alpha=0.5)
+            if state != 'Q':
+                for offset in offsets:
+                    axs[j].plot(time[offset], trajectory[state][offset], marker='o', markersize=5, color='black', alpha=0.5)
+
         # Add Legend
         for j in range(len(states)):
             axs[j].legend(loc='upper right', fontsize=fontsize)
@@ -123,6 +126,7 @@ def plot_predictive_performance(file, states, predictors, offsets=[0], title='',
 if __name__ == "__main__":
     horizon = 50
 
+    ##### Varying Stepsize #####
     # plot_predictive_performance(
     #     title='Varying Stepsize',
     #     file = 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-11_16-47-00 20ms swingup.csv',
@@ -138,6 +142,7 @@ if __name__ == "__main__":
     #     fontsize='small'
     # )
 
+    ##### Varying k #####
     # plot_predictive_performance(
     #     title='Varying k',
     #     file = 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-22_01-34-16 20ms swinging short.csv',
@@ -149,6 +154,19 @@ if __name__ == "__main__":
     #     offsets = [51, 150],
     #     figsize=(8,6)
     # )
+
+    ##### Anomaly Close Up #####
+    # plot_predictive_performance(
+    #     title='Anomaly',
+    #     file='ExperimentRecordings/Results/CP_PID_2022-01-22_01-34-16 20ms swinging anomaly.csv',
+    #     states=['angle', 'angleD'],
+    #     predictors={},
+    #     slider=False,
+    #     plot_frozen=False,
+    #     plot_fitted=False
+    # )
+
+    ##### Predictive Performance: EUler vs RNN #####
     last_files = glob.glob('ExperimentRecordings/*.csv')
     last_files.sort(key=os.path.getctime, reverse=True)
 
@@ -156,22 +174,26 @@ if __name__ == "__main__":
         title='Euler & RNN',
         # file = 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-18_01-25-26 Unsuccesful Swingup.csv',
         # file = 'ExperimentRecordings/CP_mppi-tf-RNN_2022-02-18_01-25-26 Unsuccesful Swingup.csv',
-        file=last_files[0],
-        # file='ExperimentRecordings/Swingups for Training V2/Experiment-0.csv',
+        #file=last_files[0],
+        #file='ExperimentRecordings/Swingups for Training V2/Experiment-0.csv',
+        #file = 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-11_16-47-00 20ms swingup.csv',
+        #file='ExperimentRecordings/Results/Swingup/CP_mppi-tf-RNN_2022-02-21_01-24-50.csv',
+        #file='ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-22_01-34-16 20ms swinging.csv',
+        file='ExperimentRecordings/Results/Swingup/CP_mppi-tf-Euler_2022-02-21_01-27-23.csv',
         states=['angle', 'angleD', 'position', 'positionD', 'Q'],
         predictors={
             'Euler': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10, k=1 / 3),
             # 'Pretrained RNN': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='Pretrained-RNN-1/GRU-6IN-32H1-32H2-5OUT-0'),
-            # 'RNN with Simulation Data (20 Epochs) [GRU-1]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-1'),
-            'RNN with Physical V1 (20 Epochs) [GRU-4]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-4'),
+            'RNN with Simulation Data (20 Epochs) [GRU-1]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-1'),
+            #'RNN with Physical V1 (20 Epochs) [GRU-4]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-4'),
             # 'RNN with Simulation (20 Epochs) + Physical V1 (2 Epochs) [GRU-0]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-0'),
             # 'RNN with Simulation (20 Epochs) + Physical V1 (20 Epochs) [GRU-3]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-3'),
-            # 'RNN with Simulation + Physical V1 (20 Epochs) + Physical V2 (10 epochs) [GRU-5]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-5'),
+            'RNN with Simulation + Physical V1 (20 Epochs) +  V2 (10 epochs) [GRU-5]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-5'),
             # 'RNN with Simulation + Physical V1 (20 Epochs) + Physical V2 (20 epochs) [GRU-6]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-6'),
-            'RNN with Physical V2 (20 Epochs) [GRU-7]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-7'),
+            #'RNN with Physical V2 (20 Epochs) [GRU-7]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-7'),
         },
-        offsets=[237],
+        offsets=[110],
         slider=True,
-        plot_frozen=True,
-        plot_fitted=True
+        plot_frozen=False,
+        plot_fitted=False
     )

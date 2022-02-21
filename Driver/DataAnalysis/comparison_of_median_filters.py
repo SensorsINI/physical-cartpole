@@ -66,14 +66,14 @@ if __name__ == "__main__":
     std_classic2_5k = [pd.read_csv('ExperimentRecordings/Median Filter Measurements/' + classic2_5k[name], comment='#')['angle_raw'].std() for name in classic2_5k]
     std_classic5k = [pd.read_csv('ExperimentRecordings/Median Filter Measurements/' + classic5k[name], comment='#')['angle_raw'].std() for name in classic5k]
     std_classic10k = [pd.read_csv('ExperimentRecordings/Median Filter Measurements/' + classic10k[name], comment='#')['angle_raw'].std() for name in classic10k]
-    plt.plot(length, std_advanced10k, label='Advanced Median Filter, Oversampling 10kHz', marker='.', markersize=8)
+    #plt.plot(length, std_advanced10k, label='Advanced Median Filter, Oversampling 10kHz', marker='.', markersize=8)
     plt.plot(length, std_classic2_5k, label='Classic Median Filter, Oversampling 2.5kHz', marker='.', markersize=8)
     plt.plot(length, std_classic5k, label='Classic Median Filter, Oversampling 5kHz', marker='.', markersize=8)
     plt.plot(length, std_classic10k, label='Classic Median Filter, Oversampling 10kHz', marker='.', markersize=8)
     plt.xlabel('Filter Length')
     plt.ylabel('Average Angle Deviation')
-    plt.legend(prop={'size': 8})
-    plt.savefig('ExperimentRecordings/Plots/Comparison of Median Filters.pdf')
+    plt.legend(fontsize='medium')
+    plt.savefig('ExperimentRecordings/Plots/Median Filter Comparison.pdf')
     plt.show()
 
     # Covariance for used Filter

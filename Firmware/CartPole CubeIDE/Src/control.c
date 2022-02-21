@@ -52,7 +52,7 @@ int 			controlCommand 		= 0;
 bool            isCalibrated 		= true;
 unsigned short  ledPeriod;
 int  			angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
-int  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
+long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
 short			angleErrPrev;
 short			positionErrPrev;
@@ -61,7 +61,7 @@ int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
 int				encoderDirection	= 1;
-unsigned int	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
+unsigned long	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
 bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
 int 			prevRead = 0;
@@ -296,7 +296,7 @@ void CONTROL_Loop(void)
         *((short *)&buffer[5]) = position;
         *((short *)&buffer[7]) = command;
         *((unsigned char *)&buffer[9]) = invalid_step;
-        *((unsigned int *)&buffer[10]) = timeMeasured;
+        *((unsigned int *)&buffer[10]) = (unsigned int)timeMeasured;
         *((unsigned short *)&buffer[14]) = (unsigned short)(latency / 10);
         // latency maximum: 10 * 65'535 Us = 653ms
 
@@ -304,7 +304,7 @@ void CONTROL_Loop(void)
         USART_SendBuffer(buffer, 17);
 
         if(newReceived) {
-        	timeSent = TIMER1_getSystemTime_Us();
+        	timeSent = timeMeasured;
         	timeReceived = 0;
         	newReceived = false;
         }
@@ -327,13 +327,13 @@ void CONTROL_BackgroundTask(void)
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
-	static unsigned int    	lastRead = 0;
+	static unsigned long    lastRead = 0;
 	int						read = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	unsigned int now = TIMER1_getSystemTime_Us();
+	unsigned long now = TIMER1_getSystemTime_Us();
 
 	// int-overflow after 1h
 	if (now < lastRead) {
@@ -347,7 +347,7 @@ void CONTROL_BackgroundTask(void)
 		//angleSamples[angleSampIndex] = unwrap(prevRead, read);
 		//prevRead = read;
 
-		angleSamplesTimestamp[angleSampIndex] = now;
+		//angleSamplesTimestamp[angleSampIndex] = now;
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
 		lastRead = now;
