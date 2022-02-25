@@ -4,7 +4,7 @@ controller:
     dt: 0.02                              # sec
     mpc_horizon: 1.0                      # sec
     num_rollouts: 2000                     # Number of Monte Carlo samples
-    predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
+    predictor_type: "EulerTF"               # One of ["Euler", "EulerTF", "NeuralNet"]
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
       ep_weight: 2500.0         # Pole Potential

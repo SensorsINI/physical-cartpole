@@ -600,9 +600,12 @@ class PhysicalCartPoleDriver:
     def get_motor_command(self):
 
         self.actualMotorCmd = self.Q
+
         if MOTOR_DYNAMICS_CORRECTED:
 
             self.actualMotorCmd = self.Q
+            factor = 0.5
+            self.actualMotorCmd = self.actualMotorCmd + factor * np.random.uniform(-1.0, 1.0)
 
             # Use Model_velocity_bidirectional.py to determine the margins and correction factor below
 
