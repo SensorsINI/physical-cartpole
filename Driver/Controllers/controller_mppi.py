@@ -294,12 +294,11 @@ class controller_mppi(template_controller):
 
         :return: rollout_costs - Array filled with a cost for each rollout trajectory
         """
-        As = s
-        Au = u + delta_u
+
         s = predictor.predict(s, (u + delta_u)[..., np.newaxis])[:, :, : len(STATE_INDICES)]
 
         # Compute costs
-        total_cost, dd, ep, ekp, ekc, cc, ccrc, border = self.stage_cost(s, u, delta_u, target_position)
+        total_cost, dd, ep, ekp, ekc, cc, ccrc, border = self.stage_cost(s[:, 1:, :], u, delta_u, target_position)
         terminal_cost = self.terminal_cost(s, target_position)
         rollout_costs = np.sum(total_cost, axis=1) + terminal_cost
         #rollout_costs = np.dot(total_cost, self.gamma) + terminal_cost
@@ -325,6 +324,7 @@ class controller_mppi(template_controller):
         cc = self.cc_weight * ((0.5 * (1 - 1.0 / NU) * R * delta_u ** 2 + R * u * delta_u + 0.5 * R * u ** 2))
         ccrc = self.ccrc_weight * control_change_rate_cost(delta_u)
         border = self.border_safety_weight * border_barrier(s[..., POSITION_IDX], self.border_threshold)
+
 
         total_cost = dd + ep + ekp + ekc + cc + ccrc + border
 
@@ -432,7 +432,7 @@ class controller_mppi(template_controller):
         self.u[-1] = 0
 
         # Prepare predictor for next timestep (0.1ms)
-        predictor.update_internal_state_tf(tf.convert_to_tensor(Q, dtype=tf.float32))
+        predictor.update_internal_state(tf.convert_to_tensor(Q, dtype=tf.float32))
 
         return Q
 
@@ -534,7 +534,7 @@ class controller_mppi(template_controller):
                         Q_current = tf.convert_to_tensor(Q[np.newaxis, timestep:timestep + horizon], dtype=tf.float32)
                         predictions[i, timestep, 0] = s[timestep, :]
                         predictions[i, timestep, 1:] = predictor.predict(s_current, Q_current).numpy()
-                        predictor.update_internal_state_tf(tf.convert_to_tensor(Q_current[:, 0], dtype=tf.float32))
+                        predictor.update_internal_state(Q_current[:, 0])
 
             nominal_states = rollout_states[np.arange(rollout_states.shape[0]), rollout_index, ...].squeeze()
             nominal_costs = rollout_costs[np.arange(rollout_costs.shape[0]), rollout_index, ...].squeeze()
