@@ -432,7 +432,7 @@ class controller_mppi(template_controller):
         self.u[-1] = 0
 
         # Prepare predictor for next timestep (0.1ms)
-        predictor.update_internal_state(tf.convert_to_tensor(Q, dtype=tf.float32))
+        predictor.update_internal_state(np.atleast_3d(Q))
 
         return Q
 
@@ -533,7 +533,7 @@ class controller_mppi(template_controller):
                         s_current = tf.convert_to_tensor(s[timestep, :], dtype=tf.float32)
                         Q_current = tf.convert_to_tensor(Q[np.newaxis, timestep:timestep + horizon], dtype=tf.float32)
                         predictions[i, timestep, 0] = s[timestep, :]
-                        predictions[i, timestep, 1:] = predictor.predict(s_current, Q_current).numpy()
+                        predictions[i, timestep, 1:] = predictor.predict(s_current, Q_current)
                         predictor.update_internal_state(Q_current[:, 0])
 
             nominal_states = rollout_states[np.arange(rollout_states.shape[0]), rollout_index, ...].squeeze()
