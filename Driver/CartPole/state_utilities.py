@@ -3,7 +3,7 @@ import numpy as np
 
 
 STATE_VARIABLES = np.sort(
-    ["angle", "angleD", "angle_cos", "angle_sin", "position", "positionD"]
+    ["angle", "angleD", "angle_cos", "angle_sin", "position", "positionD",]
 )
 
 STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}
@@ -45,7 +45,7 @@ def create_cartpole_state(state: dict = {}, dtype=None) -> np.ndarray:
     if dtype is None:
         dtype = np.float32
 
-    s = np.zeros_like(STATE_VARIABLES, dtype=dtype)
+    s = np.zeros_like(STATE_VARIABLES, dtype=np.float32)
     for i, v in enumerate(STATE_VARIABLES):
         s[i] = state.get(v) if v in state.keys() else s[i]
     return s

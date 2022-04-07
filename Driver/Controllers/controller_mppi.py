@@ -20,14 +20,17 @@ from CartPole.state_utilities import (
     ANGLED_IDX,
     POSITION_IDX,
     POSITIOND_IDX,
+    STATE_INDICES,
     create_cartpole_state,
 )
 from matplotlib.widgets import Slider
 from numba import jit
 from numpy.random import SFC64, Generator
-from SI_Toolkit_ApplicationSpecificFiles.predictor_ODE import predictor_ODE
+from SI_Toolkit.Predictors.predictor_ODE import predictor_ODE
+from SI_Toolkit.Predictors.predictor_ODE_tf import predictor_ODE_tf
+from SI_Toolkit.Predictors.predictor_autoregressive_tf import predictor_autoregressive_tf
 from scipy.interpolate import interp1d
-from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import predictor_autoregressive_tf
+
 from Controllers.template_controller import template_controller
 from globals import *
 import time as global_time
@@ -35,13 +38,13 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
 import tensorflow as tf
 
-config = yaml.load(open(os.path.join("SI_Toolkit_ApplicationSpecificFiles", "config.yml"), "r"), Loader=yaml.FullLoader)
 
-NET_NAME = config["modeling"]["NET_NAME"]
+config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
+
+NET_NAME = config["controller"]["mppi_RNN"]["NET_NAME"]
 NET_TYPE = NET_NAME.split("-")[0]
 CONTROLLER_CONFIG = "mppi_" + PREDICTOR
 
-config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
 """Timestep and sampling settings"""
 dt = config["controller"][CONTROLLER_CONFIG]["dt"]
 mpc_horizon = config["controller"][CONTROLLER_CONFIG]["mpc_horizon"]
@@ -64,12 +67,16 @@ SQRTRHODTINV = config["controller"][CONTROLLER_CONFIG]["SQRTRHOINV"] * (1 / np.m
 SAMPLING_TYPE = config["controller"][CONTROLLER_CONFIG]["SAMPLING_TYPE"]
 
 """Define Predictor"""
-if predictor_type == "Euler":
+if predictor_type == "EulerTF":
+    predictor = predictor_ODE_tf(horizon=mpc_samples, dt=dt, intermediate_steps=10)
+elif predictor_type == "Euler":
     predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=10)
-elif predictor_type == "EulerTF":
-    predictor = predictor_autoregressive_tf(horizon=mpc_samples, batch_size=num_rollouts, net_name='EulerTF', dt=dt, intermediate_steps=10)
 elif predictor_type == "NeuralNet":
-    predictor = predictor_autoregressive_tf(horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME)
+    predictor = predictor_autoregressive_tf(
+        horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME
+    )
+# elif predictor_type == "GP":
+#     predictor = predictor_autoregressive_GP(horizon=mpc_samples)
 
 
 """Cost function helpers"""
@@ -287,7 +294,9 @@ class controller_mppi(template_controller):
 
         :return: rollout_costs - Array filled with a cost for each rollout trajectory
         """
-        s = predictor.predict_tf(tf.convert_to_tensor(s, dtype=tf.float32), tf.convert_to_tensor(u + delta_u, dtype=tf.float32)).numpy()
+        As = s
+        Au = u + delta_u
+        s = predictor.predict(s, (u + delta_u)[..., np.newaxis])[:, :, : len(STATE_INDICES)]
 
         # Compute costs
         total_cost, dd, ep, ekp, ekc, cc, ccrc, border = self.stage_cost(s, u, delta_u, target_position)
@@ -524,7 +533,7 @@ class controller_mppi(template_controller):
                         s_current = tf.convert_to_tensor(s[timestep, :], dtype=tf.float32)
                         Q_current = tf.convert_to_tensor(Q[np.newaxis, timestep:timestep + horizon], dtype=tf.float32)
                         predictions[i, timestep, 0] = s[timestep, :]
-                        predictions[i, timestep, 1:] = predictor.predict_tf(s_current, Q_current).numpy()
+                        predictions[i, timestep, 1:] = predictor.predict(s_current, Q_current).numpy()
                         predictor.update_internal_state_tf(tf.convert_to_tensor(Q_current[:, 0], dtype=tf.float32))
 
             nominal_states = rollout_states[np.arange(rollout_states.shape[0]), rollout_index, ...].squeeze()
