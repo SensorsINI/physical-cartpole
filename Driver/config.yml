@@ -5,7 +5,7 @@ controller:
     mpc_horizon: 1.0                      # sec
     num_rollouts: 2000                     # Number of Monte Carlo samples
     predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
-    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # Applies only if predictor_type is NeuralNet
+    NET_NAME: 'SI_Toolkit_ApplicationSpecificFiles/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
       ep_weight: 2200.0         # Pole Potential
