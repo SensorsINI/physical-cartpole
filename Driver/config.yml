@@ -1,27 +1,77 @@
 controller:
-  mppi:
+  mppi_RNN:  # MPPI RNN
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 1.0                      # sec
-    num_rollouts: 200                      # Number of Monte Carlo samples
-    update_every: 1                     # Cost weighted update of inputs every ... steps
-    predictor_type: "Euler"               # One of ["Euler", "NeuralNet"]
-    dd_weight: 120.0          # distance difference cost
-    ep_weight: 50000.0        # potential energy pole
-    ekp_weight: 0.01          # kinetic energy pole
-    ekc_weight: 5.0           # kinetic energy cart
-    cc_weight: 1.0            # control cost
-    ccrc_weight: 1.0          # control change rate cost
+    num_rollouts: 2000                     # Number of Monte Carlo samples
+    predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
+    NET_NAME: 'SI_Toolkit_ApplicationSpecificFiles/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
+    stage_cost:
+      dd_weight: 2000.0          # Distance Difference
+      ep_weight: 2200.0         # Pole Potential
+      ekp_weight: 15.0           # Pole Kinetic
+      ekc_weight: 0.0           # Cart Kinetic
+      cc_weight: 2.0            # Control Cost
+      ccrc_weight: 0.0          # Control Change Rate Cost
+      border_safety: 2000000.0   # Border Constraint
+      border_threshold: 0.88
+    terminal_cost:
+      angle: 10000.0
+      position: 10000.0
+      swing_through: 0.0
+    terminal_goal:
+      angle: 0.0636 #0.0636
+      position: 0.1 # 0.1
+    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
+    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
+    R: 1.0                                # How much to punish Q
+    LBD: 100.0 # 100.0                            # Cost parameter lambda
+    NU: 1000.0                            # Exploration variance
+    SQRTRHOINV: 0.03                      # Sampling variance
+    GAMMA: 0.995                           # Future cost discount
+    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
+    logging:                        # Collect and show detailed insights into the controller's behavior
+      stage_cost: True
+      cost_to_go_breakdown: True
+      average_cost_to_go: False
+      trajectory: False
+      rollouts: False
+  mppi_Euler:
+    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
+    dt: 0.02                              # sec
+    mpc_horizon: 1.0                      # sec
+    num_rollouts: 2000                     # Number of Monte Carlo samples
+    predictor_type: "EulerTF"               # One of ["Euler", "EulerTF", "NeuralNet"]
+    stage_cost:
+      dd_weight: 2000.0          # Distance Difference
+      ep_weight: 2000.0         # Pole Potential
+      ekp_weight: 15.0           # Pole Kinetic
+      ekc_weight: 0.0           # Cart Kinetic
+      cc_weight: 2.0            # Control Cost
+      ccrc_weight: 0.0          # Control Change Rate Cost
+      border_safety: 2000000.0   # Border Constraint
+      border_threshold: 0.95
+    terminal_cost:
+      angle: 10000.0
+      position: 10000.0
+      swing_through: 0
+    terminal_goal:
+        angle: 0.0636 #0.0636
+        position: 0.1 # 0.1
     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
     R: 1.0                                # How much to punish Q
     LBD: 100.0                            # Cost parameter lambda
     NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.01                      # Sampling variance
-    GAMMA: 1.00                           # Future cost discount
+    SQRTRHOINV: 0.03                      # Sampling variance
+    GAMMA: 0.995                           # Future cost discount
     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    LOGGING: True                        # Collect and show detailed insights into the controller's behavior
-    WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle
+    logging:                          # Collect and show detailed insights into the controller's behavior
+      stage_cost: False
+      cost_to_go_breakdown: False
+      average_cost_to_go: False
+      trajectory: False
+      rollouts: False
   custom_mpc_scipy:
     DT: 0.1
     # method: 'L-BFGS-B'
@@ -79,16 +129,16 @@ cartpole:
   m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
   M: 0.230  # mass of cart, kg # Checked by Antonio
   L: "0.395/2.0"  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
-  u_max: 2.62  # max force produced by the motor, N # Checked by Marcin
+  u_max: 2.62 # max force produced by the motor, N # Checked by Marcin
   M_fric: 4.77  # cart friction on track, N/m/s # Checked by Marcin
-  J_fric: 2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
+  J_fric: 8e-4 #2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
   v_max: 0.8  # max DC motor speed, m/s, in absense of friction, used for motor back EMF model # TODO: not implemented in model, but needed for MPC
   cart_length: 4.4e-2  # m, checked by Marcin&Asude
   usable_track_length: 44.0e-2  # m, checked by Marcin&Asude
   controlDisturbance: 0.0  # disturbance, as factor of u_max
   controlBias: 0.0  # bias of control input
   g: 9.81  # absolute value of gravity acceleration, m/s^2
-  k: "4.0/3.0"  # Dimensionless factor of moment of inertia of the pole with length 2L: I: (1/3)*m*(2L)^2 = (4/3)*m*(L)^2
+  k: "1.0/3.0"  # Dimensionless factor of moment of inertia of the pole with length 2L: I: (1/3)*m*(2L)^2 = (4/3)*m*(L)^2
   latency: 0.0 # s
   noise:
     noise_mode: 'OFF'

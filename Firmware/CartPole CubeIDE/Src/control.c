@@ -22,6 +22,7 @@
 #define CMD_GET_POSITION_CONFIG		0xC7
 #define CMD_SET_MOTOR				0xC8
 #define CMD_SET_CONTROL_CONFIG		0xC9
+#define CMD_COLLECT_RAW_ANGLE		0xCA
 #define CMD_STATE					0xCC
 
 bool            streamEnable        = false;
@@ -51,7 +52,7 @@ int 			controlCommand 		= 0;
 bool            isCalibrated 		= true;
 unsigned short  ledPeriod;
 int  			angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
-int  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
+long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
 short			angleErrPrev;
 short			positionErrPrev;
@@ -60,12 +61,13 @@ int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
 int				encoderDirection	= 1;
-unsigned int	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
+unsigned long	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
 bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
+int 			prevRead = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
-static unsigned char txBuffer[32];
+static unsigned char txBuffer[17000];
 
 unsigned char 	crc(const unsigned char * message, unsigned int len);
 bool 			crcIsValid(const unsigned char * buff, unsigned int len, unsigned char crcVal);
@@ -79,6 +81,7 @@ void 			cmd_SetPositionConfig(const unsigned char * config);
 void 			cmd_GetPositionConfig(void);
 void 			cmd_SetMotor(int motorCmd);
 void			cmd_SetControlConfig(const unsigned char * config);
+void			cmd_collectRawAngle(const unsigned short, const unsigned short);
 
 void CONTROL_Init(void)
 {
@@ -98,7 +101,6 @@ void CONTROL_ToggleState(void)
 	cmd_ControlMode(!controlEnabled);
 }
 
-const int ADC_RANGE = 4096;
 
 int clip(int value, int min, int max) {
 	if (value > max)
@@ -108,6 +110,7 @@ int clip(int value, int min, int max) {
 	return value;
 }
 
+const int ADC_RANGE = 4096;
 int wrapLocal(int angle) {
     if (angle >= ADC_RANGE/2)
 		return angle - ADC_RANGE;
@@ -152,7 +155,7 @@ void CONTROL_Loop(void)
     static unsigned char	packetCnt       = 0;
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
-	static int 				prevAngle = 0;
+	static int 				prevAngle = 0, stableAngle = 0;
 	static int 				pprevAngle = 0, ppprevAngle = 0;
 	static int 				angleD = 0, angleI = 0;
 	#define lastAngleLength 5
@@ -185,54 +188,28 @@ void CONTROL_Loop(void)
 	else
 		angle_mean = angle_sum / angle_averageLen;*/
 
-	angle_mean = AdvanceMedianFilter(angleSamples, angle_averageLen);
+	angle_mean = ClassicMedianFilter(angleSamples, angle_averageLen);
+	prevRead = 0;
 
-	// Detect invalid steps
-	#define MAX_ADC_STEP 60
-	#define MAX_INVALID_STEPS 0
-	#define PASSTHRU_MARGIN 200
+	angle = angle_mean;
+	angleD = wrapLocal(angle - prevAngle);
+	prevAngle = angle;
 
-	int invalid_step = 0;
 
+	// Anomaly Detection: count invalid buffer steps
+	#define MAX_ADC_STEP 20
+	unsigned char invalid_step = 0;
 	if(angle_averageLen > 1) {
 		for (int i = 0; i < angle_averageLen; i++) {
 			// start at oldest value (since angleSampIndex is not yet overwritten)
 			int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
 			int prev = angleSamples[(angleSampIndex + i + angle_averageLen - 1) % angle_averageLen];
-			//int dt = angleSamplesTimestamp[] - angleSamplesTimestamp
 
 			// previous value for oldest value not existing
-			if(i != 0 && abs(curr-prev) > MAX_ADC_STEP)
+			if(i != 0 && abs(wrapLocal(curr-prev)) > MAX_ADC_STEP)
 				invalid_step++;
 		}
 	}
-
-	// Anomaly Detection: discard buffer if too many invalid steps (allow 2 for 1 outlier/popcorn noise)
-	if (abs(wrapLocal(prevAngle)) > PASSTHRU_MARGIN || invalid_step <= MAX_INVALID_STEPS) {
-		//int diff;
-		//angle = angle_mean;
-		//if(frozen==0)
-		//diff = (11*angle/6 - 3*prevAngle + 3*pprevAngle/2 - ppprevAngle/3);
-		//diff = (3*angle/2 - 2*prevAngle + pprevAngle/2);
-		//diff = (angle - prevAngle);
-		//else
-		//	diff = angle - prevAngle;
-		//frozen=0;
-		//angleD = wrapLocal(diff) / (1 + frozen);
-
-		//ppprevAngle = pprevAngle;
-		//pprevAngle = prevAngle;
-		//prevAngle = angle;
-		frozen = 0;
-	}
-	else {
-		//angle = prevAngle;
-		frozen ++;
-	}
-
-	angle = angle_mean;
-	angleD = wrapLocal(angle - prevAngle);
-	prevAngle = angle;
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position = (positionRaw - positionCentre);
@@ -303,12 +280,13 @@ void CONTROL_Loop(void)
 	}
 
 	// Send latest state to the PC
-    if (streamEnable)
+	static int slowdown = 0;
+    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN)
     {
+        slowdown = 0;
+
     	if(timeReceived > 0 && timeSent > 0 && newReceived) {
         	latency = timeReceived - timeSent;
-    	} else {
-    		latency = 0;
     	}
 
         buffer[ 0] = SERIAL_SOF;
@@ -317,15 +295,16 @@ void CONTROL_Loop(void)
         *((short *)&buffer[3]) = angle;
         *((short *)&buffer[5]) = position;
         *((short *)&buffer[7]) = command;
-        *((unsigned char *)&buffer[9]) = frozen;
-        *((unsigned int *)&buffer[10]) = timeMeasured;
-        *((unsigned short *)&buffer[14]) = (unsigned short)latency;
+        *((unsigned char *)&buffer[9]) = invalid_step;
+        *((unsigned int *)&buffer[10]) = (unsigned int)timeMeasured;
+        *((unsigned short *)&buffer[14]) = (unsigned short)(latency / 10);
+        // latency maximum: 10 * 65'535 Us = 653ms
 
         buffer[16] = crc(buffer, 16);
         USART_SendBuffer(buffer, 17);
 
         if(newReceived) {
-        	timeSent = TIMER1_getSystemTime_Us();
+        	timeSent = timeMeasured;
         	timeReceived = 0;
         	newReceived = false;
         }
@@ -348,12 +327,13 @@ void CONTROL_BackgroundTask(void)
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	short					motorCmd;
-	static unsigned int    	lastRead = 0;
+	static unsigned long    lastRead = 0;
+	int						read = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
 	///////////////////////////////////////////////////
-	unsigned int now = TIMER1_getSystemTime_Us();
+	unsigned long now = TIMER1_getSystemTime_Us();
 
 	// int-overflow after 1h
 	if (now < lastRead) {
@@ -362,9 +342,12 @@ void CONTROL_BackgroundTask(void)
 	// read every ca. 100us
 	else if (now > lastRead + CONTROL_ANGLE_MEASUREMENT_INTERVAL_US) {
 		// conversion takes 18us
-		angleSamples[angleSampIndex] = ANGLE_Read();
+		read = ANGLE_Read();
+		angleSamples[angleSampIndex] = read;
+		//angleSamples[angleSampIndex] = unwrap(prevRead, read);
+		//prevRead = read;
 
-		angleSamplesTimestamp[angleSampIndex] = now;
+		//angleSamplesTimestamp[angleSampIndex] = now;
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
 		lastRead = now;
@@ -497,6 +480,31 @@ void CONTROL_BackgroundTask(void)
 								{
 									cmd_SetControlConfig(&rxBuffer[3]);
 								}
+								break;
+							}
+
+							case CMD_COLLECT_RAW_ANGLE:
+							{
+								if (pktLen == 8)
+								{
+									unsigned short length 	   = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
+									unsigned short interval_us = 256 * (unsigned short)rxBuffer[6] + (unsigned short)rxBuffer[5];
+									cmd_CollectRawAngle(length, interval_us);
+								}
+
+								if (pktLen == 6)
+								{
+									motorCmd =
+									timeReceived = TIMER1_getSystemTime_Us();
+									newReceived = true;
+
+									if(controlSync) {
+										controlCommand = motorCmd;
+									} else {
+										cmd_SetMotor(motorCmd);
+									}
+								}
+
 								break;
 							}
 
@@ -756,6 +764,46 @@ void cmd_SetMotor(int speed)
 				MOTOR_SetSpeed(speed);
 		}
 	}
+}
+
+void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_US)
+{
+
+	TIMER1_SetCallback(0);
+	MOTOR_Stop();
+	Led_Enable(true);
+
+	txBuffer[ 0] = SERIAL_SOF;
+	txBuffer[ 1] = CMD_COLLECT_RAW_ANGLE;
+	txBuffer[ 2] = 4 + 2*MEASURE_LENGTH;
+
+	unsigned int now = 0, lastRead = 0;
+
+	unsigned int i;
+	for(i=0; i<MEASURE_LENGTH;) {
+		Led_Enable(i % 2);
+		now = TIMER1_getSystemTime_Us();
+
+		// int-overflow after 1h
+		if (now < lastRead) {
+			lastRead = now;
+		}
+		// read every ca. 100us
+		else if (now > lastRead + INTERVAL_US) {
+			// conversion takes 18us
+			*((unsigned short *)&txBuffer[ 3 + 2*i]) = ANGLE_Read();
+			lastRead = now;
+			i++;
+		}
+	}
+	Led_Enable(true);
+
+	//txBuffer[3 + 2*MEASURE_LENGTH] = crc(txBuffer, 3 + 2*MEASURE_LENGTH);
+
+	__disable_irq();
+	USART_SendBuffer(txBuffer, 4 + 2*MEASURE_LENGTH);
+	TIMER1_SetCallback(CONTROL_Loop);
+	__enable_irq();
 }
 
 void cmd_SetControlConfig(const unsigned char * config)

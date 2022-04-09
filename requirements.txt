@@ -12,4 +12,7 @@ sklearn
 PyYAML
 numba
 tqdm
-tensorflow
+tensorboard_plugin_profile
+tensorflow==2.4.0
+seaborn
+do-mpc==4.1.1
