@@ -371,15 +371,19 @@ class PhysicalCartPoleDriver:
             ##### Artificial Latency  #####
             elif c == 'b':
                 angle_average = 0
-                number_of_measurements = 100
+                number_of_measurements = 400
                 for _ in range(number_of_measurements):
                     (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     angle_average += angle
                 angle_average = angle_average / float(number_of_measurements)
-                print('\nHanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
-                ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
-                ANGLE_HANGING_DEFAULT = False
 
+                angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
+                if abs(angle_rad) > 1.0:
+                    print('\nHanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
+                    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
+                    ANGLE_HANGING_DEFAULT = False
+                else:
+                    print('\nAverage angle: {} rad'.format(angle_rad))
             # Fine tune angle deviation
             elif c == '=':
                 ANGLE_DEVIATION_FINETUNE += 0.002
