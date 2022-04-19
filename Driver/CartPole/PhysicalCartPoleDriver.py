@@ -602,11 +602,18 @@ class PhysicalCartPoleDriver:
     def set_target_position(self):
         # Get the target position
         # if self.controlEnabled and self.danceEnabled:
-        if self.danceEnabled:
-            self.target_position = POSITION_TARGET + self.danceAmpl * np.sin(
-                2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
+        if self.current_measure.is_running():
+            try:
+                self.target_position = self.current_measure.target_position
+                # print(self.target_position)
+            except AttributeError:
+                pass
         else:
-            self.target_position = POSITION_TARGET
+            if self.danceEnabled:
+                self.target_position = POSITION_TARGET + self.danceAmpl * np.sin(
+                    2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
+            else:
+                self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
 
     def joystick_action(self):
 
