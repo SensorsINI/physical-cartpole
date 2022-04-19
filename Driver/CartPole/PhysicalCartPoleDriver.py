@@ -15,6 +15,7 @@ from DriverFunctions.interface import Interface
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.step_response_measure import StepResponseMeasurement
 from DriverFunctions.swing_up_measure import SwingUpMeasure
+from DriverFunctions.random_target_measure import RandomTargetMeasure
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPole.state_utilities import create_cartpole_state
@@ -90,7 +91,9 @@ class PhysicalCartPoleDriver:
         # Measurement
         self.step_response_measure = StepResponseMeasurement()
         self.swing_up_measure = SwingUpMeasure(self)
-        self.current_measure = self.swing_up_measure
+        self.random_target_measure = RandomTargetMeasure(self)
+        # self.current_measure = self.swing_up_measure
+        self.current_measure = self.random_target_measure
 
         # Motor Commands
         self.Q = 0.0 # Motor command normed to be in a range -1 to 1
@@ -409,26 +412,38 @@ class PhysicalCartPoleDriver:
 
             ##### Measurement Mode #####
             elif c == 'm':
-                if self.current_measure is not self.step_response_measure:
+                if self.current_measure is self.step_response_measure:
                     if self.current_measure.is_running():
+                        print('Closing step_response_measure')
                         self.current_measure.stop()
-                    self.current_measure = self.step_response_measure
-
-                if self.current_measure.is_idle():
-                     self.current_measure.start()
-                else:
-                     self.current_measure.stop()
-
-            elif c == 'n':
-                if self.current_measure is not self.swing_up_measure:
-                    if self.current_measure.is_running():
-                        self.current_measure.stop()
+                    print('Setting swing_up_measure')
                     self.current_measure = self.swing_up_measure
 
+                elif self.current_measure is self.swing_up_measure:
+                    if self.current_measure.is_running():
+                        print('Closing swing_up_measure')
+                        self.current_measure.stop()
+                    print('Setting random_target_measure')
+                    self.current_measure = self.random_target_measure
+
+                elif self.current_measure is self.random_target_measure:
+                    if self.current_measure.is_running():
+                        print('Closing random_target_measure')
+                        self.current_measure.stop()
+                    print('Setting step_response_measure')
+                    self.current_measure = self.step_response_measure
+                else:
+                    print('No recognized measure loaded. Setting step_response_measure')
+                    self.current_measure = self.step_response_measure
+
+            elif c == 'n':
+
                 if self.current_measure.is_idle():
+                     print('\nMeasurement started!\n')
                      self.current_measure.start()
                 else:
                      self.current_measure.stop()
+                     print('\nMeasurement stopped\n')
 
             ##### Joystick  #####
             elif c == 'j':
