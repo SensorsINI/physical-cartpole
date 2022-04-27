@@ -86,8 +86,8 @@ controller:
     num_rollouts: 2000
     predictor_type: NeuralNet
     update_every: 1
-  nn_as_mpc_tf:
-    PATH_TO_MODELS: ./Controllers/models_for_nn_as_mpc_tf/
+  nn_imitator_tf:
+    PATH_TO_MODELS: ./Controllers/models_for_nn_imitator_tf/
     net_name: Dense-6IN-32H1-32H2-1OUT-0
   pid:
     D_angle: 0.0

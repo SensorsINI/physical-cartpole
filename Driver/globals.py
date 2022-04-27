@@ -23,7 +23,12 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mppi'  # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'Euler'  # e.g. 'Euler', 'RNN'
-CONTROL_PERIOD_MS = 5 if CONTROLLER_NAME == 'PID' else 20  # e.g. 5 for PID or 20 for mppi
+if CONTROLLER_NAME == 'PID':
+    CONTROL_PERIOD_MS = 5
+elif CONTROLLER_NAME == 'nn-imitator-tf':
+    CONTROL_PERIOD_MS = 7
+else:
+    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = False  # Delays Input until next Timeslot for more accurate measurements
 PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
