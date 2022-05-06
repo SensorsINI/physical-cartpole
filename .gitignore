@@ -1,6 +1,8 @@
 /.idea
 .DS_Store
 /Driver/ExperimentRecordings/
+/Driver/ExperimentRecordings/
+/Driver/SI_Toolkit_ASF/Experiments/
 /Firmware/CartPole CubeIDE/.settings/language.settings.xml
 /Firmware/CartPole CubeIDE/Debug/
 /Firmware/CartPole CubeIDE/*.launch
