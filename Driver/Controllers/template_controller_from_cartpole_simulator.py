@@ -16,10 +16,13 @@ class controller_from_cartpole_simulator_PCP(template_controller):
     def __init__(self):
         self.controller_kern = some_controller()
 
-    def step(self):
-        Q = self.controller_kern.step()
+    def step(self, s, target_position, time=None):
+        Q = self.controller_kern.step(s, target_position, time)
         return Q
 
     def controller_reset(self):
         self.controller_kern.controller_reset()
 
+    def functions_specific_to_physical_cartpole(self):
+        # e.g. inout and output from the terminal
+        ...
