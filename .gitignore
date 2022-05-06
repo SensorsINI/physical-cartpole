@@ -1,8 +1,15 @@
 /.idea
 .DS_Store
 /Driver/ExperimentRecordings/
-/Driver/ExperimentRecordings/
-/Driver/SI_Toolkit_ASF/Experiments/
+
+/Driver/SI_Toolkit_ASF/Experiments/*
+!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1
+/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/*
+!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models
+/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/*
+!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5
+
+
 /Firmware/CartPole CubeIDE/.settings/language.settings.xml
 /Firmware/CartPole CubeIDE/Debug/
 /Firmware/CartPole CubeIDE/*.launch
