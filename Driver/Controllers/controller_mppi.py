@@ -29,6 +29,7 @@ from numpy.random import SFC64, Generator
 from SI_Toolkit.Predictors.predictor_ODE import predictor_ODE
 from SI_Toolkit.Predictors.predictor_ODE_tf import predictor_ODE_tf
 from SI_Toolkit.Predictors.predictor_autoregressive_tf import predictor_autoregressive_tf
+from SI_Toolkit.Predictors.predictor_autoregressive_GP import predictor_autoregressive_GP
 from scipy.interpolate import interp1d
 
 from Controllers.template_controller import template_controller
@@ -75,8 +76,8 @@ elif predictor_type == "NeuralNet":
     predictor = predictor_autoregressive_tf(
         horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME
     )
-# elif predictor_type == "GP":
-#     predictor = predictor_autoregressive_GP(horizon=mpc_samples)
+elif predictor_type == "GP":
+    predictor = predictor_autoregressive_GP(horizon=mpc_samples, num_rollouts=num_rollouts)
 
 
 """Cost function helpers"""
