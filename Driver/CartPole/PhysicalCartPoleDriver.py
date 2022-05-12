@@ -797,8 +797,8 @@ class PhysicalCartPoleDriver:
 
             ############  Mode  ############
             if self.controlEnabled:
-                if CONTROLLER_NAME=='mppi':
-                    mode='CONTROLLER:   mppi (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.horizon, self.controller.num_rollouts, PREDICTOR)
+                if 'mppi' in CONTROLLER_NAME:
+                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.horizon, self.controller.num_rollouts, PREDICTOR)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
