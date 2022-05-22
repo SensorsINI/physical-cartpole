@@ -2,8 +2,8 @@ controller:
   mppi_RNN:  # MPPI RNN
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
-    num_rollouts: 2000                     # Number of Monte Carlo samples
+    mpc_horizon: 0.7                      # sec
+    num_rollouts: 1000                     # Number of Monte Carlo samples
     predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
     NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
     stage_cost:
@@ -39,10 +39,9 @@ controller:
   mppi_GP:  # MPPI GP
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
-    mpc_horizon: 0.5                      # sec
-    num_rollouts: 1000                     # Number of Monte Carlo samples
+    mpc_horizon: 0.8                      # sec
+    num_rollouts: 420                     # Number of Monte Carlo samples
     predictor_type: "GP"               # One of ["Euler", "EulerTF", "NeuralNet"]
-    NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
       ep_weight: 2200.0         # Pole Potential
@@ -51,33 +50,33 @@ controller:
       cc_weight: 2.0            # Control Cost
       ccrc_weight: 0.0          # Control Change Rate Cost
       border_safety: 2000000.0   # Border Constraint
-      border_threshold: 0.88
+      border_threshold: 0.8
     terminal_cost:
       angle: 10000.0
       position: 10000.0
-      swing_through: 0.0
+      swing_through: 0
     terminal_goal:
-      angle: 0.0636 #0.0636
-      position: 0.1 # 0.1
+        angle: 0.0 #0.0636
+        position: 0.0 # 0.1
     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
     R: 1.0                                # How much to punish Q
-    LBD: 100.0 # 100.0                            # Cost parameter lambda
+    LBD: 100.0                            # Cost parameter lambda
     NU: 1000.0                            # Exploration variance
     SQRTRHOINV: 0.03                      # Sampling variance
     GAMMA: 0.995                           # Future cost discount
     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
     logging:                        # Collect and show detailed insights into the controller's behavior
-      stage_cost: False
+      stage_cost: True
       cost_to_go_breakdown: False
-      average_cost_to_go: False
+      average_cost_to_go: True
       trajectory: False
       rollouts: False
   mppi_Euler:
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
-    num_rollouts: 2000                     # Number of Monte Carlo samples
+    mpc_horizon: 0.44                      # sec
+    num_rollouts: 10                     # Number of Monte Carlo samples
     predictor_type: "EulerTF"               # One of ["Euler", "EulerTF", "NeuralNet"]
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
@@ -104,8 +103,45 @@ controller:
     GAMMA: 0.995                           # Future cost discount
     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
     logging:                          # Collect and show detailed insights into the controller's behavior
-      stage_cost: False
-      cost_to_go_breakdown: False
+      stage_cost: True
+      cost_to_go_breakdown: True
+      average_cost_to_go: False
+      trajectory: True
+      rollouts: False
+  mppi_Hybrid: # MPPI Hybrid
+    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
+    dt: 0.02                              # sec
+    mpc_horizon: 1.0                      # sec
+    num_rollouts: 2000                     # Number of Monte Carlo samples
+    predictor_type: "Hybrid"
+    NET_NAME: 'SI_Toolkit_ASF/Experiments/Pretrained-RNN-1/Models/GRU-6IN-32H1-32H2-5OUT-1'
+    stage_cost:
+      dd_weight: 2000.0          # Distance Difference
+      ep_weight: 2200.0         # Pole Potential
+      ekp_weight: 15.0           # Pole Kinetic
+      ekc_weight: 0.0           # Cart Kinetic
+      cc_weight: 2.0            # Control Cost
+      ccrc_weight: 0.0          # Control Change Rate Cost
+      border_safety: 2000000.0   # Border Constraint
+      border_threshold: 0.88
+    terminal_cost:
+      angle: 10000.0
+      position: 10000.0
+      swing_through: 0.0
+    terminal_goal:
+      angle: 0.0636 #0.0636
+      position: 0.1 # 0.1
+    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
+    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
+    R: 1.0                                # How much to punish Q
+    LBD: 100.0 # 100.0                            # Cost parameter lambda
+    NU: 1000.0                            # Exploration variance
+    SQRTRHOINV: 0.03                      # Sampling variance
+    GAMMA: 0.995                           # Future cost discount
+    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
+    logging: # Collect and show detailed insights into the controller's behavior
+      stage_cost: True
+      cost_to_go_breakdown: True
       average_cost_to_go: False
       trajectory: False
       rollouts: False
@@ -162,7 +198,7 @@ controller:
 cartpole:
   SEED: 1873  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
   PATH_TO_CONTROLLERS: './Controllers/'  # Path where controllers are stored
-  PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './Experiment_Recordings/'   # Where to save experiment recording per default
+  PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './CartPoleSimulation/Experiment_Recordings/'   # Where to save experiment recording per default
   m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
   M: 0.230  # mass of cart, kg # Checked by Antonio
   L: "0.395/2.0"  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
