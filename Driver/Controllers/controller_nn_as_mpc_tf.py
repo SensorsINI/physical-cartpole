@@ -1,33 +1,29 @@
 import yaml
-import copy
-import os
 
 import tensorflow as tf
 import numpy as np
-import pandas as pd
 
 from types import SimpleNamespace
 
-from CartPole.state_utilities import ANGLED_IDX, ANGLE_IDX, POSITIOND_IDX, POSITION_IDX
 from Controllers.template_controller import template_controller
-from SI_Toolkit.load_and_normalize import denormalize_df, load_normalization_info, normalize_df, normalize_numpy_array
+from SI_Toolkit.load_and_normalize import normalize_numpy_array
 
 try:
-    from SI_Toolkit_ASF.predictors_customization import STATE_VARIABLES, STATE_INDICES, \
+    from SI_Toolkit_ASF_global.predictors_customization import STATE_VARIABLES, STATE_INDICES, \
         CONTROL_INPUTS, augment_predictor_output
 except ModuleNotFoundError:
-    print('SI_Toolkit_ApplicationSpecificFiles not yet created')
+    print('SI_Toolkit_ASF not yet created')
 
 from SI_Toolkit.TF.TF_Functions.Initialization import get_net, get_norm_info_for_net
 from SI_Toolkit.TF.TF_Functions.Compile import Compile
 
 config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
 
-NET_NAME = config['controller']['nn_imitator_tf']['net_name']
-PATH_TO_MODELS = config['controller']['nn_imitator_tf']['PATH_TO_MODELS']
+NET_NAME = config['controller']['nn_as_mpc_tf']['net_name']
+PATH_TO_MODELS = config['controller']['nn_as_mpc_tf']['PATH_TO_MODELS']
 
 
-class controller_nn_imitator_tf(template_controller):
+class controller_nn_as_mpc_tf(template_controller):
     def __init__(self, batch_size=1):
 
         a = SimpleNamespace()
@@ -36,8 +32,6 @@ class controller_nn_imitator_tf(template_controller):
         a.path_to_models = PATH_TO_MODELS
 
         a.net_name = NET_NAME
-
-        self.controller_name = 'nn-imitator-tf'
 
         # Create a copy of the network suitable for inference (stateful and with sequence length one)
         self.net, self.net_info = \
@@ -84,6 +78,3 @@ class controller_nn_imitator_tf(template_controller):
         # print('retracing evaluate_net_f')
         net_output = self.net(net_input)
         return net_output
-
-    def controller_reset(self):
-        pass
