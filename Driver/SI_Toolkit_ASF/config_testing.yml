@@ -1,13 +1,24 @@
 testing:
-  tests: ['SGPR_10', 'Euler', 'GRU-6IN-32H1-32H2-5OUT-0']  # May be 'Euler', Euler-predictor, name of network or None = 'Dense-16H1-16H2'
+  tests: ['Euler',
+          'SGP_10_reduced_1df',
+          'SGP_10_reduced_5dfs',
+          'SGP_10_reduced_10dfs',
+          'SGP_10_extended_1df',
+          'SGP_10_extended_10dfs',
+          'SGP_10_reduced',
+          'SGP_10_full',
+          'SGP_30_reduced',
+          'SGP_30_full',
+          'GRU-6IN-32H1-32H2-5OUT-Sim',
+          'GRU-6IN-32H1-32H2-5OUT-Phys']  # May be 'Euler', Euler-predictor, name of network or None = 'Dense-16H1-16H2'
   TEST_FILE: 'Experiment.csv'
   features: ['angle',
-     'angleD',
-     'angle_cos',
-     'angle_sin',
-     'position',
-     'positionD',
-     ]
+             'angleD',
+             'angle_cos',
+             'angle_sin',
+             'position',
+             'positionD',
+             ]
   control_inputs: ['Q']   # Indicates which inputs to network are control_input, TODO: Not sure how it would work with multiple inputs
   PATH_TO_NN: './SI_Toolkit_ASF/Experiments/SimData/Models/'  # Path where the neural network models are stored
   # PATH_TO_NN: './SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/'  # Path where the neural network models are stored
