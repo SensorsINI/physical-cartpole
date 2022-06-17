@@ -13,12 +13,17 @@ from others.p_globals import (
     k, M, m, g, J_fric, M_fric, L, v_max, u_max, controlDisturbance, controlBias, TrackHalfLength
 )
 from DriverFunctions.csv_helpers import csv_init
+from random import random
 
-RUN_TIME = 15.0  # Test time in seconds
-PAUSE_TIME = 60.0
-TOTAL_RUNS = 100
+RUN_TIME = 25.0  # Test time in seconds
+PAUSE_TIME = 10.0
+DISTURBANCE_TIME = 8.0
+DISTURBANCE_LENGTH = 0.2  # 0.2
+DISTURBANCE_LENGTH /= 0.02
+TOTAL_RUNS = 30
+STEP_AMPLITUDE = 1.0  # 1, 1.5, 2
 
-class SetTimeMeasure:
+class DisturbanceMeasure:
     def __init__(self, driver):
         self.driver = driver
         self.state = 'idle'
@@ -27,11 +32,11 @@ class SetTimeMeasure:
         self.initial_run = True
 
     def start(self):
-        print('Start set-time measurements!')
+        print('Start disturbance measurements!')
         self.state = 'reset'
 
     def stop(self):
-        print('Stop set-time measurements!')
+        print('Stop disturbance measurements!')
         self.state = 'idle'
 
     def is_idle(self):
@@ -102,6 +107,19 @@ class SetTimeMeasure:
         elif self.state == 'run':
             self.Q = self.driver.Q
 
+            if (self.time - self.start_time) >= DISTURBANCE_TIME:
+                self.disturbance_start = self.time
+                self.disturbance_direction = 1 if random() < 0.5 else -1
+                self.state = 'disturbance'
+                self.disturbance_ts = 0
+
+        elif self.state == 'disturbance':
+            if self.disturbance_ts < DISTURBANCE_LENGTH:
+                self.Q = self.disturbance_direction * STEP_AMPLITUDE
+                self.disturbance_ts += 1
+            else:
+                self.Q = self.driver.Q
+
             if (self.time - self.start_time) > RUN_TIME:
                 self.driver.controlEnabled = False
                 self.run_num += 1
@@ -120,11 +138,11 @@ class SetTimeMeasure:
 
     def __str__(self):
         if self.state == 'reset':
-            return f'Set-time (State: {self.state}, Q:{self.Q:.2f}, Start Angle={self.start_angle:.1f}, Start AngleD={self.start_angleD:.1f})\nRUN: {self.run_num}'
+            return f'Disturbance (State: {self.state}, Q:{self.Q:.2f}, Start Angle={self.start_angle:.1f}, Start AngleD={self.start_angleD:.1f})\nRUN: {self.run_num}'
         elif self.state == 'run':
-            return f'Set-time (State: {self.state}, Q:{self.Q:.2f}, Time={self.time:.2f})\nRUN: {self.run_num}'
+            return f'Disturbance (State: {self.state}, Q:{self.Q:.2f}, Time={self.time:.2f})\nRUN: {self.run_num}'
         elif self.state == 'stop':
-            return f'Set-time (State: {self.state}, Q:{self.Q:.2f}, Time={self.time:.2f})\nDONE!'
+            return f'Disturbance (State: {self.state}, Q:{self.Q:.2f}, Time={self.time:.2f})\nDONE!'
         else:
-            return f'Set-time (State: {self.state}, Q:{self.Q:.2f})\nRUN: {self.run_num}'
+            return f'Disturbance (State: {self.state}, Q:{self.Q:.2f})\nRUN: {self.run_num}'
 

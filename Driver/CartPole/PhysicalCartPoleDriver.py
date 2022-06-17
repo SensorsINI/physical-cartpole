@@ -17,6 +17,7 @@ from DriverFunctions.step_response_measure import StepResponseMeasurement
 from DriverFunctions.swing_up_measure import SwingUpMeasure
 from DriverFunctions.random_target_measure import RandomTargetMeasure
 from DriverFunctions.set_time_measure import SetTimeMeasure
+from DriverFunctions.disturbance_measure import DisturbanceMeasure
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPole.state_utilities import create_cartpole_state
@@ -94,7 +95,9 @@ class PhysicalCartPoleDriver:
         self.swing_up_measure = SwingUpMeasure(self)
         self.random_target_measure = RandomTargetMeasure(self)
         self.set_time_measure = SetTimeMeasure(self)
+        self.disturbance_measure = DisturbanceMeasure(self)
 
+        # self.current_measure = self.disturbance_measure
         self.current_measure = self.set_time_measure
         # self.current_measure = self.swing_up_measure
         # self.current_measure = self.random_target_measure
@@ -167,7 +170,7 @@ class PhysicalCartPoleDriver:
         self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency)
         self.s_delayed = np.copy(self.s)
 
-        self.arduino_serial_port = serial.Serial('/dev/ttyUSB1', 115200, timeout=5)
+        self.arduino_serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)
         self.arduino_serial_port.write(b'1')
 
     def run(self):
