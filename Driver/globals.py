@@ -22,7 +22,7 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mppi-tf-CPS'  # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discrete'
-PREDICTOR = 'Euler'  # e.g. 'Euler', 'RNN'
+PREDICTOR = 'RNN'  # e.g. 'Euler', 'RNN'
 if CONTROLLER_NAME == 'PID':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'nn-imitator-tf':
@@ -78,7 +78,7 @@ import subprocess
 
 SERIAL_PORT = None
 try:
-    SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB1'
+    SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB0'
 except Exception as err:
     print(err)
 
