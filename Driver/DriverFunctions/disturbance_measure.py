@@ -17,10 +17,10 @@ from random import random
 
 RUN_TIME = 25.0  # Test time in seconds
 PAUSE_TIME = 10.0
-DISTURBANCE_TIME = 8.0
+DISTURBANCE_TIME = 10.0
 DISTURBANCE_LENGTH = 0.2  # 0.2
 DISTURBANCE_LENGTH /= 0.02
-TOTAL_RUNS = 30
+TOTAL_RUNS = 10
 STEP_AMPLITUDE = 1.0  # 1, 1.5, 2
 
 class DisturbanceMeasure:

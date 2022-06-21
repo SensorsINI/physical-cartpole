@@ -22,7 +22,7 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mppi-tf-CPS'  # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discrete'
-PREDICTOR = 'RNN'  # e.g. 'Euler', 'RNN'
+PREDICTOR = 'GP'  # e.g. 'Euler', 'RNN'
 if CONTROLLER_NAME == 'PID':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'nn-imitator-tf':

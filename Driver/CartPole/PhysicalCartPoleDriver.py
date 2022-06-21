@@ -97,8 +97,8 @@ class PhysicalCartPoleDriver:
         self.set_time_measure = SetTimeMeasure(self)
         self.disturbance_measure = DisturbanceMeasure(self)
 
-        # self.current_measure = self.disturbance_measure
-        self.current_measure = self.set_time_measure
+        self.current_measure = self.disturbance_measure
+        # self.current_measure = self.set_time_measure
         # self.current_measure = self.swing_up_measure
         # self.current_measure = self.random_target_measure
 

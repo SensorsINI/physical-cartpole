@@ -1,5 +1,5 @@
 testing:
-  tests: ['SGP_10_reduced_5dfs', 'GRU-6IN-32H1-32H2-5OUT-1']  # May be 'Euler', Euler-predictor, name of network or None = 'Dense-16H1-16H2'
+  tests: ['SGP_10', 'GRU-6IN-32H1-32H2-5OUT-0', 'Euler']  # May be 'Euler', Euler-predictor, name of network or None = 'Dense-16H1-16H2'
   TEST_FILE: 'Experiment-2000.csv'
   features: ['angle',
      'angleD',
@@ -9,11 +9,11 @@ testing:
      'positionD',
      ]
   control_inputs: ['Q']   # Indicates which inputs to network are control_input, TODO: Not sure how it would work with multiple inputs
-  PATH_TO_NN: './SI_Toolkit_ASF/Experiments/SimData/Models/'  # Path where the neural network models are stored
-  # PATH_TO_NN: './SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/'  # Path where the neural network models are stored
+  # PATH_TO_NN: './SI_Toolkit_ASF/Experiments/SimData/Models/'  # Path where the neural network models are stored
+  PATH_TO_NN: './SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/'  # Path where the neural network models are stored
   # PATH_TO_NN: './SI_Toolkit_ASF/Experiments/Pretrained-RNN-1/Models/'  # Path where the neural network models are stored
-  PATH_TO_TEST_FILE: './SI_Toolkit_ASF/Experiments/SimData/Recordings/Test/'
-  # PATH_TO_TEST_FILE: './SI_Toolkit_ASF/Experiments/PhysicalData-1/Recordings/Test/'
-  TEST_LEN: 'max'
+  # PATH_TO_TEST_FILE: './SI_Toolkit_ASF/Experiments/SimData/Recordings/Test/'
+  PATH_TO_TEST_FILE: './SI_Toolkit_ASF/Experiments/PhysicalData-1/Recordings/Test/'
+  TEST_LEN: 100
   MAX_HORIZON: 35  # Indicates prediction horizon for testing
   START_IDX: 0  # Indicates from which point data from test file should be taken
