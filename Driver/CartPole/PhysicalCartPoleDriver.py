@@ -16,6 +16,8 @@ from DriverFunctions.kbhit import KBHit
 from DriverFunctions.step_response_measure import StepResponseMeasurement
 from DriverFunctions.swing_up_measure import SwingUpMeasure
 from DriverFunctions.random_target_measure import RandomTargetMeasure
+from DriverFunctions.set_time_measure import SetTimeMeasure
+from DriverFunctions.disturbance_measure import DisturbanceMeasure
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPole.state_utilities import create_cartpole_state
@@ -92,8 +94,13 @@ class PhysicalCartPoleDriver:
         self.step_response_measure = StepResponseMeasurement()
         self.swing_up_measure = SwingUpMeasure(self)
         self.random_target_measure = RandomTargetMeasure(self)
+        self.set_time_measure = SetTimeMeasure(self)
+        self.disturbance_measure = DisturbanceMeasure(self)
+
+        # self.current_measure = self.disturbance_measure
+        self.current_measure = self.set_time_measure
         # self.current_measure = self.swing_up_measure
-        self.current_measure = self.random_target_measure
+        # self.current_measure = self.random_target_measure
 
         # Motor Commands
         self.Q = 0.0 # Motor command normed to be in a range -1 to 1
