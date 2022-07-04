@@ -21,8 +21,8 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mppi'  # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discrete'
-PREDICTOR = 'Euler'  # e.g. 'Euler', 'RNN'
+CONTROLLER_NAME = 'mppi-tf-CPS'  # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discrete'
+PREDICTOR = 'RNN'  # e.g. 'Euler', 'RNN'
 if CONTROLLER_NAME == 'PID':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'nn-imitator-tf':
@@ -47,7 +47,7 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1209.82  # 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1186.705  # 1213     # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_ORIGINAL = 1025  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
@@ -56,7 +56,7 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.134  # adjust from key commands such that upright angle error is minimized
-POLYFIT_ANGLED = True if CONTROLLER_NAME == 'mppi' and PREDICTOR in ['RNN', 'GP'] else False
+POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False
 
 ##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
@@ -78,7 +78,7 @@ import subprocess
 
 SERIAL_PORT = None
 try:
-    SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB1'
+    SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB0'
 except Exception as err:
     print(err)
 
