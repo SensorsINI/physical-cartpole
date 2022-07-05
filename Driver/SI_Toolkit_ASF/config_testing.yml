@@ -15,5 +15,6 @@ testing:
   PATH_TO_TEST_FILE: './SI_Toolkit_ASF/Experiments/SimData/Recordings/Test/'
   # PATH_TO_TEST_FILE: './SI_Toolkit_ASF/Experiments/PhysicalData-1/Recordings/Test/'
   TEST_LEN: 'max'
-  MAX_HORIZON: 35  # Indicates prediction horizon for testing
+  DECIMATION: 1
+  MAX_HORIZON: 30  # Indicates prediction horizon for testing
   START_IDX: 0  # Indicates from which point data from test file should be taken
