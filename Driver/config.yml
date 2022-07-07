@@ -2,8 +2,8 @@ controller:
   mppi_RNN:  # MPPI RNN
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
-    mpc_horizon: 0.7                      # sec
-    num_rollouts: 1000                     # Number of Monte Carlo samples
+    mpc_horizon: 1.0                      # sec
+    num_rollouts: 2000                     # Number of Monte Carlo samples
     predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
     NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
     stage_cost:
@@ -40,7 +40,7 @@ controller:
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 0.8                      # sec
-    num_rollouts: 420                     # Number of Monte Carlo samples
+    num_rollouts: 1000                     # Number of Monte Carlo samples
     predictor_type: "GP"               # One of ["Euler", "EulerTF", "NeuralNet"]
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
