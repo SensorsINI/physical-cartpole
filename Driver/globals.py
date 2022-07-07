@@ -56,7 +56,7 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 
 ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = 0.134  # adjust from key commands such that upright angle error is minimized
-POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False
+POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller
 
 ##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR

@@ -98,9 +98,9 @@ class PhysicalCartPoleDriver:
         self.disturbance_measure = DisturbanceMeasure(self)
 
         # self.current_measure = self.disturbance_measure
-        self.current_measure = self.set_time_measure
+        # self.current_measure = self.set_time_measure
         # self.current_measure = self.swing_up_measure
-        # self.current_measure = self.random_target_measure
+        self.current_measure = self.random_target_measure
 
         # Motor Commands
         self.Q = 0.0 # Motor command normed to be in a range -1 to 1
