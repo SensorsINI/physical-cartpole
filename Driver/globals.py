@@ -25,7 +25,7 @@ CONTROLLER_NAME = 'mppi-tf-CPS'  # e.g. 'PID', 'mppi', 'do-mpc', 'do-mpc-discret
 PREDICTOR = 'RNN'  # e.g. 'Euler', 'RNN'
 if CONTROLLER_NAME == 'PID':
     CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'nn-imitator-tf':
+elif CONTROLLER_NAME == 'neural-imitator-tf' or CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 7
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
