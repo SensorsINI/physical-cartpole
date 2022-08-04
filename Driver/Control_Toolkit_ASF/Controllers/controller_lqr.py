@@ -23,8 +23,6 @@ Q = np.diag(config["controller"]["lqr"]["Q"])
 R = config["controller"]["lqr"]["R"]
 
 class controller_lqr(template_controller):
-    controller_name = "LQR"
-    
     def __init__(self):
         # From https://github.com/markwmuller/controlpy/blob/master/controlpy/synthesis.py#L8
         """Solve the continuous time LQR controller for a continuous time system.

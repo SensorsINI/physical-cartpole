@@ -36,8 +36,6 @@ l_positionD /= w_sum
 
 
 class controller_do_mpc(template_controller):
-    controller_name = "Do-MPC Continuous"
-    
     def __init__(self, position_init=0.0, positionD_init=0.0, angle_init=0.0, angleD_init=0.0):
 
         """

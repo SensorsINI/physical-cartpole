@@ -24,8 +24,6 @@ PATH_TO_MODELS = config['controller']['neural_imitator_tf']['PATH_TO_MODELS']
 
 
 class controller_neural_imitator_tf(template_controller):
-    controller_name = "Neural Imitator TF"
-    
     def __init__(self, batch_size=1):
 
         a = SimpleNamespace()

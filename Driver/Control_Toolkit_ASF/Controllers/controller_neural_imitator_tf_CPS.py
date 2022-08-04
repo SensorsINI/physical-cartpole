@@ -13,8 +13,6 @@ For a controller to be found and imported it must:
 
 
 class controller_neural_imitator_tf_CPS(controller_neural_imitator_tf):
-    controller_name = "neural-imitator-tf-CPS"
-
     def functions_specific_to_physical_cartpole(self):
         # e.g. inout and output from the terminal
         pass
