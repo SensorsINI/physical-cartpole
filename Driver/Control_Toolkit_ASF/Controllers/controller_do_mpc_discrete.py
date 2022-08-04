@@ -56,6 +56,8 @@ def cartpole_integration(s, dt):
 
 
 class controller_do_mpc_discrete(template_controller):
+    controller_name = "Do-MPC Discrete"
+    
     def __init__(self,
                  position_init=0.0,
                  positionD_init=0.0,

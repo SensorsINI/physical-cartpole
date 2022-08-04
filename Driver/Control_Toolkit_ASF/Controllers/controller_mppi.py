@@ -156,6 +156,7 @@ class controller_mppi(template_controller):
     :param template_controller: Superclass describing the basic controller interface
     :type template_controller: abc.ABC
     """
+    controller_name = "MPPI"
 
     def __init__(self):
 

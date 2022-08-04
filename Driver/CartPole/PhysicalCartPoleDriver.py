@@ -6,6 +6,9 @@ import time
 import numpy as np
 
 import os
+
+from Driver.Control_Toolkit.others.globals_and_utils import get_controller
+from Driver.Control_Toolkit.Controllers import template_controller
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -25,7 +28,6 @@ from CartPole.state_utilities import ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, AN
 from CartPole._CartPole_mathematical_helpers import wrap_angle_rad
 from CartPole.latency_adder import LatencyAdder
 
-from DriverFunctions.controllers_management import set_controller
 from DriverFunctions.firmware_parameters import set_firmware_parameters
 from DriverFunctions.csv_helpers import csv_init
 
@@ -56,7 +58,8 @@ class PhysicalCartPoleDriver:
 
         self.InterfaceInstance = Interface()
 
-        self.controller, _, _ = set_controller(controller_name=CONTROLLER_NAME)
+        Controller = get_controller(controller_name=CONTROLLER_NAME)
+        self.controller: template_controller = Controller()
 
         self.log = my_logger(__name__)
 
@@ -229,7 +232,7 @@ class PhysicalCartPoleDriver:
                 # Active Python Control: set values from controller
                 self.lastControlTime = self.timeNow
                 start = time.time()
-                self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
+                self.Q = self.controller.step(s=self.s, time=self.timeNow)
                 performance_measurement[0] = time.time() - start
                 self.controller_steptime = time.time() - start
                 if AUTOSTART:

@@ -12,6 +12,8 @@ For a controller to be found and imported it must:
 """
 
 class controller_from_cartpole_simulator_PCP(template_controller):
+    controller_name = "PCP"
+    
     def __init__(self, SomeController, *args, **kwargs):
         self.controller_kern: template_controller = SomeController(*args, **kwargs)
 
