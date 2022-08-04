@@ -1,3 +1,6 @@
 [submodule "Driver/CartPoleSimulation"]
 	path = Driver/CartPoleSimulation
 	url = https://github.com/SensorsINI/CartPoleSimulation
+[submodule "Driver/Control_Toolkit"]
+	path = Driver/Control_Toolkit
+	url = git@github.com:SensorsINI/Control_Toolkit.git

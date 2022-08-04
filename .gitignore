@@ -16,3 +16,5 @@
 /Firmware/FactoryFirmware CubeIDE/.settings/language.settings.xml
 /Firmware/FactoryFirmware CubeIDE/Debug/
 /Firmware/FactoryFirmware CubeIDE/*.launch
+
+*env/
