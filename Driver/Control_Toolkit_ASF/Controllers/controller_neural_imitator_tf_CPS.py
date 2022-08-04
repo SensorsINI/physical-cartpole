@@ -1,5 +1,4 @@
-from CartPoleSimulation.Controllers.controller_mppi_tf import controller_mppi_tf
-from Controllers.template_controller import template_controller
+from Driver.Control_Toolkit_ASF.Controllers.controller_neural_imitator_tf import controller_neural_imitator_tf
 
 """
 Please modify this template to include a controller from cartpole simulator in physical cartpole
@@ -13,11 +12,12 @@ For a controller to be found and imported it must:
 """
 
 
-class controller_mppi_tf_CPS(controller_mppi_tf):
-    def __init__(self):
-        super().__init__()
-        self.controller_name = "mppi-tf-CPS"
+class controller_neural_imitator_tf_CPS(controller_neural_imitator_tf):
+    controller_name = "neural-imitator-tf-CPS"
 
     def functions_specific_to_physical_cartpole(self):
         # e.g. inout and output from the terminal
+        pass
+
+    def controller_reset(self):
         pass

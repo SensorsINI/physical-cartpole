@@ -5,25 +5,7 @@ These are the functions used for loading the appropriate controllers.
         Maybe it is worth effort changing them in the same way in CartPole simulator to ensure compatibility?
 
 """
-
-import glob
-import numpy as np
-import os
-
-from globals import PATH_TO_CONTROLLERS
-# Method returns the list of controllers available in the PATH_TO_CONTROLLERS folder
-def get_available_controller_names():
-    """
-    Method returns the list of controllers available in the PATH_TO_CONTROLLERS folder
-    """
-    controller_files = glob.glob(PATH_TO_CONTROLLERS + 'controller_' + '*.py')
-    controller_names = ['manual-stabilization']
-    controller_names.extend(np.sort(
-        [os.path.basename(item)[len('controller_'):-len('.py')].replace('_', '-') for item in controller_files]
-    ))
-
-    return controller_names
-
+from Driver.Control_Toolkit.others.globals_and_utils import get_available_controller_names
 
 # Set the controller of CartPole
 def set_controller(controller_names=None, controller_name=None, controller_idx=None):

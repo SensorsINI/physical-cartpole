@@ -30,7 +30,6 @@ elif CONTROLLER_NAME == 'neural-imitator-tf' or CONTROLLER_NAME == 'neural-imita
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = False  # Delays Input until next Timeslot for more accurate measurements
-PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
