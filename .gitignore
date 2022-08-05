@@ -17,4 +17,20 @@
 /Firmware/FactoryFirmware CubeIDE/Debug/
 /Firmware/FactoryFirmware CubeIDE/*.launch
 
-*env/
+*env
+.DS_Store
+*__pycache__
+*.pyc
+*.csv
+*.png
+*.txt
+*.ckpt.*
+*.pt
+*.env
+*.vscode
+build/
+dist/
+eggs/
+*.egg-info/
+*.egg
+Driver/SI_Toolkit_ASF/Experiments/*

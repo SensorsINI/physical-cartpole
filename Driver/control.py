@@ -1,7 +1,11 @@
-import subprocess
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
+sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
+
+import subprocess
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
-from CartPole.PhysicalCartPoleDriver import PhysicalCartPoleDriver
+from CartPolePhysical.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 import tensorflow as tf
 
 subprocess.call("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True, stdout=open(os.devnull, 'wb'))

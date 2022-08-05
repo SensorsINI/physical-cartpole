@@ -51,7 +51,7 @@ sensitivity_aP_gain = 1.0
 sensitivity_aI_gain = 1.0
 sensitivity_aD_gain = 0.01
 
-class controller_PID(template_controller):
+class controller_pid(template_controller):
     def __init__(self):
 
         self.controller_name = 'PID'

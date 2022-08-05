@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import yaml
 config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
 
-dt_mpc_simulation = config["controller"]["do_mpc"]["dt_mpc_simulation"]
+dt = config["controller"]["do_mpc"]["dt"]
 mpc_horizon = config["controller"]["do_mpc"]["mpc_horizon"]
 
 # Perturbation factors:
@@ -86,7 +86,7 @@ class controller_do_mpc(template_controller):
 
         setup_mpc = {
             'n_horizon': mpc_horizon,
-            't_step': dt_mpc_simulation,
+            't_step': dt,
             'n_robust': 0,
             'store_full_solution': False,
             'store_lagr_multiplier': False,

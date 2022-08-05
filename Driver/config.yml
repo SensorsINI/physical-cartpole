@@ -72,7 +72,7 @@ controller:
       average_cost_to_go: True
       trajectory: False
       rollouts: False
-  mppi_Euler:
+  mppi:
     SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 0.44                      # sec
@@ -146,7 +146,7 @@ controller:
       trajectory: False
       rollouts: False
   custom_mpc_scipy:
-    DT: 0.1
+    dt: 0.1
     # method: 'L-BFGS-B'
     method: 'SLSQP'
     ftol: 1.0e-8
@@ -163,10 +163,10 @@ controller:
     m3: 0.0  # position_cost
     m4: 0.0  # positionD_cost
   do_mpc_discrete:
-    dt_mpc_simulation: 0.02  # s
+    dt: 0.02  # s
     mpc_horizon: 50
   do_mpc:
-    dt_mpc_simulation: 0.02  # s
+    dt: 0.02  # s
     mpc_horizon: 50
     # Perturbation factors:
     # Change of output from optimal
@@ -190,13 +190,15 @@ controller:
     I_position: 0.0
     D_position: 23.867413035692557
   mpc_opti:
-    dt_mpc_simulation: 0.2  # s
+    dt: 0.2  # s
     mpc_horizon: 10
   neural_imitator_tf:
     net_name: 'Dense-6IN-128H1-128H2-1OUT-0'
     PATH_TO_MODELS: './Controllers/models_for_nn_imitator_tf/'
 cartpole:
-  SEED: 1873  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
+  seed: 1873  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
+  actuator_noise: 0.0
+  num_control_inputs: 1
   PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './CartPoleSimulation/Experiment_Recordings/'   # Where to save experiment recording per default
   m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
   M: 0.230  # mass of cart, kg # Checked by Antonio

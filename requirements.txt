@@ -3,6 +3,7 @@ pygame
 pyserial
 pandas
 matplotlib
+engineering_notation
 scipy
 GitPython
 PyQt5
@@ -11,8 +12,12 @@ sympy
 sklearn
 PyYAML
 numba
+gym
 tqdm
+torch
 tensorboard_plugin_profile
 tensorflow==2.4.0
 seaborn
 do-mpc==4.1.1
+
+./Driver/SI_Toolkit/

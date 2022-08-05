@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import yaml
 config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
 
-dt_mpc_simulation = config["controller"]["do_mpc_discrete"]["dt_mpc_simulation"]
+dt = config["controller"]["do_mpc_discrete"]["dt"]
 mpc_horizon = config["controller"]["do_mpc_discrete"]["mpc_horizon"]
 
 
@@ -83,7 +83,7 @@ class controller_do_mpc_discrete(template_controller):
 
         target_position = self.model.set_variable('_tvp', 'target_position')
 
-        s_next = mpc_next_state(s, Q2u(Q), dt=dt_mpc_simulation)
+        s_next = mpc_next_state(s, Q2u(Q), dt=dt)
 
         self.model.set_rhs('s.position', s_next.position)
         self.model.set_rhs('s.angle', s_next.angle)
@@ -109,7 +109,7 @@ class controller_do_mpc_discrete(template_controller):
 
         setup_mpc = {
             'n_horizon': mpc_horizon,
-            't_step': dt_mpc_simulation,
+            't_step': dt,
             'n_robust': 0,
             'store_full_solution': False,
             'store_lagr_multiplier': False,
