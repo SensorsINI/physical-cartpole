@@ -20,10 +20,10 @@ from DriverFunctions.set_time_measure import SetTimeMeasure
 from DriverFunctions.disturbance_measure import DisturbanceMeasure
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
-from CartPole.state_utilities import create_cartpole_state
-from CartPole.state_utilities import ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
-from CartPole._CartPole_mathematical_helpers import wrap_angle_rad
-from CartPole.latency_adder import LatencyAdder
+from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state
+from CartPoleSimulation.CartPole.state_utilities import ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
+from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
+from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
 from DriverFunctions.controllers_management import set_controller
 from DriverFunctions.firmware_parameters import set_firmware_parameters

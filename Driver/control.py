@@ -1,7 +1,7 @@
 import subprocess
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
-from CartPole.PhysicalCartPoleDriver import PhysicalCartPoleDriver
+from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 import tensorflow as tf
 
 subprocess.call("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True, stdout=open(os.devnull, 'wb'))

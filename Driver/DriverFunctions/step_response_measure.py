@@ -2,7 +2,7 @@
 # control.py calls update_state() if state is not 'idle'
 import time
 from globals import *
-from CartPole.state_utilities import (
+from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_IDX,
     ANGLED_IDX,
     POSITION_IDX,
