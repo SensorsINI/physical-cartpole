@@ -668,12 +668,13 @@ class PhysicalCartPoleDriver:
                     elif np.sign(self.s[POSITIOND_IDX]) < 0:
                         self.actualMotorCmd -= 342.53
             else:
-                self.actualMotorCmd *= 4916.29
+                self.actualMotorCmd *= 5518.73
                 if self.actualMotorCmd != 0:
                     if np.sign(self.s[POSITIOND_IDX]) > 0:
-                        self.actualMotorCmd += 266.77
+                        self.actualMotorCmd += 266.43
                     elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                        self.actualMotorCmd -= 250.80
+                        self.actualMotorCmd -= 246.94
+                        self.actualMotorCmd -= 246.94
 
         else:
             self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
