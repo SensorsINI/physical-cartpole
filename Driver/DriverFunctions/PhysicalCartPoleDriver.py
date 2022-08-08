@@ -356,6 +356,16 @@ class PhysicalCartPoleDriver:
                 self.danceEnabled = False
                 print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
+            elif c == ';':
+                if hasattr(self.controller, 'rev'):
+                    if self.controller.rev:
+                        self.controller.rev = False
+                    else:
+                        self.controller.rev = True
+                else:
+                    'Controller has no attribute for switch of equilibrium point.'
+
+
             ##### Calibration #####
             elif c == 'K':
                 global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
