@@ -25,11 +25,11 @@ CONTROLLER_NAME = 'lqr'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'RNN'  # e.g. 'predictor_ODE_tf', 'predictor_autoregressive_tf'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'neural-imitator-tf' or CONTROLLER_NAME == 'neural-imitator-tf-CPS':
+elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 7
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
-CONTROL_SYNC = False  # Delays Input until next Timeslot for more accurate measurements
+CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
@@ -46,8 +46,8 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1186.705  # 1213     # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING_ORIGINAL = 1025  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1158  # 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_ORIGINAL = 1034  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
