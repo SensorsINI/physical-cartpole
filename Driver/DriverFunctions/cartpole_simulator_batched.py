@@ -50,11 +50,11 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         cart_length = kwargs["cart_length"]
         usable_track_length = kwargs["usable_track_length"]
-        track_half_length = np.array(usable_track_length - cart_length / 2.0)
+        self.track_half_length = np.array(usable_track_length - cart_length / 2.0)
         self.u_max = kwargs["u_max"]
 
         self.x_threshold = (
-            0.9 * track_half_length
+            0.9 * self.track_half_length
         )  # Takes care that the cart is not going beyond the boundary
 
         observation_space_boundary = np.array(
@@ -63,18 +63,19 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
                 np.finfo(np.float32).max,
                 1.0,
                 1.0,
-                np.float32(track_half_length),
+                np.float32(self.track_half_length),
                 np.finfo(np.float32).max,
             ]
         )
 
         self.observation_space = Box(
-            -observation_space_boundary, observation_space_boundary
+            -observation_space_boundary, observation_space_boundary, dtype=np.float32
         )
         self.action_space = Box(
             low=np.float32(self.min_action),
             high=np.float32(self.max_action),
             shape=(1,),
+            dtype=np.float32,
         )
 
         self.viewer = None
@@ -83,7 +84,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.state = None
         self.action = None
         self.reward = None
-        self.target = None
+        self.target_tf = tf.Variable([self.CartPoleInstance.target_position, self.CartPoleInstance.target_equilibrium])
         self.done = False
 
         self.steps_beyond_done = None
@@ -118,9 +119,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
                 ],
                 1,
             )
-            self.target = self.lib.to_tensor(
-                self.CartPoleInstance.target_position, self.lib.float32
-            )
+            self.target_tf.assign(self.CartPoleInstance.target_position)
             self.steps_beyond_done = None
         else:
             if self.lib.ndim(state) < 2:
@@ -200,10 +199,42 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         )
 
         return next_state
+    
+    def _E_kin_cart(self, positionD):
+        """Compute penalty for kinetic energy of cart"""
+        return positionD ** 2
+
+
+    def _E_kin_pol(self, angleD):
+        """Compute penalty for kinetic energy of pole"""
+        return angleD ** 2
+
+
+    def _E_pot_cost(self, angle):
+        """Compute penalty for not balancing pole upright (penalize large angles)"""
+        return 0.25 * (1.0 - self.lib.cos(angle)) ** 2
+        # return angle ** 2
+
+
+    def _distance_difference_cost(self, position):
+        """Compute penalty for distance of cart to the target position"""
+        return (
+            ((position - self.target_tf[0]) / (2.0 * self.track_half_length)) ** 2
+            + self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32) * 1.0e6  # Soft constraint: Do not crash into border
+        )
+        # TODO: Make this cost differentiable
 
     def get_reward(self, state, action):
-        reward = -state[..., ANGLE_COS_IDX]
-        return reward
+        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(state, 6, 1)
+        dd = self.config["dd_weight"] * self._distance_difference_cost(position)
+        ep = self.config["ep_weight"] * self._E_pot_cost(angle)
+        ekp = self.config["ekp_weight"] * self._E_kin_pol(angleD)
+        ekc = self.config["ekc_weight"] * self._E_kin_cart(positionD)
+        cc = self.config["cc_weight"] * action[:, 0]
+
+        q = dd + ep + ekp + ekc + cc
+
+        return -q
 
     def is_done(self, state):
         return False

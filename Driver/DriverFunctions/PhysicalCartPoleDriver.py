@@ -6,6 +6,7 @@ import time
 import numpy as np
 
 import os
+from Driver.Control_Toolkit.others.environment import TensorFlowLibrary
 from Driver.DriverFunctions.cartpole_simulator_batched import cartpole_simulator_batched
 
 from Control_Toolkit.others.globals_and_utils import get_controller
@@ -45,7 +46,7 @@ from yaml import load, FullLoader
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-config = load(open(os.path.join("Driver", "config.yml"), "r"), Loader=FullLoader)
+config = load(open(os.path.join("Driver", "CartPoleSimulation", "config.yml"), "r"), Loader=FullLoader)
 
 
 @jit(nopython=False, cache=True, fastmath=True)
@@ -68,13 +69,15 @@ class PhysicalCartPoleDriver:
         planning_env_config.update({
             "dt": config["controller"][CONTROLLER_NAME].get("dt", 0.02),
             "mode": "stabilization",
+            "batch_size": config["controller"][CONTROLLER_NAME]["num_rollouts"],
+            "computation_lib": TensorFlowLibrary,
         })
 
-        self.planning_env = cartpole_simulator_batched(**planning_env_config)
+        self.env = cartpole_simulator_batched(**planning_env_config)
 
         Controller = get_controller(controller_name=CONTROLLER_NAME)
         self.controller: template_controller = Controller(
-            environment=self.planning_env,
+            environment=self.env,
             **{
                 **config["controller"][CONTROLLER_NAME],
                 **{"num_control_inputs": config["cartpole"]["num_control_inputs"]}
@@ -252,7 +255,7 @@ class PhysicalCartPoleDriver:
                 # Active Python Control: set values from controller
                 self.lastControlTime = self.timeNow
                 start = time.time()
-                self.Q = self.controller.step(self.s, self.timeNow)
+                self.Q = float(self.controller.step(self.s, self.timeNow))
                 performance_measurement[0] = time.time() - start
                 self.controller_steptime = time.time() - start
                 if AUTOSTART:
@@ -843,7 +846,7 @@ class PhysicalCartPoleDriver:
             ############  Mode  ############
             if self.controlEnabled:
                 if 'mppi' in CONTROLLER_NAME:
-                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.horizon, self.controller.num_rollouts, PREDICTOR)
+                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.env_mock.config["mpc_horizon"], self.controller.env_mock.config["num_rollouts"], PREDICTOR)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
