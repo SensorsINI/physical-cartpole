@@ -46,7 +46,7 @@ from yaml import load, FullLoader
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-config = load(open(os.path.join("Driver", "CartPoleSimulation", "config.yml"), "r"), Loader=FullLoader)
+config = load(open(os.path.join("CartPoleSimulation", "config.yml"), "r"), Loader=FullLoader)
 
 
 @jit(nopython=False, cache=True, fastmath=True)

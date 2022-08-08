@@ -21,7 +21,7 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'lqr'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'mppi-tf'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'RNN'  # e.g. 'predictor_ODE_tf', 'predictor_autoregressive_tf'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5

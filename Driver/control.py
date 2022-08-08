@@ -3,6 +3,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
 sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
 
+os.chdir("Driver")
+
 import subprocess
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
@@ -25,7 +27,8 @@ subprocess.Popen("python3 DataAnalysis/plot_server.py", shell=True)
 #tf.debugging.set_log_device_placement(True)
 
 PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver()
-PhysicalCartPoleDriverInstance.run()
+with tf.device("cpu"):
+    PhysicalCartPoleDriverInstance.run()
 
 try:
     subprocess.check_output("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True)

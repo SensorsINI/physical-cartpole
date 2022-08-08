@@ -18,7 +18,7 @@ STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
     name=None,
 )
 
-config = load(open(os.path.join("Driver", "CartPoleSimulation", "config.yml"), "r"), FullLoader)
+config = load(open(os.path.join("CartPoleSimulation", "config.yml"), "r"), FullLoader)
 
 
 class next_state_predictor_ODE_tf:
