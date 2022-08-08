@@ -47,7 +47,7 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1160.2  # 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1158  # 1213     # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_ORIGINAL = 1034  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
