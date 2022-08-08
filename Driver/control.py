@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
+sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
+
 import subprocess
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
