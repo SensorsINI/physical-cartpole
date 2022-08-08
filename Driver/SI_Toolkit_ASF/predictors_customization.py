@@ -8,7 +8,7 @@ from yaml import FullLoader, load
 
 environment_module = "cartpole_simulator_batched"
 Environment = getattr(
-    import_module(f"Driver.CartPolePhysical.{environment_module}"), environment_module
+    import_module(f"Driver.DriverFunctions.{environment_module}"), environment_module
 )
 
 
@@ -30,7 +30,7 @@ class next_state_predictor_ODE:
             **{"seed": config["data_generator"]["seed"]},
             **{"computation_lib": NumpyLibrary},
         }
-        self.env = getattr(import_module("Driver.CartPolePhysical.cartpole_simulator_batched"), "cartpole_simulator_batched")(
+        self.env = getattr(import_module("Driver.DriverFunctions.cartpole_simulator_batched"), "cartpole_simulator_batched")(
             batch_size=batch_size, **planning_env_config
         )
 

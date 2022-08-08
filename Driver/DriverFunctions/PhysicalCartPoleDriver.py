@@ -6,6 +6,10 @@ import time
 import numpy as np
 
 import os
+from Driver.DriverFunctions.cartpole_simulator_batched import cartpole_simulator_batched
+
+from Control_Toolkit.others.globals_and_utils import get_controller
+from Control_Toolkit.Controllers import template_controller
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -20,12 +24,10 @@ from DriverFunctions.set_time_measure import SetTimeMeasure
 from DriverFunctions.disturbance_measure import DisturbanceMeasure
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
-from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state
-from CartPoleSimulation.CartPole.state_utilities import ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
+from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
 from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
 from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
-from DriverFunctions.controllers_management import set_controller
 from DriverFunctions.firmware_parameters import set_firmware_parameters
 from DriverFunctions.csv_helpers import csv_init
 
@@ -38,9 +40,12 @@ import tensorflow as tf
 import serial
 from numba import jit
 from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
+from yaml import load, FullLoader
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
+
+config = load(open(os.path.join("Driver", "config.yml"), "r"), Loader=FullLoader)
 
 
 @jit(nopython=False, cache=True, fastmath=True)
@@ -56,7 +61,25 @@ class PhysicalCartPoleDriver:
 
         self.InterfaceInstance = Interface()
 
-        self.controller, _, _ = set_controller(controller_name=CONTROLLER_NAME)
+        planning_env_config ={
+            **config["cartpole"],
+            **config["controller"][CONTROLLER_NAME]
+        }
+        planning_env_config.update({
+            "dt": config["controller"][CONTROLLER_NAME].get("dt", 0.02),
+            "mode": "stabilization",
+        })
+
+        self.planning_env = cartpole_simulator_batched(**planning_env_config)
+
+        Controller = get_controller(controller_name=CONTROLLER_NAME)
+        self.controller: template_controller = Controller(
+            environment=self.planning_env,
+            **{
+                **config["controller"][CONTROLLER_NAME],
+                **{"num_control_inputs": config["cartpole"]["num_control_inputs"]}
+            }
+        )
 
         self.log = my_logger(__name__)
 
@@ -65,7 +88,6 @@ class PhysicalCartPoleDriver:
         self.new_console_output = True
 
         self.controlEnabled = AUTOSTART
-        self.safety_switch_counter = 0
         self.firmwareControl = False
         self.manualMotorSetting = False
         self.terminate_experiment = False
@@ -168,7 +190,7 @@ class PhysicalCartPoleDriver:
 
         # Artificial Latency
         self.additional_latency = 0.0
-        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency)
+        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=0.005)
         self.s_delayed = np.copy(self.s)
 
         self.arduino_serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)
@@ -230,7 +252,7 @@ class PhysicalCartPoleDriver:
                 # Active Python Control: set values from controller
                 self.lastControlTime = self.timeNow
                 start = time.time()
-                self.Q = self.controller.step(s=self.s, target_position=self.target_position, time=self.timeNow)
+                self.Q = self.controller.step(self.s, self.timeNow)
                 performance_measurement[0] = time.time() - start
                 self.controller_steptime = time.time() - start
                 if AUTOSTART:
@@ -482,13 +504,13 @@ class PhysicalCartPoleDriver:
             elif c == '90':
                 self.additional_latency += 0.002
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency)
+                self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
             elif c == '0':
                 self.additional_latency -= 0.002
                 if self.additional_latency < 0.0:
                     self.additional_latency = 0.0
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency)
+                self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
 
             elif c == '5':
                 subprocess.call(["python", "DataAnalysis/state_analysis.py"])
@@ -724,7 +746,7 @@ class PhysicalCartPoleDriver:
 
     def write_csv_row(self):
         if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
-            if self.controller.controller_name == 'PID':
+            if self.controller.controller_name == 'pid':
                 self.csvwriter.writerow(
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                      self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,

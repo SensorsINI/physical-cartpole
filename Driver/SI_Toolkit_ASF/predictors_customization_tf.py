@@ -31,14 +31,14 @@ class next_state_predictor_ODE_tf:
             **{"seed": config["data_generator"]["seed"]},
             **{"computation_lib": TensorFlowLibrary},
         }
-        self.env = getattr(import_module("Driver.CartPolePhysical.cartpole_simulator_batched"), "cartpole_simulator_batched")(
+        self.env = getattr(import_module("Driver.DriverFunctions.cartpole_simulator_batched"), "cartpole_simulator_batched")(
             batch_size=batch_size, **planning_env_config
         )
 
         self.intermediate_steps = tf.convert_to_tensor(
             intermediate_steps, dtype=tf.int32
         )
-        self.env = getattr(import_module("Driver.CartPolePhysical.cartpole_simulator_batched"), "cartpole_simulator_batched")(
+        self.env = getattr(import_module("Driver.DriverFunctions.cartpole_simulator_batched"), "cartpole_simulator_batched")(
             batch_size=batch_size, **planning_env_config
         )
 
