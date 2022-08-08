@@ -25,7 +25,7 @@ CONTROLLER_NAME = 'mppi-tf-CPS'  # e.g. 'PID', 'mppi', 'mppi-tf-CPS', 'neural-im
 PREDICTOR = 'RNN'  # e.g. 'Euler', 'RNN'  # Not for CPS - set it in config
 if CONTROLLER_NAME == 'PID':
     CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'neural-imitator-tf' or CONTROLLER_NAME == 'neural-imitator-tf-CPS':
+elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 7
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
