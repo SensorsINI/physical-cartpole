@@ -65,6 +65,7 @@ class PhysicalCartPoleDriver:
         self.new_console_output = True
 
         self.controlEnabled = AUTOSTART
+        self.safety_switch_counter = 0
         self.firmwareControl = False
         self.manualMotorSetting = False
         self.terminate_experiment = False
@@ -703,18 +704,22 @@ class PhysicalCartPoleDriver:
     def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
         if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
-            print('\nSafety Switch.')
-            self.controlEnabled = False
-            self.InterfaceInstance.set_motor(0)
-            self.new_console_output = 1
+            self.safety_switch_counter += 1
+            if self.safety_switch_counter > 10:  # Allow short bumps
+                self.safety_switch_counter = 0
+                print('\nSafety Switch.')
+                self.controlEnabled = False
+                self.InterfaceInstance.set_motor(0)
+                self.new_console_output = 1
 
-            if hasattr(self.controller, 'controller_report') and self.controlled_iterations > 1:
-                self.controller.controller_report()
-            if hasattr(self.controller, 'controller_reset'):
-                self.controller.controller_reset()
-            self.danceEnabled = False
-            self.actualMotorCmd = 0
+                if hasattr(self.controller, 'controller_report') and self.controlled_iterations > 1:
+                    self.controller.controller_report()
+                if hasattr(self.controller, 'controller_reset'):
+                    self.controller.controller_reset()
+                self.danceEnabled = False
+                self.actualMotorCmd = 0
         else:
+            self.safety_switch_counter = 0
             pass
 
     def write_csv_row(self):
