@@ -193,7 +193,7 @@ controller:
     dt_mpc_simulation: 0.2  # s
     mpc_horizon: 10
 cartpole:
-  SEED: 1873  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
+  SEED: "None"  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
   PATH_TO_CONTROLLERS: './Controllers/'  # Path where controllers are stored
   PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './CartPoleSimulation/Experiment_Recordings/'   # Where to save experiment recording per default
   m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
@@ -218,4 +218,4 @@ cartpole:
     sigma_positionD: 0.01
 
 data_generator:
-  SEED: 1  # If "None" random seed based on datetime is used
+  SEED: "None"  # If "None" random seed based on datetime is used
