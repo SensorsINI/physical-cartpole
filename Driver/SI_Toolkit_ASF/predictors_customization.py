@@ -1,58 +1,48 @@
+import os
+from importlib import import_module
+
 import numpy as np
+from Control_Toolkit.others.environment import NumpyLibrary
+from Driver.globals import CONTROLLER_NAME
+from yaml import FullLoader, load
 
-from CartPole.state_utilities import STATE_INDICES, STATE_VARIABLES, CONTROL_INPUTS, CONTROL_INDICES, create_cartpole_state
-from CartPole.state_utilities import ANGLE_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX
+environment_module = "cartpole_simulator_batched"
+Environment = getattr(
+    import_module(f"Driver.CartPolePhysical.{environment_module}"), environment_module
+)
 
-from CartPole.cartpole_model import Q2u, L
-from CartPole.cartpole_numba import cartpole_fine_integration_s_numba
 
-class next_state_predictor_ODE():
+STATE_VARIABLES = np.array([f"x_{i}" for i in range(1, Environment.num_states)])
+STATE_INDICES = {x: np.where(STATE_VARIABLES == x)[0][0] for x in STATE_VARIABLES}
+CONTROL_INPUTS = np.array([f"u_{i}" for i in range(Environment.num_actions)])
+CONTROL_INDICES = {x: np.where(CONTROL_INPUTS == x)[0][0] for x in CONTROL_INPUTS}
 
-    def __init__(self, dt, intermediate_steps):
-        self.s = create_cartpole_state()
+config = load(open(os.path.join("Driver", "config.yml"), "r"), FullLoader)
+
+
+class next_state_predictor_ODE:
+    def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
+        self.s = None
+        
+        planning_env_config = {
+            **config["controller"][CONTROLLER_NAME],
+            **config["cartpole"],
+            **{"seed": config["data_generator"]["seed"]},
+            **{"computation_lib": NumpyLibrary},
+        }
+        self.env = getattr(import_module("Driver.CartPolePhysical.cartpole_simulator_batched"), "cartpole_simulator_batched")(
+            batch_size=batch_size, **planning_env_config
+        )
 
         self.intermediate_steps = intermediate_steps
         self.t_step = np.float32(dt / float(self.intermediate_steps))
 
     def step(self, s, Q, params):
-
-        assert Q.shape[0] == s.shape[0]
-        assert Q.ndim == 2
-        assert s.ndim == 2
-
-        if params is None:
-            pole_half_length = L
-        else:
-            pole_half_length = params
-
-        Q = np.squeeze(Q, axis=1)  # Removes features dimension, specific for cartpole as it has only one control input
-
-        u = Q2u(Q)
-
-        s_next = cartpole_fine_integration_s_numba(
-            s=s,
-            u=u,
-            t_step=self.t_step,
-            intermediate_steps=self.intermediate_steps,
-            L=pole_half_length,
-        )
-
-        return s_next
-
+        self.env.reset(s.copy())
+        next_state, _, _, _ = self.env.step(Q)
+        return next_state
 
 
 def augment_predictor_output(output_array, net_info):
-
-    if 'angle' not in net_info.outputs:
-        output_array[..., STATE_INDICES['angle']] = \
-            np.arctan2(
-                output_array[..., STATE_INDICES['angle_sin']],
-                output_array[..., STATE_INDICES['angle_cos']])
-    if 'angle_sin' not in net_info.outputs:
-        output_array[..., STATE_INDICES['angle_sin']] = \
-            np.sin(output_array[..., STATE_INDICES['angle']])
-    if 'angle_cos' not in net_info.outputs:
-        output_array[..., STATE_INDICES['angle_cos']] = \
-            np.sin(output_array[..., STATE_INDICES['angle']])
-
+    pass
     return output_array

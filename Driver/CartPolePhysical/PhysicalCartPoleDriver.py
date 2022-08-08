@@ -6,10 +6,10 @@ import time
 import numpy as np
 
 import os
-from Driver.CartPolePhysical.cartpole_simulator_batched import cartpole_simulator_batched
+from CartPolePhysical.cartpole_simulator_batched import cartpole_simulator_batched
 
-from Driver.Control_Toolkit.others.globals_and_utils import get_controller
-from Driver.Control_Toolkit.Controllers import template_controller
+from Control_Toolkit.others.globals_and_utils import get_controller
+from Control_Toolkit.Controllers import template_controller
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -45,7 +45,7 @@ from yaml import load, FullLoader
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-config = load(open(os.path.join(os.path.dirname(__file__), "..", "config.yml"), "r"), Loader=FullLoader)
+config = load(open(os.path.join("Driver", "config.yml"), "r"), Loader=FullLoader)
 
 
 @jit(nopython=False, cache=True, fastmath=True)

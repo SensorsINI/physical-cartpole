@@ -1,11 +1,11 @@
 controller:
   mppi_RNN:  # MPPI RNN
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
+    seed: 1897                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 1.0                      # sec
     num_rollouts: 2000                     # Number of Monte Carlo samples
-    predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
-    NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
+    predictor_name: "predictor_autoregressive_tf"               # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
+    NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_name is predictor_autoregressive_tf
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
       ep_weight: 2200.0         # Pole Potential
@@ -37,11 +37,11 @@ controller:
       trajectory: False
       rollouts: False
   mppi_GP:  # MPPI GP
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
+    seed: 1897                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 0.8                      # sec
     num_rollouts: 1000                     # Number of Monte Carlo samples
-    predictor_type: "GP"               # One of ["Euler", "EulerTF", "NeuralNet"]
+    predictor_name: "GP"               # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "GP"]
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
       ep_weight: 2200.0         # Pole Potential
@@ -73,11 +73,14 @@ controller:
       trajectory: False
       rollouts: False
   mppi:
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
+    seed: null                          # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 0.44                      # sec
-    num_rollouts: 10                     # Number of Monte Carlo samples
-    predictor_type: "EulerTF"               # One of ["Euler", "EulerTF", "NeuralNet"]
+    num_rollouts: 10                      # Number of Monte Carlo samples
+    predictor_name: "predictor_ODE_tf"               # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "GP"]
+    predictor_intermediate_steps: 10
+    NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # Applies only if predictor name is predictor_autoregressive_tf
+    GP_NAME: 'SGP_30'                     # Applies only if predictor name is GP
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
       ep_weight: 2200.0         # Pole Potential
@@ -100,7 +103,7 @@ controller:
     LBD: 100.0                            # Cost parameter lambda
     NU: 1000.0                            # Exploration variance
     SQRTRHOINV: 0.03                      # Sampling variance
-    GAMMA: 0.995                           # Future cost discount
+    GAMMA: 0.995                          # Future cost discount
     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
     logging:                          # Collect and show detailed insights into the controller's behavior
       stage_cost: True
@@ -108,12 +111,14 @@ controller:
       average_cost_to_go: False
       trajectory: True
       rollouts: False
+    WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle
+    update_every: 1                       # Cost weighted update of inputs every ... steps
   mppi_Hybrid: # MPPI Hybrid
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
+    seed: 1897                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
     dt: 0.02                              # sec
     mpc_horizon: 1.0                      # sec
     num_rollouts: 2000                     # Number of Monte Carlo samples
-    predictor_type: "Hybrid"
+    predictor_name: "Hybrid"
     NET_NAME: 'SI_Toolkit_ASF/Experiments/Pretrained-RNN-1/Models/GRU-6IN-32H1-32H2-5OUT-1'
     stage_cost:
       dd_weight: 2000.0          # Distance Difference
@@ -182,6 +187,8 @@ controller:
   lqr:
     Q: [10.0, 1.0, 1.0, 1.0]
     R: 10.0
+    control_noise: 0.0
+    seed: null
   pid:
     P_angle: 574.0
     I_angle: 0.0
@@ -196,16 +203,17 @@ controller:
     net_name: 'Dense-6IN-128H1-128H2-1OUT-0'
     PATH_TO_MODELS: './Controllers/models_for_nn_imitator_tf/'
 cartpole:
-  seed: 1873  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
+  seed: 1873  # This is a seed for rng for CartPole instance class only. If null random seed based on datetime is used
   actuator_noise: 0.0
   num_control_inputs: 1
+  mode: stabilization
   PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './CartPoleSimulation/Experiment_Recordings/'   # Where to save experiment recording per default
   m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
   M: 0.230  # mass of cart, kg # Checked by Antonio
   L: "0.395/2.0"  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
   u_max: 2.62 # max force produced by the motor, N # Checked by Marcin
   M_fric: 4.77  # cart friction on track, N/m/s # Checked by Marcin
-  J_fric: 8e-4 #2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
+  J_fric: 8.0e-4 #2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
   v_max: 0.8  # max DC motor speed, m/s, in absense of friction, used for motor back EMF model # TODO: not implemented in model, but needed for MPC
   cart_length: 4.4e-2  # m, checked by Marcin&Asude
   usable_track_length: 44.0e-2  # m, checked by Marcin&Asude
@@ -222,4 +230,4 @@ cartpole:
     sigma_positionD: 0.01
 
 data_generator:
-  SEED: 1  # If "None" random seed based on datetime is used
+  seed: 1  # If null random seed based on datetime is used

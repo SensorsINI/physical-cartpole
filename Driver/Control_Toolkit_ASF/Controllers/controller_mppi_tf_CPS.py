@@ -1,4 +1,4 @@
-from Driver.Control_Toolkit.Controllers.controller_mppi_tf import controller_mppi_tf
+from Control_Toolkit.Controllers.controller_mppi_tf import controller_mppi_tf
 
 """
 Please modify this template to include a controller from cartpole simulator in physical cartpole

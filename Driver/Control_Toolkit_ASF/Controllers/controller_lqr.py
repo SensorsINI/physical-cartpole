@@ -6,10 +6,10 @@ It assumes that the input relation is u = Q*u_max (no fancy motor model) !
 from scipy.linalg import solve_continuous_are
 import numpy as np
 
-from Controllers.template_controller import template_controller
-from CartPole.state_utilities import ANGLE_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
-from CartPole.cartpole_model import u_max, s0
-from CartPole.cartpole_jacobian import cartpole_jacobian
+from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.CartPole.state_utilities import ANGLE_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
+from CartPoleSimulation.CartPole.cartpole_model import u_max, s0
+from CartPoleSimulation.CartPole.cartpole_jacobian import cartpole_jacobian
 
 import json
 from DriverFunctions.json_helpers import get_new_json_filename

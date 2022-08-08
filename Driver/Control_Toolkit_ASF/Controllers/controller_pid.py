@@ -26,8 +26,8 @@ A PID controller for the Cartpole using CartpoleSimulator conventions
 
 import json
 
-from Controllers.template_controller import template_controller
-from CartPole.state_utilities import cartpole_state_varname_to_index
+from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.CartPole.state_utilities import cartpole_state_varname_to_index
 from DriverFunctions.json_helpers import get_new_json_filename
 
 from globals import dec, inc, JSON_PATH

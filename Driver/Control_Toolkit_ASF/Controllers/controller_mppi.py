@@ -14,8 +14,8 @@ import yaml
 import seaborn as sns
 
 sns.set()
-from CartPole.cartpole_model import TrackHalfLength
-from CartPole.state_utilities import (
+from CartPoleSimulation.CartPole.cartpole_model import TrackHalfLength
+from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_IDX,
     ANGLED_IDX,
     POSITION_IDX,
@@ -32,7 +32,7 @@ from SI_Toolkit.Predictors.predictor_autoregressive_tf import predictor_autoregr
 from SI_Toolkit.Predictors.predictor_autoregressive_GP import predictor_autoregressive_GP
 from scipy.interpolate import interp1d
 
-from Controllers.template_controller import template_controller
+from Control_Toolkit.Controllers import template_controller
 from globals import *
 import time as global_time
 import os
@@ -51,10 +51,10 @@ dt = config["controller"][CONTROLLER_CONFIG]["dt"]
 mpc_horizon = config["controller"][CONTROLLER_CONFIG]["mpc_horizon"]
 mpc_samples = int(mpc_horizon / dt)  # Number of steps in MPC horizon
 num_rollouts = config["controller"][CONTROLLER_CONFIG]["num_rollouts"]
-predictor_type = config["controller"][CONTROLLER_CONFIG]["predictor_type"]
+predictor_name = config["controller"][CONTROLLER_CONFIG]["predictor_name"]
 
 """Perturbation factor"""
-p_Q = config["controller"][CONTROLLER_CONFIG]["control_noise"]
+p_Q = config["cartpole"]["control_noise"]
 dd_noise = ep_noise = ekp_noise = ekc_noise = cc_noise = config["controller"][CONTROLLER_CONFIG]["cost_noise"]
 gui_dd = gui_ep = gui_ekp = gui_ekc = gui_cc = gui_ccrc = np.zeros(1, dtype=np.float32)
 
@@ -68,15 +68,15 @@ SQRTRHODTINV = config["controller"][CONTROLLER_CONFIG]["SQRTRHOINV"] * (1 / np.m
 SAMPLING_TYPE = config["controller"][CONTROLLER_CONFIG]["SAMPLING_TYPE"]
 
 """Define Predictor"""
-if predictor_type == "EulerTF":
+if predictor_name == "predictor_ODE_tf":
     predictor = predictor_ODE_tf(horizon=mpc_samples, dt=dt, intermediate_steps=10)
-elif predictor_type == "Euler":
+elif predictor_name == "predictor_ODE":
     predictor = predictor_ODE(horizon=mpc_samples, dt=dt, intermediate_steps=10)
-elif predictor_type == "NeuralNet":
+elif predictor_name == "predictor_autoregressive_tf":
     predictor = predictor_autoregressive_tf(
         horizon=mpc_samples, batch_size=num_rollouts, net_name=NET_NAME
     )
-elif predictor_type == "GP":
+elif predictor_name == "predictor_autoregressive_GP":
     predictor = predictor_autoregressive_GP(horizon=mpc_samples, num_rollouts=num_rollouts)
 
 
@@ -158,9 +158,9 @@ class controller_mppi(template_controller):
     """
     def __init__(self):
 
-        SEED = config["controller"][CONTROLLER_CONFIG]["SEED"]
-        self.rng_mppi = Generator(SFC64(SEED))
-        self.rng_mppi_rnn = Generator(SFC64(SEED * 2))  # There are some random numbers used at warm up of rnn only. Separate rng prevents a shift
+        seed = config["controller"][CONTROLLER_CONFIG]["seed"]
+        self.rng_mppi = Generator(SFC64(seed))
+        self.rng_mppi_rnn = Generator(SFC64(seed * 2))  # There are some random numbers used at warm up of rnn only. Separate rng prevents a shift
 
         self.controller_name = 'mppi-tf'
         self.angleErr = 0.0
@@ -203,7 +203,7 @@ class controller_mppi(template_controller):
 
         self.num_rollouts = num_rollouts
         self.horizon = mpc_samples
-        self.predictor_type = predictor_type
+        self.predictor_name = predictor_name
 
         self.gamma = (GAMMA ** np.arange(self.horizon))
 

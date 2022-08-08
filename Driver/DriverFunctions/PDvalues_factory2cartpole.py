@@ -1,4 +1,4 @@
-from Driver.globals import *
+from globals import *
 import json
 
 writetofile = '../Json/control-factory.json'
