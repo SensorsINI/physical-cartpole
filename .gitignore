@@ -35,3 +35,4 @@ eggs/
 *.egg
 Driver/SI_Toolkit_ASF/Experiments/*
 *.hdf*
+*.pdf
