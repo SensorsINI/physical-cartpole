@@ -27,8 +27,7 @@ subprocess.Popen("python3 DataAnalysis/plot_server.py", shell=True)
 #tf.debugging.set_log_device_placement(True)
 
 PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver()
-with tf.device("cpu"):
-    PhysicalCartPoleDriverInstance.run()
+PhysicalCartPoleDriverInstance.run()
 
 try:
     subprocess.check_output("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True)

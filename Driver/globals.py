@@ -61,7 +61,7 @@ POLYFIT_ANGLED = False
 ##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
-POSITION_ENCODER_RANGE = 4660  # This is an empirical approximation # seems to be 4164 now
+POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation # seems to be 4164 now
 POSITION_OFFSET = 0  # Serves to adjust starting position - position after calibration is 0
 POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2  # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396  # Total usable track length in meters

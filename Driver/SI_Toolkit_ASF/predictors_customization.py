@@ -36,10 +36,13 @@ class next_state_predictor_ODE:
 
         self.intermediate_steps = intermediate_steps
         self.t_step = np.float32(dt / float(self.intermediate_steps))
+        self.env.dt = self.t_step
 
     def step(self, s, Q, params):
-        self.env.reset(s.copy())
-        next_state, _, _, _ = self.env.step(Q)
+        self.env.state = s.copy()
+        for _ in range(self.intermediate_steps):
+            next_state, _, _, _ = self.env.step(Q)
+            s = next_state
         return next_state
 
 

@@ -841,7 +841,7 @@ class PhysicalCartPoleDriver:
                 print('\033[5A', end='')
             self.new_console_output = False
 
-            print('\r')
+            print('\r\033[K')
 
             ############  Mode  ############
             if self.controlEnabled:
@@ -892,7 +892,7 @@ class PhysicalCartPoleDriver:
                     )
                 )
             else:
-                print('')
+                print('\033[K')
 
             ############  Performance  ############
             #if self.total_iterations > 10:

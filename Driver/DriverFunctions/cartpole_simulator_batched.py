@@ -15,6 +15,8 @@ from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from gym.spaces import Box
 from gym.utils.renderer import Renderer
 
+from Driver.SI_Toolkit.src.SI_Toolkit.TF.TF_Functions.Compile import Compile
+
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     num_actions = 1
@@ -50,7 +52,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         cart_length = kwargs["cart_length"]
         usable_track_length = kwargs["usable_track_length"]
-        self.track_half_length = np.array(usable_track_length - cart_length / 2.0)
+        self.track_half_length = np.array((usable_track_length-cart_length)/2.0)
         self.u_max = kwargs["u_max"]
 
         self.x_threshold = (
@@ -138,6 +140,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             return tuple((self.state, {}))
         return self.state
 
+    @Compile
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
         state, action = self._expand_arrays(state, action)
 
@@ -179,6 +182,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             {"target": self.CartPoleInstance.target_position},
         )
 
+    @Compile
     def step_physics(self, state: TensorType, action: TensorType):
         # Convert dimensionless motor power to a physical force acting on the Cart
         u = self.u_max * action[:, 0]
@@ -225,7 +229,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         # TODO: Make this cost differentiable
 
     def get_reward(self, state, action):
-        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(state, 6, 1)
+        angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(state, 6, -1)
         dd = self.config["dd_weight"] * self._distance_difference_cost(position)
         ep = self.config["ep_weight"] * self._E_pot_cost(angle)
         ekp = self.config["ekp_weight"] * self._E_kin_pol(angleD)
