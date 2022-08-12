@@ -9,12 +9,6 @@ from CartPoleSimulation.CartPole.state_utilities import cartpole_state_vector_to
 
 from types import SimpleNamespace
 
-import yaml
-config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
-
-dt = config["controller"]["do_mpc_discrete"]["dt"]
-mpc_horizon = config["controller"]["do_mpc_discrete"]["mpc_horizon"]
-
 
 def mpc_next_state(s, u, dt):
     """Wrapper for CartPole ODE. Given a current state (without second derivatives), returns a state after time dt
@@ -56,17 +50,23 @@ def cartpole_integration(s, dt):
 
 
 class controller_do_mpc_discrete(template_controller):
-    def __init__(self,
-                 position_init=0.0,
-                 positionD_init=0.0,
-                 angle_init=-3.12,
-                 angleD_init=0.0,
-                 ):
-
+    def __init__(
+        self,
+        environment,
+        dt: float,
+        mpc_horizon: float,
+        position_init=0.0,
+        positionD_init=0.0,
+        angle_init=0.0,
+        angleD_init=0.0,
+        **kwargs,
+    ):
+        super().__init__(environment)
+        self.action_low = self.env_mock.action_space.low
+        self.action_high = self.env_mock.action_space.high
         """
         Get configured do-mpc modules:
         """
-
         # Container for the state of the cart
         s = SimpleNamespace()
 
@@ -128,8 +128,8 @@ class controller_do_mpc_discrete(template_controller):
         self.mpc.set_objective(mterm=mterm, lterm=lterm)
         self.mpc.set_rterm(Q=0.1)
 
-        self.mpc.bounds['lower', '_u', 'Q'] = -1.0
-        self.mpc.bounds['upper', '_u', 'Q'] = 1.0
+        self.mpc.bounds['lower', '_u', 'Q'] = self.action_low
+        self.mpc.bounds['upper', '_u', 'Q'] = self.action_high
 
         self.tvp_template = self.mpc.get_tvp_template()
 
@@ -157,7 +157,7 @@ class controller_do_mpc_discrete(template_controller):
         return self.tvp_template
 
 
-    def step(self, s, target_position, time=None):
+    def step(self, s, time=None):
 
         s = cartpole_state_vector_to_namespace(s)
 
@@ -167,7 +167,7 @@ class controller_do_mpc_discrete(template_controller):
         self.x0['s.angle'] = s.angle
         self.x0['s.angleD'] = s.angleD
 
-        self.tvp_template['_tvp', :, 'target_position'] = target_position
+        self.tvp_template['_tvp', :, 'target_position'] = self.env_mock.target_position
 
         Q = self.mpc.make_step(self.x0)
 

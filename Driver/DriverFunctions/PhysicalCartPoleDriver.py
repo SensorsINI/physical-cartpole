@@ -75,7 +75,7 @@ class PhysicalCartPoleDriver:
 
         self.env = cartpole_simulator_batched(**planning_env_config)
 
-        Controller = get_controller(controller_name=CONTROLLER_NAME)
+        Controller, self.controller_name, self.controller_idx = get_controller(controller_name=CONTROLLER_NAME)
         self.controller: template_controller = Controller(
             environment=self.env,
             **{
@@ -838,7 +838,7 @@ class PhysicalCartPoleDriver:
             self.printCount = 0
 
             if True and not self.new_console_output:
-                print('\033[5A', end='')
+                print('\033[5A\033[K', end='')
             self.new_console_output = False
 
             print('\r\033[K')

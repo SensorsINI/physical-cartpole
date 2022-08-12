@@ -1,46 +1,49 @@
 """do-mpc controller"""
 
-import do_mpc
-import numpy as np
-
-from Control_Toolkit.Controllers import template_controller
-from CartPoleSimulation.CartPole.cartpole_model import Q2u, cartpole_ode_namespace
-from CartPoleSimulation.CartPole.state_utilities import cartpole_state_vector_to_namespace
-
 from types import SimpleNamespace
 
-import yaml
-config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
+import do_mpc
+import numpy as np
+from CartPoleSimulation.CartPole.cartpole_model import Q2u, cartpole_ode_namespace
+from CartPoleSimulation.CartPole.state_utilities import cartpole_state_vector_to_namespace
+from CartPoleSimulation.others.globals_and_utils import create_rng
+from CartPoleSimulation.CartPole.cartpole_model import TrackHalfLength
 
-dt = config["controller"]["do_mpc"]["dt"]
-mpc_horizon = config["controller"]["do_mpc"]["mpc_horizon"]
-
-# Perturbation factors:
-# Change of output from optimal
-p_Q = config["controller"]["do_mpc"]["p_Q"]
-# Change of cost function
-p_position = config["controller"]["do_mpc"]["p_position"]
-p_positionD = config["controller"]["do_mpc"]["p_positionD"]
-p_angle = config["controller"]["do_mpc"]["p_angle"]
-
-l_angle = config["controller"]["do_mpc"]["l_angle"]
-l_position = config["controller"]["do_mpc"]["l_position"]
-l_positionD = config["controller"]["do_mpc"]["l_positionD"]
-
-
-w_sum = l_angle + l_position + l_positionD
-
-l_angle /= w_sum
-l_position /= w_sum
-l_positionD /= w_sum
+from Control_Toolkit.Controllers import template_controller
 
 
 class controller_do_mpc(template_controller):
-    def __init__(self, position_init=0.0, positionD_init=0.0, angle_init=0.0, angleD_init=0.0):
-
+    def __init__(
+        self,
+        environment,
+        seed: int,
+        dt: float,
+        mpc_horizon: float,
+        p_Q: float,
+        p_position: float,
+        p_positionD: float,
+        p_angle: float,
+        l_angle: float,
+        l_position: float,
+        l_positionD: float,
+        position_init=0.0,
+        positionD_init=0.0,
+        angle_init=0.0,
+        angleD_init=0.0,    
+        **kwargs,
+    ):
+        super().__init__(environment)
+        self.action_low = self.env_mock.action_space.low
+        self.action_high = self.env_mock.action_space.high
         """
         Get configured do-mpc modules:
         """
+        self.p_Q = p_Q
+
+        w_sum = l_angle + l_position + l_positionD
+        l_angle /= w_sum
+        l_position /= w_sum
+        l_positionD /= w_sum
 
         # Container for the state of the cart
         s = SimpleNamespace()  # s like state
@@ -67,25 +70,23 @@ class controller_do_mpc(template_controller):
         self.model.set_rhs('s.angleD', angleD_next)
 
         # Simplified, normalized expressions for E_kin and E_pot as a port of cost function
-        cost_position = (s.position - target_position) ** 2
+        cost_position = (s.position - target_position) ** 2 + 1.0e4 * (1.0 / (1.0 - (s.position/TrackHalfLength)**2))
         cost_positionD = s.positionD ** 2
         cost_angleD = s.angleD**2
         cost_angle_sin = np.sin(s.angle)**2
-        cost_angle = (s.angle/np.pi)**2
-
+        cost_angle = 1.0e5 * (s.angle/np.pi)**2
 
         self.model.set_expression('cost_positionD', cost_positionD)
         self.model.set_expression('cost_angleD', cost_angleD)
         self.model.set_expression('cost_angle', cost_angle)
         self.model.set_expression('cost_position', cost_position)
 
-
         self.model.setup()
 
         self.mpc = do_mpc.controller.MPC(self.model)
 
         setup_mpc = {
-            'n_horizon': mpc_horizon,
+            'n_horizon': int(mpc_horizon / dt),
             't_step': dt,
             'n_robust': 0,
             'store_full_solution': False,
@@ -100,11 +101,12 @@ class controller_do_mpc(template_controller):
         # self.mpc.set_param(nlpsol_opts={'ipopt.linear_solver': 'mumps'})
         self.mpc.set_param(nlpsol_opts = {'ipopt.linear_solver': 'MA57'})
 
+        self.rng = create_rng(self.__class__.__name__, seed)
         # # Standard version
         lterm = (
-                l_angle * (1+p_angle*np.random.uniform(-1.0, 1.0)) * self.model.aux['cost_angle']
-                + l_position * (1+p_position*np.random.uniform(-1.0, 1.0)) * cost_position
-                + l_positionD * (1+p_positionD*np.random.uniform(-1.0, 1.0)) * self.model.aux['cost_positionD']
+                l_angle * (1+p_angle*self.rng.uniform(-1.0, 1.0)) * self.model.aux['cost_angle']
+                + l_position * (1+p_position*self.rng.uniform(-1.0, 1.0)) * cost_position
+                + l_positionD * (1+p_positionD*self.rng.uniform(-1.0, 1.0)) * self.model.aux['cost_positionD']
                  )
         # mterm = 400.0 * self.model.aux['E_kin_cart']
         mterm = 0.0 * self.model.aux['cost_positionD']
@@ -124,8 +126,8 @@ class controller_do_mpc(template_controller):
         self.mpc.set_objective(mterm=mterm, lterm=lterm)
 
 
-        self.mpc.bounds['lower', '_u', 'Q'] = -1.0
-        self.mpc.bounds['upper', '_u', 'Q'] = 1.0
+        self.mpc.bounds['lower', '_u', 'Q'] = self.action_low
+        self.mpc.bounds['upper', '_u', 'Q'] = self.action_high
 
         self.tvp_template = self.mpc.get_tvp_template()
 
@@ -151,7 +153,7 @@ class controller_do_mpc(template_controller):
         return self.tvp_template
 
 
-    def step(self, s, target_position, time=None):
+    def step(self, s, time=None):
 
         s = cartpole_state_vector_to_namespace(s)
 
@@ -161,8 +163,8 @@ class controller_do_mpc(template_controller):
         self.x0['s.angle'] = s.angle
         self.x0['s.angleD'] = s.angleD
 
-        self.tvp_template['_tvp', :, 'target_position'] = target_position
+        self.tvp_template['_tvp', :, 'target_position'] = self.env_mock.target_position
 
         Q = self.mpc.make_step(self.x0)
 
-        return Q.item()*(1+p_Q*np.random.uniform(-1.0, 1.0))
+        return Q.item()*(1+self.p_Q*self.rng.uniform(-1.0, 1.0))

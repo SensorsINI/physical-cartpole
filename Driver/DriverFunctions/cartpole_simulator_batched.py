@@ -87,6 +87,8 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         self.action = None
         self.reward = None
         self.target_tf = tf.Variable([self.CartPoleInstance.target_position, self.CartPoleInstance.target_equilibrium])
+        self.target_position = self.CartPoleInstance.target_position
+        self.target_position_tf = self.CartPoleInstance.target_position_tf
         self.done = False
 
         self.steps_beyond_done = None
@@ -121,7 +123,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
                 ],
                 1,
             )
-            self.target_tf.assign(self.CartPoleInstance.target_position)
+            self.CartPoleInstance.target_position_tf.assign(self.CartPoleInstance.target_position)
             self.steps_beyond_done = None
         else:
             if self.lib.ndim(state) < 2:
@@ -222,11 +224,12 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def _distance_difference_cost(self, position):
         """Compute penalty for distance of cart to the target position"""
+        position_normalized = position / self.track_half_length
         return (
-            ((position - self.target_tf[0]) / (2.0 * self.track_half_length)) ** 2
-            + self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32) * 1.0e6  # Soft constraint: Do not crash into border
+            ((position - self.CartPoleInstance.target_position_tf[0]) / (2.0 * self.track_half_length)) ** 2
+            + 5.0e1 / ((1.0 - position_normalized**2))
+            + 1.0e6 * self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32)
         )
-        # TODO: Make this cost differentiable
 
     def get_reward(self, state, action):
         angle, angleD, angle_cos, angle_sin, position, positionD = self.lib.unstack(state, 6, -1)
