@@ -16,9 +16,8 @@ from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 subprocess.call("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True, stdout=open(os.devnull, 'wb'))
 subprocess.Popen("python3 -m DataAnalysis.plot_server", shell=True)
 
-
-#tf.keras.backend.clear_session()
-#tf.config.optimizer.set_jit(True) # Enable XLA.
+tf.keras.backend.clear_session()
+tf.config.optimizer.set_jit(True) # Enable XLA.
 
 print("TF Devices:", tf.config.list_physical_devices())
 print("TF Device Placement:", tf.config.get_soft_device_placement())

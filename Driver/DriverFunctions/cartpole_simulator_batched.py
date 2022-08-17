@@ -227,7 +227,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         position_normalized = position / self.track_half_length
         return (
             ((position - self.CartPoleInstance.target_position_tf) / (2.0 * self.track_half_length)) ** 2
-            + 5.0e1 / ((1.0 - position_normalized**2))
+            + 2.0e1 / ((1.0 - position_normalized**2))
             + 1.0e6 * self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32)
         )
 
