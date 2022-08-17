@@ -14,8 +14,8 @@ try:
 except ModuleNotFoundError:
     print('SI_Toolkit_ASF not yet created')
 
-from SI_Toolkit.TF.TF_Functions.Initialization import get_net, get_norm_info_for_net
-from SI_Toolkit.TF.TF_Functions.Compile import Compile
+from SI_Toolkit.Functions.General.Initialization import get_net, get_norm_info_for_net
+from SI_Toolkit.Functions.TF.Compile import Compile
 
 config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
 

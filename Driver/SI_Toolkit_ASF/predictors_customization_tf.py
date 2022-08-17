@@ -4,7 +4,7 @@ from importlib import import_module
 import tensorflow as tf
 from Control_Toolkit.others.environment import TensorFlowLibrary
 from globals import CONTROLLER_NAME
-from SI_Toolkit.TF.TF_Functions.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import Compile
 from yaml import FullLoader, load
 
 from SI_Toolkit_ASF.predictors_customization import STATE_INDICES

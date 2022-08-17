@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
-from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import predictor_autoregressive_tf
+from SI_Toolkit.Predictors.predictor_autoregressive_tf import predictor_autoregressive_tf
 import tensorflow as tf
 from tqdm import tqdm
 from matplotlib import use

@@ -15,7 +15,7 @@ from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 from gym.spaces import Box
 from gym.utils.renderer import Renderer
 
-from Driver.SI_Toolkit.src.SI_Toolkit.TF.TF_Functions.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import Compile
 
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
