@@ -2,7 +2,7 @@ import os
 from importlib import import_module
 
 import tensorflow as tf
-from Control_Toolkit.others.environment import TensorFlowLibrary
+from CartPoleSimulation.Control_Toolkit.others.environment import TensorFlowLibrary
 from globals import CONTROLLER_NAME
 from SI_Toolkit.Functions.TF.Compile import Compile
 from yaml import FullLoader, load

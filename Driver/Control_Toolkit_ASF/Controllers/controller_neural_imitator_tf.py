@@ -5,7 +5,7 @@ import numpy as np
 
 from types import SimpleNamespace
 
-from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
 from SI_Toolkit.load_and_normalize import normalize_numpy_array
 
 try:

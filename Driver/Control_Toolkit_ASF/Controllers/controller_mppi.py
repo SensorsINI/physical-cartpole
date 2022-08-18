@@ -32,7 +32,7 @@ from SI_Toolkit.Predictors.predictor_autoregressive_tf import predictor_autoregr
 from SI_Toolkit.Predictors.predictor_autoregressive_GP import predictor_autoregressive_GP
 from scipy.interpolate import interp1d
 
-from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
 from globals import *
 import time as global_time
 import os

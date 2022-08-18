@@ -1,4 +1,4 @@
-from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
 
 """
 Please modify this template to include a controller from cartpole simulator in physical cartpole

@@ -9,7 +9,7 @@ from CartPoleSimulation.CartPole.state_utilities import cartpole_state_vector_to
 from CartPoleSimulation.others.globals_and_utils import create_rng
 from CartPoleSimulation.CartPole.cartpole_model import TrackHalfLength
 
-from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
 
 
 class controller_do_mpc(template_controller):

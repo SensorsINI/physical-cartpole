@@ -6,11 +6,11 @@ import time
 import numpy as np
 
 import os
-from Driver.Control_Toolkit.others.environment import TensorFlowLibrary
-from Driver.DriverFunctions.cartpole_simulator_batched import cartpole_simulator_batched
+from CartPoleSimulation.Control_Toolkit.others.environment import TensorFlowLibrary
+from DriverFunctions.cartpole_simulator_batched import cartpole_simulator_batched
 
-from Control_Toolkit.others.globals_and_utils import get_controller
-from Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.Control_Toolkit.others.globals_and_utils import get_controller
+from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 

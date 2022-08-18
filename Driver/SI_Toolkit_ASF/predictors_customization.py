@@ -2,8 +2,8 @@ import os
 from importlib import import_module
 
 import numpy as np
-from Control_Toolkit.others.environment import NumpyLibrary
-from Driver.globals import CONTROLLER_NAME
+from CartPoleSimulation.Control_Toolkit.others.environment import NumpyLibrary
+from globals import CONTROLLER_NAME
 from yaml import FullLoader, load
 
 environment_module = "cartpole_simulator_batched"
