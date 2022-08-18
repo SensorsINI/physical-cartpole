@@ -1,6 +1,3 @@
-[submodule "Driver/Control_Toolkit"]
-	path = Driver/Control_Toolkit
-	url = git@github.com:SensorsINI/Control_Toolkit.git
 [submodule "Driver/SI_Toolkit"]
 	path = Driver/SI_Toolkit
 	url = git@github.com:SensorsINI/SI_Toolkit.git
