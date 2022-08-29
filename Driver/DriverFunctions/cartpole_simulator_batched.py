@@ -165,9 +165,6 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
         # Update the total time of the simulation
         self.CartPoleInstance.step_time()
-        self.CartPoleInstance.target_position = (
-            0.0  # TODO: Make option of random target position
-        )
 
         reward = self.get_reward(self.state, action)
         done = self.is_done(self.state)
@@ -224,11 +221,9 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
 
     def _distance_difference_cost(self, position):
         """Compute penalty for distance of cart to the target position"""
-        position_normalized = position / self.track_half_length
         return (
-            ((position - self.CartPoleInstance.target_position_tf) / (2.0 * self.track_half_length)) ** 2
-            + 2.0e1 / ((1.0 - position_normalized**2))
-            + 1.0e6 * self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32)
+            ((position - self.CartPoleInstance.target_position_tf) / self.track_half_length) ** 2
+            + 4.0 * self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32)
         )
 
     def get_reward(self, state, action):

@@ -113,7 +113,7 @@ class PhysicalCartPoleDriver:
         # Dance Mode
         self.danceEnabled = False
         self.danceAmpl = 0.10  # m
-        self.dancePeriodS = 8.0
+        self.dancePeriodS = 16.0
         self.dance_start_time = 0.0
 
         # Measurement
@@ -657,6 +657,8 @@ class PhysicalCartPoleDriver:
                     2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
             else:
                 self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
+        
+        self.env.CartPoleInstance.target_position = self.target_position
 
     def joystick_action(self):
 
@@ -857,12 +859,13 @@ class PhysicalCartPoleDriver:
             print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
+            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{:04}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
+                    self.env.CartPoleInstance.target_position,
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,
