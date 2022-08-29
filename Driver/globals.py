@@ -53,8 +53,8 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
-ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.134  # adjust from key commands such that upright angle error is minimized
+ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_ADC_RANGE
+ANGLE_DEVIATION_FINETUNE = 0.128  # adjust from key commands such that upright angle error is minimized
 POLYFIT_ANGLED = False
 # POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
 
