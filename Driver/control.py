@@ -5,7 +5,8 @@ import subprocess
 sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
 sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # TF: Only use CPU if uncommented
+# Set device
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # TF: If uncommented, only uses CPU
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
 os.chdir("Driver")
