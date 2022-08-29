@@ -1,5 +1,4 @@
-from CartPoleSimulation.Controllers import some_controller
-from Controllers.template_controller import template_controller
+from Control_Toolkit_ASF.Controllers.controller_neural_imitator_tf import controller_neural_imitator_tf
 
 """
 Please modify this template to include a controller from cartpole simulator in physical cartpole
@@ -12,17 +11,11 @@ For a controller to be found and imported it must:
 4. It must have __init__ and step methods
 """
 
-class controller_from_cartpole_simulator_PCP(template_controller):
-    def __init__(self):
-        self.controller_kern = some_controller()
 
-    def step(self, s, target_position, time=None):
-        Q = self.controller_kern.step(s, target_position, time)
-        return Q
-
-    def controller_reset(self):
-        self.controller_kern.controller_reset()
-
+class controller_neural_imitator_tf_CPS(controller_neural_imitator_tf):
     def functions_specific_to_physical_cartpole(self):
         # e.g. inout and output from the terminal
-        ...
+        pass
+
+    def controller_reset(self):
+        pass

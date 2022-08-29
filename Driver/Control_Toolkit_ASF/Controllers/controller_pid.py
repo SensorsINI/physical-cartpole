@@ -26,8 +26,8 @@ A PID controller for the Cartpole using CartpoleSimulator conventions
 
 import json
 
-from Controllers.template_controller import template_controller
-from CartPole.state_utilities import cartpole_state_varname_to_index
+from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
+from CartPoleSimulation.CartPole.state_utilities import cartpole_state_varname_to_index
 from DriverFunctions.json_helpers import get_new_json_filename
 
 from globals import dec, inc, JSON_PATH
@@ -51,7 +51,7 @@ sensitivity_aP_gain = 1.0
 sensitivity_aI_gain = 1.0
 sensitivity_aD_gain = 0.01
 
-class controller_PID(template_controller):
+class controller_pid(template_controller):
     def __init__(self):
 
         self.controller_name = 'PID'

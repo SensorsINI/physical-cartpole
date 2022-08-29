@@ -1,221 +1,230 @@
-controller:
-  mppi_RNN:  # MPPI RNN
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
-    num_rollouts: 2000                     # Number of Monte Carlo samples
-    predictor_type: "NeuralNet"               # One of ["Euler", "EulerTF", "NeuralNet"]
-    NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_type is NeuralNet
-    stage_cost:
-      dd_weight: 2000.0          # Distance Difference
-      ep_weight: 2200.0         # Pole Potential
-      ekp_weight: 15.0           # Pole Kinetic
-      ekc_weight: 0.0           # Cart Kinetic
-      cc_weight: 2.0            # Control Cost
-      ccrc_weight: 0.0          # Control Change Rate Cost
-      border_safety: 2000000.0   # Border Constraint
-      border_threshold: 0.88
-    terminal_cost:
-      angle: 10000.0
-      position: 10000.0
-      swing_through: 0.0
-    terminal_goal:
-      angle: 0.0636 #0.0636
-      position: 0.1 # 0.1
-    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
-    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0 # 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.03                      # Sampling variance
-    GAMMA: 0.995                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    logging:                        # Collect and show detailed insights into the controller's behavior
-      stage_cost: True
-      cost_to_go_breakdown: True
-      average_cost_to_go: False
-      trajectory: False
-      rollouts: False
-  mppi_GP:  # MPPI GP
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 0.8                      # sec
-    num_rollouts: 1000                     # Number of Monte Carlo samples
-    predictor_type: "GP"               # One of ["Euler", "EulerTF", "NeuralNet"]
-    stage_cost:
-      dd_weight: 2000.0          # Distance Difference
-      ep_weight: 2200.0         # Pole Potential
-      ekp_weight: 15.0           # Pole Kinetic
-      ekc_weight: 0.0           # Cart Kinetic
-      cc_weight: 2.0            # Control Cost
-      ccrc_weight: 0.0          # Control Change Rate Cost
-      border_safety: 2000000.0   # Border Constraint
-      border_threshold: 0.8
-    terminal_cost:
-      angle: 10000.0
-      position: 10000.0
-      swing_through: 0
-    terminal_goal:
-        angle: 0.0 #0.0636
-        position: 0.0 # 0.1
-    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
-    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.03                      # Sampling variance
-    GAMMA: 0.995                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    logging:                        # Collect and show detailed insights into the controller's behavior
-      stage_cost: True
-      cost_to_go_breakdown: False
-      average_cost_to_go: True
-      trajectory: False
-      rollouts: False
-  mppi_Euler:
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 0.44                      # sec
-    num_rollouts: 10                     # Number of Monte Carlo samples
-    predictor_type: "EulerTF"               # One of ["Euler", "EulerTF", "NeuralNet"]
-    stage_cost:
-      dd_weight: 2000.0          # Distance Difference
-      ep_weight: 2200.0         # Pole Potential
-      ekp_weight: 15.0           # Pole Kinetic
-      ekc_weight: 0.0           # Cart Kinetic
-      cc_weight: 2.0            # Control Cost
-      ccrc_weight: 0.0          # Control Change Rate Cost
-      border_safety: 2000000.0   # Border Constraint
-      border_threshold: 0.95
-    terminal_cost:
-      angle: 10000.0
-      position: 10000.0
-      swing_through: 0
-    terminal_goal:
-        angle: 0.0636 #0.0636
-        position: 0.1 # 0.1
-    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
-    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.03                      # Sampling variance
-    GAMMA: 0.995                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    logging:                          # Collect and show detailed insights into the controller's behavior
-      stage_cost: True
-      cost_to_go_breakdown: True
-      average_cost_to_go: False
-      trajectory: True
-      rollouts: False
-  mppi_Hybrid: # MPPI Hybrid
-    SEED: 1897                            # Seed for rng, for MPPI only, put "None" to set random seed (do it when you generate data for training!)
-    dt: 0.02                              # sec
-    mpc_horizon: 1.0                      # sec
-    num_rollouts: 2000                     # Number of Monte Carlo samples
-    predictor_type: "Hybrid"
-    NET_NAME: 'SI_Toolkit_ASF/Experiments/Pretrained-RNN-1/Models/GRU-6IN-32H1-32H2-5OUT-1'
-    stage_cost:
-      dd_weight: 2000.0          # Distance Difference
-      ep_weight: 2200.0         # Pole Potential
-      ekp_weight: 15.0           # Pole Kinetic
-      ekc_weight: 0.0           # Cart Kinetic
-      cc_weight: 2.0            # Control Cost
-      ccrc_weight: 0.0          # Control Change Rate Cost
-      border_safety: 2000000.0   # Border Constraint
-      border_threshold: 0.88
-    terminal_cost:
-      angle: 10000.0
-      position: 10000.0
-      swing_through: 0.0
-    terminal_goal:
-      angle: 0.0636 #0.0636
-      position: 0.1 # 0.1
-    cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
-    control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
-    R: 1.0                                # How much to punish Q
-    LBD: 100.0 # 100.0                            # Cost parameter lambda
-    NU: 1000.0                            # Exploration variance
-    SQRTRHOINV: 0.03                      # Sampling variance
-    GAMMA: 0.995                           # Future cost discount
-    SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
-    logging: # Collect and show detailed insights into the controller's behavior
-      stage_cost: True
-      cost_to_go_breakdown: True
-      average_cost_to_go: False
-      trajectory: False
-      rollouts: False
-  custom_mpc_scipy:
-    DT: 0.1
-    # method: 'L-BFGS-B'
-    method: 'SLSQP'
-    ftol: 1.0e-8
-    mpc_horizon: 10
-    # weights
-    wr: 0.001  # rterm
-    l1: 100.0  # angle_cost
-    l1_2: 0.0  # angle_sin_cost
-    l2: 0.0  # angleD_cost
-    l3: 0.0  # position_cost
-    l4: 0.01  # positionD_cost
-    m1: 0.0  # angle_sin_cost
-    m2: 0.0  # angleD_cost
-    m3: 0.0  # position_cost
-    m4: 0.0  # positionD_cost
-  do_mpc_discrete:
-    dt_mpc_simulation: 0.02  # s
-    mpc_horizon: 50
-  do_mpc:
-    dt_mpc_simulation: 0.02  # s
-    mpc_horizon: 50
-    # Perturbation factors:
-    # Change of output from optimal
-    p_Q: 0.00
-    # Random change of cost function by factor
-    p_position: 0.0
-    p_positionD: 0.0
-    p_angle: 0.0
-    # Cost factor
-    l_angle: 0.1
-    l_position: 1.0
-    l_positionD: 0.1
-  lqr:
-    Q: [10.0, 1.0, 1.0, 1.0]
-    R: 10.0
-  pid:
-    P_angle: 574.0
-    I_angle: 0.0
-    D_angle: 574.0
-    P_position: 1.5911608690461705
-    I_position: 0.0
-    D_position: 23.867413035692557
-  mpc_opti:
-    dt_mpc_simulation: 0.2  # s
-    mpc_horizon: 10
-cartpole:
-  SEED: "None"  # This is a seed for rng for CartPole instance class only. If "None" random seed based on datetime is used
-  PATH_TO_CONTROLLERS: './Controllers/'  # Path where controllers are stored
-  PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './CartPoleSimulation/Experiment_Recordings/'   # Where to save experiment recording per default
-  m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
-  M: 0.230  # mass of cart, kg # Checked by Antonio
-  L: "0.395/2.0"  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
-  u_max: 2.62 # max force produced by the motor, N # Checked by Marcin
-  M_fric: 4.77  # cart friction on track, N/m/s # Checked by Marcin
-  J_fric: 2.5e-4 #2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
-  v_max: 0.8  # max DC motor speed, m/s, in absense of friction, used for motor back EMF model # TODO: not implemented in model, but needed for MPC
-  cart_length: 4.4e-2  # m, checked by Marcin&Asude
-  usable_track_length: 44.0e-2  # m, checked by Marcin&Asude
-  controlDisturbance: 0.0  # disturbance, as factor of u_max
-  controlBias: 0.0  # bias of control input
-  g: 9.81  # absolute value of gravity acceleration, m/s^2
-  k: "1.0/3.0"  # Dimensionless factor of moment of inertia of the pole with length 2L: I: (1/3)*m*(2L)^2 = (4/3)*m*(L)^2
-  latency: 0.0 # s
-  noise:
-    noise_mode: 'OFF'
-    sigma_angle: 0.022  # As measured by Asude
-    sigma_position: 0.001
-    sigma_angleD: 0.09  # This is much smaller than would result from sigma_angle under assumption of iir filter+derviative calculation; the theoretical value would be 2.28
-    sigma_positionD: 0.01
+# controller:
+#   mppi_RNN:  # MPPI RNN
+#     seed: 1897                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
+#     dt: 0.02                              # sec
+#     mpc_horizon: 1.0                      # sec
+#     num_rollouts: 2000                     # Number of Monte Carlo samples
+#     predictor_name: "predictor_autoregressive_tf"               # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf"]
+#     NET_NAME: 'SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5'  # Applies only if predictor_name is predictor_autoregressive_tf
+#     stage_cost:
+#       dd_weight: 2000.0          # Distance Difference
+#       ep_weight: 2200.0         # Pole Potential
+#       ekp_weight: 15.0           # Pole Kinetic
+#       ekc_weight: 0.0           # Cart Kinetic
+#       cc_weight: 2.0            # Control Cost
+#       ccrc_weight: 0.0          # Control Change Rate Cost
+#       border_safety: 2000000.0   # Border Constraint
+#       border_threshold: 0.88
+#     terminal_cost:
+#       angle: 10000.0
+#       position: 10000.0
+#       swing_through: 0.0
+#     terminal_goal:
+#       angle: 0.0636 #0.0636
+#       position: 0.1 # 0.1
+#     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
+#     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
+#     R: 1.0                                # How much to punish Q
+#     LBD: 100.0 # 100.0                            # Cost parameter lambda
+#     NU: 1000.0                            # Exploration variance
+#     SQRTRHOINV: 0.03                      # Sampling variance
+#     GAMMA: 0.995                           # Future cost discount
+#     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
+#     logging:                        # Collect and show detailed insights into the controller's behavior
+#       stage_cost: True
+#       cost_to_go_breakdown: True
+#       average_cost_to_go: False
+#       trajectory: False
+#       rollouts: False
+#   mppi_GP:  # MPPI GP
+#     seed: 1897                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
+#     dt: 0.02                              # sec
+#     mpc_horizon: 0.8                      # sec
+#     num_rollouts: 1000                     # Number of Monte Carlo samples
+#     predictor_name: "GP"               # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "GP"]
+#     stage_cost:
+#       dd_weight: 2000.0          # Distance Difference
+#       ep_weight: 2200.0         # Pole Potential
+#       ekp_weight: 15.0           # Pole Kinetic
+#       ekc_weight: 0.0           # Cart Kinetic
+#       cc_weight: 2.0            # Control Cost
+#       ccrc_weight: 0.0          # Control Change Rate Cost
+#       border_safety: 2000000.0   # Border Constraint
+#       border_threshold: 0.8
+#     terminal_cost:
+#       angle: 10000.0
+#       position: 10000.0
+#       swing_through: 0
+#     terminal_goal:
+#         angle: 0.0 #0.0636
+#         position: 0.0 # 0.1
+#     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
+#     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
+#     R: 1.0                                # How much to punish Q
+#     LBD: 100.0                            # Cost parameter lambda
+#     NU: 1000.0                            # Exploration variance
+#     SQRTRHOINV: 0.03                      # Sampling variance
+#     GAMMA: 0.995                           # Future cost discount
+#     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
+#     logging:                        # Collect and show detailed insights into the controller's behavior
+#       stage_cost: True
+#       cost_to_go_breakdown: False
+#       average_cost_to_go: True
+#       trajectory: False
+#       rollouts: False
+#   mppi:
+#     seed: null                          # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
+#     dt: 0.02                              # sec
+#     mpc_horizon: 0.44                      # sec
+#     num_rollouts: 10                      # Number of Monte Carlo samples
+#     predictor_name: "predictor_ODE_tf"               # One of ["predictor_ODE", "predictor_ODE_tf", "predictor_autoregressive_tf", "GP"]
+#     predictor_intermediate_steps: 10
+#     NET_NAME: 'GRU-6IN-32H1-32H2-5OUT-0'  # Applies only if predictor name is predictor_autoregressive_tf
+#     GP_NAME: 'SGP_30'                     # Applies only if predictor name is GP
+#     stage_cost:
+#       dd_weight: 2000.0          # Distance Difference
+#       ep_weight: 2200.0         # Pole Potential
+#       ekp_weight: 15.0           # Pole Kinetic
+#       ekc_weight: 0.0           # Cart Kinetic
+#       cc_weight: 2.0            # Control Cost
+#       ccrc_weight: 0.0          # Control Change Rate Cost
+#       border_safety: 2000000.0   # Border Constraint
+#       border_threshold: 0.95
+#     terminal_cost:
+#       angle: 10000.0
+#       position: 10000.0
+#       swing_through: 0
+#     terminal_goal:
+#         angle: 0.0636 #0.0636
+#         position: 0.1 # 0.1
+#     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
+#     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
+#     R: 1.0                                # How much to punish Q
+#     LBD: 100.0                            # Cost parameter lambda
+#     NU: 1000.0                            # Exploration variance
+#     SQRTRHOINV: 0.03                      # Sampling variance
+#     GAMMA: 0.995                          # Future cost discount
+#     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
+#     logging:                          # Collect and show detailed insights into the controller's behavior
+#       stage_cost: True
+#       cost_to_go_breakdown: True
+#       average_cost_to_go: False
+#       trajectory: True
+#       rollouts: False
+#     WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle
+#     update_every: 1                       # Cost weighted update of inputs every ... steps
+#   mppi_Hybrid: # MPPI Hybrid
+#     seed: 1897                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
+#     dt: 0.02                              # sec
+#     mpc_horizon: 1.0                      # sec
+#     num_rollouts: 2000                     # Number of Monte Carlo samples
+#     predictor_name: "Hybrid"
+#     NET_NAME: 'SI_Toolkit_ASF/Experiments/Pretrained-RNN-1/Models/GRU-6IN-32H1-32H2-5OUT-1'
+#     stage_cost:
+#       dd_weight: 2000.0          # Distance Difference
+#       ep_weight: 2200.0         # Pole Potential
+#       ekp_weight: 15.0           # Pole Kinetic
+#       ekc_weight: 0.0           # Cart Kinetic
+#       cc_weight: 2.0            # Control Cost
+#       ccrc_weight: 0.0          # Control Change Rate Cost
+#       border_safety: 2000000.0   # Border Constraint
+#       border_threshold: 0.88
+#     terminal_cost:
+#       angle: 10000.0
+#       position: 10000.0
+#       swing_through: 0.0
+#     terminal_goal:
+#       angle: 0.0636 #0.0636
+#       position: 0.1 # 0.1
+#     cost_noise: 0.0                       # Noise on stage cost weights by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0 othewise
+#     control_noise: 0.0                    # Noise on top of the calculated control input by +/- this value, we usually set 0.5 to explore various controllers while collecting data for training, 0.1 to test an not-ideal case
+#     R: 1.0                                # How much to punish Q
+#     LBD: 100.0 # 100.0                            # Cost parameter lambda
+#     NU: 1000.0                            # Exploration variance
+#     SQRTRHOINV: 0.03                      # Sampling variance
+#     GAMMA: 0.995                           # Future cost discount
+#     SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
+#     logging: # Collect and show detailed insights into the controller's behavior
+#       stage_cost: True
+#       cost_to_go_breakdown: True
+#       average_cost_to_go: False
+#       trajectory: False
+#       rollouts: False
+#   custom_mpc_scipy:
+#     dt: 0.1
+#     # method: 'L-BFGS-B'
+#     method: 'SLSQP'
+#     ftol: 1.0e-8
+#     mpc_horizon: 10
+#     # weights
+#     wr: 0.001  # rterm
+#     l1: 100.0  # angle_cost
+#     l1_2: 0.0  # angle_sin_cost
+#     l2: 0.0  # angleD_cost
+#     l3: 0.0  # position_cost
+#     l4: 0.01  # positionD_cost
+#     m1: 0.0  # angle_sin_cost
+#     m2: 0.0  # angleD_cost
+#     m3: 0.0  # position_cost
+#     m4: 0.0  # positionD_cost
+#   do_mpc_discrete:
+#     dt: 0.02  # s
+#     mpc_horizon: 50
+#   do_mpc:
+#     dt: 0.02  # s
+#     mpc_horizon: 50
+#     # Perturbation factors:
+#     # Change of output from optimal
+#     p_Q: 0.00
+#     # Random change of cost function by factor
+#     p_position: 0.0
+#     p_positionD: 0.0
+#     p_angle: 0.0
+#     # Cost factor
+#     l_angle: 0.1
+#     l_position: 1.0
+#     l_positionD: 0.1
+#   lqr:
+#     Q: [10.0, 1.0, 1.0, 1.0]
+#     R: 10.0
+#     control_noise: 0.0
+#     seed: null
+#   pid:
+#     P_angle: 574.0
+#     I_angle: 0.0
+#     D_angle: 574.0
+#     P_position: 1.5911608690461705
+#     I_position: 0.0
+#     D_position: 23.867413035692557
+#   mpc_opti:
+#     dt: 0.2  # s
+#     mpc_horizon: 10
+# cartpole:
+#   seed: 1873  # This is a seed for rng for CartPole instance class only. If null random seed based on datetime is used
+#   actuator_noise: 0.0
+#   num_control_inputs: 1
+#   mode: stabilization
+#   PATH_TO_EXPERIMENT_RECORDINGS_DEFAULT: './CartPoleSimulation/Experiment_Recordings/'   # Where to save experiment recording per default
+#   m: 0.087  # mass of pole, kg # Checked by Antonio & Tobi
+#   M: 0.230  # mass of cart, kg # Checked by Antonio
+#   L: "0.395/2.0"  # HALF (!!!) length of pend, m # Checked by Antonio & Tobi
+#   u_max: 2.62 # max force produced by the motor, N # Checked by Marcin
+#   M_fric: 4.77  # cart friction on track, N/m/s # Checked by Marcin
+#   J_fric: 2.5e-4 #2.5e-4  # friction coefficient on angular velocity in pole joint, Nm/rad/s # Checked by Marcin
+#   v_max: 0.8  # max DC motor speed, m/s, in absense of friction, used for motor back EMF model # TODO: not implemented in model, but needed for MPC
+#   cart_length: 4.4e-2  # m, checked by Marcin&Asude
+#   usable_track_length: 44.0e-2  # m, checked by Marcin&Asude
+#   controlDisturbance: 0.0  # disturbance, as factor of u_max
+#   controlBias: 0.0  # bias of control input
+#   g: 9.81  # absolute value of gravity acceleration, m/s^2
+#   k: "1.0/3.0"  # Dimensionless factor of moment of inertia of the pole with length 2L: I: (1/3)*m*(2L)^2 = (4/3)*m*(L)^2
+#   latency: 0.0 # s
+#   noise:
+#     noise_mode: 'OFF'
+#     sigma_angle: 0.022  # As measured by Asude
+#     sigma_position: 0.001
+#     sigma_angleD: 0.09  # This is much smaller than would result from sigma_angle under assumption of iir filter+derviative calculation; the theoretical value would be 2.28
+#     sigma_positionD: 0.01
 
-data_generator:
-  SEED: "None"  # If "None" random seed based on datetime is used
+# data_generator:
+#   seed: 1  # If null random seed based on datetime is used

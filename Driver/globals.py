@@ -21,16 +21,15 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mppi-tf-CPS'  # e.g. 'PID', 'mppi', 'mppi-tf-CPS', 'neural-imitator-tf-CPS'
-PREDICTOR = 'RNN'  # e.g. 'Euler', 'RNN'  # Not for CPS - set it in config
-if CONTROLLER_NAME == 'PID':
+CONTROLLER_NAME = 'dist-adam-resamp2-tf'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+PREDICTOR = 'predictor_ODE_tf'  # e.g. 'predictor_ODE_tf', 'predictor_autoregressive_tf'
+if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 7
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
-PATH_TO_CONTROLLERS = './Controllers/'  # Path where controllers are stored
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
@@ -38,7 +37,7 @@ JSON_PATH = 'Json/'
 MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
 MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'PID' else True  # Linearize and Threshold Motor Commands
 
-MOTOR_FULL_SCALE = 8192  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
 
 ##### Angle Conversion #####
@@ -47,22 +46,22 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1158  # 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1123  # 1213     # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_ORIGINAL = 1034  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
-ANGLE_NORMALIZATION_FACTOR = 2 * math.pi / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.134  # adjust from key commands such that upright angle error is minimized
+ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_ADC_RANGE
+ANGLE_DEVIATION_FINETUNE = 0.13  # adjust from key commands such that upright angle error is minimized
 POLYFIT_ANGLED = False
 # POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
 
 ##### Position Conversion #####
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
-POSITION_ENCODER_RANGE = 4660  # This is an empirical approximation # seems to be 4164 now
+POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation # seems to be 4164 now
 POSITION_OFFSET = 0  # Serves to adjust starting position - position after calibration is 0
 POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2  # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396  # Total usable track length in meters

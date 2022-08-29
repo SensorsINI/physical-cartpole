@@ -1,84 +1,67 @@
+import os
+from importlib import import_module
+
 import tensorflow as tf
+from CartPoleSimulation.Control_Toolkit.others.environment import TensorFlowLibrary
+from globals import CONTROLLER_NAME
+from SI_Toolkit.Functions.TF.Compile import Compile
+from yaml import FullLoader, load
 
-from CartPole.state_utilities import STATE_INDICES, STATE_VARIABLES, CONTROL_INPUTS, CONTROL_INDICES, create_cartpole_state
-from CartPole.state_utilities import ANGLE_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX
+from SI_Toolkit_ASF.predictors_customization import STATE_INDICES
 
-from CartPole.cartpole_tf import cartpole_fine_integration_tf, Q2u_tf
-from CartPole.cartpole_model import L
-
-from SI_Toolkit.TF.TF_Functions.Compile import Compile
-import numpy as np
-
-STATE_INDICES_TF = tf.lookup.StaticHashTable(
+STATE_INDICES_TF = tf.lookup.StaticHashTable(  # TF style dictionary
     initializer=tf.lookup.KeyValueTensorInitializer(
-        keys=tf.constant(list(STATE_INDICES.keys())), values=tf.constant(list(STATE_INDICES.values()))),
-    default_value=-100, name=None
+        keys=tf.constant(list(STATE_INDICES.keys())),
+        values=tf.constant(list(STATE_INDICES.values())),
+    ),
+    default_value=-100,
+    name=None,
 )
 
+config = load(open(os.path.join("CartPoleSimulation", "config.yml"), "r"), FullLoader)
 
-class next_state_predictor_ODE_tf():
 
-    def __init__(self, dt, intermediate_steps):
-        self.s = tf.convert_to_tensor(create_cartpole_state())
+class next_state_predictor_ODE_tf:
+    def __init__(self, dt, intermediate_steps, batch_size, **kwargs):
+        self.s = None
 
-        self.intermediate_steps = tf.convert_to_tensor(intermediate_steps, dtype=tf.int32)
-        self.t_step = tf.convert_to_tensor(dt / float(self.intermediate_steps), dtype=tf.float32)
-
-    @Compile
-    def step(self, s, Q, params):
-
-        # assers does not work with Compile, but left here for information
-        # assert Q.shape[0] == s.shape[0]
-        # assert Q.ndim == 2
-        # assert s.ndim == 2
-
-        if params is None:
-            pole_half_length = tf.convert_to_tensor(L, dtype=tf.float32)
-        else:
-            pole_half_length = tf.convert_to_tensor(params, dtype=tf.float32)
-
-        Q = tf.squeeze(Q, axis=1)  # Removes features dimension, specific for cartpole as it has only one control input
-
-        u = Q2u_tf(Q)
-
-        (
-            s_next
-        ) = cartpole_fine_integration_tf(
-            s,
-            u=u,
-            t_step=self.t_step,
-            intermediate_steps=self.intermediate_steps,
-            L=pole_half_length,
+        planning_env_config = {
+            **config["controller"][CONTROLLER_NAME],
+            **config["cartpole"],
+            **{"seed": config["data_generator"]["seed"]},
+            **{"computation_lib": TensorFlowLibrary},
+        }
+        self.env = getattr(import_module("Driver.DriverFunctions.cartpole_simulator_batched"), "cartpole_simulator_batched")(
+            batch_size=batch_size, **planning_env_config
         )
 
-        return s_next
+        self.intermediate_steps = tf.convert_to_tensor(
+            intermediate_steps, dtype=tf.int32
+        )
+        self.t_step = tf.convert_to_tensor(
+            dt / float(self.intermediate_steps), dtype=tf.float32
+        )
+        self.env.dt = self.t_step
+
+    def step(self, s, Q, params):
+        self.env.state = s
+        for _ in tf.range(self.intermediate_steps):
+            next_state = self.env.step_tf(s, Q)
+            s = next_state
+        return next_state
 
 
 class predictor_output_augmentation_tf:
-    def __init__(self, net_info):
-        self.net_output_indices = {key: value for value, key in enumerate(net_info.outputs)}
+    def __init__(self, net_info, differential_network=False):
+        self.net_output_indices = {
+            key: value for value, key in enumerate(net_info.outputs)
+        }
         indices_augmentation = []
         features_augmentation = []
-        if 'angle' not in net_info.outputs:
-            indices_augmentation.append(STATE_INDICES['angle'])
-            features_augmentation.append('angle')
-        if 'angle_sin' not in net_info.outputs and 'angle' in net_info.outputs:
-            indices_augmentation.append(STATE_INDICES['angle_sin'])
-            features_augmentation.append('angle_sin')
-        if 'angle_cos' not in net_info.outputs and 'angle' in net_info.outputs:
-            indices_augmentation.append(STATE_INDICES['angle_cos'])
-            features_augmentation.append('angle_cos')
 
         self.indices_augmentation = indices_augmentation
         self.features_augmentation = features_augmentation
         self.augmentation_len = len(self.indices_augmentation)
-
-        if 'angle' in net_info.outputs:
-            self.index_angle = tf.convert_to_tensor(self.net_output_indices['angle'])
-        if 'angle_sin' in net_info.outputs:
-            self.index_angle_sin = tf.convert_to_tensor(self.net_output_indices['angle_sin'])
-        if 'angle_cos' in net_info.outputs:
-            self.index_angle_cos = tf.convert_to_tensor(self.net_output_indices['angle_cos'])
 
     def get_indices_augmentation(self):
         return self.indices_augmentation
@@ -90,21 +73,8 @@ class predictor_output_augmentation_tf:
     def augment(self, net_output):
 
         output = net_output
-        if 'angle' in self.features_augmentation:
-            angle = \
-                tf.math.atan2(
-                    net_output[..., self.index_angle_sin],
-                    net_output[..., self.index_angle_cos])[:, :, tf.newaxis]
-            output = tf.concat([output, angle], axis=-1)
-
-        if 'angle_sin' in self.features_augmentation:
-            angle_sin = \
-                tf.sin(net_output[..., self.index_angle])
-            output = tf.concat([output, angle_sin], axis=-1)
-
-        if 'angle_cos' in self.features_augmentation:
-            angle_cos = \
-                tf.cos(net_output[..., self.index_angle])
-            output = tf.concat([output, angle_cos], axis=-1)
+        # if 'sin(x)' in self.features_augmentation:
+        #     sin_x = tf.math.sin(net_output[..., self.index_x])[:, :, tf.newaxis]
+        #     output = tf.concat([output, sin_x], axis=-1)
 
         return output

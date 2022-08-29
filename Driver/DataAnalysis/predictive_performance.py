@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
-from SI_Toolkit.TF.TF_Functions.predictor_autoregressive_tf import predictor_autoregressive_tf
+from SI_Toolkit.Predictors.predictor_autoregressive_tf import predictor_autoregressive_tf
 import tensorflow as tf
 from tqdm import tqdm
 from matplotlib import use
@@ -132,10 +132,10 @@ if __name__ == "__main__":
     #     file = 'ExperimentRecordings/20ms Trajectories/CP_mppi-tf_2022-02-11_16-47-00 20ms swingup.csv',
     #     states = ['angle', 'angleD', 'position', 'positionD'],
     #     predictors = {
-    #         'Euler (h=20ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=1),
-    #         'Euler (h=10ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=5),
-    #         'Euler (h=2ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10),
-    #         'Euler (h=1ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=20),
+    #         'Euler (h=20ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=1),
+    #         'Euler (h=10ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=5),
+    #         'Euler (h=2ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=10),
+    #         'Euler (h=1ms)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=20),
     #     },
     #     offsets = [51, 150],
     #     figsize=(8,12),
@@ -148,8 +148,8 @@ if __name__ == "__main__":
     #     file = 'ExperimentRecordings/20ms Trajectories/CP_PID_2022-01-22_01-34-16 20ms swinging short.csv',
     #     states = ['angle', 'angleD'],
     #     predictors = {
-    #         'Euler (k=4/3)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10, k=4/3),
-    #         'Euler (k=1/3)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10, k=1/3),
+    #         'Euler (k=4/3)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=10, k=4/3),
+    #         'Euler (k=1/3)': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=10, k=1/3),
     #     },
     #     offsets = [51, 150],
     #     figsize=(8,6)
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         file='ExperimentRecordings/Results/Swingup/CP_mppi-tf-Euler_2022-02-21_01-27-23.csv',
         states=['angle', 'angleD', 'position', 'positionD', 'Q'],
         predictors={
-            'Euler': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='EulerTF', intermediate_steps=10, k=1 / 3),
+            'Euler': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='predictor_ODE_tf', intermediate_steps=10, k=1 / 3),
             # 'Pretrained RNN': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='Pretrained-RNN-1/GRU-6IN-32H1-32H2-5OUT-0'),
             'RNN with Simulation Data (20 Epochs) [GRU-1]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-1'),
             #'RNN with Physical V1 (20 Epochs) [GRU-4]': predictor_autoregressive_tf(horizon=horizon, batch_size=1, net_name='PhysicalData-1/GRU-6IN-32H1-32H2-5OUT-4'),
