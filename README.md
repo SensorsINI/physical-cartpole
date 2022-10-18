@@ -10,13 +10,27 @@ The new firmware built during the workshop enables the following features:
 * Motor safety cut off - prevents the motor from melting if the cart hits a limit.
 
 # Requirements to Build/Program the Micro
+Jerome Jeanine found a way to program the Aliexpress ST micro using open source tools. See [his thesis MPPI on a physical cartpole](https://drive.google.com/file/d/1nSxp6x9yCe-Xci26lOERq7qKkFW_sD_q/view?usp=sharing). 
+
+
 * KEIL MDK development environment.
 * STLink debugger.
+
+# Installation
 
 Preferable way to install python packages:
 `pip install -r requirements.txt` in a conda env or pip venv.
 
+# Running
+The main module is [control.py](Driver/control.py).
+
+Parameters are distributed in [globals.py](Driver/globals.py) and [config_CPP.yml](Drivers/config_CPP.yml).
+
 # Notes
+
+## Firmware
+The [firmware](Firmware) folder has the ST firmware.
+
 ## Modes of Operation
 
 The pendulum microcontroller firmware has two modes of operation:
