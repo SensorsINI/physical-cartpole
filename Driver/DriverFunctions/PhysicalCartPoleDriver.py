@@ -6,11 +6,7 @@ import time
 import numpy as np
 
 import os
-from CartPoleSimulation.Control_Toolkit.others.environment import TensorFlowLibrary
-from DriverFunctions.cartpole_simulator_batched import cartpole_simulator_batched
 
-from CartPoleSimulation.Control_Toolkit.others.globals_and_utils import get_controller
-from CartPoleSimulation.Control_Toolkit.Controllers import template_controller
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -58,31 +54,13 @@ def polyfit(buffer):
 
 
 class PhysicalCartPoleDriver:
-    def __init__(self):
+    def __init__(self, CartPoleInstance):
+
+        self.CartPoleInstance = CartPoleInstance
+        self.CartPoleInstance.set_controller(controller_idx=CONTROLLER_NAME)
+        self.controller = self.CartPoleInstance.controller
 
         self.InterfaceInstance = Interface()
-
-        planning_env_config ={
-            **config["cartpole"],
-            **config["controller"][CONTROLLER_NAME]
-        }
-        planning_env_config.update({
-            "dt": config["controller"][CONTROLLER_NAME].get("dt", 0.02),
-            "mode": "stabilization",
-            "batch_size": config["controller"][CONTROLLER_NAME]["num_rollouts"],
-            "computation_lib": TensorFlowLibrary,
-        })
-
-        self.env = cartpole_simulator_batched(**planning_env_config)
-
-        Controller, self.controller_name, self.controller_idx = get_controller(controller_name=CONTROLLER_NAME)
-        self.controller: template_controller = Controller(
-            environment=self.env,
-            **{
-                **config["controller"][CONTROLLER_NAME],
-                **{"num_control_inputs": config["cartpole"]["num_control_inputs"]}
-            }
-        )
 
         self.log = my_logger(__name__)
 
@@ -162,6 +140,7 @@ class PhysicalCartPoleDriver:
         # Target
         self.position_offset = 0
         self.target_position = 0.0
+        self.target_equilibrium = 1
 
         # Joystick variable
         self.stick = None
@@ -196,7 +175,10 @@ class PhysicalCartPoleDriver:
         self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=0.005)
         self.s_delayed = np.copy(self.s)
 
-        self.arduino_serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)
+        # self.arduino_serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)
+        SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode(
+            "utf-8").strip() if platform.system() == 'Darwinx' else '/dev/tty.usbserial-110'
+        self.arduino_serial_port = serial.Serial(SERIAL_PORT, 115200, timeout=5)
         self.arduino_serial_port.write(b'1')
 
     def run(self):
@@ -255,7 +237,7 @@ class PhysicalCartPoleDriver:
                 # Active Python Control: set values from controller
                 self.lastControlTime = self.timeNow
                 start = time.time()
-                self.Q = float(self.controller.step(self.s, self.timeNow))
+                self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position, "target_equilibrium": self.target_equilibrium}))
                 performance_measurement[0] = time.time() - start
                 self.controller_steptime = time.time() - start
                 if AUTOSTART:
@@ -383,13 +365,10 @@ class PhysicalCartPoleDriver:
                 print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
             elif c == ';':
-                if hasattr(self.controller, 'rev'):
-                    if self.controller.rev:
-                        self.controller.rev = False
-                    else:
-                        self.controller.rev = True
+                if self.target_equilibrium == 1:
+                    self.target_equilibrium = 0
                 else:
-                    'Controller has no attribute for switch of equilibrium point.'
+                    self.target_equilibrium = 1
 
 
             ##### Calibration #####
@@ -658,7 +637,7 @@ class PhysicalCartPoleDriver:
             else:
                 self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
         
-        self.env.CartPoleInstance.target_position = self.target_position
+        self.CartPoleInstance.target_position = self.target_position
 
     def joystick_action(self):
 
@@ -865,7 +844,7 @@ class PhysicalCartPoleDriver:
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
-                    self.env.CartPoleInstance.target_position,
+                    self.CartPoleInstance.target_position,
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,

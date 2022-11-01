@@ -13,6 +13,7 @@ os.chdir("Driver")
 
 import tensorflow as tf
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
+from CartPoleSimulation.CartPole import CartPole
 
 subprocess.call("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True, stdout=open(os.devnull, 'wb'))
 subprocess.Popen("python3 -m DataAnalysis.plot_server", shell=True)
@@ -27,7 +28,8 @@ print("TF Float Type:", tf.keras.backend.floatx())
 #tf.config.set_soft_device_placement(True)
 #tf.debugging.set_log_device_placement(True)
 
-PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver()
+CartPoleInstance = CartPole()
+PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver(CartPoleInstance)
 PhysicalCartPoleDriverInstance.run()
 
 try:
