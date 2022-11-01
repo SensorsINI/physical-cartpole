@@ -42,9 +42,6 @@ from yaml import load, FullLoader
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-config = load(open(os.path.join("CartPoleSimulation", "config.yml"), "r"), Loader=FullLoader)
-
-
 @jit(nopython=False, cache=True, fastmath=True)
 def polyfit(buffer):
     p = fit_poly(np.arange(len(buffer)), buffer, 2)
@@ -827,7 +824,8 @@ class PhysicalCartPoleDriver:
             ############  Mode  ############
             if self.controlEnabled:
                 if 'mppi' in CONTROLLER_NAME:
-                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.env_mock.config["mpc_horizon"], self.controller.env_mock.config["num_rollouts"], PREDICTOR)
+                    pass
+                    # mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.env_mock.config["mpc_horizon"], self.controller.env_mock.config["num_rollouts"], PREDICTOR)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
