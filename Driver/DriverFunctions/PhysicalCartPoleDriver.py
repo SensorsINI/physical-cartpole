@@ -54,7 +54,7 @@ class PhysicalCartPoleDriver:
     def __init__(self, CartPoleInstance):
 
         self.CartPoleInstance = CartPoleInstance
-        self.CartPoleInstance.set_controller(controller_idx=CONTROLLER_NAME)
+        self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
 
         self.InterfaceInstance = Interface()
@@ -172,9 +172,6 @@ class PhysicalCartPoleDriver:
         self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=0.005)
         self.s_delayed = np.copy(self.s)
 
-        # self.arduino_serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)
-        SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode(
-            "utf-8").strip() if platform.system() == 'Darwinx' else '/dev/tty.usbserial-110'
         self.arduino_serial_port = serial.Serial(SERIAL_PORT, 115200, timeout=5)
         self.arduino_serial_port.write(b'1')
 

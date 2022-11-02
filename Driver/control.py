@@ -14,6 +14,7 @@ os.chdir("Driver")
 import tensorflow as tf
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 from CartPoleSimulation.CartPole import CartPole
+from globals import CONTROL_PERIOD_MS
 
 subprocess.call("ps aux | grep plot_server | awk '{print $2}' | xargs kill -9 > /dev/null", shell=True, stdout=open(os.devnull, 'wb'))
 subprocess.Popen("python3 -m DataAnalysis.plot_server", shell=True)
@@ -29,6 +30,7 @@ print("TF Float Type:", tf.keras.backend.floatx())
 #tf.debugging.set_log_device_placement(True)
 
 CartPoleInstance = CartPole()
+CartPoleInstance.dt_controller = float(CONTROL_PERIOD_MS)/1000.0
 PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver(CartPoleInstance)
 PhysicalCartPoleDriverInstance.run()
 

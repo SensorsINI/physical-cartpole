@@ -19,6 +19,24 @@ CMD_SET_CONTROL_CONFIG  = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
 
+def get_serial_port():
+    import platform
+    import subprocess
+
+    SERIAL_PORT = None
+    try:
+        system = platform.system()
+        if system == 'Darwin':  # Mac
+            SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
+        elif system == 'Linux':
+            SERIAL_PORT = '/dev/ttyUSB0'  # You might need to change the USB number
+        else:
+            raise NotImplementedError('For system={} connection to serial port is not implemented.')
+    except Exception as err:
+        print(err)
+
+    return SERIAL_PORT
+
 class Interface:
     def __init__(self):
         self.device         = None

@@ -2,6 +2,8 @@ import math
 import logging
 import numpy as np
 
+from Driver.DriverFunctions.interface import get_serial_port
+
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
@@ -21,7 +23,7 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'dist-adam-resamp2-tf'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'predictor_ODE_tf'  # e.g. 'predictor_ODE_tf', 'predictor_autoregressive_tf'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
@@ -73,14 +75,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP = 4.0
 
 ##### Serial Port #####
-import platform
-import subprocess
-
-SERIAL_PORT = None
-try:
-    SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip() if platform.system() == 'Darwin' else '/dev/ttyUSB0'
-except Exception as err:
-    print(err)
+SERIAL_PORT = get_serial_port()
 
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 

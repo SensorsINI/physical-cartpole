@@ -8,14 +8,15 @@ from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_COS_IDX,
 )
 
-from CartPoleSimulation.Control_Toolkit.others.environment import EnvironmentBatched, NumpyLibrary, TensorType
+from CartPoleSimulation.Control_Toolkit.others.environment import EnvironmentBatched
+from SI_Toolkit.computation_library import NumpyLibrary, TensorType
 
 from CartPoleSimulation.GymlikeCartPole.CartPoleEnv_LTC import CartPoleEnv_LTC
 
 from gym.spaces import Box
 from gym.utils.renderer import Renderer
 
-from SI_Toolkit.Functions.TF.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import CompileTF
 
 
 class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
@@ -142,7 +143,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             return tuple((self.state, {}))
         return self.state
 
-    @Compile
+    @CompileTF
     def step_tf(self, state: tf.Tensor, action: tf.Tensor):
         state, action = self._expand_arrays(state, action)
 
@@ -181,7 +182,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
             {"target": self.CartPoleInstance.target_position},
         )
 
-    @Compile
+    @CompileTF
     def step_physics(self, state: TensorType, action: TensorType):
         # Convert dimensionless motor power to a physical force acting on the Cart
         u = self.u_max * action[:, 0]
