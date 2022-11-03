@@ -223,7 +223,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
         """Compute penalty for distance of cart to the target position"""
         return (
             ((position - self.CartPoleInstance.target_position_tf) / self.track_half_length) ** 2
-            + 100.0 * self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32)
+            + 200.0 * self.lib.cast(self.lib.abs(position) > 0.95 * self.track_half_length, self.lib.float32)
         )
 
     def get_reward(self, state, action):
