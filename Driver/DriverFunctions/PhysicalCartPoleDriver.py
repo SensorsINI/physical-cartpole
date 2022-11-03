@@ -54,6 +54,7 @@ class PhysicalCartPoleDriver:
     def __init__(self, CartPoleInstance):
 
         self.CartPoleInstance = CartPoleInstance
+        self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
 
@@ -359,10 +360,7 @@ class PhysicalCartPoleDriver:
                 print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
             elif c == ';':
-                if self.target_equilibrium == 1:
-                    self.target_equilibrium = -1
-                else:
-                    self.target_equilibrium = 1
+                self.target_equilibrium *= -1.0
 
 
             ##### Calibration #####
@@ -839,7 +837,7 @@ class PhysicalCartPoleDriver:
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
-                    self.CartPoleInstance.target_position,
+                    f"{self.CartPoleInstance.target_position}, {self.CartPoleInstance.target_equilibrium}",
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,
