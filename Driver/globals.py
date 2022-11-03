@@ -24,7 +24,7 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+OPTIMIZER_NAME = 'cem-tf'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'predictor_ODE_tf'  # e.g. 'predictor_ODE_tf', 'predictor_autoregressive_tf'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
@@ -57,7 +57,7 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
 ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.13  # adjust from key commands such that upright angle error is minimized
+ANGLE_DEVIATION_FINETUNE = 0.116  # adjust from key commands such that upright angle error is minimized
 POLYFIT_ANGLED = False
 # POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
 

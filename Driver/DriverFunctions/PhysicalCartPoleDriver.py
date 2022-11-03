@@ -269,7 +269,7 @@ class PhysicalCartPoleDriver:
                 break
 
             self.end = time.time()
-            self.python_latency = self.end - self.InterfaceInstance.start;
+            self.python_latency = self.end - self.InterfaceInstance.start
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
@@ -837,7 +837,7 @@ class PhysicalCartPoleDriver:
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
-                    self.CartPoleInstance.target_position,
+                    f"{self.CartPoleInstance.target_position}, {self.CartPoleInstance.target_equilibrium}",
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,
