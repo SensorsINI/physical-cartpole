@@ -16,11 +16,11 @@ from DriverFunctions.csv_helpers import csv_init
 from DriverFunctions.TargetPositionGenerator import TargetPositionGenerator
 from DriverFunctions.PID_Position import controller_PID_position
 
-NUMBER_OF_SWINGUPS = 50
+NUMBER_OF_SWINGUPS = 10
 STABLE_ANGLE_RAD = 0.2
 TIME_STABLE = 15
 RESET_Q = 0.5
-TIME_STABLE_DOWN = 3
+TIME_STABLE_DOWN = 10.0
 
 class SwingUpMeasure:
     def __init__(self, driver):
@@ -30,6 +30,8 @@ class SwingUpMeasure:
         self.counter_swingup = 0
         self.TPG = TargetPositionGenerator()
         self.target_position = 0.0
+
+        self.first_start = True
 
         self.PID = controller_PID_position()
 
@@ -57,27 +59,31 @@ class SwingUpMeasure:
 
         if self.state == 'idle':
             self.Q = 0
+            self.first_start = True
 
         # Generate Starting Position
         elif self.state == 'start':
-            self.Q = 0
-            self.target_position = 0.8 * np.random.uniform(low=-1,high=1) * TrackHalfLength
+            self.Q = self.driver.Q
+
+            if self.first_start:
+                self.driver.csvfilename, self.driver.csvfile, self.driver.csvwriter = csv_init(
+                    csv_name='Experiment-' + str(self.counter_swingup),
+                    controller_name=self.driver.controller.controller_name)
+                self.TPG.set_experiment()
+                self.first_start = False
+            self.target_position = np.random.uniform(low=-0.18, high=0.18)
             self.start_angle = np.random.uniform(low=0.5,high=0.8) * np.pi
             self.start_angleD = np.random.uniform(low=0.5,high=0.8) * np.pi
             self.state = 'reset'
 
-            if hasattr(self.driver.controller, 'rev'):
-                self.driver.target_equilibrium = -1
+            self.driver.target_equilibrium = -1
 
         # Move Back to Starting Position
         elif self.state == 'reset':
 
-            if hasattr(self.driver.controller, 'target_equilibrium'):
-                self.driver.target_equilibrium = -1
-                self.driver.controlEnabled = True
-                self.Q = self.driver.Q
-            else:
-                self.Q = self.PID.step(self.position, self.target_position, time)
+            self.driver.target_equilibrium = -1
+            self.driver.controlEnabled = True
+            self.Q = self.driver.Q
 
             if abs(self.position - self.target_position) > 0.01\
                     and not (
@@ -89,41 +95,37 @@ class SwingUpMeasure:
                 self.state = 'wait inbetween'
 
         elif self.state == 'wait inbetween':
-            if hasattr(self.driver.controller, 'rev'):
-                self.driver.target_equilibrium = -1
-                self.driver.controlEnabled = True
-                self.Q = self.driver.Q
-            else:
-                self.Q = self.PID.step(self.position, self.target_position, time)
+            self.driver.target_equilibrium = -1
+            self.driver.controlEnabled = True
+            self.Q = self.driver.Q
+            self.target_position = self.TPG.get_target_position()
 
             if self.time - self.time_start_stable_down > TIME_STABLE_DOWN:
-                self.TPG.set_experiment()
                 self.target_position = self.TPG.get_target_position()
                 self.time_start = self.time
                 self.state = 'swingup'
                 self.driver.controlEnabled = True
-                self.driver.csvfilename, self.driver.csvfile, self.driver.csvwriter = csv_init(csv_name='Experiment-'+str(self.counter_swingup), controller_name=self.driver.controller.controller_name)
 
 
         # Wait until 2s stable
         elif self.state == 'swingup':
 
-            if hasattr(self.driver.controller, 'rev'):
-                self.driver.target_equilibrium = 1
+            self.driver.target_equilibrium = 1
 
             self.driver.loggingEnabled = True
             self.target_position = self.TPG.get_target_position()
 
             if self.time - self.time_start > TIME_STABLE:
                 self.counter_swingup += 1
-                self.driver.controlEnabled = False
-                self.Q = 0
-                self.driver.controller.controller_report()
+                self.Q = self.driver.Q
 
                 if self.counter_swingup >= NUMBER_OF_SWINGUPS:
                     self.state = 'idle'
-                    self.driver.csvfile.close()
                     self.driver.loggingEnabled = False
+                    self.driver.csvfile.close()
+                    self.driver.controlEnabled = False
+                    self.driver.controller.controller_report()
+                    self.first_start = True
                 else:
                     self.state = 'start'
             else:
@@ -131,6 +133,8 @@ class SwingUpMeasure:
 
         else:
             raise Exception(f'unknown state {self.state}')
+
+        self.driver.target_position = self.target_position
 
     def __str__(self):
         if self.state == 'reset':

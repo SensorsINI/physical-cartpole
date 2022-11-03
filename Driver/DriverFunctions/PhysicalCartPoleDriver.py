@@ -88,8 +88,8 @@ class PhysicalCartPoleDriver:
 
         # Dance Mode
         self.danceEnabled = False
-        self.danceAmpl = 0.10  # m
-        self.dancePeriodS = 1.0
+        self.danceAmpl = 0.15  # m
+        self.dancePeriodS = 3.0
         self.dance_start_time = 0.0
 
         # Measurement
@@ -831,7 +831,7 @@ class PhysicalCartPoleDriver:
             print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{:04}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
+            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
