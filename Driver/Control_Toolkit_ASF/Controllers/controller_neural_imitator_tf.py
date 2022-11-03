@@ -15,25 +15,35 @@ except ModuleNotFoundError:
     print('SI_Toolkit_ASF not yet created')
 
 from SI_Toolkit.Functions.General.Initialization import get_net, get_norm_info_for_net
-from SI_Toolkit.Functions.TF.Compile import Compile
+from SI_Toolkit.Functions.TF.Compile import CompileTF
+from SI_Toolkit.computation_library import NumpyLibrary
 
-config = yaml.load(open("config.yml", "r"), Loader=yaml.FullLoader)
+config = yaml.load(open("Control_Toolkit_ASF/config_controllers.yml", "r"), Loader=yaml.FullLoader)
 
-NET_NAME = config['controller']['neural_imitator_tf']['net_name']
-PATH_TO_MODELS = config['controller']['neural_imitator_tf']['PATH_TO_MODELS']
+NET_NAME = config['neural-imitator-tf']['net_name']
+PATH_TO_MODELS = config['neural-imitator-tf']['PATH_TO_MODELS']
 
 
 class controller_neural_imitator_tf(template_controller):
-    def __init__(self, batch_size=1):
+    _computation_library = NumpyLibrary
+    def __init__(self,
+                 dt,
+                 environment_name,
+                 initial_environment_attributes,
+                 num_states,
+                 num_control_inputs,
+                 control_limits,
+                 ):
+
+        for property, new_value in initial_environment_attributes.items():
+            setattr(self, property, self.computation_library.to_variable(new_value, self.computation_library.float32))
 
         a = SimpleNamespace()
-        self.batch_size = batch_size  # It makes sense only for testing (Brunton plot for Q) of not rnn networks to make bigger batch, this is not implemented
+        self.batch_size = 1  # It makes sense only for testing (Brunton plot for Q) of not rnn networks to make bigger batch, this is not implemented
 
         a.path_to_models = PATH_TO_MODELS
 
         a.net_name = NET_NAME
-
-        self.controller_name = 'neural-imitator-tf'
 
         # Create a copy of the network suitable for inference (stateful and with sequence length one)
         self.net, self.net_info = \
@@ -54,10 +64,12 @@ class controller_neural_imitator_tf(template_controller):
         except:
             self.evaluate_net = self.evaluate_net_f
 
-    def step(self, s, target_position, time=None):
+    def step(self, s: np.ndarray, time=None, updated_attributes={}):
+        self.update_attributes(updated_attributes)
 
         net_input = s[..., [STATE_INDICES.get(key) for key in self.net_info.inputs[:-1]]]  # -1 is a fix to exclude target position
-        net_input = np.append(net_input, target_position)
+        net_input = np.append(net_input, self.target_position)
+        # net_input = np.append(net_input, self.target_equilibrium, self.target_position)
 
         net_input = normalize_numpy_array(net_input,
                                           self.net_info.inputs,
@@ -75,7 +87,7 @@ class controller_neural_imitator_tf(template_controller):
 
         return Q
 
-    @Compile
+    @CompileTF
     def evaluate_net_f(self, net_input):
         # print('retracing evaluate_net_f')
         net_output = self.net(net_input)

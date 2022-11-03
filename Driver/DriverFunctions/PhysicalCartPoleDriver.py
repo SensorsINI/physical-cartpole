@@ -360,7 +360,7 @@ class PhysicalCartPoleDriver:
 
             elif c == ';':
                 if self.target_equilibrium == 1:
-                    self.target_equilibrium = 0
+                    self.target_equilibrium = -1
                 else:
                     self.target_equilibrium = 1
 
@@ -738,7 +738,7 @@ class PhysicalCartPoleDriver:
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                      self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
-                     self.target_position, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
+                     self.target_position, self.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
                      self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 

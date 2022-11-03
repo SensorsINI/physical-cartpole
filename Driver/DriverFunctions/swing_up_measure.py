@@ -67,13 +67,13 @@ class SwingUpMeasure:
             self.state = 'reset'
 
             if hasattr(self.driver.controller, 'rev'):
-                self.driver.controller.rev = True
+                self.driver.target_equilibrium = -1
 
         # Move Back to Starting Position
         elif self.state == 'reset':
 
-            if hasattr(self.driver.controller, 'rev'):
-                self.driver.controller.rev = True
+            if hasattr(self.driver.controller, 'target_equilibrium'):
+                self.driver.target_equilibrium = -1
                 self.driver.controlEnabled = True
                 self.Q = self.driver.Q
             else:
@@ -90,7 +90,7 @@ class SwingUpMeasure:
 
         elif self.state == 'wait inbetween':
             if hasattr(self.driver.controller, 'rev'):
-                self.driver.controller.rev = True
+                self.driver.target_equilibrium = -1
                 self.driver.controlEnabled = True
                 self.Q = self.driver.Q
             else:
@@ -109,7 +109,7 @@ class SwingUpMeasure:
         elif self.state == 'swingup':
 
             if hasattr(self.driver.controller, 'rev'):
-                self.driver.controller.rev = False
+                self.driver.target_equilibrium = 1
 
             self.driver.loggingEnabled = True
             self.target_position = self.TPG.get_target_position()
@@ -122,11 +122,10 @@ class SwingUpMeasure:
 
                 if self.counter_swingup >= NUMBER_OF_SWINGUPS:
                     self.state = 'idle'
+                    self.driver.csvfile.close()
+                    self.driver.loggingEnabled = False
                 else:
                     self.state = 'start'
-
-                self.driver.csvfile.close()
-                self.driver.loggingEnabled = False
             else:
                 self.Q = self.driver.Q
 
