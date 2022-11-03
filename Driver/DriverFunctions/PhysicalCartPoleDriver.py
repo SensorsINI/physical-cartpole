@@ -837,7 +837,7 @@ class PhysicalCartPoleDriver:
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
-                    f"{self.CartPoleInstance.target_position}, {self.CartPoleInstance.target_equilibrium}",
+                    self.CartPoleInstance.target_position,
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,
