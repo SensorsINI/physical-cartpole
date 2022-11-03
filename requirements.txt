@@ -20,4 +20,4 @@ tensorflow==2.9.1
 seaborn
 do-mpc==4.1.1
 
-./Driver/CartPoleSimulation/SI_Toolkit/
+-e ./Driver/CartPoleSimulation/SI_Toolkit/
