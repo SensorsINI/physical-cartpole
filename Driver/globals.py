@@ -23,12 +23,12 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'neural-imitator-tf-CPS'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
 PREDICTOR = 'predictor_ODE_tf'  # e.g. 'predictor_ODE_tf', 'predictor_autoregressive_tf'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
-    CONTROL_PERIOD_MS = 7
+    CONTROL_PERIOD_MS = 8
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements

@@ -95,3 +95,6 @@ class controller_neural_imitator_tf(template_controller):
 
     def controller_reset(self):
         pass
+
+    def controller_report(self):
+        pass
