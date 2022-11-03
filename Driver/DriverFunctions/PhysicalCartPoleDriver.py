@@ -362,7 +362,6 @@ class PhysicalCartPoleDriver:
             elif c == ';':
                 self.target_equilibrium *= -1.0
 
-
             ##### Calibration #####
             elif c == 'K':
                 global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
@@ -630,6 +629,7 @@ class PhysicalCartPoleDriver:
                 self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
         
         self.CartPoleInstance.target_position = self.target_position
+        self.CartPoleInstance.target_equilibrium = self.target_equilibrium
 
     def joystick_action(self):
 
