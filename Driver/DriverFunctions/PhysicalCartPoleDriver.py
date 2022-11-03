@@ -89,7 +89,7 @@ class PhysicalCartPoleDriver:
         # Dance Mode
         self.danceEnabled = False
         self.danceAmpl = 0.10  # m
-        self.dancePeriodS = 16.0
+        self.dancePeriodS = 1.0
         self.dance_start_time = 0.0
 
         # Measurement
