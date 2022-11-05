@@ -1,8 +1,8 @@
 cem-tf:
   seed: null                          # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  cem_outer_it: 3                    #how many outer iterations to use
-  cem_initial_action_stdev: 0.5
+  cem_outer_it: 5                    #how many outer iterations to use
+  cem_initial_action_stdev: 0.2
   num_rollouts: 200          #how many rollouts per outer cem iteration
   cem_stdev_min: 0.01
   cem_best_k: 40
@@ -49,7 +49,7 @@ gradient-tf:
   adam_beta_2: 0.999
   adam_epsilon: 1.0e-07
   rtol: 1.0e-3
-  gradient_steps: 5
+  gradient_steps: 2
   num_rollouts: 40
   initial_action_stdev: 0.5
   gradmax_clip: 5

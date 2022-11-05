@@ -49,7 +49,6 @@ def polyfit(buffer):
     #p = np.polyfit(x=np.arange(len(buffer)), y=buffer, deg=2)
     #return np.polyval(p=p, x=len(buffer))
 
-
 class PhysicalCartPoleDriver:
     def __init__(self, CartPoleInstance):
 
@@ -88,8 +87,8 @@ class PhysicalCartPoleDriver:
 
         # Dance Mode
         self.danceEnabled = False
-        self.danceAmpl = 0.15  # m
-        self.dancePeriodS = 3.0
+        self.danceAmpl = 0.12  # m
+        self.dancePeriodS = 2.0
         self.dance_start_time = 0.0
 
         # Measurement
@@ -176,6 +175,8 @@ class PhysicalCartPoleDriver:
         self.arduino_serial_port = serial.Serial(SERIAL_PORT, 115200, timeout=5)
         self.arduino_serial_port.write(b'1')
 
+        self.time_last_switch = -np.inf
+
     def run(self):
         self.setup()
         self.run_experiment()
@@ -226,6 +227,17 @@ class PhysicalCartPoleDriver:
 
             self.get_state_and_time_measurement()
 
+            if DEOMO_PROGRAM and self.controlEnabled:
+                self.danceEnabled = True
+                if self.timeNow-self.time_last_switch > 8:
+                    self.time_last_switch = self.timeNow
+                    if self.target_equilibrium == 1:
+                        self.target_equilibrium = -1
+                    else:
+                        self.target_equilibrium = 1
+
+
+
             self.set_target_position()
 
             if self.controlEnabled:
@@ -253,6 +265,7 @@ class PhysicalCartPoleDriver:
                 self.get_motor_command()
 
             if self.controlEnabled and self.current_measure.is_idle():
+                # pass
                 self.safety_switch_off()
 
             if self.controlEnabled or self.current_measure.is_running():
@@ -514,6 +527,17 @@ class PhysicalCartPoleDriver:
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
                 self.terminate_experiment = True
+
+    def update_parameters_in_cartpole_instance(self):
+        """
+        Just to make changes visible in GUI
+        """
+
+        self.CartPoleInstance.s[POSITION_IDX] = self.s[POSITION_IDX]
+        self.CartPoleInstance.s[POSITIOND_IDX] = self.s[POSITIOND_IDX]
+        self.CartPoleInstance.s[ANGLE_IDX] = self.s[ANGLE_IDX]
+        self.CartPoleInstance.time = self.timeNow
+        self.CartPoleInstance.dt = self.controller_steptime
 
     def wrap_local(self, angle):
         ADC_RANGE = 4096

@@ -5,7 +5,7 @@ cost_function_name_default: default
 
 CartPole:
   default:
-    dd_weight: 1500.0
+    dd_weight: 1000.0
     ep_weight: 500.0
     ekp_weight: 8.0
     ekc_weight: 2.0

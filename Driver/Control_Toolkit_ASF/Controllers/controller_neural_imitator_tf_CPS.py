@@ -1,4 +1,4 @@
-from Control_Toolkit_ASF.Controllers.controller_neural_imitator_tf import controller_neural_imitator_tf
+from Control_Toolkit_ASF.Controllers.controller_neural_imitator_tf_deprecated import controller_neural_imitator_tf
 
 """
 Please modify this template to include a controller from cartpole simulator in physical cartpole

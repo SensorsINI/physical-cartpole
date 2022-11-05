@@ -67,6 +67,7 @@ class controller_neural_imitator_tf(template_controller):
     def step(self, s: np.ndarray, time=None, updated_attributes={}):
         self.update_attributes(updated_attributes)
 
+        # net_input = s[..., [STATE_INDICES.get(key) for key in self.net_info.inputs[:-1]]]
         net_input = s[..., [STATE_INDICES.get(key) for key in self.net_info.inputs[:-2]]]  # -1 is a fix to exclude target position
         net_input = np.append(net_input, self.target_equilibrium)
         net_input = np.append(net_input, self.target_position)
