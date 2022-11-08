@@ -137,7 +137,6 @@ class PhysicalCartPoleDriver:
         # Target
         self.position_offset = 0
         self.target_position = 0.0
-        self.target_equilibrium = 1
 
         # Joystick variable
         self.stick = None
@@ -176,6 +175,8 @@ class PhysicalCartPoleDriver:
         self.arduino_serial_port.write(b'1')
 
         self.time_last_switch = -np.inf
+
+        self.demo_program = DEMO_PROGRAM
 
     def run(self):
         self.setup()
@@ -222,67 +223,69 @@ class PhysicalCartPoleDriver:
 
     def run_experiment(self):
 
-        while True:
-            self.keyboard_input()
-
-            self.get_state_and_time_measurement()
-
-            if DEOMO_PROGRAM and self.controlEnabled:
-                self.danceEnabled = True
-                if self.timeNow-self.time_last_switch > 8:
-                    self.time_last_switch = self.timeNow
-                    if self.target_equilibrium == 1:
-                        self.target_equilibrium = -1
-                    else:
-                        self.target_equilibrium = 1
+        while not self.terminate_experiment:
+            self.experiment_sequence()
 
 
+    def experiment_sequence(self):
 
-            self.set_target_position()
+        self.keyboard_input()
 
-            if self.controlEnabled:
-                # Active Python Control: set values from controller
-                self.lastControlTime = self.timeNow
-                start = time.time()
-                self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position, "target_equilibrium": self.target_equilibrium}))
-                performance_measurement[0] = time.time() - start
-                self.controller_steptime = time.time() - start
-                if AUTOSTART:
-                    self.Q = 0
-                self.controlled_iterations += 1
-            else:
-                # Observing Firmware Control: set values from firmware for logging
-                #self.lastControlTime = self.sent
-                #self.actualMotorCmd = self.command
-                #self.Q = self.command / MOTOR_FULL_SCALE
-                self.controlled_iterations = 0
+        self.get_state_and_time_measurement()
 
-            self.joystick_action()
+        if self.demo_program and self.controlEnabled:
+            self.danceEnabled = True
+            if self.timeNow - self.time_last_switch > 8:
+                self.time_last_switch = self.timeNow
+                if self.CartPoleInstance.target_equilibrium == 1:
+                    self.CartPoleInstance.target_equilibrium = -1
+                else:
+                    self.CartPoleInstance.target_equilibrium = 1
 
-            self.measurement_action()
+        self.set_target_position()
 
-            if self.controlEnabled or self.current_measure.is_running():
-                self.get_motor_command()
+        if self.controlEnabled:
+            # Active Python Control: set values from controller
+            self.lastControlTime = self.timeNow
+            start = time.time()
+            self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
+                                                                       "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
+            performance_measurement[0] = time.time() - start
+            self.controller_steptime = time.time() - start
+            if AUTOSTART:
+                self.Q = 0
+            self.controlled_iterations += 1
+        else:
+            # Observing Firmware Control: set values from firmware for logging
+            # self.lastControlTime = self.sent
+            # self.actualMotorCmd = self.command
+            # self.Q = self.command / MOTOR_FULL_SCALE
+            self.controlled_iterations = 0
 
-            if self.controlEnabled and self.current_measure.is_idle():
-                # pass
-                self.safety_switch_off()
+        self.joystick_action()
 
-            if self.controlEnabled or self.current_measure.is_running():
-                self.InterfaceInstance.set_motor(self.actualMotorCmd)
+        self.measurement_action()
 
-            # Logging, Plotting, Terminal
-            if self.loggingEnabled:
-                self.write_csv_row()
-            if self.livePlotEnabled:
-                self.plot_live()
-            self.write_current_data_to_terminal()
+        if self.controlEnabled or self.current_measure.is_running():
+            self.get_motor_command()
 
-            if self.terminate_experiment:
-                break
+        if self.controlEnabled and self.current_measure.is_idle():
+            self.safety_switch_off()
 
-            self.end = time.time()
-            self.python_latency = self.end - self.InterfaceInstance.start
+        if self.controlEnabled or self.current_measure.is_running():
+            self.InterfaceInstance.set_motor(self.actualMotorCmd)
+
+        # Logging, Plotting, Terminal
+        if self.loggingEnabled:
+            self.write_csv_row()
+        if self.livePlotEnabled:
+            self.plot_live()
+        self.write_current_data_to_terminal()
+
+        self.update_parameters_in_cartpole_instance()
+
+        self.end = time.time()
+        self.python_latency = self.end - self.InterfaceInstance.start
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
@@ -338,7 +341,7 @@ class PhysicalCartPoleDriver:
                 self.loggingEnabled = not self.loggingEnabled
                 print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
                 if self.loggingEnabled:
-                    self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name+'-'+PREDICTOR)
+                    self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
@@ -353,27 +356,16 @@ class PhysicalCartPoleDriver:
                 print("\nFirmware Control", self.firmwareControl)
                 self.InterfaceInstance.control_mode(self.firmwareControl)
             elif c == 'k':
-                self.controlEnabled = not self.controlEnabled
-
                 # Reset Performance Buffers
-                self.delta_time_buffer = np.zeros((0))
-                self.firmware_latency_buffer = np.zeros((0))
-                self.python_latency_buffer = np.zeros((0))
-                self.controller_steptime_buffer = np.zeros((0))
-                global performance_measurement, performance_measurement_buffer
-                performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
-
                 if self.controlEnabled is False:
-                    self.Q = 0
-                    self.InterfaceInstance.set_motor(0)
-                    if self.controller.controller_name == 'mppi-tf':
-                        self.controller.controller_report()
-                    self.controller.controller_reset()
-                self.danceEnabled = False
+                    self.switch_on_control()
+
+                elif self.controlEnabled is True:
+                    self.switch_off_control()
                 print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
             elif c == ';':
-                self.target_equilibrium *= -1.0
+                self.CartPoleInstance.target_equilibrium *= -1.0
 
             ##### Calibration #####
             elif c == 'K':
@@ -528,6 +520,26 @@ class PhysicalCartPoleDriver:
                 self.log.info("\nquitting....")
                 self.terminate_experiment = True
 
+    def switch_off_control(self):
+        print('off')
+        self.controlEnabled = False
+        self.Q = 0
+        self.InterfaceInstance.set_motor(0)
+        if self.controller.controller_name == 'mppi-tf':
+            self.controller.controller_report()
+        self.controller.controller_reset()
+        self.danceEnabled = False
+
+    def switch_on_control(self):
+        print('on')
+        self.controlEnabled = True
+        self.delta_time_buffer = np.zeros((0))
+        self.firmware_latency_buffer = np.zeros((0))
+        self.python_latency_buffer = np.zeros((0))
+        self.controller_steptime_buffer = np.zeros((0))
+        global performance_measurement, performance_measurement_buffer
+        performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
+
     def update_parameters_in_cartpole_instance(self):
         """
         Just to make changes visible in GUI
@@ -536,8 +548,13 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.s[POSITION_IDX] = self.s[POSITION_IDX]
         self.CartPoleInstance.s[POSITIOND_IDX] = self.s[POSITIOND_IDX]
         self.CartPoleInstance.s[ANGLE_IDX] = self.s[ANGLE_IDX]
+        self.CartPoleInstance.s[ANGLE_COS_IDX] = self.s[ANGLE_COS_IDX]
+        self.CartPoleInstance.s[ANGLE_SIN_IDX] = self.s[ANGLE_SIN_IDX]
+        self.CartPoleInstance.s[ANGLED_IDX] = self.s[ANGLED_IDX]
+        self.CartPoleInstance.Q = self.Q
         self.CartPoleInstance.time = self.timeNow
         self.CartPoleInstance.dt = self.controller_steptime
+        self.CartPoleInstance.target_position = self.target_position
 
     def wrap_local(self, angle):
         ADC_RANGE = 4096
@@ -653,7 +670,6 @@ class PhysicalCartPoleDriver:
                 self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
         
         self.CartPoleInstance.target_position = self.target_position
-        self.CartPoleInstance.target_equilibrium = self.target_equilibrium
 
     def joystick_action(self):
 
@@ -760,7 +776,7 @@ class PhysicalCartPoleDriver:
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                      self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
-                     self.target_position, self.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
+                     self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
                      self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 

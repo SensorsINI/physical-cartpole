@@ -4,7 +4,7 @@ import numpy as np
 
 from Driver.DriverFunctions.interface import get_serial_port
 
-DEOMO_PROGRAM = False
+DEMO_PROGRAM = False
 
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR
