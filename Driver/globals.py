@@ -26,7 +26,7 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'mppi-tf'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+OPTIMIZER_NAME = 'mppi'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':

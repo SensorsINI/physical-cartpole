@@ -38,6 +38,8 @@ class controller_neural_imitator_tf(template_controller):
         for property, new_value in initial_environment_attributes.items():
             setattr(self, property, self.computation_library.to_variable(new_value, self.computation_library.float32))
 
+        self.lib = self.computation_library
+
         a = SimpleNamespace()
         self.batch_size = 1  # It makes sense only for testing (Brunton plot for Q) of not rnn networks to make bigger batch, this is not implemented
 
