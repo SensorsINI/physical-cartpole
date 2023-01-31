@@ -858,9 +858,8 @@ class PhysicalCartPoleDriver:
 
             ############  Mode  ############
             if self.controlEnabled:
-                if 'mppi' in CONTROLLER_NAME:
-                    pass
-                    # mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.env_mock.config["mpc_horizon"], self.controller.env_mock.config["num_rollouts"], PREDICTOR)
+                if 'mpc' in CONTROLLER_NAME:
+                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.optimizer.mpc_horizon, self.controller.optimizer.num_rollouts, self.controller.predictor.predictor_name)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
