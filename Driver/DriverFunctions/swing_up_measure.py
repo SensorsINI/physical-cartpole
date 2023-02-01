@@ -9,9 +9,7 @@ from CartPole.state_utilities import (
     POSITIOND_IDX,
 )
 import numpy as np
-from others.p_globals import (
-    k, M, m, g, J_fric, M_fric, L, v_max, u_max, controlDisturbance, controlBias, TrackHalfLength
-)
+
 from DriverFunctions.csv_helpers import csv_init
 from DriverFunctions.TargetPositionGenerator import TargetPositionGenerator
 from DriverFunctions.PID_Position import controller_PID_position
