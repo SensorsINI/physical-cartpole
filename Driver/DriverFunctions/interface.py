@@ -2,6 +2,10 @@ import serial
 import struct
 import time
 
+from others.logger import get_logger
+
+log=get_logger(__name__)
+
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
 READ_STATE_TIMEOUT      = 1.0      # Seconds
@@ -30,11 +34,14 @@ def get_serial_port():
             SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
         elif system == 'Linux':
             SERIAL_PORT = '/dev/ttyUSB0'  # You might need to change the USB number
+        elif system == 'Windows':
+            SERIAL_PORT = 'COM1'  # You might need to change the USB number
         else:
-            raise NotImplementedError('For system={} connection to serial port is not implemented.')
+            raise NotImplementedError(f'For system={system},  connection to serial port={SERIAL_PORT} is not implemented.')
     except Exception as err:
         print(err)
 
+    log.debug(f'Returning SERIAL_PORT={SERIAL_PORT}')
     return SERIAL_PORT
 
 class Interface:

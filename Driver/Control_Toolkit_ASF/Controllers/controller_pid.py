@@ -299,33 +299,6 @@ class controller_pid(template_controller):
         elif c == 'L':
             self.loadparams()
 
-    def print_help(self):
-        print("\n***********************************")
-        print("keystroke commands")
-        print("ESC quit")
-        print("k toggle control on/off (initially off)")
-        print("K trigger motor position calibration")
-        print("=/- increase/decrease (fine tune) angle deviation value")
-        print("[/] increase/decrease position target")
-        print("2/1 angle proportional gain")
-        print("w/q angle integral gain")
-        print("s/a angle derivative gain")
-        print("z/x angle smoothing")
-        print("4/3 position proportional gain")
-        print("r/e position integral gain")
-        print("f/d position derivative gain")
-        print("p print PID parameters")
-        print("l toggle logging data")
-        print("S/L Save/Load param values from disk")
-        print("D Toggle dance mode")
-        print(",./ Turn on motor left zero right")
-        print("m Toggle measurement")
-        print("j Switch joystick control mode")
-        print("b Print angle measurement from sensor")
-        print("6 Enable/Disable live plot")
-        print("5 Interrupts for histogram plot")
-        print("***********************************")
-
     def controller_reset(self):
 
         self.time_last = None

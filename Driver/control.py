@@ -11,6 +11,9 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
 os.chdir("Driver")
 
+from others.logger import get_logger
+log=get_logger(__name__)
+
 import tensorflow as tf
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 from CartPoleSimulation.CartPole import CartPole
@@ -22,9 +25,9 @@ subprocess.Popen("python3 -m DataAnalysis.plot_server", shell=True)
 tf.keras.backend.clear_session()
 tf.config.optimizer.set_jit(True) # Enable XLA.
 
-print("TF Devices:", tf.config.list_physical_devices())
-print("TF Device Placement:", tf.config.get_soft_device_placement())
-print("TF Float Type:", tf.keras.backend.floatx())
+log.debug(f"TF Devices: {tf.config.list_physical_devices()}")
+log.debug(f"TF Device Placement: {tf.config.get_soft_device_placement()}")
+log.debug(f"TF Float Type: {tf.keras.backend.floatx()}")
 
 #tf.config.set_soft_device_placement(True)
 #tf.debugging.set_log_device_placement(True)

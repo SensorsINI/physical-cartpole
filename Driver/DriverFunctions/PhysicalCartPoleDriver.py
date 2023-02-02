@@ -212,8 +212,7 @@ class PhysicalCartPoleDriver:
         except AttributeError:
             print('printparams not implemented for this self.controller.')
 
-        if hasattr(self.controller, 'print_help'):
-            self.controller.print_help()
+        self.print_keyboard_help()
 
         self.startTime = time.time()
         self.lastTime = self.startTime
@@ -297,6 +296,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
+        """ Checks for keyboard input keystroke and takes action on it."""
         global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
@@ -406,7 +406,7 @@ class PhysicalCartPoleDriver:
                 else:
                     print('\nAverage angle: {} rad'.format(angle_rad))
             # Fine tune angle deviation
-            elif c == '=':
+            elif c == '=': # TODO save in json file
                 ANGLE_DEVIATION_FINETUNE += 0.002
                 print("\nIncreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
             # Decrease Target Angle
@@ -479,7 +479,7 @@ class PhysicalCartPoleDriver:
                     self.log.info(f'set joystick to {self.joystickMode} mode')
 
             ##### Artificial Latency  #####
-            elif c == '90':
+            elif c == 90:
                 self.additional_latency += 0.002
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
@@ -491,6 +491,7 @@ class PhysicalCartPoleDriver:
                 self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
 
             elif c == '5':
+                print('\nstarting state analysis.py')
                 subprocess.call(["python", "DataAnalysis/state_analysis.py"])
 
 
@@ -513,12 +514,41 @@ class PhysicalCartPoleDriver:
                     self.live_connection.send('reset')
 
             elif c == 'h' or c == '?':
-                self.controller.print_help()
+                self.print_keyboard_help()
 
             ##### Exit ######
             elif ord(c) == 27:  # ESC
                 self.log.info("\nquitting....")
                 self.terminate_experiment = True
+    def print_keyboard_help(self):
+        """ Prints help message for keyboard commands to console"""
+        print("\n***********************************")
+        print("keystroke commands")
+        print("ESC quit")
+        print("k toggle control on/off (initially off)")
+        print("K trigger motor position calibration")
+        print("=/- increase/decrease (fine tune) angle offset value to obtain 0 when vertically")
+        print("[/] increase/decrease position target")
+        print("2/1 angle proportional gain")
+        print("w/q angle integral gain")
+        print("s/a angle derivative gain")
+        print("z/x angle smoothing")
+        print("4/3 position proportional gain")
+        print("r/e position integral gain")
+        print("f/d position derivative gain")
+        print("p print PID parameters")
+        print("l toggle logging data")
+        print("S/L Save/Load param values from disk")
+        print("D Toggle dance mode")
+        print(",./ Turn on motor left zero right")
+        print("m Toggle measurement")
+        print("n Toggle motor current measurement") # TODO not sure
+        print("j Switch joystick control mode")
+        print("b Print angle measurement from sensor")
+        print("6 Enable/Disable live plot")
+        print("5 Interrupts for histogram plot")
+        print("6789 toggle/save/reset/units of live state plotting")
+        print("***********************************")
 
     def switch_off_control(self):
         print('off')

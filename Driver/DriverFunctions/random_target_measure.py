@@ -10,7 +10,7 @@ from CartPole.state_utilities import (
 )
 import numpy as np
 from others.p_globals import (
-    k, M, m, g, J_fric, M_fric, L, v_max, u_max, controlDisturbance, controlBias, TrackHalfLength
+    k, m_cart, m_pole, g, J_fric, M_fric, L, v_max, u_max, controlDisturbance, controlBias, TrackHalfLength
 )
 from DriverFunctions.csv_helpers import csv_init
 
