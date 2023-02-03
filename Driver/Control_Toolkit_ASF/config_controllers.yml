@@ -1,7 +1,7 @@
 mpc:
   optimizer: rpgd-tf
   predictor_specification: "ODE_TF"    # Can be "ODE", "ODE_TF", network/GP name (possibly with path) e.g. 'GRU-6IN-32H1-32H2-5OUT-0'/'SGP_30' or a name of a custom predictor. For more info see config_predictors in SI_Toolkit_ASF
-  cost_function_specification: default  # One of "default", "quadratic_boundary_grad", "quadratic_boundary_nonconvex", "quadratic_boundary"
+  cost_function_specification: "cartpole_dancer_cost"  # One of "default", "quadratic_boundary_grad", "quadratic_boundary_nonconvex", "quadratic_boundary"
   computation_library: tensorflow  # One of "numpy", "tensorflow", "pytorch". Defaults to "numpy" if none given.
   controller_logging: false
 mppi-cartpole:
@@ -10,7 +10,7 @@ mppi-cartpole:
   num_rollouts: 3500                    # Number of Monte Carlo samples
   update_every: 1                       # Cost weighted update of inputs every ... steps
   predictor_specification: "ODE_TF"    # Can be "ODE", "ODE_TF", network/GP name (possibly with path) e.g. 'GRU-6IN-32H1-32H2-5OUT-0'/'SGP_30' or a name of a custom predictor. For more info see config_predictors in SI_Toolkit_ASF
-  cost_function_specification: default  # One of "default", "quadratic_boundary_grad", "quadratic_boundary_nonconvex", "quadratic_boundary"
+  cost_function_specification: "cartpole_dancer_cost"  # One of "default", "quadratic_boundary_grad", "quadratic_boundary_nonconvex", "quadratic_boundary", "cartpole-dancer-cost"
   dd_weight: 120.0
   ep_weight: 50000.0
   ekp_weight: 0.01
@@ -23,7 +23,6 @@ mppi-cartpole:
   LBD: 100.0                            # Cost parameter lambda
   NU: 1000.0                            # Exploration variance
   SQRTRHOINV: 0.02                      # Sampling variance
-  GAMMA: 1.00                           # Future cost discount
   SAMPLING_TYPE: "interpolated"         # One of ["iid", "random_walk", "uniform", "repeated", "interpolated"]
   controller_logging: False                        # Collect and show detailed insights into the controller's behavior
   WASH_OUT_LEN: 100                     # Only matters if RNN used as predictor; For how long MPPI should be desactivated (replaced either with LQR or random input) to give memory units time to settle

@@ -39,8 +39,15 @@ from numba import jit
 from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
 from yaml import load, FullLoader
 
+from Driver.DriverFunctions.interface import get_serial_port
+from CartPoleSimulation.others.prefs import MyPreferences
+prefs=MyPreferences()
+
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
+
+log = my_logger(__name__)
+
 
 @jit(nopython=False, cache=True, fastmath=True)
 def polyfit(buffer):
@@ -59,7 +66,6 @@ class PhysicalCartPoleDriver:
 
         self.InterfaceInstance = Interface()
 
-        self.log = my_logger(__name__)
 
         # Console Printing
         self.printCount = 0
@@ -186,14 +192,14 @@ class PhysicalCartPoleDriver:
     def setup(self):
         # Check that we are running from terminal, otherwise we cannot control it
         if not sys.stdin.isatty():
-            print('Run from an interactive terminal to allow keyboard input.')
+            print('Run from an interactive terminal to allow keyboard input (in pycharm, select "Emulate terminal output" in run settings).')
             quit()
 
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
 
-        self.log.info('\n Opened ' + str(SERIAL_PORT) + ' successfully')
+        log.info('\n Opened ' + str(SERIAL_PORT) + ' successfully')
 
         self.stick, self.joystickMode = setup_joystick()
 
@@ -224,7 +230,7 @@ class PhysicalCartPoleDriver:
 
         while not self.terminate_experiment:
             self.experiment_sequence()
-
+        print("experiment terminated, wait ....")
 
     def experiment_sequence(self):
 
@@ -287,7 +293,8 @@ class PhysicalCartPoleDriver:
         self.python_latency = self.end - self.InterfaceInstance.start
 
     def quit_experiment(self):
-        # when x hit during loop or other loop exit
+        print('turning off motor and shutting down interfaces to cartpole and other peripherals')
+        # when q/ESC hit during loop or other loop exit
         self.InterfaceInstance.set_motor(0)  # turn off motor
         self.InterfaceInstance.close()
         joystick.quit()
@@ -389,7 +396,7 @@ class PhysicalCartPoleDriver:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
                 print('Detected motor: {}'.format(MOTOR))
 
-            ##### Artificial Latency  #####
+            ##### Measure angle precisely  #####
             elif c == 'b':
                 angle_average = 0
                 number_of_measurements = 400
@@ -405,28 +412,30 @@ class PhysicalCartPoleDriver:
                     ANGLE_HANGING_DEFAULT = False
                 else:
                     print('\nAverage angle: {} rad'.format(angle_rad))
-            # Fine tune angle deviation
-            elif c == '=': # TODO save in json file
+            # Fine tune angle deviation (use to adjust the zero angle when pole is upright, or use -3.000 rad when hanging down with POLOLU motor)
+            elif c == '=':
                 ANGLE_DEVIATION_FINETUNE += 0.002
-                print("\nIncreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+                print(f'\nIncreased angle deviation fine tune value to {ANGLE_DEVIATION_FINETUNE:.3f}')
+                prefs.put('ANGLE_DEVIATION_FINETUNE',ANGLE_DEVIATION_FINETUNE)
             # Decrease Target Angle
             elif c == '-':
                 ANGLE_DEVIATION_FINETUNE -= 0.002
-                print("\nDecreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+                print(f'\nDecreased angle deviation fine tune value to {ANGLE_DEVIATION_FINETUNE:.3f}')
+                prefs.put('ANGLE_DEVIATION_FINETUNE',ANGLE_DEVIATION_FINETUNE)
 
             ##### Target Position #####
-            # Increase Target Position
+            # Increase Target Position of pole
             elif c == ']':
                 POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
                 if POSITION_TARGET > 0.8 * (POSITION_ENCODER_RANGE // 2):
                     POSITION_TARGET = 0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nIncreased target position to {0} cm".format(POSITION_TARGET * 100))
+                print(f"\nIncreased target position to {POSITION_TARGET*100:.1f} cm")
             # Decrease Target Position
             elif c == '[':
                 POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
                 if POSITION_TARGET < -0.8 * (POSITION_ENCODER_RANGE // 2):
                     POSITION_TARGET = -0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nDecreased target position to {0} cm".format(POSITION_TARGET * 100))
+                print(f"\nDecreased target position to {POSITION_TARGET*100:.1f} cm")
 
             ##### Measurement Mode #####
             elif c == 'm':
@@ -517,18 +526,19 @@ class PhysicalCartPoleDriver:
                 self.print_keyboard_help()
 
             ##### Exit ######
-            elif ord(c) == 27:  # ESC
-                self.log.info("\nquitting....")
+            elif c=='q' or ord(c) == 27:  # ESC
+                print("\nquitting....")
                 self.terminate_experiment = True
     def print_keyboard_help(self):
         """ Prints help message for keyboard commands to console"""
         print("\n***********************************")
         print("keystroke commands")
-        print("ESC quit")
+        print("q/ESC quit")
         print("k toggle control on/off (initially off)")
         print("K trigger motor position calibration")
         print("=/- increase/decrease (fine tune) angle offset value to obtain 0 when vertically")
-        print("[/] increase/decrease position target")
+        print("[] increase/decrease position target")
+        print("; flip target pole equilibrium fron balance to hanging or vice versa; also affects other behaviors like spin")
         print("2/1 angle proportional gain")
         print("w/q angle integral gain")
         print("s/a angle derivative gain")
@@ -544,7 +554,7 @@ class PhysicalCartPoleDriver:
         print("m Toggle measurement")
         print("n Toggle motor current measurement") # TODO not sure
         print("j Switch joystick control mode")
-        print("b Print angle measurement from sensor")
+        print("b Print averaged angle measurement from sensor")
         print("6 Enable/Disable live plot")
         print("5 Interrupts for histogram plot")
         print("6789 toggle/save/reset/units of live state plotting")

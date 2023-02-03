@@ -19,5 +19,6 @@ tensorboard_plugin_profile
 tensorflow==2.9.1
 seaborn
 do-mpc==4.1.1
+pypref # https://bachiraoun.github.io/pypref/
 
 -e ./Driver/CartPoleSimulation/SI_Toolkit/

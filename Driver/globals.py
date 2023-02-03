@@ -2,7 +2,10 @@ import math
 import logging
 import numpy as np
 
+
 from Driver.DriverFunctions.interface import get_serial_port
+from CartPoleSimulation.others.prefs import MyPreferences
+prefs=MyPreferences()
 
 DEMO_PROGRAM = False
 
@@ -25,8 +28,8 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'mppi'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete' TODO move to config
+OPTIMIZER_NAME = 'mppi'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete' TODO move to config
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
@@ -50,15 +53,15 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_ADC_RANGE = 4096  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 712  # 1213     # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING_ORIGINAL = 1051  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = prefs.get('ANGLE_HANGING_POLOLU',712)  # 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_ORIGINAL = prefs.get('ANGLE_HANGING_ORIGINAL',1051)  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
 ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_ADC_RANGE
-ANGLE_DEVIATION_FINETUNE = 0.116  # adjust from key commands such that upright angle error is minimized
+ANGLE_DEVIATION_FINETUNE = prefs.get('ANGLE_DEVIATION_FINETUNE',0.116)  # adjust from key commands such that upright angle error is minimized
 POLYFIT_ANGLED = False
 # POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
 

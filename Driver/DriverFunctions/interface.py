@@ -2,7 +2,7 @@ import serial
 import struct
 import time
 
-from others.logger import get_logger
+from Control_Toolkit.others.globals_and_utils import get_logger
 
 log=get_logger(__name__)
 

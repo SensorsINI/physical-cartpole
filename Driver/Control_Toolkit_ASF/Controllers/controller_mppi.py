@@ -61,10 +61,8 @@ gui_dd = gui_ep = gui_ekp = gui_ekc = gui_cc = gui_ccrc = np.zeros(1, dtype=np.f
 """MPPI constants"""
 R = config["controller"][CONTROLLER_CONFIG]["R"]
 LBD = config["controller"][CONTROLLER_CONFIG]["LBD"]
-GAMMA = config["controller"][CONTROLLER_CONFIG]["GAMMA"]
 NU = config["controller"][CONTROLLER_CONFIG]["NU"]
 SQRTRHODTINV = config["controller"][CONTROLLER_CONFIG]["SQRTRHOINV"] * (1 / np.math.sqrt(dt))
-#GAMMA = config["controller"][CONTROLLER_CONFIG]["GAMMA"]
 SAMPLING_TYPE = config["controller"][CONTROLLER_CONFIG]["SAMPLING_TYPE"]
 
 """Define Predictor"""
@@ -204,8 +202,6 @@ class controller_mppi(template_controller):
         self.num_rollouts = num_rollouts
         self.horizon = mpc_samples
         self.predictor_name = predictor_name
-
-        self.gamma = (GAMMA ** np.arange(self.horizon))
 
         # Logging
         self.logs = {

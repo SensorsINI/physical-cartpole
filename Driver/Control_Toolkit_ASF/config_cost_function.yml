@@ -31,3 +31,56 @@ CartPole:
     cc_weight: 1.0
     ccrc_weight: 1.0
     R: 1.0                                # How much to punish Q, For MPPI YOU have to make sure that this is the same as in optimizer config, as it plays a special role in the optimization algorithm as well as is used in cost functions!
+  cartpole_dancer_cost: # values must be explicitly float or scientific format if needed, since they are cast to int type if provided here as int, which might not work for some ops
+    # the policy (dance step or move to control). It is trailed by an int to code the policy as an int for tensorflow XLA compiled code.
+    # e.g. dance0 will create (in update_attributes call) policy='dance' and policy_number=0
+    # this hack is to allow branching in XLA code that lacks string compare operator
+    # see others\globals_and_utilities.py\update_attributes method
+    policy:  balance1  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4
+
+    # tobi cannot get conditional branch to work for following option in cartpole_dancer_cost.py
+#    distance_norm: 0 # 0=abs, 1=rmse, 2=mse are possible distance metrics
+    terminal_cost_factor: 10e+0 # how much to weight up the terminal state costs compared to the rest of the rollout
+    stage_cost_factor: 1e+0 # how much to weight up the state costs
+    track_edge_barrier_cost: 1e9 # how much to penalize cart at edge of track
+    track_length_fraction: 0.9 # fraction of half track length to allow free movement of cart before hitting barrier function
+
+    # cost weightings for the different state components for following desired cart state trajectory
+    cart_pos_weight: 1e5 # weight on cart pos error
+    pole_angle_weight: 1e5 # weight on difference of angle
+    cart_vel_weight: 1e0 # weight on difference of cart velocity
+    upright_pole_energy_multiple_to_count_spin_direction_cost: 1.25 # pole must have this excess total energy before we start counting spin direction energy
+    pole_swing_weight: 1e5 # cart angle derivative weight
+    pole_energy_total_weight: 1e5 # energy_total is sum of kinetic and potential energy
+
+    # following weight the control and its change
+    control_cost_weight: 1e3 # cost of control
+    control_cost_change_weight: 1e0 # cost of changing control
+
+    # spin
+    spin_dir: ccw-1 # cw+1 ccw-1 1 or cw, -1 or ccw
+#    spin_freq_hz: 4. # negative to spin other direction, must set at least 1hz
+    # following weight pole energies
+#    pole_energy_potential_weight: 0. Energy_potential weight, ep is maximized by upright pole, minimized by hanging pole. Make it positive for upright pole.
+
+
+    # balance
+    balance_dir: up # 1 or up, -1 or down, multiplied by target_equilibrium
+
+    # shimmy does a sinusoidal dance of cart around target position with period in seconds and amplitude in meters
+    shimmy_freq_hz: .5
+    shimmy_amp: .1
+    shimmy_freq2_hz: 2.
+    shimmy_amp2: .025
+    shimmy_duration: 8. # for shimmy that lasts a finite time and ramps from freq to freq2 and amp to amp2
+    shimmy_dir: up # up, down
+#    shimmy_plot: 0 # to plot the shimmy function
+
+    # cartonly only controls cart position, pole is ignored. Trajectory is triangular with amp and per
+    cartonly_amp: .15
+    cartonly_freq_hz: .2
+    cartonly_duty_cycle: .5 # set to .5 for triangle, 0 or 1 for sawtooth
+
+    dance_song_file: 'others/Media/Rolling_Stones_Satisfaction.mp3' # no spaces or special chars, no / . - etc....
+    dance_csv_file: 'Control_Toolkit_ASF/Cost_Functions/CartPole/cartpole_dance-satisfaction.csv'
+    dance_song_playback_rate: 1. # rate to match song speed compared to real time simulation rate, we should set to 1 for song to sound native but code must run fast enough then
