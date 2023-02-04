@@ -7,6 +7,8 @@ import numpy as np
 
 import os
 
+from tqdm import trange
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -391,20 +393,30 @@ class PhysicalCartPoleDriver:
 
             ##### Artificial Latency  #####
             elif c == 'b':
-                angle_average = 0
-                number_of_measurements = 400
-                for _ in range(number_of_measurements):
+                measured_angles = []
+                number_of_measurements = 1000
+                time_measurement_start = time.time()
+                print('Started angle measurement.')
+                for _ in trange(number_of_measurements):
                     (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
-                    angle_average += angle
-                angle_average = angle_average / float(number_of_measurements)
+                    measured_angles.append(float(angle))
+                time_measurement = time.time()-time_measurement_start
+
+                angle_average = np.mean(measured_angles)
+                angle_std = np.std(measured_angles)
 
                 angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
-                if abs(angle_rad) > 1.0:
-                    print('\nHanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
-                    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
-                    ANGLE_HANGING_DEFAULT = False
-                else:
-                    print('\nAverage angle: {} rad'.format(angle_rad))
+                angle_std_rad = angle_std*ANGLE_NORMALIZATION_FACTOR
+                print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
+                                                                                              angle_rad,
+                                                                                              angle_average))
+                print('\nAngle std of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
+                                                                                              angle_std_rad,
+                                                                                              angle_std))
+                print('\nMeasurement took {} s'.format(time_measurement))
+                # if abs(angle_rad) > 1.0:
+                #     ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
+                #     ANGLE_HANGING_DEFAULT = False
             # Fine tune angle deviation
             elif c == '=':
                 ANGLE_DEVIATION_FINETUNE += 0.002
