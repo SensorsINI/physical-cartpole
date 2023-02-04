@@ -1,45 +1,26 @@
 #include "timer.h"
 
 TIMER1_Callback cbTimer1;
-unsigned long timer_resets = 0;
-unsigned int periodMS = 5;
-unsigned int slowdown = 1;
+long timer_resets = 0;
+unsigned int _periodMS = 0;
 
 // Timer base is configured to be 1MHz (resolution of 1us)
 // periodMS sets the period of the interrupt in ms (max value is 6553 ms)
-void TIMER1_Init(unsigned int _periodMS)
+void TIMER1_Init(unsigned int periodMS)
 {
-	periodMS = _periodMS;
+	_periodMS = periodMS;
+	periodMS = (periodMS * 1000) - 1;
 
 	cbTimer1 = 0;
 
-	RCC->APB2ENR	|= 1<<11;					// TIM1 clock enable
-	TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
- 	TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
- 	TIM1->DIER		|= 1<<0;   					// Enable update interrupt
- 	TIM1->DIER		|= 1<<6;   					// Enable triggered interrupt
- 	TIM1->CR1		|= 0x01;					// Enable timer
+	RCC->APB2ENR	|= 1<<11;		// TIM1 clock enable    
+ 	TIM1->ARR		 = periodMS;	// Setting counter automatic reload value  
+	TIM1->PSC		 = 72;		// The prescaler 7200 gets the count clock of 1Mhz.
+	TIM1->DIER		|= 1<<0;   		// Enable update interrupt				
+	TIM1->DIER		|= 1<<6;   		// Enable triggered interrupt	   
+	TIM1->CR1		|= 0x01;		// Enable timer
 	SYS_NVIC_Init(1, 1, TIM1_UP_IRQn, 2);
 }  
-
-void TIMER1_ChangePeriod(unsigned int _periodMS)
-{
-	timer_resets = 0;
-	periodMS = _periodMS;
-
-	if (periodMS < 60) {
-		slowdown = 1;
-
-		TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
-		TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
-	}
-	else {
-		slowdown = (periodMS / 60 + 1);
-
-		TIM1->ARR		 = (periodMS * 1000 / slowdown) - 1;	// Setting counter automatic reload value
-		TIM1->PSC		 = 72 * slowdown;						// The prescaler 72 gets the count clock of 1Mhz.
-	}
-}
 
 void TIMER1_SetCallback(TIMER1_Callback cb)
 {
@@ -48,12 +29,12 @@ void TIMER1_SetCallback(TIMER1_Callback cb)
 
 // Timer base is configured to be 1MHz (resolution of 1us)
 float TIMER1_getSystemTime() {
-    return ((float)timer_resets + (TIM1->SR ? 1.0 : 0.0)) * 1e-3 * periodMS + ((float)TIM1->CNT) * 1e-6 * slowdown;
+    return ((float)timer_resets + (TIM1->SR ? 1.0 : 0.0)) * 1e-3 * _periodMS + ((float)TIM1->CNT) * 1e-6;
 }
 
 // unsigned long max value: 4'294'967'295us = 4'294.967'295s ~ 60min
-unsigned long TIMER1_getSystemTime_Us() {
-    return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * (unsigned long)periodMS + TIM1->CNT * slowdown;
+unsigned int TIMER1_getSystemTime_Us() {
+    return (timer_resets + (TIM1->SR ? 1 : 0)) * 1000 * _periodMS + TIM1->CNT;
 }
 
 // Timer 1 interrupt handler
@@ -62,7 +43,7 @@ void TIM1_UP_IRQHandler(void)
 	if(TIM1->SR & 0x0001)
 	{
         timer_resets += 1;
-        TIM1->SR &= ~(1<<0);
+		TIM1->SR &= ~(1<<0);
 		if (cbTimer1) {
 			cbTimer1();
 		}

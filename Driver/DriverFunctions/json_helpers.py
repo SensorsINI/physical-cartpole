@@ -20,5 +20,5 @@ def get_new_json_filename(controllername, filedirectory = JSON_PATH):
     previd = get_max_number_in_filename(filedirectory)
     id = previd + 1
     id_str = str(id)
-    new_filename = filedirectory + 'control' + '_' + controllername + '-' + id_str + '.json'
+    new_filename = filedirectory + 'control' + '_' + controllername + ' - ' + id_str + '.json'
     return new_filename

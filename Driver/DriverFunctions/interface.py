@@ -15,27 +15,7 @@ CMD_GET_ANGLE_CONFIG    = 0xC5
 CMD_SET_POSITION_CONFIG = 0xC6
 CMD_GET_POSITION_CONFIG = 0xC7
 CMD_SET_MOTOR           = 0xC8
-CMD_SET_CONTROL_CONFIG  = 0xC9
-CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
-
-def get_serial_port():
-    import platform
-    import subprocess
-
-    SERIAL_PORT = None
-    try:
-        system = platform.system()
-        if system == 'Darwin':  # Mac
-            SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
-        elif system == 'Linux':
-            SERIAL_PORT = '/dev/ttyUSB0'  # You might need to change the USB number
-        else:
-            raise NotImplementedError('For system={} connection to serial port is not implemented.')
-    except Exception as err:
-        print(err)
-
-    return SERIAL_PORT
 
 class Interface:
     def __init__(self):
@@ -44,8 +24,6 @@ class Interface:
         self.prevPktNum     = 1000
         self.start = None
         self.end = None
-
-        self.encoderDirection = None
 
     def open(self, port, baud):
         self.port = port
@@ -85,13 +63,8 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-
-        self.clear_read_buffer()
-
-        reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
-        self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
-
-        return True
+        self.prevPktNum = 1000
+        return self._receive_reply(CMD_CALIBRATE, 4, CALIBRATE_TIMEOUT) == msg
 
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
@@ -99,14 +72,16 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
-    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 24]
+    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch):
+        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 29]
         msg += list(struct.pack('h', setPoint))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('f', smoothing))
         msg += list(struct.pack('f', KP))
         msg += list(struct.pack('f', KI))
         msg += list(struct.pack('f', KD))
+        msg += list(struct.pack('i', controlLatencyUs))
+        msg += list(struct.pack('B', controlSynch))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
@@ -117,8 +92,8 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
         reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 29)
-        (setPoint, avgLen, smoothing, KP, KI, KD) = struct.unpack('hHffff', bytes(reply[3:20]))
-        return setPoint, avgLen, smoothing, KP, KI, KD
+        (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch) = struct.unpack('hHffffiB', bytes(reply[3:20]))
+        return (setPoint, avgLen, smoothing, KP, KI, KD, controlLatencyUs, controlSynch)
 
     def set_position_config(self, setPoint, ctrlPeriod_ms, smoothing, KP, KD):
         msg = [SERIAL_SOF, CMD_SET_POSITION_CONFIG, 20]
@@ -138,40 +113,30 @@ class Interface:
         self.device.flush()
         reply = self._receive_reply(CMD_GET_POSITION_CONFIG, 20)
         (setPoint, ctrlPeriod_ms, smoothing, KP, KD) = struct.unpack('hHfff', bytes(reply[3:19]))
-        return setPoint, ctrlPeriod_ms, smoothing, KP, KD
+        return (setPoint, ctrlPeriod_ms, smoothing, KP, KD)
 
     def set_motor(self, speed):
         msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-
-    def set_control_config(self, controlLoopPeriodMs, controlSync, controlLatencyUs):
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 11]
-        msg += list(struct.pack('H', controlLoopPeriodMs))
-        msg += list(struct.pack('?', controlSync))
-        msg += list(struct.pack('i', controlLatencyUs))
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-
-    def collect_raw_angle(self, lenght=100, interval_us=100):
-        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,  lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2*lenght, crc=False, timeout=100)
-        return struct.unpack(str(lenght)+'H', bytes(reply[3:3+2*lenght]))
+        self.end = time.time()
 
     def read_state(self):
-        self.clear_read_buffer()
-        reply = self._receive_reply(CMD_STATE, 17, READ_STATE_TIMEOUT)
+        reply = self._receive_reply(CMD_STATE, 20, READ_STATE_TIMEOUT)
 
-        (angle, position, command, invalid_steps, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
+        # Verify packet sequence 
+        if self.prevPktNum != 1000:
+            if ((reply[3] - self.prevPktNum) & 0xFF) > 1:
+                print("WARNING -- Skipped packets [prev={0} now={1}]".format(self.prevPktNum, reply[3]))
+        self.prevPktNum = reply[3]
 
-        return angle, 0, position, command, invalid_steps, sent/1e6, latency/1e5
+        (angle, angleD, position) = struct.unpack('hhh', bytes(reply[4:10]))
+        frozen = struct.unpack('B', bytes(reply[10:11]))[0]
+        sent, received = struct.unpack('II', bytes(reply[11:19]))
+        return angle, angleD, position, frozen, sent/1e6, received/1e6
 
-    def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True):
+    def _receive_reply(self, cmd, cmdLen, timeout=None):
         self.device.timeout = timeout
         self.start = False
 
@@ -196,25 +161,21 @@ class Interface:
                 # print('I am looping! Hurra!')
                 # Message must start with SOF character
                 if self.msg[0] != SERIAL_SOF:
-                    #print('\nMissed SERIAL_SOF')
                     del self.msg[0]
                     continue
 
                 # Check command
                 if self.msg[1] != cmd:
-                    print('\nMissed CMD.')
                     del self.msg[0]
                     continue
 
                 # Check message packet length
-                if self.msg[2] != cmdLen and cmdLen < 256:
-                    print('\nWrong Packet Length.')
+                if self.msg[2] != cmdLen:
                     del self.msg[0]
                     continue
 
                 # Verify integrity of message
-                if crc and self.msg[cmdLen-1] != self._crc(self.msg[:cmdLen-1]):
-                    print('\nCRC Failed.')
+                if self.msg[cmdLen-1] != self._crc(self.msg[:cmdLen-1]):
                     del self.msg[0]
                     continue
 

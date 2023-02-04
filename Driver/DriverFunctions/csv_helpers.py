@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 import csv
 
-from globals import PATH_TO_EXPERIMENT_RECORDINGS, CONTROL_PERIOD_MS
+from globals import PATH_TO_EXPERIMENT_RECORDINGS
 
 try:
     # Use gitpython to get a current revision number and use it in description of experimental data
@@ -59,11 +59,12 @@ def csv_init(csv_name=None, controller_name=None):
 
         writer.writerow(['#'])
 
+        #TODO: find real values here. This is needed for brunton plot.
         writer.writerow(['#'])
         writer.writerow(['# Time intervals dt:'])
         writer.writerow(['# Simulation: 0.002 s'])
-        writer.writerow(['# Controller update: '+str(CONTROL_PERIOD_MS/1000)+' s'])
-        writer.writerow(['# Saving: '+str(CONTROL_PERIOD_MS/1000)+' s'])
+        writer.writerow(['# Controller update: 0.01 s'])
+        writer.writerow(['# Saving: 0.01 s'])
         writer.writerow(['#'])
 
         writer.writerow(['# Units:'])
@@ -92,20 +93,16 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(['# position_squared'])
         writer.writerow(['# Q_squared'])
         writer.writerow(['# sent'])
+        writer.writerow(['# received'])
         writer.writerow(['# latency'])
         writer.writerow(['# pythonLatency'])
-        writer.writerow(['# additionalLatency'])
-        writer.writerow(['# invalid_steps'])
-        writer.writerow(['# frozen'])
-        writer.writerow(['# angleD fitted'])
         writer.writerow(['#'])
         writer.writerow(['#'])
 
         writer.writerow(
             ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angleD_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
-                'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['target_equilibrium'] + ['positionErr'] + ['angleCmd'] + [
-                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['latency'] + ['pythonLatency']+ ['controller_steptime'] + ['additionalLatency']
-            + ['invalid_steps'] + ['frozen'] + ['fitted'] + ['angle_raw_sensor'] + ['angleD_raw_sensor'] + ['angleD_fitted'])
+                'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['positionErr'] + ['angleCmd'] + [
+                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['received'] + ['latency']  + ['pythonLatency'] )
 
     # TODO: Not sure if we really need to return these two things and if this is efficient implementation
     csvfile = open(csv_filepath, 'a', newline='')
