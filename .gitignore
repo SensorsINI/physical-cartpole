@@ -1,5 +1,39 @@
-/Driver/ExperimentRecordings/
-/Firmware/CartPole CubeIDE/Debug/Src/
-/Firmware/Factory Firmware CubeIDE/Debug/Src/
-.DS_Store
 /.idea
+.DS_Store
+/Driver/ExperimentRecordings/
+
+/Driver/SI_Toolkit_ASF/Experiments/*
+!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1
+/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/*
+!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models
+/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/*
+!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5
+
+
+/Firmware/CartPole CubeIDE/.settings/language.settings.xml
+/Firmware/CartPole CubeIDE/Debug/
+/Firmware/CartPole CubeIDE/*.launch
+/Firmware/FactoryFirmware CubeIDE/.settings/language.settings.xml
+/Firmware/FactoryFirmware CubeIDE/Debug/
+/Firmware/FactoryFirmware CubeIDE/*.launch
+
+*env
+.DS_Store
+*__pycache__
+*.pyc
+*.csv
+*.png
+*.txt
+*.ckpt.*
+*.pt
+*.env
+*.vscode
+build/
+dist/
+eggs/
+*.egg-info/
+*.egg
+Driver/SI_Toolkit_ASF/Experiments/*
+*.hdf*
+*.pdf
+*.prof

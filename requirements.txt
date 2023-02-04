@@ -1,11 +1,23 @@
-numpy
+numpy==1.22.4
 pygame
 pyserial
 pandas
 matplotlib
+engineering_notation
 scipy
 GitPython
 PyQt5
 tk
 sympy
 sklearn
+PyYAML
+numba==0.56.0
+gymnasium
+tqdm
+torch
+tensorboard_plugin_profile
+tensorflow==2.9.1
+seaborn
+do-mpc==4.1.1
+
+-e ./Driver/CartPoleSimulation/SI_Toolkit/

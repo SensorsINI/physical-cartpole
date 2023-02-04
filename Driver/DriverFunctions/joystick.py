@@ -2,7 +2,7 @@
 import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
-from globals import JOYSTICK_SCALING, JOYSTICK_DEADZONE, JOYSTICK_POSITION_KP
+from globals import JOYSTICK_POSITION_KP, TRACK_LENGTH
 
 
 def setup_joystick():
@@ -18,7 +18,7 @@ def setup_joystick():
     else:
         stick = None
         joystickMode = None
-        print('no joystick found, only PD control or no control possible')
+        print('no joystick found')
 
     return stick, joystickMode
 
@@ -39,13 +39,15 @@ def get_stick_position(stick):
 def motorCmd_from_joystick(joystickMode, stickPos, position):
     # todo handle joystick control of cart to position, not speed - is this resolved?
     if joystickMode == 'speed':
-        MotorCmd = int(round(stickPos * JOYSTICK_SCALING))
+        Q = stickPos
     elif joystickMode == 'position':
-        MotorCmd = int((stickPos - position) * JOYSTICK_POSITION_KP)
+        position_normed = position/TRACK_LENGTH
+        normed_distance_difference = 0.5*(stickPos - position_normed)
+        Q = normed_distance_difference * JOYSTICK_POSITION_KP
     else:
         error_string = 'Unknown joystick mode: {}'.format(joystickMode)
         raise NameError(error_string)
-    return MotorCmd
+    return Q
 
 # The rest of this file is what was previously in joystick_tester.py
 # Run this script as main to test the joystick
