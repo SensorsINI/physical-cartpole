@@ -2,7 +2,6 @@ import sys
 import os
 import subprocess
 
-from Control_Toolkit.others.globals_and_utils import get_logger
 
 sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
 sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
@@ -13,7 +12,8 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
 os.chdir("Driver")
 
-log=get_logger(__name__)
+from get_logger import get_logger
+log = get_logger(__name__)
 
 import tensorflow as tf
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver

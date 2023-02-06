@@ -10,7 +10,6 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
-from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.interface import Interface
 from DriverFunctions.kbhit import KBHit
@@ -46,7 +45,8 @@ prefs=MyPreferences()
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-log = my_logger(__name__)
+from get_logger import get_logger
+log = get_logger(__name__)
 
 
 @jit(nopython=False, cache=True, fastmath=True)

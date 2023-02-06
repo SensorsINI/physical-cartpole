@@ -2,9 +2,9 @@ import serial
 import struct
 import time
 
-from Control_Toolkit.others.globals_and_utils import get_logger
 
-log=get_logger(__name__)
+from get_logger import get_logger
+log = get_logger(__name__)
 
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
