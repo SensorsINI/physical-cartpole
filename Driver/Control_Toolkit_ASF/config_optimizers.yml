@@ -11,7 +11,7 @@ cem-tf:
 cem-gmm-tf:
   seed: null                          # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  cem_outer_it: 3                    #how many outer iterations to use
+  cem_outer_it: 2                    #how many outer iterations to use
   num_rollouts: 200          #how many rollouts per outer cem iteration
   cem_stdev_min: 0.01
   cem_initial_action_stdev: 0.5
@@ -91,8 +91,8 @@ dist-adam-resamp2-tf:
 rpgd-tf:
   seed: null                            # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
-  SAMPLING_DISTRIBUTION: normal  # "normal" or "uniform"
-  period_interpolation_inducing_points: 1                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
+  SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+  period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
@@ -101,21 +101,21 @@ rpgd-tf:
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k_ratio: 0.25
-  outer_its: 2
+  outer_its: 7
   resamp_per: 10
   sample_stdev: 0.5
   warmup: false
   warmup_iterations: 250
 rpgd-me-tf:
   seed: null                            # If null, random seed based on datetime is used
-  mpc_horizon: 35                       # steps
-  SAMPLING_DISTRIBUTION: normal  # "normal" or "uniform"
-  period_interpolation_inducing_points: 5                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
+  mpc_horizon: 40                       # steps
+  SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
+  period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
   adam_epsilon: 1.0e-08
-  maximum_entropy_alpha: 0.1
+  maximum_entropy_alpha: 0.0
   gradmax_clip: 10
   rtol: 1.0e-3
   num_rollouts: 32
