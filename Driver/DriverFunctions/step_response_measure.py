@@ -15,11 +15,11 @@ FRICTION_SLOWDOWN = False
 
 # Direction for measurement.py with the cart accelerating to right:
 STARTING_POSITION = -0.15  # cart starting position (in m)
-ENDING_POSITION = 0.05  # position to turn off motor
+ENDING_POSITION = 0.15  # position to turn off motor
 RESET_Q = 0.5
-SPEED_STEP = 0.05
-STARTING_SPEED = 0.1  # doesn't work for low values for some reason
-ENDING_SPEED = 1.5
+SPEED_STEP = 0.1
+STARTING_SPEED = 0.15  # doesn't work for low values for some reason
+ENDING_SPEED = 1.0
 PAUSE_BEFORE_STEP_S = .5  # pause after reset to start position before starting step
 FRICTION_SLOWDOWN_TIME_S = 1  # time at end to just turn off motor and glide to stop
 STEP_TIMEOUT_S = 10
@@ -91,7 +91,7 @@ class StepResponseMeasurement:
                 self.state = 'starting_step'
                 self.time_state_changed = time
         elif self.state == 'starting_step':
-            if abs(self.speed) < abs(ENDING_SPEED):
+            if abs(self.speed) + abs(SPEED_STEP) <= abs(ENDING_SPEED):
                 self.speed += SPEED_STEP
                 self.Q = self.speed
                 self.state = 'moving'
