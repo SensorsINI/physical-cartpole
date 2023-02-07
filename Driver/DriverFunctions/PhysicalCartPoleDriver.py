@@ -494,13 +494,13 @@ class PhysicalCartPoleDriver:
             elif c == '90':
                 self.additional_latency += 0.002
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
+                self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == '0':
                 self.additional_latency -= 0.002
                 if self.additional_latency < 0.0:
                     self.additional_latency = 0.0
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
+                self.LatencyAdderInstance.set_latency(self.additional_latency)
 
             elif c == '5':
                 subprocess.call(["python", "DataAnalysis/state_analysis.py"])
