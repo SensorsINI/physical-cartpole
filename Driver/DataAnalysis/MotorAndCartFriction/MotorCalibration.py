@@ -1,4 +1,15 @@
 """
+
+It is a priori not clear for which range of Q to collect the date.
+The easiest solution for the first data collection is to MOTOR_DYNAMICS_CORRECTED=False
+and sweep step responses for Q in the range -1 to 1 which covers whole safe range of motor inputs.
+If you want to test it for a wider range than what is set as -1 to 1 range
+you can calculate the Q range as the safe range / factor used to convert Q to motor input.
+Notice that by doing it you are neglecting the affine shift
+and if you accidentally command command bigger than safe range the system stays safe,
+but the callibration script may produce rubbish (TODO)
+
+
 This script allows you to find right values to calibrate cartpole motors.
 To keep our simulation simple we want to model cart acceleration as
 dv/dt = a * Q - b * v      (1)
@@ -73,10 +84,10 @@ EVALUATION_SINGLE_FILE = False
 # FILE_NAME = 'Pololu.csv'
 FILE_NAME = 'Original.csv'
 
-PLOT_CORRECTED = False #
+PLOT_CORRECTED = True
 
 v_sat_max = 0.55
-v_sat_max_lin = 0.45
+v_sat_max_lin = 0.55
 
 
 def motor_calibration(FILE_NAME):
@@ -96,7 +107,7 @@ def motor_calibration(FILE_NAME):
 
     data['dt'] = data['time'].shift(-1) - data['time']
     data['positionD_last'] = data['positionD'].shift(1)
-    data['positionD_smoothed'] = smooth(data['positionD'], 30)
+    data['positionD_smoothed'] = smooth(data['positionD'], 2)
     try:
         data['motor_input'] = data['actualMotorSave'] # Older data sets
     except:
