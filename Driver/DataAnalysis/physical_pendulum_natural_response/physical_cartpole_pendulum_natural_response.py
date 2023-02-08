@@ -1,4 +1,7 @@
 """
+
+The script assumed that 0 angle was calibrated correctly as up position
+
 This script finds the parameters of cartpole pole
 We assume that cart is immobilized. The equations boils down to:
 angleDD * moment_of_inertia = -mg(L/2)sin(angle) - J_friction * angleD
@@ -74,7 +77,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-file_path = './others/physical_pendulum_natural_response/cartpole-2021-03-29-13-00-01-pole-natural-response.csv'
+from globals import ANGLE_360_DEG_IN_ADC_UNITS
+
+file_path = './DataAnalysis/physical_pendulum_natural_response/CP_right_pololu_free_swinging_with_blocked_cart_2023-02-05_10-48-36.csv'
 
 # Load data
 data: pd.DataFrame = pd.read_csv(file_path, comment='#')
@@ -82,23 +87,24 @@ data: pd.DataFrame = pd.read_csv(file_path, comment='#')
 # Cut first corrupted cycles and last, where the pole is not swinging anymore
 # Take care! - Check also that the position is constant
 
-data = data.iloc[2500:-1800, :]
+data = data.iloc[3500:-1000, :]
 
 # Take just data for angle
-angle = data['angle']
+angle_original = data['angle'].to_numpy()
 time = data['time']
+
+angle = np.copy(angle_original)
+angle[angle_original > 0] = angle[angle_original > 0] - np.pi
+angle[angle_original < 0] = angle[angle_original < 0] + np.pi
+
+# plt.figure()
+# plt.plot(angle)
+# plt.show()
+
 
 # Smooth angle measurement
 # https://stackoverflow.com/questions/20618804/how-to-smooth-a-curve-in-the-right-way
 angle = savgol_filter(angle, 51, 3)
-
-# Convert units to radians:
-mean_angle = np.mean(angle)
-angle = angle*2*np.pi/4096.0
-
-# Center around 0
-mean_angle = np.mean(angle)
-angle = angle - mean_angle
 
 # Compute first derivative
 angleD = np.gradient(angle, time)
@@ -112,15 +118,15 @@ angleDD = np.gradient(angleD, time)
 angleDD = savgol_filter(angleDD, 51, 3)
 
 # Plot angle or its derivative
-# plt.figure()
-# # plt.plot(time, angle/max(angle), label='Angle')
-# plt.plot(time, angle*(180/np.pi), label='Angle')
-# # plt.plot(time, angleD/max(angleD), label='AngleD')
-# # plt.plot(time, angleDD/max(angleDD), label='AngleDD')
-# plt.legend()
-# plt.ylabel('Angle(-/D/DD)[-]')
-# plt.ylabel('Time [s]')
-# plt.show()
+plt.figure()
+# plt.plot(time, angle/max(angle), label='Angle')
+plt.plot(time, angle*(180/np.pi), label='Angle')
+# plt.plot(time, angleD/max(angleD), label='AngleD')
+# plt.plot(time, angleDD/max(angleDD), label='AngleDD')
+plt.legend()
+plt.ylabel('Angle(-/D/DD)[-]')
+plt.ylabel('Time [s]')
+plt.show()
 
 # Start with small angle approx to get the approx parameters:
 time_small = time[-3000:]

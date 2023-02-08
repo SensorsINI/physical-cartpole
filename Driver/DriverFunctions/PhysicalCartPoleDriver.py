@@ -5,6 +5,8 @@ import time
 
 import os
 
+from tqdm import trange
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -391,21 +393,31 @@ class PhysicalCartPoleDriver:
 
             ##### Measure angle precisely  #####
             elif c == 'b':
-                angle_average = 0
-                number_of_measurements = 400
-                for _ in range(number_of_measurements):
+                measured_angles = []
+                number_of_measurements = 1000
+                time_measurement_start = time.time()
+                print('Started angle measurement.')
+                for _ in trange(number_of_measurements):
                     (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
-                    angle_average += angle
-                angle_average = angle_average / float(number_of_measurements)
+                    measured_angles.append(float(angle))
+                time_measurement = time.time()-time_measurement_start
+
+                angle_average = np.mean(measured_angles)
+                angle_std = np.std(measured_angles)
 
                 angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
-                if abs(angle_rad) > 1.0:
-                    print('\nHanging angle average of {} measurements: {}     '.format(number_of_measurements, angle_average))
-                    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
-                    ANGLE_HANGING_DEFAULT = False
-                else:
-                    print('\nAverage angle: {} rad'.format(angle_rad))
-            # Fine tune angle deviation (use to adjust the zero angle when pole is upright, or use -3.000 rad when hanging down with POLOLU motor)
+                angle_std_rad = angle_std*ANGLE_NORMALIZATION_FACTOR
+                print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
+                                                                                              angle_rad,
+                                                                                              angle_average))
+                print('\nAngle std of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
+                                                                                              angle_std_rad,
+                                                                                              angle_std))
+                print('\nMeasurement took {} s'.format(time_measurement))
+                # if abs(angle_rad) > 1.0:
+                #     ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
+                #     ANGLE_HANGING_DEFAULT = False
+            # Fine tune angle deviation
             elif c == '=':
                 ANGLE_DEVIATION_FINETUNE += 0.002
                 print(f'\nIncreased angle deviation fine tune value to {ANGLE_DEVIATION_FINETUNE:.3f}')
@@ -484,13 +496,13 @@ class PhysicalCartPoleDriver:
             elif c == 90:
                 self.additional_latency += 0.002
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
+                self.LatencyAdderInstance.set_latency(self.additional_latency)
             elif c == '0':
                 self.additional_latency -= 0.002
                 if self.additional_latency < 0.0:
                     self.additional_latency = 0.0
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency, dt_sampling=0.005)
+                self.LatencyAdderInstance.set_latency(self.additional_latency)
 
             elif c == '5':
                 print('\nstarting state analysis.py')
@@ -743,23 +755,22 @@ class PhysicalCartPoleDriver:
 
             # The change dependent on velocity sign is motivated theory of classical friction
             if MOTOR == 'POLOLU':
-                self.actualMotorCmd *= 4307.69
+                self.actualMotorCmd *= 3617.43
                 if self.actualMotorCmd != 0:
                     if np.sign(self.s[POSITIOND_IDX]) > 0:
-                        self.actualMotorCmd += 398.69
+                        self.actualMotorCmd += 181.66
                     elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                        self.actualMotorCmd -= 342.53
+                        self.actualMotorCmd -= 312.98
             else:
-                self.actualMotorCmd *= 5518.73
+                self.actualMotorCmd *= 4729.99
                 if self.actualMotorCmd != 0:
                     if np.sign(self.s[POSITIOND_IDX]) > 0:
-                        self.actualMotorCmd += 266.43
+                        self.actualMotorCmd += 135.75
                     elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                        self.actualMotorCmd -= 246.94
-                        self.actualMotorCmd -= 246.94
+                        self.actualMotorCmd -= 170.90
 
         else:
-            self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
+            self.actualMotorCmd *= MOTOR_FULL_SCALE_SAFE  # Scaling to motor units
             pass
 
         # Convert to motor encoder units
@@ -891,9 +902,8 @@ class PhysicalCartPoleDriver:
 
             ############  Mode  ############
             if self.controlEnabled:
-                if 'mppi' in CONTROLLER_NAME:
-                    pass
-                    # mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.env_mock.config["mpc_horizon"], self.controller.env_mock.config["num_rollouts"], PREDICTOR)
+                if 'mpc' in CONTROLLER_NAME:
+                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.optimizer.mpc_horizon, self.controller.optimizer.num_rollouts, self.controller.predictor.predictor_name)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:

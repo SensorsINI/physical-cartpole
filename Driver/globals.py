@@ -28,8 +28,8 @@ LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for al
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
 ##### Controller Settings #####
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete' TODO move to config
-OPTIMIZER_NAME = 'mppi'  # e.g. 'pid', 'mppi', 'do-mpc', 'do-mpc-discrete' TODO move to config
+CONTROLLER_NAME = 'mpc'  # e.g. 'mpc', 'neural-imitator-tf-CPS'
+OPTIMIZER_NAME = 'mppi'  # e.g. 'rpgd-tf', 'mppi'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
@@ -41,27 +41,29 @@ AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
+MOTOR = 'ORIGINAL'  # choose 'POLOLU' or 'ORIGINAL'
 MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'PID' else True  # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
 
 ##### Angle Conversion #####
-# Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_ADC_RANGE/2)/ANGLE_ADC_RANGE*math.pi
+# Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
-ANGLE_ADC_RANGE = 4096  # Range of angle values #
+ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = prefs.get('ANGLE_HANGING_POLOLU',712)  # 1213     # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING_ORIGINAL = prefs.get('ANGLE_HANGING_ORIGINAL',1051)  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1062.26  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = prefs.get('ANGLE_HANGING_POLOLU',1062.26)  # 1213     # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_ORIGINAL = prefs.get('ANGLE_HANGING_ORIGINAL',1046.75)  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
 # At the beginning always default angle hanging for default motor specified in globals is loaded
 
-ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_ADC_RANGE
 ANGLE_DEVIATION_FINETUNE = prefs.get('ANGLE_DEVIATION_FINETUNE',0.116)  # adjust from key commands such that upright angle error is minimized
+ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_360_DEG_IN_ADC_UNITS
 POLYFIT_ANGLED = False
 # POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
 
@@ -92,13 +94,13 @@ ANGLE_DEVIATION = np.array(0.0)
 
 
 def angle_constants_update(new_angle_hanging):
-    global ANGLE_ADC_RANGE
+    global ANGLE_360_DEG_IN_ADC_UNITS
 
     # update angle deviation according to ANGLE_HANGING update
-    if new_angle_hanging < ANGLE_ADC_RANGE / 2:
-        angle_deviation = - new_angle_hanging - ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to -pi
+    if new_angle_hanging < ANGLE_360_DEG_IN_ADC_UNITS / 2:
+        angle_deviation = - new_angle_hanging - ANGLE_360_DEG_IN_ADC_UNITS / 2  # moves upright to 0 and hanging to -pi
     else:
-        angle_deviation = - new_angle_hanging + ANGLE_ADC_RANGE / 2  # moves upright to 0 and hanging to pi
+        angle_deviation = - new_angle_hanging + ANGLE_360_DEG_IN_ADC_UNITS / 2  # moves upright to 0 and hanging to pi
 
     return new_angle_hanging, angle_deviation
 
