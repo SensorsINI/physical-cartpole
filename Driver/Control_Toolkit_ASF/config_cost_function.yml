@@ -13,7 +13,7 @@ CartPole:
   quadratic_boundary_grad:
     dd_weight: 1000.0
     ep_weight: 7000.0
-    ekp_weight: 5.0
+    ekp_weight: 20.0
     cc_weight: 1.0
     ccrc_weight: 1.0
     discount_factor: 0.97
