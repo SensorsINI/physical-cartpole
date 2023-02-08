@@ -3,7 +3,7 @@ import struct
 import time
 
 
-from get_logger import get_logger
+from Control_Toolkit.others.get_logger import get_logger
 log = get_logger(__name__)
 
 PING_TIMEOUT            = 1.0       # Seconds

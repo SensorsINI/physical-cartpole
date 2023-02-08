@@ -1,16 +1,13 @@
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
-import math
 import time
-import numpy as np
 
 import os
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
-from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.interface import Interface
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.step_response_measure import StepResponseMeasurement
@@ -24,28 +21,24 @@ from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, A
 from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
 from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
-from DriverFunctions.firmware_parameters import set_firmware_parameters
 from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
-import subprocess, multiprocessing, platform
+import subprocess
 from multiprocessing.connection import Client
 import sys
-import tensorflow as tf
 import serial
 from numba import jit
 from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
-from yaml import load, FullLoader
 
-from Driver.DriverFunctions.interface import get_serial_port
 from CartPoleSimulation.others.prefs import MyPreferences
 prefs=MyPreferences()
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-from get_logger import get_logger
+from Control_Toolkit.others.get_logger import get_logger
 log = get_logger(__name__)
 
 
@@ -526,14 +519,14 @@ class PhysicalCartPoleDriver:
                 self.print_keyboard_help()
 
             ##### Exit ######
-            elif c=='q' or ord(c) == 27:  # ESC
+            elif c=='q' or c=='x' or ord(c) == 27:  # ESC/x/q all quit
                 print("\nquitting....")
                 self.terminate_experiment = True
     def print_keyboard_help(self):
         """ Prints help message for keyboard commands to console"""
         print("\n***********************************")
         print("keystroke commands")
-        print("q/ESC quit")
+        print("q/x/ESC quit")
         print("k toggle control on/off (initially off)")
         print("K trigger motor position calibration")
         print("=/- increase/decrease (fine tune) angle offset value to obtain 0 when vertically")
