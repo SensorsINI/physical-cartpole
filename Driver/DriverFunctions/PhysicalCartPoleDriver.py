@@ -7,6 +7,8 @@ import os
 
 from tqdm import trange
 
+from CartPole import CartPole
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
@@ -52,8 +54,11 @@ def polyfit(buffer):
     #return np.polyval(p=p, x=len(buffer))
 
 class PhysicalCartPoleDriver:
-    def __init__(self, CartPoleInstance):
+    # set to singleton physical cartpole instance to detect if we are running physical cartpole; see CartPoleMainWindow for example of such static globals
+    PhysicalCartPoleDriverInstance = None
 
+    def __init__(self, CartPoleInstance:CartPole):
+        PhysicalCartPoleDriver.PhysicalCartPoleDriverInstance=self # (tobi) used to access the (hopefully) singleton instance; see cartpole_dancer.py
         self.CartPoleInstance = CartPoleInstance
         self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
@@ -129,6 +134,7 @@ class PhysicalCartPoleDriver:
         self.fitted = 0
         self.position_raw = 0
         self.anglePrev = 0.0
+        self.position_centered_unconverted = None # the cart position in motor units with center position subtracted
         self.positionPrev = None
         self.angleDPrev = 0.0
         self.positionDPrev = 0.0
@@ -156,13 +162,13 @@ class PhysicalCartPoleDriver:
 
         # Performance
         self.delta_time = 0
-        self.delta_time_buffer = np.zeros((0))
+        self.delta_time_buffer = np.zeros(0)
         self.firmware_latency = 0
-        self.firmware_latency_buffer = np.zeros((0))
+        self.firmware_latency_buffer = np.zeros(0)
         self.python_latency = 0
-        self.python_latency_buffer = np.zeros((0))
+        self.python_latency_buffer = np.zeros(0)
         self.controller_steptime = 0
-        self.controller_steptime_buffer = np.zeros((0))
+        self.controller_steptime_buffer = np.zeros(0)
         self.controlled_iterations = 0
         self.total_iterations = 0
         self.latency_violations = 0
@@ -178,6 +184,7 @@ class PhysicalCartPoleDriver:
         self.time_last_switch = -np.inf
 
         self.demo_program = DEMO_PROGRAM
+        self.safety_switch_counter = 0
 
     def run(self):
         self.setup()
@@ -187,8 +194,9 @@ class PhysicalCartPoleDriver:
     def setup(self):
         # Check that we are running from terminal, otherwise we cannot control it
         if not sys.stdin.isatty():
-            print('Run from an interactive terminal to allow keyboard input (in pycharm, select "Emulate terminal output" in run settings).')
-            quit()
+            log.error("Run from an interactive terminal to allow keyboard input (in pycharm, select 'Emulate terminal output' in run settings).")
+            self.quit_experiment()
+            quit(1)
 
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.control_mode(False)
@@ -266,13 +274,13 @@ class PhysicalCartPoleDriver:
 
         self.measurement_action()
 
-        if self.controlEnabled or self.current_measure.is_running():
+        if self.controlEnabled or self.current_measure.is_running() or self.manualMotorSetting:
             self.get_motor_command()
 
-        if self.controlEnabled and self.current_measure.is_idle():
+        if self.controlEnabled and self.current_measure.is_idle() :
             self.safety_switch_off()
 
-        if self.controlEnabled or self.current_measure.is_running():
+        if self.controlEnabled or self.current_measure.is_running() or self.manualMotorSetting:
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
         # Logging, Plotting, Terminal
@@ -315,21 +323,21 @@ class PhysicalCartPoleDriver:
             if c == '.':  # zero motor
                 self.controlEnabled = False
                 self.Q = 0
-                self.manualMotorSetting = False
-                print('\nNormed motor command after .', self.Q)
+                self.manualMotorSetting = True
+                print('\nZeroed motor with "."')
             elif c == ',':  # left
                 self.controlEnabled = False
-                self.Q -= 0.01
+                self.Q -= 0.05
                 self.manualMotorSetting = True
-                print('\nNormed motor command after ,', self.Q)
+                print('\nDecreased normed motor command with "," to', self.Q)
             elif c == '/':  # right
                 self.controlEnabled = False
-                self.Q += 0.01
+                self.Q += 0.05
                 self.manualMotorSetting = True
-                print('\nNormed motor command after /', self.Q)
+                print('\nIncreased normed motor command with "/" to', self.Q)
 
 
-            elif c == 'D':
+            elif c == 'D': # old 'dance' mode to move target position sinusoidally
                 # We want the sinusoid to start at predictable (0) position
                 if self.danceEnabled is True:
                     self.danceEnabled = False
@@ -431,13 +439,13 @@ class PhysicalCartPoleDriver:
             ##### Target Position #####
             # Increase Target Position of pole
             elif c == ']':
-                POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
+                POSITION_TARGET += 100 * POSITION_NORMALIZATION_FACTOR
                 if POSITION_TARGET > 0.8 * (POSITION_ENCODER_RANGE // 2):
                     POSITION_TARGET = 0.8 * (POSITION_ENCODER_RANGE // 2)
                 print(f"\nIncreased target position to {POSITION_TARGET*100:.1f} cm")
             # Decrease Target Position
             elif c == '[':
-                POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
+                POSITION_TARGET -= 100 * POSITION_NORMALIZATION_FACTOR
                 if POSITION_TARGET < -0.8 * (POSITION_ENCODER_RANGE // 2):
                     POSITION_TARGET = -0.8 * (POSITION_ENCODER_RANGE // 2)
                 print(f"\nDecreased target position to {POSITION_TARGET*100:.1f} cm")
@@ -481,19 +489,19 @@ class PhysicalCartPoleDriver:
             elif c == 'j':
                 if self.joystickMode is None:
                     self.stick, self.joystickMode = setup_joystick()
-                    self.log.warning('no joystick')
+                    log.warning('no joystick')
                 elif self.joystickMode == 'not active':
                     self.joystickMode = 'speed'
-                    self.log.info(f'set joystick to cart {self.joystickMode} control mode')
+                    log.info(f'set joystick to cart {self.joystickMode} control mode')
                 elif self.joystickMode == 'speed':
                     self.joystickMode = 'position'
-                    self.log.info(f'set joystick to cart {self.joystickMode} control mode')
+                    log.info(f'set joystick to cart {self.joystickMode} control mode')
                 elif self.joystickMode == 'position':
                     self.joystickMode = 'not active'
-                    self.log.info(f'set joystick to {self.joystickMode} mode')
+                    log.info(f'set joystick to {self.joystickMode} mode')
 
             ##### Artificial Latency  #####
-            elif c == 90:
+            elif c == '9':
                 self.additional_latency += 0.002
                 print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
                 self.LatencyAdderInstance.set_latency(self.additional_latency)
@@ -578,6 +586,7 @@ class PhysicalCartPoleDriver:
     def switch_on_control(self):
         print('on')
         self.controlEnabled = True
+        self.manualMotorSetting = False
         self.delta_time_buffer = np.zeros((0))
         self.firmware_latency_buffer = np.zeros((0))
         self.python_latency_buffer = np.zeros((0))
@@ -657,7 +666,7 @@ class PhysicalCartPoleDriver:
         self.angle_raw_prev = self.angle_raw
         self.angleD_raw_prev = self.angleD_raw
 
-        # Convert position and angle to physical units
+        # Convert position and angle to physical units of meters and radians
         angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
@@ -737,7 +746,7 @@ class PhysicalCartPoleDriver:
                 self.current_measure.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.timeNow)
                 self.Q = self.current_measure.Q
             except TimeoutError as e:
-                self.log.warning(f'timeout in self.measurement: {e}')
+                log.warning(f'timeout in self.measurement: {e}')
 
     def get_motor_command(self):
 
@@ -749,7 +758,7 @@ class PhysicalCartPoleDriver:
             # Use Model_velocity_bidirectional.py to determine the margins and correction factor below
 
             # # We cut the region which is linear
-            # # In fact you don't need - it it is already ensured that Q -1 to 1 corresponds to linear range
+            # # In fact you don't need - it is already ensured that Q -1 to 1 corresponds to linear range
             # self.actualMotorCmd = 1.0 if self.actualMotorCmd > 1.0 else self.actualMotorCmd
             # self.actualMotorCmd = -1.0 if self.actualMotorCmd < -1.0 else self.actualMotorCmd
 
@@ -778,25 +787,27 @@ class PhysicalCartPoleDriver:
 
         # Check if motor power in safe boundaries, not to burn it in case you have an error before or not-corrected option
         # NEVER RUN IT WITHOUT IT
-        self.actualMotorCmd = MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd > MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd #Todo: use numpy clip
+        self.actualMotorCmd = MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd > MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
         self.actualMotorCmd = -MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd < -MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
 
-        self.actualMotorCmd = -self.actualMotorCmd
+        self.actualMotorCmd = -self.actualMotorCmd # todo why minus sign here?
 
     def safety_switch_off(self):
-        # Temporary safety switch off if goes to the boundary
-        if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
+        # Temporary safety switch off if cart gets close to the boundary
+        if abs(self.position_centered_unconverted) >  ((0.95 *POSITION_ENCODER_RANGE) // 2): # // is floor division, results in int value closest to zero
             self.safety_switch_counter += 1
             if self.safety_switch_counter > 10:  # Allow short bumps
                 self.safety_switch_counter = 0
-                print('\nSafety Switch.')
+                log.error(f'\nMotor disabled because more than 10 times abs(self.position_centered_unconverted)={abs(self.position_centered_unconverted)} >  ((.95* POSITION_ENCODER_RANGE) // 2)={((.95* POSITION_ENCODER_RANGE) // 2)}')
                 self.controlEnabled = False
+                self.manualMotorSetting=False
                 self.InterfaceInstance.set_motor(0)
                 self.new_console_output = 1
 
                 if hasattr(self.controller, 'controller_report') and self.controlled_iterations > 1:
                     self.controller.controller_report()
                 if hasattr(self.controller, 'controller_reset'):
+                    log.debug('resetting controller')
                     self.controller.controller_reset()
                 self.danceEnabled = False
                 self.actualMotorCmd = 0
@@ -891,7 +902,7 @@ class PhysicalCartPoleDriver:
             performance_measurement_buffer = np.append(performance_measurement_buffer, np.expand_dims(performance_measurement, axis=1), axis=1)
             performance_measurement_buffer = performance_measurement_buffer[:, -PRINT_AVERAGING_LENGTH:]
 
-        if True or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
+        if self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
             if True and not self.new_console_output:
@@ -903,7 +914,7 @@ class PhysicalCartPoleDriver:
             ############  Mode  ############
             if self.controlEnabled:
                 if 'mpc' in CONTROLLER_NAME:
-                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.optimizer.mpc_horizon, self.controller.optimizer.num_rollouts, self.controller.predictor.predictor_name)
+                    mode='CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.optimizer.mpc_horizon, self.controller.optimizer.num_rollouts, self.controller.predictor_wrapper.predictor_name)
                 else:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
@@ -920,7 +931,7 @@ class PhysicalCartPoleDriver:
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
                     self.position_raw,
-                    f"{self.CartPoleInstance.target_position}, {self.CartPoleInstance.target_equilibrium}",
+                    f"pos: {self.CartPoleInstance.target_position*100:+.2f}cm, eq: {self.CartPoleInstance.target_equilibrium:+.0f}",
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,

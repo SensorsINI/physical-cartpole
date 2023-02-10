@@ -12,7 +12,7 @@ DEMO_PROGRAM = False
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
-PRINT_PERIOD_MS = 10  # shows state in terminal every this many control updates
+PRINT_PERIOD_MS = 300  # shows state in terminal every this many ms
 PRINT_AVERAGING_LENGTH = 500
 
 ##### Timing #####
@@ -27,7 +27,7 @@ LIVE_PLOT_KEEPSAMPLES = 5000
 LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
-##### Controller Settings #####
+##### Controller Settings - IMPORTANT, these override the config yml file values #####
 CONTROLLER_NAME = 'mpc'  # e.g. 'mpc', 'neural-imitator-tf-CPS'
 OPTIMIZER_NAME = 'mppi'  # e.g. 'rpgd-tf', 'mppi'
 if CONTROLLER_NAME == 'pid':
@@ -35,7 +35,7 @@ if CONTROLLER_NAME == 'pid':
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 8
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 25  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
@@ -53,8 +53,6 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1062.26  # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_POLOLU = prefs.get('ANGLE_HANGING_POLOLU',1062.26)  # 1213     # Value from sensor when pendulum is at stable equilibrium point
 ANGLE_HANGING_ORIGINAL = prefs.get('ANGLE_HANGING_ORIGINAL',1046.75)  # Value from sensor when pendulum is at stable equilibrium point
 
@@ -74,7 +72,7 @@ POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation # seems to b
 POSITION_OFFSET = 0  # Serves to adjust starting position - position after calibration is 0
 POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2  # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396  # Total usable track length in meters
-POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH / POSITION_ENCODER_RANGE  # 0.000084978540773
+POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH / POSITION_ENCODER_RANGE  # 0.000084978540773 - converts motor encoder values to meters along cart track
 
 POSITION_TARGET = 0.0  # meters
 
