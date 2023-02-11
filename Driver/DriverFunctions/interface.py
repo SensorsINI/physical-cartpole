@@ -148,6 +148,10 @@ class Interface:
         return setPoint, ctrlPeriod_ms, smoothing, KP, KD
 
     def set_motor(self, speed):
+        """ Sends the motor speed command in raw motor units to the cartpole
+
+        :param speed: the motor speed in motor units
+        """
         msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))

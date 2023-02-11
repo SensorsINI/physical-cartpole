@@ -35,7 +35,7 @@ if CONTROLLER_NAME == 'pid':
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 8
 else:
-    CONTROL_PERIOD_MS = 25  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
