@@ -46,7 +46,7 @@ CartPole:
     terminal_safety_cost_factor: 100e+0 # how much to weight up the terminal state costs compared to the rest of the rollout
     stage_cost_factor: 1e0 # how much to weight up the state costs
     track_edge_barrier_cost: 1e9 # how much to penalize cart at edge of track
-    track_length_fraction: 0.9 # fraction of half track length to allow free movement of cart before hitting barrier function
+    track_length_fraction: 0.95 # fraction of half track length to allow free movement of cart before hitting barrier function
 
     # cost weightings for the different state components for following desired cart state trajectory
     cart_pos_weight: 3e7 # weight on cart pos error

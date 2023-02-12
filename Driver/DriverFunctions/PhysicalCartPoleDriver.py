@@ -327,7 +327,7 @@ class PhysicalCartPoleDriver:
     def keyboard_input(self):
         """ Checks for keyboard input keystroke and takes action on it."""
         global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
-        pos_target_step = 0.01  # meters
+        pos_target_step = 0.05  # meters
         pos_target_limit=0.8*TRACK_LENGTH/2
 
         if self.kbAvailable & self.kb.kbhit():
@@ -876,6 +876,8 @@ class PhysicalCartPoleDriver:
         return (False,Q)
 
     def write_csv_row(self):
+        """ Writes one row of CSV data file. If new fields are added here, update csv_helper.py csv_init() method to add to header
+        """
         if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
             if self.controller.controller_name == 'pid':
                 self.csvwriter.writerow(
@@ -893,7 +895,9 @@ class PhysicalCartPoleDriver:
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                      self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted
+                     ]
+                )
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q

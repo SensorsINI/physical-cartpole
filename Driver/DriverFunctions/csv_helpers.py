@@ -10,7 +10,12 @@ try:
 except ModuleNotFoundError:
     print('GitPython not found')
 
-def csv_init(csv_name=None, controller_name=None):
+def csv_init(csv_name=None, controller_name=None)->None:
+    """ Initializes the CSV file to hold saved data
+    :param csv_name: the filename
+    :param controller_name: the controller name
+
+    """
 
     # Make folder to save data (if not yet existing)
     try:
@@ -47,7 +52,7 @@ def csv_init(csv_name=None, controller_name=None):
     with open(csv_filepath, "a") as outfile:
         writer = csv.writer(outfile)
 
-        writer.writerow(['# ' + 'This is CartPole simulation from {} at time {}'
+        writer.writerow(['# ' + 'This is CartPole data from {} at time {}'
                         .format(datetime.now().strftime('%d.%m.%Y'), datetime.now().strftime('%H:%M:%S'))])
         try:
             repo = Repo(search_parent_directories=True)
