@@ -299,6 +299,9 @@ class controller_pid(template_controller):
         elif c == 'L':
             self.loadparams()
 
+    def print_keyboard_help(self):
+        pass # TODO complete this
+
     def controller_reset(self):
 
         self.time_last = None

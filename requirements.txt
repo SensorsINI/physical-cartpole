@@ -20,5 +20,6 @@ tensorflow==2.9.1
 seaborn
 do-mpc==4.1.1
 pypref # https://bachiraoun.github.io/pypref/
+easygui # for file dialog, e.g. to select CSV files to plot
 
 -e ./Driver/CartPoleSimulation/SI_Toolkit/

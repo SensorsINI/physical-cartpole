@@ -10,7 +10,7 @@ import numpy as np
 from tqdm import trange
 
 from CartPole import CartPole
-from Control_Toolkit.Controllers import template_controller
+from Control_Toolkit.Controllers import template_controller, controller_mpc
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
@@ -65,7 +65,7 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance = CartPoleInstance
         self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
-        self.controller:template_controller = self.CartPoleInstance.controller
+        self.controller:controller_mpc = self.CartPoleInstance.controller
 
         self.InterfaceInstance = Interface()
 
@@ -126,6 +126,7 @@ class PhysicalCartPoleDriver:
         # State
         self.s = create_cartpole_state() # the cartpole state
         self.predicted_next_state=None # the predicted next state, to measure model mismatch
+        self.traj_next_state=None # the target next state from cartpole_trajectory_generator, to measure model mismatch
         self.angle_raw = 0
         self.angle_raw_stable = None
         self.angle_raw_prev = None
@@ -231,7 +232,7 @@ class PhysicalCartPoleDriver:
         self.print_keyboard_help()
 
         self.startTime = time.time()
-        self.lastTime = self.startTime
+        self.lastTime = 0 # set to zero at start of execution
         self.lastControlTime = self.startTime
 
         self.InterfaceInstance.stream_output(True)  # now start streaming state
@@ -245,7 +246,7 @@ class PhysicalCartPoleDriver:
     def experiment_sequence(self):
 
         self.keyboard_input()
-        self.controlEnabled=True # TODO DEBUG hack since debugger hangs on any keyboard input
+        # self.controlEnabled=True # TODO DEBUG hack since debugger hangs on any keyboard input
 
         self.get_state_and_time_measurement()
 
@@ -272,6 +273,8 @@ class PhysicalCartPoleDriver:
             # tobi: predict next state so that we can measure model mismatch
             next_states=self.controller.predictor_wrapper.predictor.predict(self.s, [self.Q], horizon=1) # Q must be a vector
             self.predicted_next_state = next_states[0,1,:]  # take 2nd step of rollout since first step is current state
+
+            self.traj_next_state= self.controller.cartpole_trajectory_generator.traj[:, 0] # what the cartpole_trajectory_generator tries to get to
 
             performance_measurement[0] = time.time() - start
             self.controller_steptime = time.time() - start
@@ -303,8 +306,8 @@ class PhysicalCartPoleDriver:
         if self.controlEnabled and self.current_measure.is_idle() :
             self.check_for_safety_switch_off()
 
-        # if self.controlEnabled or self.current_measure.is_running() or self.manualMotorSetting  or self.returnToCenter:
-        #     self.InterfaceInstance.set_motor(self.actualMotorCmd)
+        if self.controlEnabled or self.current_measure.is_running() or self.manualMotorSetting  or self.returnToCenter:
+            self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
         # if self.returnToCenter: #debug
         #     print(f'\ncentering: self.Q={self.Q:.2f}, self.actualMotorCmd={self.actualMotorCmd}')
@@ -613,6 +616,12 @@ class PhysicalCartPoleDriver:
         print("6 Enable/Disable live plot")
         print("5 Interrupts for histogram plot")
         print("6789 toggle/save/reset/units of live state plotting")
+        print(" **** commands for specific controller")
+        try:
+            self.controller.print_keyboard_help()
+        except AttributeError:
+            print(f'no print_keyboard_help() for controller "{self.controller}"')
+            pass
         print("***********************************")
 
     def switch_off_control(self):
@@ -714,7 +723,7 @@ class PhysicalCartPoleDriver:
         position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
 
         # Time self.measurement
-        self.timeNow = time.time()
+        self.timeNow = time.time()-self.startTime # make times relative to start to avoid large time numbers in controller
         self.lastTime = self.timeNow
         self.elapsedTime = self.timeNow - self.startTime
 
@@ -764,7 +773,7 @@ class PhysicalCartPoleDriver:
                 self.target_position = POSITION_TARGET + self.danceAmpl * np.sin(
                     2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
             else:
-                self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
+                self.target_position = POSITION_TARGET # tobi it was lowpass filtered for some reason, not clear why 0.995 * self.target_position + 0.005 * POSITION_TARGET
         
         self.CartPoleInstance.target_position = self.target_position
 
@@ -903,19 +912,23 @@ class PhysicalCartPoleDriver:
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
                      self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
             else:
-                self.csvwriter.writerow(
-                    [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw,
-                     self.s[ANGLE_IDX], self.s[ANGLED_IDX],
-                     self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-                     self.s[POSITION_IDX], self.s[POSITIOND_IDX],
-                     'NA', 'NA',
-                     self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted,
-                     self.predicted_next_state[ANGLE_IDX], self.predicted_next_state[ANGLED_IDX],
-                     self.predicted_next_state[ANGLE_COS_IDX], self.predicted_next_state[ANGLE_SIN_IDX],
-                     self.predicted_next_state[POSITION_IDX], self.predicted_next_state[POSITIOND_IDX],
-                     ]
+                if not self.predicted_next_state is None and not self.traj_next_state is None:
+                    self.csvwriter.writerow(
+                        [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw,
+                         self.s[ANGLE_IDX], self.s[ANGLED_IDX],
+                         self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
+                         self.s[POSITION_IDX], self.s[POSITIOND_IDX],
+                         'NA', 'NA',
+                         self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
+                         self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                         self.sent, self.firmware_latency, self.python_latency, self.controller_steptime, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted,
+                         self.predicted_next_state[ANGLE_IDX], self.predicted_next_state[ANGLED_IDX],
+                         self.predicted_next_state[ANGLE_COS_IDX], self.predicted_next_state[ANGLE_SIN_IDX],
+                         self.predicted_next_state[POSITION_IDX], self.predicted_next_state[POSITIOND_IDX],
+                         self.traj_next_state[ANGLE_IDX], self.traj_next_state[ANGLED_IDX],
+                         self.traj_next_state[ANGLE_COS_IDX], self.traj_next_state[ANGLE_SIN_IDX],
+                         self.traj_next_state[POSITION_IDX], self.traj_next_state[POSITIOND_IDX],
+                         ]
                 )
 
         self.actualMotorCmd_prev = self.actualMotorCmd

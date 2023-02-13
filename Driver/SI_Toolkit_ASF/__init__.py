@@ -19,3 +19,5 @@ USE_TENSORFLOW_EAGER_MODE = False
 USE_TENSORFLOW_XLA = True
 
 log.info(f'set USE_TENSORFLOW_EAGER_MODE={USE_TENSORFLOW_EAGER_MODE} and USE_TENSORFLOW_XLA={USE_TENSORFLOW_XLA}')
+if USE_TENSORFLOW_EAGER_MODE:
+    log.warning(f'Tensorflow eager mode is enabled, code execution will be about 10X slower than when tensorflow compiled!')
