@@ -10,10 +10,11 @@ try:
 except ModuleNotFoundError:
     print('GitPython not found')
 
-def csv_init(csv_name=None, controller_name=None)->None:
+def csv_init(csv_name=None, controller_name=None, header_line='#"')->None:
     """ Initializes the CSV file to hold saved data
     :param csv_name: the filename
     :param controller_name: the controller name
+    :param header_line: the header line of comma-separated column names
 
     """
 
@@ -103,6 +104,7 @@ def csv_init(csv_name=None, controller_name=None)->None:
         writer.writerow(['# invalid_steps'])
         writer.writerow(['# frozen'])
         writer.writerow(['# angleD fitted'])
+        writer.writerow(['# predicted next state'])
         writer.writerow(['#'])
         writer.writerow(['#'])
 
@@ -110,7 +112,10 @@ def csv_init(csv_name=None, controller_name=None)->None:
             ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angleD_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
                 'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['target_equilibrium'] + ['positionErr'] + ['angleCmd'] + [
                 'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['latency'] + ['pythonLatency']+ ['controller_steptime'] + ['additionalLatency']
-            + ['invalid_steps'] + ['frozen'] + ['fitted'] + ['angle_raw_sensor'] + ['angleD_raw_sensor'] + ['angleD_fitted'])
+            + ['invalid_steps'] + ['frozen'] + ['fitted'] + ['angle_raw_sensor'] + ['angleD_raw_sensor'] + ['angleD_fitted']+
+            ['predict_angle'] + ['predict_angleD'] + ['predict_angle_cos'] + ['predict_angle_sin'] + ['predict_position_raw'] + ['predict_position'] + [
+                'predict_positionD']
+        )
 
     # TODO: Not sure if we really need to return these two things and if this is efficient implementation
     csvfile = open(csv_filepath, 'a', newline='')
