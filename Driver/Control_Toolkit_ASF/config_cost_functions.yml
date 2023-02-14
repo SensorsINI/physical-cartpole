@@ -42,16 +42,14 @@ CartPole:
 
     # tobi cannot get conditional branch to work for following option in cartpole_dancer_cost.py
 #    distance_norm: 0 # 0=abs, 1=rmse, 2=mse are possible distance metrics
-    terminal_cost_factor: 100e+0 # how much to weight up the terminal state costs compared to the rest of the rollout
-    terminal_safety_cost_factor: 100e+0 # how much to weight up the terminal state costs compared to the rest of the rollout
     stage_cost_factor: 1e0 # how much to weight up the state costs
     track_edge_barrier_cost: 1e9 # how much to penalize cart at edge of track
-    track_length_fraction: 0.95 # fraction of half track length to allow free movement of cart before hitting barrier function
+    track_length_fraction: 0.85 # fraction of half track length to allow free movement of cart before hitting barrier function
 
     # cost weightings for the different state components for following desired cart state trajectory
-    cart_pos_weight: 3e7 # weight on cart pos error
-    pole_angle_weight: 2e6 # weight on difference of angle
-    cart_vel_weight: 1e4 # weight on difference of cart velocity
+    cart_pos_weight: 6e6 # weight on cart pos error
+    pole_angle_weight: 1e6 # weight on difference of angle
+    cart_vel_weight: 0e3 # weight on difference of cart velocity
     pole_swing_weight: 1.5e+4 # cart angle derivative weight
 
     # following weight the control and its change
@@ -71,8 +69,8 @@ CartPole:
     balance_dir: up # 1 or up, -1 or down, multiplied by target_equilibrium
 
     # shimmy does a sinusoidal dance of cart around target position with period in seconds and amplitude in meters
-    shimmy_freq_hz: .1
-    shimmy_amp: .0
+    shimmy_freq_hz: 2.25
+    shimmy_amp: .07
     shimmy_freq2_hz: 2.
     shimmy_amp2: .025
     shimmy_duration: 8. # for shimmy that lasts a finite time and ramps from freq to freq2 and amp to amp2
@@ -80,9 +78,12 @@ CartPole:
 #    shimmy_plot: 0 # to plot the shimmy function
 
     # cartonly only controls cart position, pole is ignored. Trajectory is triangular with amp and per
-    cartonly_amp: 0.1 # amplitude in meters (half of peak to peak of triangle wave)
-    cartonly_freq_hz: .3
+    cartonly_amp: 0.03 # amplitude in meters (half of peak to peak of triangle wave)
+    cartonly_freq_hz: 2.25
     cartonly_duty_cycle: 0.5 # set to .5 for triangle, 0 or 1 for sawtooth
+
+    # cartwheel, turn around some number of times, ending with balancing
+    cartwheel_cycles: 2 # positive cw, negative ccw
 
     dance_song_file: 'others/Media/Rolling_Stones_Satisfaction.mp3' # no spaces or special chars, no / . - etc....
     dance_csv_file: 'Control_Toolkit_ASF/Cost_Functions/CartPole/cartpole_dance-satisfaction.csv'

@@ -1,15 +1,13 @@
-
+""" Controls compilation of tensorflow python code """
 from Control_Toolkit.others.get_logger import get_logger
 log=get_logger(__name__)
-
 
 ### Choose whether to run TensorFlow in eager mode (slow, interpreted) or graph mode (fast, compiled)
 # Set `USE_TENSORFLOW_EAGER_MODE=False` to:
 # 1. decorate functions in optimizers and predictors with `@tf.function`.
 # 2. and thereby enable TensorFlow graph mode. This is orders of magnitude faster than the standard eager mode.
 # Use USE_TENSORFLOW_EAGER_MODE=True to enable debugging
-USE_TENSORFLOW_EAGER_MODE = False
-
+USE_TENSORFLOW_EAGER_MODE = False # True for debugging, False to compile
 
 ### Choose whether to use TensorFlow Accelerated Linear Algebra (XLA).
 # XLA uses machine-specific conversions to speed up the compiled TensorFlow graph.
