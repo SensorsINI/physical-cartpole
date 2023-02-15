@@ -38,7 +38,7 @@ CartPole:
     # e.g. dance0 will create (in update_attributes call) policy='dance' and policy_number=0
     # this hack is to allow branching in XLA code that lacks string compare operator
     # see others\globals_and_utilities.py\update_attributes method
-    policy:  dance0  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4
+    policy:  shimmy3  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4
 
     # tobi cannot get conditional branch to work for following option in cartpole_dancer_cost.py
 #    distance_norm: 0 # 0=abs, 1=rmse, 2=mse are possible distance metrics
@@ -50,7 +50,7 @@ CartPole:
     cart_pos_weight: 1e7 # weight on cart pos error
     pole_angle_weight: 1e6 # weight on difference of angle
     cart_vel_weight: 1e3 # weight on difference of cart velocity
-    pole_swing_weight: 1.5e+4 # cart angle derivative weight
+    pole_swing_weight: 2e+4 # cart angle derivative weight
 
     # following weight the control and its change
     control_cost_weight: 1e3 # cost of control
@@ -67,7 +67,7 @@ CartPole:
 
     # shimmy does a sinusoidal dance of cart around target position with period in seconds and amplitude in meters
     shimmy_freq_hz: 2.25
-    shimmy_amp: .1
+    shimmy_amp: .01
     shimmy_freq2_hz: 2.
     shimmy_amp2: .025
     shimmy_duration: 8. # for shimmy that lasts a finite time and ramps from freq to freq2 and amp to amp2
