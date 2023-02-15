@@ -2,6 +2,7 @@
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
 import time
+import atexit
 
 import os
 from typing import Tuple
@@ -237,6 +238,8 @@ class PhysicalCartPoleDriver:
 
         self.InterfaceInstance.stream_output(True)  # now start streaming state
 
+        atexit.register(self.switch_off_motor)
+
     def run_experiment(self):
 
         while not self.terminate_experiment:
@@ -327,7 +330,7 @@ class PhysicalCartPoleDriver:
     def quit_experiment(self):
         print('turning off motor and shutting down interfaces to cartpole and other peripherals')
         # when q/ESC hit during loop or other loop exit
-        self.InterfaceInstance.set_motor(0)  # turn off motor
+        self.switch_off_motor()
         self.InterfaceInstance.close()
         joystick.quit()
 
@@ -624,18 +627,26 @@ class PhysicalCartPoleDriver:
             pass
         print("***********************************")
 
+    def switch_off_motor(self):
+        if self.InterfaceInstance:
+            try:
+                self.InterfaceInstance.set_motor(0)
+                log.info('switched off motor')
+            except AttributeError:
+                pass
+
     def switch_off_control(self):
-        print('off')
+        print('control turned off')
         self.controlEnabled = False
         self.Q = 0
-        self.InterfaceInstance.set_motor(0)
+        self.switch_off_motor()
         if self.controller.controller_name == 'mppi-tf':
             self.controller.controller_report()
         self.controller.controller_reset()
         self.danceEnabled = False
 
     def switch_on_control(self):
-        print('on')
+        print('control turned on')
         self.controlEnabled = True
         self.manualMotorSetting = False
         self.returnToCenter=False
