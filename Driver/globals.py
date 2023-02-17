@@ -26,19 +26,19 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'mppi'  # e.g. 'rpgd-tf', 'mppi'
+OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
     CONTROL_PERIOD_MS = 8
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 22  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'ORIGINAL'  # choose 'POLOLU' or 'ORIGINAL'
+MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
 MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'PID' else True  # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
