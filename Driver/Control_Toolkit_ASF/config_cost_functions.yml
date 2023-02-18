@@ -38,22 +38,22 @@ CartPole:
     # e.g. dance0 will create (in update_attributes call) policy='dance' and policy_number=0
     # this hack is to allow branching in XLA code that lacks string compare operator
     # see others\globals_and_utilities.py\update_attributes method
-    policy:  shimmy3  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4
+    policy:  cartwheel5  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4 cartwheel5
 
     # tobi cannot get conditional branch to work for following option in cartpole_dancer_cost.py
 #    distance_norm: 0 # 0=abs, 1=rmse, 2=mse are possible distance metrics
     stage_cost_factor: 1e0 # how much to weight up the state costs
     track_edge_barrier_cost: 1e9 # how much to penalize cart at edge of track
-    track_length_fraction: 0.85 # fraction of half track length to allow free movement of cart before hitting barrier function
+    track_length_fraction: 0.8 # fraction of half track length to allow free movement of cart before hitting barrier function
 
     # cost weightings for the different state components for following desired cart state trajectory
     cart_pos_weight: 1e7 # weight on cart pos error
-    pole_angle_weight: 1e6 # weight on difference of angle
+    pole_angle_weight: 2e6 # weight on difference of angle
     cart_vel_weight: 1e3 # weight on difference of cart velocity
-    pole_swing_weight: 2e+4 # cart angle derivative weight
+    pole_swing_weight: 4e+4 # cart angle derivative weight
 
     # following weight the control and its change
-    control_cost_weight: 1e3 # cost of control
+    control_cost_weight: 1e1 # cost of control
     control_cost_change_weight: 1e0 # cost of changing control
 
     # spin
@@ -66,8 +66,8 @@ CartPole:
     balance_dir: up # 1 or up, -1 or down, multiplied by target_equilibrium
 
     # shimmy does a sinusoidal dance of cart around target position with period in seconds and amplitude in meters
-    shimmy_freq_hz: 2.25
-    shimmy_amp: .01
+    shimmy_freq_hz: 1.125
+    shimmy_amp: .1
     shimmy_freq2_hz: 2.
     shimmy_amp2: .025
     shimmy_duration: 8. # for shimmy that lasts a finite time and ramps from freq to freq2 and amp to amp2
@@ -79,8 +79,14 @@ CartPole:
     cartonly_freq_hz: 2.25
     cartonly_duty_cycle: 0.5 # set to .5 for triangle, 0 or 1 for sawtooth
 
-    # cartwheel, turn around some number of times, ending with balancing
-    cartwheel_cycles: 2 # positive cw, negative ccw
+    # cartwheel
+    cartwheel_cycles: +3 # positive cw, negative ccw
+    cartwheel_balance_angle_limit_deg: 10.0
+    cartwheel_balance_angled_limit_deg_per_sec: 30.0
+    cartwheel_freefall_angle_limit_deg: 20.
+    cartwheel_freefall_angled_limit_deg_per_sec: 30.
+    cartwheel_freefall_to_after_angle_limit_deg: 60.
+#    cartwheel_target_duration_s: 1.1
 
     dance_song_file: 'others/Media/Rolling_Stones_Satisfaction.mp3' # no spaces or special chars, no / . - etc....
     dance_csv_file: 'Control_Toolkit_ASF/Cost_Functions/CartPole/cartpole_dance-satisfaction.csv'
