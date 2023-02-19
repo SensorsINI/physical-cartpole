@@ -236,6 +236,18 @@ class PhysicalCartPoleDriver:
         self.lastTime = 0 # set to zero at start of execution
         self.lastControlTime = self.startTime
 
+        last_calibration_time=prefs.get('last_calibration_time',0)
+        if last_calibration_time==0 or self.startTime-last_calibration_time>6*3600:
+
+            if last_calibration_time==0:
+                    log.warning(f'the cart position has never been calibrated, use \'K\' to perform cart calibration to find center position')
+                    time.sleep(2.)
+            else:
+                dthours=(self.startTime - last_calibration_time)/3600.
+                if dthours>3:
+                    log.warning(f'The cart position has not been calibrated in {dthours:.1f} hours; use \'K\' to perform cart calibration to find center position')
+                    time.sleep(2.)
+
         self.InterfaceInstance.stream_output(True)  # now start streaming state
 
         atexit.register(self.switch_off_motor)
@@ -435,6 +447,7 @@ class PhysicalCartPoleDriver:
                 self.InterfaceInstance.calibrate()
                 (_, _, self.position_offset, _, _, _, _) = self.InterfaceInstance.read_state()
                 print("Done calibrating")
+                prefs.put('last_calibration_time', time.time())
 
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
