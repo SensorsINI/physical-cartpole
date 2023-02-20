@@ -261,7 +261,7 @@ class PhysicalCartPoleDriver:
     def experiment_sequence(self):
 
         self.keyboard_input()
-        # self.controlEnabled=True # TODO DEBUG hack since debugger hangs on any keyboard input
+        self.controlEnabled=True # TODO DEBUG hack since debugger hangs on any keyboard input
 
         self.get_state_and_time_measurement()
 
