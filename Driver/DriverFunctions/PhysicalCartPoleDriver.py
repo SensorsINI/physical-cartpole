@@ -47,7 +47,8 @@ import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
 from Control_Toolkit.others.get_logger import get_logger
-log = get_logger(__name__)
+
+log = get_logger(__name__) # just before loop starts in run_experiment we remove all existing handlers and add PhysicalCartpoleLoggingFormatter as a new formatter for a new handler
 
 
 @jit(nopython=False, cache=True, fastmath=True)
@@ -74,6 +75,7 @@ class PhysicalCartPoleDriver:
         # Console Printing
         self.printCount = 0
         self.new_console_output = True
+        """ set new_console_output True before printing anytime you want to show some console output during runtime"""
 
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
@@ -83,6 +85,7 @@ class PhysicalCartPoleDriver:
         self.wasControlEnabledBeforeReturnToCenter = False # flag to resume control after return to center
 
         self.safety_switch_counter = 0
+        self.loop_counter=0
 
         # CSV Logging
         self.loggingEnabled = False
@@ -249,10 +252,17 @@ class PhysicalCartPoleDriver:
                     time.sleep(2.)
 
         self.InterfaceInstance.stream_output(True)  # now start streaming state
-
         atexit.register(self.switch_off_motor)
 
     def run_experiment(self):
+
+        # remove all handlers and then add our special handler to log to console
+        log.handlers.clear()
+        ch = logging.StreamHandler()
+        ch.setFormatter(PhysicalCartpoleLoggingFormatter())
+        log.addHandler(ch)
+
+        print('\033[2J', end='') # clear whole screen and move to top left
 
         while not self.terminate_experiment:
             self.experiment_sequence()
@@ -260,8 +270,13 @@ class PhysicalCartPoleDriver:
 
     def experiment_sequence(self):
 
+        self.loop_counter+=1
+
+        # debug logger
+        if self.loop_counter%300==0:
+            log.info(f'loop counter = {self.loop_counter}') # TODO remove debug
         self.keyboard_input()
-        self.controlEnabled=True # TODO DEBUG hack since debugger hangs on any keyboard input
+        # self.controlEnabled=True # DEBUG hack since debugger hangs on any keyboard input
 
         self.get_state_and_time_measurement()
 
@@ -299,6 +314,7 @@ class PhysicalCartPoleDriver:
         elif self.returnToCenter:
             (done,self.Q)=self.compute_Q_to_center_cart()
             if done: # returns True when done centering
+                self.new_console_output=True
                 log.info(f'done returning to center, turning off motor and starting control; pos={self.s[POSITION_IDX] * 100:.3f}cm')
                 self.returnToCenter=False
                 self.InterfaceInstance.set_motor(0)
@@ -356,7 +372,7 @@ class PhysicalCartPoleDriver:
         pos_target_limit=0.8*TRACK_LENGTH/2
 
         if self.kbAvailable & self.kb.kbhit():
-            self.new_console_output = True
+            self.new_console_output = True # to allow showing the command response
 
             c = self.kb.getch()
             try:
@@ -384,12 +400,14 @@ class PhysicalCartPoleDriver:
 
             elif c=='C': # switch off control and return to center position mode with constant cart speed
                 if not self.returnToCenter:
+                    self.new_console_output=True
                     log.info('started returning to center...')
                     self.wasControlEnabledBeforeReturnToCenter=self.controlEnabled
                     self.controlEnabled=False
                     self.returnToCenter=True # will call self.center_cart() in control loop experiment_sequence()
                     self.manualMotorSetting=False
                 else:
+                    self.new_console_output=True
                     log.info('stopped returning to center')
                     self.controlEnabled = False
                     self.returnToCenter = False
@@ -644,6 +662,7 @@ class PhysicalCartPoleDriver:
         if self.InterfaceInstance:
             try:
                 self.InterfaceInstance.set_motor(0)
+                self.new_console_output=True
                 log.info('switched off motor')
             except AttributeError:
                 pass
@@ -1025,11 +1044,17 @@ class PhysicalCartPoleDriver:
         if self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
-            if True and not self.new_console_output:
-                print('\033[5A\033[K', end='')
+            if (not self.new_console_output): # TODO cryptic for tobi
+                # print('\033[2J', end='') # clear whole screen and move to top left
+                print('\033[1;1H', end='') # move to top left
+                # print('\033[6A\033[K', end='') # 5A is cursor up 5 lines, then -033[K clears to end of this line. The number of lines should match the number of lprint( below
             self.new_console_output = False
 
-            print('\r\033[K')
+            # lprint()
+
+            # cartpole trajectory controller and dancer
+            if self.controlEnabled:
+                lprint(self.controller.cartpole_trajectory_generator.last_status_text) # TODO add status of dancer here
 
             ############  Mode  ############
             if self.controlEnabled:
@@ -1039,13 +1064,14 @@ class PhysicalCartPoleDriver:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
                 mode = 'CONTROLLER:   Firmware'
-            print("\r" + mode +  '\033[K')
+            lprint(mode)
 
             ############  Mode  ############
-            print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
+            if not self.current_measure.is_idle():
+                lprint(f'MEASUREMENT: {self.current_measure}')
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
+            lprint("STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
@@ -1061,7 +1087,7 @@ class PhysicalCartPoleDriver:
 
             ############  Timing  ############
             if self.total_iterations > 10 and self.controlled_iterations > 10:
-                print("\rTIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%\033[K"
+                lprint("TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%"
                     .format(
                         self.delta_time_buffer.mean() * 1000,
                         self.delta_time_buffer.std() * 1000,
@@ -1081,7 +1107,7 @@ class PhysicalCartPoleDriver:
                     )
                 )
             else:
-                print('\033[K')
+                lprint()
 
             ############  Performance  ############
             #if self.total_iterations > 10:
@@ -1095,4 +1121,49 @@ class PhysicalCartPoleDriver:
             #print("\rCOST: dd:{}, ep:{}, ekp:{}, ekc:{}, cc:{}, ccrc:{}\033[K".format(
             #    gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
             #))
+
+def lprint(str=''):
+    """ Prints the str with carriage return before rest of line erased after printing out str
+    :param str: the string to print
+    """
+    if str is None:
+        str=''
+    print("\r" + str + '\033[K') #-  \033[K - Erase to end of line; \r - return to start of line
+
+
+
+class PhysicalCartpoleLoggingFormatter(logging.Formatter):
+    """Logging Formatter to add colors and count warning / errors"""
+    # see https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output/7995762#7995762
+
+    grey = "\x1b[38;21m"
+    yellow = "\x1b[33;21m"
+    cyan = "\x1b[1;36m" #
+    green = "\x1b[31;21m" # dark green
+    red = "\x1b[31;21m"
+    bold_red = "\x1b[31;1m"
+    light_blue = "\x1b[1;36m"
+    blue = "\x1b[1;34m"
+    reset = "\x1b[0m"
+    cr='\r'
+    clear_to_eol= '\033[K'
+    clear_to_eos= '\033[0J'
+    # File "{file}", line {max(line, 1)}'.replace("\\", "/")
+    format = '[%(levelname)s]: %(name)s - %(message)s at line %(lineno)d in %(funcName)s'
+
+    FORMATS = {
+        logging.DEBUG: cr + grey + format + reset + clear_to_eol+ clear_to_eos,
+        logging.INFO: cr + cyan + format + reset + clear_to_eol+ clear_to_eos,
+        logging.WARNING: cr + red + format + reset + clear_to_eol+ clear_to_eos,
+        logging.ERROR: cr + bold_red + format + reset + clear_to_eol+ clear_to_eos,
+        logging.CRITICAL: cr + bold_red + format + reset + clear_to_eol+ clear_to_eos
+    }
+
+    def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
+        super().__init__(fmt, datefmt, style, validate)
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
 
