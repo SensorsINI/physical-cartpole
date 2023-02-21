@@ -46,7 +46,7 @@ prefs=MyPreferences()
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-from Control_Toolkit.others.get_logger import get_logger
+from Control_Toolkit.others.get_logger import get_logger, CustomFormatter
 
 log = get_logger(__name__) # just before loop starts in run_experiment we remove all existing handlers and add PhysicalCartpoleLoggingFormatter as a new formatter for a new handler
 
@@ -273,8 +273,9 @@ class PhysicalCartPoleDriver:
         self.loop_counter+=1
 
         # debug logger
-        if self.loop_counter%300==0:
-            log.info(f'loop counter = {self.loop_counter}') # TODO remove debug
+        # if self.loop_counter%300==0:
+        #     log.debug(f'loop counter = {self.loop_counter}') # TODO remove debug
+
         self.keyboard_input()
         # self.controlEnabled=True # DEBUG hack since debugger hangs on any keyboard input
 
@@ -1132,31 +1133,22 @@ def lprint(str=''):
 
 
 
-class PhysicalCartpoleLoggingFormatter(logging.Formatter):
+class PhysicalCartpoleLoggingFormatter(CustomFormatter):
     """Logging Formatter to add colors and count warning / errors"""
     # see https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output/7995762#7995762
 
-    grey = "\x1b[38;21m"
-    yellow = "\x1b[33;21m"
-    cyan = "\x1b[1;36m" #
-    green = "\x1b[31;21m" # dark green
-    red = "\x1b[31;21m"
-    bold_red = "\x1b[31;1m"
-    light_blue = "\x1b[1;36m"
-    blue = "\x1b[1;34m"
-    reset = "\x1b[0m"
     cr='\r'
     clear_to_eol= '\033[K'
     clear_to_eos= '\033[0J'
     # File "{file}", line {max(line, 1)}'.replace("\\", "/")
-    format = '[%(levelname)s]: %(name)s - %(message)s at line %(lineno)d in %(funcName)s'
+    physical_cartpole_formatter = '[%(levelname)s]: %(name)s - %(message)s at line %(lineno)d in %(filename)s %(funcName)s'
 
     FORMATS = {
-        logging.DEBUG: cr + grey + format + reset + clear_to_eol+ clear_to_eos,
-        logging.INFO: cr + cyan + format + reset + clear_to_eol+ clear_to_eos,
-        logging.WARNING: cr + red + format + reset + clear_to_eol+ clear_to_eos,
-        logging.ERROR: cr + bold_red + format + reset + clear_to_eol+ clear_to_eos,
-        logging.CRITICAL: cr + bold_red + format + reset + clear_to_eol+ clear_to_eos
+        logging.DEBUG: cr + CustomFormatter.grey + physical_cartpole_formatter + CustomFormatter.reset + clear_to_eol+ clear_to_eos,
+        logging.INFO: cr + CustomFormatter.cyan + physical_cartpole_formatter + CustomFormatter.reset + clear_to_eol+ clear_to_eos,
+        logging.WARNING: cr + CustomFormatter.red + physical_cartpole_formatter + CustomFormatter.reset + clear_to_eol+ clear_to_eos,
+        logging.ERROR: cr + CustomFormatter.bold_red + physical_cartpole_formatter + CustomFormatter.reset + clear_to_eol+ clear_to_eos,
+        logging.CRITICAL: cr + CustomFormatter.bold_red + physical_cartpole_formatter + CustomFormatter.reset + clear_to_eol+ clear_to_eos
     }
 
     def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
