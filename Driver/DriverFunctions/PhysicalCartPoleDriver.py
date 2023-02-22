@@ -262,7 +262,9 @@ class PhysicalCartPoleDriver:
         ch.setFormatter(PhysicalCartpoleLoggingFormatter())
         log.addHandler(ch)
 
-        print('\033[2J', end='') # clear whole screen and move to top left
+        print('starting main loop now...')
+        # see ansi escape codes https://en.wikipedia.org/wiki/ANSI_escape_code
+        print('\033[2J') # clear whole screen and move to top left
 
         while not self.terminate_experiment:
             self.experiment_sequence()
@@ -1042,16 +1044,16 @@ class PhysicalCartPoleDriver:
             performance_measurement_buffer = np.append(performance_measurement_buffer, np.expand_dims(performance_measurement, axis=1), axis=1)
             performance_measurement_buffer = performance_measurement_buffer[:, -PRINT_AVERAGING_LENGTH:]
 
-        if self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
+        if self.total_iterations<2 or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
-            if (not self.new_console_output): # TODO cryptic for tobi
+            if (not self.new_console_output): # if no new console output from above, then move to top left, but don't clear screen because there might be logging output between these status reports
                 # print('\033[2J', end='') # clear whole screen and move to top left
                 print('\033[1;1H', end='') # move to top left
                 # print('\033[6A\033[K', end='') # 5A is cursor up 5 lines, then -033[K clears to end of this line. The number of lines should match the number of lprint( below
             self.new_console_output = False
 
-            # lprint()
+            lprint()
 
             # cartpole trajectory controller and dancer
             if self.controlEnabled:
@@ -1134,12 +1136,12 @@ def lprint(str=''):
 
 
 class PhysicalCartpoleLoggingFormatter(CustomFormatter):
-    """Logging Formatter to add colors and count warning / errors"""
+    """Logging Formatter to add colors and customized for physical-cartpole to append to the existing status output"""
     # see https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output/7995762#7995762
 
-    cr='\r'
-    clear_to_eol= '\033[K'
-    clear_to_eos= '\033[0J'
+    cr='\r' # carriage return to start of line
+    clear_to_eol= '\033[K' # clear rest of line
+    clear_to_eos= '\033[0J' # clears to end of screen
     # File "{file}", line {max(line, 1)}'.replace("\\", "/")
     physical_cartpole_formatter = '[%(levelname)s]: %(name)s - %(message)s at line %(lineno)d in %(filename)s %(funcName)s'
 
