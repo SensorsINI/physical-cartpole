@@ -214,7 +214,7 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
 
-        log.info('\n Opened ' + str(SERIAL_PORT) + ' successfully')
+        log.info('Opened ' + str(SERIAL_PORT) + ' successfully')
 
         self.stick, self.joystickMode = setup_joystick()
 
