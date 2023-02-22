@@ -38,7 +38,7 @@ CartPole:
     # e.g. dance0 will create (in update_attributes call) policy='dance' and policy_number=0
     # this hack is to allow branching in XLA code that lacks string compare operator
     # see others\globals_and_utilities.py\update_attributes method
-    policy:  dance0  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4 cartwheel5
+    policy:  toandfro6  # dance0 (follow csv file)   balance1 spin2 shimmy3 cartonly4 cartwheel5 toandfro6
 
     # tobi cannot get conditional branch to work for following option in cartpole_dancer_cost.py
 #    distance_norm: 0 # 0=abs, 1=rmse, 2=mse are possible distance metrics
@@ -79,8 +79,8 @@ CartPole:
     cartonly_freq_hz: 1.125
     cartonly_duty_cycle: 0.5 # set to .5 for triangle, 0 or 1 for sawtooth
 
-    # cartwheel
-    cartwheel_cycles: +5 # positive cw, negative ccw
+    # cartwheel and toandfro steps.
+    cartwheel_cycles: +2 # positive cw, negative ccw. For toandfro, must be >2 to do complete back and forth steps
     cartwheel_balance_angle_limit_deg: 10.0
     cartwheel_balance_angled_limit_deg_per_sec: 30.0
     cartwheel_freefall_angle_limit_deg: 20.
