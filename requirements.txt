@@ -16,7 +16,7 @@ gymnasium
 tqdm
 torch
 tensorboard_plugin_profile
-tensorflow==2.9.1
+tensorflow==2.11.*
 seaborn
 do-mpc==4.1.1
 pypref # https://bachiraoun.github.io/pypref/

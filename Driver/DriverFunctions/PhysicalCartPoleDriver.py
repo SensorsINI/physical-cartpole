@@ -221,7 +221,7 @@ class PhysicalCartPoleDriver:
         try:
             self.controller.loadparams()
         except AttributeError:
-            print('loadparams not defined for this self.controller')
+            log.info('loadparams not defined for this self.controller')
 
         time.sleep(1)
 
@@ -231,7 +231,7 @@ class PhysicalCartPoleDriver:
         try:
             self.controller.printparams()
         except AttributeError:
-            print('printparams not implemented for this self.controller.')
+            log.info('printparams not implemented for this self.controller.')
 
         self.print_keyboard_help()
 

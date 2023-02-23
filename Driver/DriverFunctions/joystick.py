@@ -3,6 +3,8 @@ import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 from globals import JOYSTICK_POSITION_KP, TRACK_LENGTH
+from Control_Toolkit.others.get_logger import get_logger
+log = get_logger()
 
 
 def setup_joystick():
@@ -14,11 +16,11 @@ def setup_joystick():
         axisNum = stick.get_numaxes()
         buttonNum = stick.get_numbuttons()
         joystickMode = 'not active'  # toggles to 'position' with 'j' key
-        print('joystick found with ' + str(axisNum) + ' axes and ' + str(buttonNum) + ' buttons')
+        log.info('joystick found with ' + str(axisNum) + ' axes and ' + str(buttonNum) + ' buttons')
     else:
         stick = None
         joystickMode = None
-        print('no joystick found')
+        log.info('no joystick found')
 
     return stick, joystickMode
 
