@@ -10,8 +10,8 @@ cem-tf:
   warmup_iterations: 250
 cem-gmm-tf:
   seed: null                          # If null, random seed based on datetime is used
-  mpc_horizon: 40                       # steps
-  cem_outer_it: 2                    #how many outer iterations to use
+  mpc_horizon: 35                       # steps
+  cem_outer_it: 3                    #how many outer iterations to use
   num_rollouts: 200          #how many rollouts per outer cem iteration
   cem_stdev_min: 0.01
   cem_initial_action_stdev: 0.5
@@ -28,7 +28,7 @@ cem-naive-grad-tf:
   gradmax_clip: 10
 cem-grad-bharadhwaj-tf:
   seed: null                          # If null, random seed based on datetime is used
-  mpc_horizon: 50                       # steps
+  mpc_horizon: 35                       # steps
   learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
@@ -92,7 +92,7 @@ rpgd-tf:
   seed: null                            # If null, random seed based on datetime is used
   mpc_horizon: 40                       # steps
   SAMPLING_DISTRIBUTION: normal  # "normal" or "uniform"
-  period_interpolation_inducing_points: 10                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
+  period_interpolation_inducing_points: 5                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.05
   adam_beta_1: 0.9
   adam_beta_2: 0.999
@@ -101,7 +101,7 @@ rpgd-tf:
   rtol: 1.0e-3
   num_rollouts: 32
   opt_keep_k_ratio: 0.25
-  outer_its: 7
+  outer_its: 5
   resamp_per: 10
   sample_stdev: 0.5
   sample_mean: 0.0
@@ -147,7 +147,7 @@ rpgd-me-param-tf:
   warmup_iterations: 250
 rpgd-ml-tf:
   seed: null                            # If null, random seed based on datetime is used
-  mpc_horizon: 40                       # steps
+  mpc_horizon: 35                       # steps
   SAMPLING_DISTRIBUTION: uniform  # "normal" or "uniform"
   period_interpolation_inducing_points: 1                #interpolation stepsize when sampling, a random point is chosen every period_interpolation_inducing_points and horizon points in between are linearly interpolated
   learning_rate: 0.01
@@ -210,4 +210,4 @@ mppi:
 random-action-tf:
   seed: null                          # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
   mpc_horizon: 35                      # steps
-  num_rollouts: 320
+  num_rollouts: 640
