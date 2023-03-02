@@ -181,6 +181,8 @@ class PhysicalCartPoleDriver:
 
         self.demo_program = DEMO_PROGRAM
 
+        self.target_position = self.CartPoleInstance.target_position = -0.05
+
     def run(self):
         self.setup()
         self.run_experiment()
@@ -235,6 +237,9 @@ class PhysicalCartPoleDriver:
         self.keyboard_input()
 
         self.get_state_and_time_measurement()
+
+        if self.timer_control-time.time() >= 5.0:
+            self.target_position = self.CartPoleInstance.target_position = 0.05
 
         if self.demo_program and self.controlEnabled:
             self.danceEnabled = True
