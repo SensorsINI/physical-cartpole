@@ -68,6 +68,7 @@ class PhysicalCartPoleDriver:
         self.new_console_output = True
 
         self.controlEnabled = AUTOSTART
+        self.timer_control = None
         self.firmwareControl = False
         self.manualMotorSetting = False
         self.terminate_experiment = False
@@ -314,16 +315,19 @@ class PhysicalCartPoleDriver:
             ##### Manual Motor Movement #####
             if c == '.':  # zero motor
                 self.controlEnabled = False
+                self.timer_control = None
                 self.Q = 0
                 self.manualMotorSetting = False
                 print('\nNormed motor command after .', self.Q)
             elif c == ',':  # left
                 self.controlEnabled = False
+                self.timer_control = None
                 self.Q -= 0.01
                 self.manualMotorSetting = True
                 print('\nNormed motor command after ,', self.Q)
             elif c == '/':  # right
                 self.controlEnabled = False
+                self.timer_control = None
                 self.Q += 0.01
                 self.manualMotorSetting = True
                 print('\nNormed motor command after /', self.Q)
@@ -373,6 +377,7 @@ class PhysicalCartPoleDriver:
             elif c == 'K':
                 global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
                 self.controlEnabled = False
+                self.timer_control = None
 
                 print("\nCalibrating motor position.... ")
                 self.InterfaceInstance.calibrate()
@@ -535,6 +540,7 @@ class PhysicalCartPoleDriver:
     def switch_off_control(self):
         print('off')
         self.controlEnabled = False
+        self.timer_control = None
         self.Q = 0
         self.InterfaceInstance.set_motor(0)
         if self.controller.controller_name == 'mppi-tf':
@@ -545,6 +551,7 @@ class PhysicalCartPoleDriver:
     def switch_on_control(self):
         print('on')
         self.controlEnabled = True
+        self.timer_control = time.time()
         self.delta_time_buffer = np.zeros((0))
         self.firmware_latency_buffer = np.zeros((0))
         self.python_latency_buffer = np.zeros((0))
@@ -758,6 +765,7 @@ class PhysicalCartPoleDriver:
                 self.safety_switch_counter = 0
                 print('\nSafety Switch.')
                 self.controlEnabled = False
+                self.timer_control = None
                 self.InterfaceInstance.set_motor(0)
                 self.new_console_output = 1
 
