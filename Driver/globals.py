@@ -38,7 +38,7 @@ AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'ORIGINAL'  # choose 'POLOLU' or 'ORIGINAL'
+MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
 MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'PID' else True  # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
