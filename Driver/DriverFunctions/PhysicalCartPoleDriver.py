@@ -238,8 +238,9 @@ class PhysicalCartPoleDriver:
 
         self.get_state_and_time_measurement()
 
-        if self.timer_control-time.time() >= 5.0:
-            self.target_position = self.CartPoleInstance.target_position = 0.05
+        if self.timer_control:
+            if self.timer_control-time.time() >= 5.0:
+                self.target_position = self.CartPoleInstance.target_position = 0.05
 
         if self.demo_program and self.controlEnabled:
             self.danceEnabled = True
