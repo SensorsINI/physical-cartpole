@@ -145,12 +145,12 @@ def motor_calibration(FILE_NAME):
     gb_pos = data_pos.groupby(['motor_input'], as_index=False)
     data_stat_pos = gb_pos.size().reset_index(drop=True)
     data_stat_pos['v_max'] = gb_pos['positionD_smoothed'].max()['positionD_smoothed']
-    data_stat_pos = data_stat_pos[(data_stat_pos['motor_input'] > 0) & (data_stat_pos['size'] > 40) & (data_stat_pos['v_max'] > 0)]
+    data_stat_pos = data_stat_pos[(data_stat_pos['motor_input'] > 0) & (data_stat_pos['size'] > 10) & (data_stat_pos['v_max'] > 0)]
 
     gb_neg = data_neg.groupby(['motor_input'], as_index=False)
     data_stat_neg = gb_neg.size().reset_index(drop=True)
     data_stat_neg['v_max'] = gb_neg['positionD_smoothed'].min()['positionD_smoothed']
-    data_stat_neg = data_stat_neg[(data_stat_neg['motor_input'] < 0) & (data_stat_neg['size'] > 40) & (data_stat_neg['v_max'] < 0)]
+    data_stat_neg = data_stat_neg[(data_stat_neg['motor_input'] < 0) & (data_stat_neg['size'] > 10) & (data_stat_neg['v_max'] < 0)]
 
     motor_input_pos = data_stat_pos['motor_input'].to_numpy()
     v_sat_pos = data_stat_pos['v_max'].to_numpy()
