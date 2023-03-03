@@ -11,14 +11,12 @@ CartPole:
     ccrc_weight: 1.0
     R: 1.0                                # How much to punish Q, For MPPI YOU have to make sure that this is the same as in optimizer config, as it plays a special role in the optimization algorithm as well as is used in cost functions!
   quadratic_boundary_grad:
-    dd_weight: 1.0
-    dd_terminal_weight: 5000.0
-    ep_weight: 5.0
-    ep_terminal_weight: 500.0
-    admissible_angle: 30.0
-    ekp_weight: 10.0
-    cc_weight: 1.0
+    dd_weight: 1000.0
+    ep_weight: 8000.0
+    ekp_weight: 90.0
+    cc_weight: 0.0
     ccrc_weight: 1.0
+    admissible_angle: 10.0
     discount_factor: 0.99
     R: 1.0                                # How much to punish Q, For MPPI YOU have to make sure that this is the same as in optimizer config, as it plays a special role in the optimization algorithm as well as is used in cost functions!
   quadratic_boundary_nonconvex:

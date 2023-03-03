@@ -100,8 +100,8 @@ rpgd-tf:
   gradmax_clip: 5
   rtol: 1.0e-3
   num_rollouts: 32
-  opt_keep_k_ratio: 0.25
-  outer_its: 5
+  opt_keep_k_ratio: 0.75
+  outer_its: 4
   resamp_per: 10
   sample_stdev: 0.5
   sample_mean: 0.0
@@ -203,7 +203,7 @@ mppi-var-tf:
 mppi:
   seed: null                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
   mpc_horizon: 35                       # steps
-  num_rollouts: 3500                    # Number of Monte Carlo samples
+  num_rollouts: 5500                    # Number of Monte Carlo samples
   cc_weight: 1.0
   R: 1.0                                # How much to punish Q, For MPPI YOU have to make sure that this is the same as in cost functions config, as it plays a special role in the optimization algorithm as well as is used in cost functions!
   LBD: 100.0                            # Cost parameter lambda
