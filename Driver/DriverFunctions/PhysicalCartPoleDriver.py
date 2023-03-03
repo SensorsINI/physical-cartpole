@@ -68,6 +68,7 @@ class PhysicalCartPoleDriver:
         self.new_console_output = True
 
         self.controlEnabled = AUTOSTART
+        self.timer_control = None
         self.firmwareControl = False
         self.manualMotorSetting = False
         self.terminate_experiment = False
@@ -235,6 +236,14 @@ class PhysicalCartPoleDriver:
 
         self.get_state_and_time_measurement()
 
+        if self.timer_control:
+            if (time.time()-self.timer_control) >= 6.0:
+                self.target_position = self.CartPoleInstance.target_position = 0.1
+            else:
+                self.target_position = self.CartPoleInstance.target_position = -0.1
+        else:
+            self.target_position = self.CartPoleInstance.target_position = -0.1
+
         if self.demo_program and self.controlEnabled:
             self.danceEnabled = True
             if self.timeNow - self.time_last_switch > 8:
@@ -314,16 +323,19 @@ class PhysicalCartPoleDriver:
             ##### Manual Motor Movement #####
             if c == '.':  # zero motor
                 self.controlEnabled = False
+                self.timer_control = None
                 self.Q = 0
                 self.manualMotorSetting = False
                 print('\nNormed motor command after .', self.Q)
             elif c == ',':  # left
                 self.controlEnabled = False
+                self.timer_control = None
                 self.Q -= 0.01
                 self.manualMotorSetting = True
                 print('\nNormed motor command after ,', self.Q)
             elif c == '/':  # right
                 self.controlEnabled = False
+                self.timer_control = None
                 self.Q += 0.01
                 self.manualMotorSetting = True
                 print('\nNormed motor command after /', self.Q)
@@ -373,6 +385,7 @@ class PhysicalCartPoleDriver:
             elif c == 'K':
                 global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
                 self.controlEnabled = False
+                self.timer_control = None
 
                 print("\nCalibrating motor position.... ")
                 self.InterfaceInstance.calibrate()
@@ -535,6 +548,7 @@ class PhysicalCartPoleDriver:
     def switch_off_control(self):
         print('off')
         self.controlEnabled = False
+        self.timer_control = None
         self.Q = 0
         self.InterfaceInstance.set_motor(0)
         if self.controller.controller_name == 'mppi-tf':
@@ -544,7 +558,14 @@ class PhysicalCartPoleDriver:
 
     def switch_on_control(self):
         print('on')
+
+        self.loggingEnabled = not self.loggingEnabled
+        print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
+        if self.loggingEnabled:
+            self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name=self.controller.controller_name)
+
         self.controlEnabled = True
+        self.timer_control = time.time()
         self.delta_time_buffer = np.zeros((0))
         self.firmware_latency_buffer = np.zeros((0))
         self.python_latency_buffer = np.zeros((0))
@@ -679,7 +700,8 @@ class PhysicalCartPoleDriver:
                 self.target_position = POSITION_TARGET + self.danceAmpl * np.sin(
                     2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
             else:
-                self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
+                pass
+                # self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
         
         self.CartPoleInstance.target_position = self.target_position
 
@@ -758,6 +780,7 @@ class PhysicalCartPoleDriver:
                 self.safety_switch_counter = 0
                 print('\nSafety Switch.')
                 self.controlEnabled = False
+                self.timer_control = None
                 self.InterfaceInstance.set_motor(0)
                 self.new_console_output = 1
 

@@ -1,0 +1,59 @@
+/home/marcin/anaconda3/envs/CPP/bin/python /home/marcin/PycharmProjects/physical-cartpole/Driver/control.py
+2023-03-03 05:40:01.550911: E tensorflow/stream_executor/cuda/cuda_driver.cc:271] failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+2023-03-03 05:40:01.550937: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:169] retrieving CUDA diagnostic information for host: ZULIA
+2023-03-03 05:40:01.550943: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:176] hostname: ZULIA
+2023-03-03 05:40:01.551026: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:200] libcuda reported version is: 525.78.1
+2023-03-03 05:40:01.551047: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:204] kernel reported version is: 525.78.1
+2023-03-03 05:40:01.551053: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:310] kernel version seems to match DSO: 525.78.1
+2023-03-03 05:40:01.551285: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+kill: (19113): No such process
+TF Devices: [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')]
+TF Device Placement: True
+TF Float Type: float32
+2023-03-03 05:40:02,565 - Control_Toolkit.others.globals_and_utils - INFO - Importing controller from CartPoleSimulation/Control_Toolkit/Controllers/controller_mpc.py (globals_and_utils.py:150)
+2023-03-03 05:40:02,605 - Control_Toolkit.Controllers - INFO - Found library tensorflow for MPC controller. (__init__.py:56)
+2023-03-03 05:40:02,607 - CartPoleSimulation.Control_Toolkit.Controllers.controller_mpc - INFO - Using predictor ODE_TF specified in controller config file (controller_mpc.py:31)
+2023-03-03 05:40:02,607 - CartPoleSimulation.Control_Toolkit.Controllers.controller_mpc - INFO - Using predictor ODE_TF specified in controller config file (controller_mpc.py:31)
+2023-03-03 05:40:02,626 - Control_Toolkit.others.globals_and_utils - INFO - optimizer_rpgd_tf: No random seed specified. Seeding with datetime. (globals_and_utils.py:74)
+2023-03-03 05:40:04.796662: I tensorflow/compiler/xla/service/service.cc:171] XLA service 0x53a5280 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2023-03-03 05:40:04.796736: I tensorflow/compiler/xla/service/service.cc:179]   StreamExecutor device (0): Host, Default Version
+2023-03-03 05:40:04.853960: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:237] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2023-03-03 05:40:08.259449: I tensorflow/compiler/jit/xla_compilation_cache.cc:399] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+no joystick found
+loadparams not defined for this self.controller
+printparams not implemented for this self.controller.
+
+CONTROLLER:   Firmware
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:-3.140rad, angle raw:1055, position:+0.49cm, position raw:-052, target:-0.1, 1.0, Q:+0.00, command:+0000, invalid_steps:0, frozen:0
+
+on
+
+self.loggingEnabled= True
+
+self.controlEnabled= True
+
+CONTROLLER:   mpc (Period=21ms, Synch=True, Horizon=35, Rollouts=32, Predictor=ODE_TF_default)
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:-0.010rad, angle raw:3183, position:+8.09cm, position raw:-851, target:0.1, 1.0, Q:+0.12, command:-0137, invalid_steps:1, frozen:0
+TIMING: delta time [μ=21.0ms, σ=0.94ms], firmware latency [μ=18.8ms, σ=4.95ms], python latency [μ=15.2ms σ=2.18ms], controller step [μ=14.3ms σ=2.16ms], latency violations: 4/793 = 0.5%
+
+self.loggingEnabled= False
+
+ Stopped self.logging data to ./ExperimentRecordings/CP_mpc_2023-03-03_05-40-12.csv
+
+CONTROLLER:   mpc (Period=21ms, Synch=True, Horizon=35, Rollouts=32, Predictor=ODE_TF_default)
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:-0.020rad, angle raw:3176, position:+7.90cm, position raw:-831, target:0.1, 1.0, Q:+0.16, command:-0766, invalid_steps:0, frozen:0
+TIMING: delta time [μ=21.0ms, σ=0.94ms], firmware latency [μ=18.8ms, σ=4.95ms], python latency [μ=15.2ms σ=2.17ms], controller step [μ=14.3ms σ=2.15ms], latency violations: 4/807 = 0.5%
+off
+
+self.controlEnabled= False
+
+CONTROLLER:   Firmware
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:+3.140rad, angle raw:1053, position:+8.43cm, position raw:-886, target:-0.1, 1.0, Q:+0.00, command:-0766, invalid_steps:0, frozen:0
+
+
+

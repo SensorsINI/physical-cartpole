@@ -1,0 +1,101 @@
+/home/marcin/anaconda3/envs/CPP/bin/python /home/marcin/PycharmProjects/physical-cartpole/Driver/control.py
+2023-03-03 05:31:54.128351: E tensorflow/stream_executor/cuda/cuda_driver.cc:271] failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+2023-03-03 05:31:54.128379: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:169] retrieving CUDA diagnostic information for host: ZULIA
+2023-03-03 05:31:54.128387: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:176] hostname: ZULIA
+2023-03-03 05:31:54.128482: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:200] libcuda reported version is: 525.78.1
+2023-03-03 05:31:54.128515: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:204] kernel reported version is: 525.78.1
+2023-03-03 05:31:54.128523: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:310] kernel version seems to match DSO: 525.78.1
+2023-03-03 05:31:54.128770: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+kill: (18599): No such process
+TF Devices: [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')]
+TF Device Placement: True
+TF Float Type: float32
+2023-03-03 05:31:55,143 - Control_Toolkit.others.globals_and_utils - INFO - Importing controller from CartPoleSimulation/Control_Toolkit/Controllers/controller_mpc.py (globals_and_utils.py:150)
+2023-03-03 05:31:55,182 - Control_Toolkit.Controllers - INFO - Found library tensorflow for MPC controller. (__init__.py:56)
+2023-03-03 05:31:55,184 - CartPoleSimulation.Control_Toolkit.Controllers.controller_mpc - INFO - Using predictor ./Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0 specified in controller config file (controller_mpc.py:31)
+2023-03-03 05:31:55,184 - CartPoleSimulation.Control_Toolkit.Controllers.controller_mpc - INFO - Using predictor ./Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0 specified in controller config file (controller_mpc.py:31)
+2023-03-03 05:31:55,202 - Control_Toolkit.others.globals_and_utils - INFO - optimizer_rpgd_tf: No random seed specified. Seeding with datetime. (globals_and_utils.py:74)
+Loading a pretrained network with the full name: Dense-6IN-32H1-32H2-5OUT-0
+
+Inputs to the loaded network: Q, angleD, angle_cos, angle_sin, position, positionD
+Outputs from the loaded network: angleD, angle_cos, angle_sin, position, positionD
+
+Constructed a neural network of type Dense, with 2 hidden layers with sizes 32, 32 respectively.
+Loading Model:  Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0/ckpt.ckpt
+
+Model loaded from a checkpoint.
+Wash out not defined.
+Loading a pretrained network with the full name: Dense-6IN-32H1-32H2-5OUT-0
+
+Inputs to the loaded network: Q, angleD, angle_cos, angle_sin, position, positionD
+Outputs from the loaded network: angleD, angle_cos, angle_sin, position, positionD
+
+Constructed a neural network of type Dense, with 2 hidden layers with sizes 32, 32 respectively.
+Loading Model:  Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0/ckpt.ckpt
+
+Model loaded from a checkpoint.
+Wash out not defined.
+Init done
+Loading a pretrained network with the full name: Dense-6IN-32H1-32H2-5OUT-0
+
+Inputs to the loaded network: Q, angleD, angle_cos, angle_sin, position, positionD
+Outputs from the loaded network: angleD, angle_cos, angle_sin, position, positionD
+
+Constructed a neural network of type Dense, with 2 hidden layers with sizes 32, 32 respectively.
+Loading Model:  Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0/ckpt.ckpt
+
+Model loaded from a checkpoint.
+Wash out not defined.
+Loading a pretrained network with the full name: Dense-6IN-32H1-32H2-5OUT-0
+
+Inputs to the loaded network: Q, angleD, angle_cos, angle_sin, position, positionD
+Outputs from the loaded network: angleD, angle_cos, angle_sin, position, positionD
+
+Constructed a neural network of type Dense, with 2 hidden layers with sizes 32, 32 respectively.
+Loading Model:  Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0/ckpt.ckpt
+
+Model loaded from a checkpoint.
+Wash out not defined.
+Init done
+2023-03-03 05:31:57.168818: I tensorflow/compiler/xla/service/service.cc:171] XLA service 0x66a7b70 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2023-03-03 05:31:57.168881: I tensorflow/compiler/xla/service/service.cc:179]   StreamExecutor device (0): Host, Default Version
+2023-03-03 05:31:57.225858: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:237] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2023-03-03 05:31:57.817837: I tensorflow/compiler/jit/xla_compilation_cache.cc:399] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+no joystick found
+loadparams not defined for this self.controller
+printparams not implemented for this self.controller.
+
+CONTROLLER:   Firmware
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:+3.140rad, angle raw:1053, position:+0.33cm, position raw:-035, target:-0.1, 1.0, Q:+0.00, command:+0000, invalid_steps:0, frozen:0
+
+on
+
+self.loggingEnabled= True
+
+self.controlEnabled= True
+
+CONTROLLER:   mpc (Period=21ms, Synch=True, Horizon=35, Rollouts=32, Predictor=neural_default)
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:+0.012rad, angle raw:3198, position:+10.49cm, position raw:-1103, target:0.1, 1.0, Q:-0.26, command:+1268, invalid_steps:2, frozen:0
+TIMING: delta time [μ=21.0ms, σ=0.00ms], firmware latency [μ=15.7ms, σ=2.71ms], python latency [μ=13.0ms σ=2.37ms], controller step [μ=12.1ms σ=2.33ms], latency violations: 1/1816 = 0.1%
+
+self.loggingEnabled= False
+
+ Stopped self.logging data to ./ExperimentRecordings/CP_mpc_2023-03-03_05-32-12.csv
+
+CONTROLLER:   mpc (Period=21ms, Synch=True, Horizon=35, Rollouts=32, Predictor=neural_default)
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:-0.017rad, angle raw:3178, position:+9.03cm, position raw:-949, target:0.1, 1.0, Q:+0.20, command:-0922, invalid_steps:0, frozen:0
+TIMING: delta time [μ=21.0ms, σ=0.00ms], firmware latency [μ=15.9ms, σ=2.72ms], python latency [μ=13.2ms σ=2.28ms], controller step [μ=12.3ms σ=2.26ms], latency violations: 1/1840 = 0.1%
+off
+
+self.controlEnabled= False
+
+CONTROLLER:   Firmware
+MEASUREMENT: Go-to-target (State: idle, Total targets:0, Q:0.00)
+STATE:  angle:+3.022rad, angle raw:0973, position:+10.86cm, position raw:-1142, target:-0.1, 1.0, Q:+0.00, command:-0922, invalid_steps:0, frozen:0
+
+
+
