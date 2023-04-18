@@ -177,6 +177,8 @@ class PhysicalCartPoleDriver:
 
         self.demo_program = DEMO_PROGRAM
 
+        self.safety_switch_counter = 0
+
     def run(self):
         self.setup()
         self.run_experiment()
