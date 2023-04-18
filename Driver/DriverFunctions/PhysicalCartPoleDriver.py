@@ -173,9 +173,6 @@ class PhysicalCartPoleDriver:
         self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=0.005)
         self.s_delayed = np.copy(self.s)
 
-        self.arduino_serial_port = serial.Serial(SERIAL_PORT, 115200, timeout=5)
-        self.arduino_serial_port.write(b'1')
-
         self.time_last_switch = -np.inf
 
         self.demo_program = DEMO_PROGRAM
