@@ -29,7 +29,7 @@ CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
+elif CONTROLLER_NAME == 'neural-imitator':
     CONTROL_PERIOD_MS = 8
 else:
     CONTROL_PERIOD_MS = 21  # e.g. 5 for PID or 20 for mppi
