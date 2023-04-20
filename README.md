@@ -97,7 +97,7 @@ Minized zynq PS (Processing System) is a ARM based architecture, so we need to c
 ```console
 sudo apt-get install g++-8-arm-linux-gnueabihf
 ```
-* <u>Compile the user installation</u>
+* <u>Compile the user app</u>
     - Create a folder for the new app and copy the makefile template and all app source file.
     - Modify the makefile template according to the app requirements.
     - Run the following command in the new app folder.
