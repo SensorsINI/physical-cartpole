@@ -67,6 +67,8 @@ if platform.system() == 'Darwin':
 else:
     use('TkAgg')
 
+DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence the results of calibration
+
 EVALUATION_SINGLE_FILE = False
 
 # Define the variables
@@ -96,7 +98,7 @@ def motor_calibration(FILE_NAME):
 
     data['dt'] = data['time'].shift(-1) - data['time']
     data['positionD_last'] = data['positionD'].shift(1)
-    data['positionD_smoothed'] = smooth(data['positionD'], 2)
+    data['positionD_smoothed'] = smooth(data['positionD'], DATA_SMOOTHING)
     try:
         data['motor_input'] = data['actualMotorSave'] # Older data sets
     except:

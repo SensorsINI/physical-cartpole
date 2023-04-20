@@ -23,6 +23,7 @@ if platform.system() == 'Darwin':
 else:
     use('TkAgg')
 
+DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence the results of calibration
 
 # Define the variables
 FILE_NAME = 'Original.csv'
@@ -46,7 +47,7 @@ data: pd.DataFrame = pd.read_csv(file_path, comment='#')
 
 data['dt'] = data['time'].shift(-1) - data['time']
 data['positionD_last'] = data['positionD'].shift(1)
-data['positionD_smoothed'] = smooth(data['positionD'], 2)
+data['positionD_smoothed'] = smooth(data['positionD'], DATA_SMOOTHING)
 
 data = data.iloc[1:-1]
 data = data.reset_index(drop=True)
