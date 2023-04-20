@@ -69,7 +69,7 @@ else:
 
 DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence the results of calibration
 
-EVALUATION_SINGLE_FILE = False
+EVALUATION_SINGLE_FILE = True
 
 # Define the variables
 # FILE_NAME = 'Pololu.csv'
