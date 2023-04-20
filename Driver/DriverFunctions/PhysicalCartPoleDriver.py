@@ -709,9 +709,6 @@ class PhysicalCartPoleDriver:
 
         self.actualMotorCmd = self.Q
         if MOTOR_DYNAMICS_CORRECTED:
-
-            self.actualMotorCmd = self.Q
-
             # Use Model_velocity_bidirectional.py to determine the margins and correction factor below
 
             # # We cut the region which is linear
