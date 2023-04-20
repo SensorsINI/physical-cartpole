@@ -79,3 +79,28 @@ If enabled, the following data is streamed to the PC at regular 5 ms intervals:
 * Current pendulum angle.
 * Current cart position.
 * Motor speed command calculated by onboard controller (0 when running in PC-control mode).
+
+## Zynq
+The [zynq](zynq) folder has the Vivado and Petalinux project for the Minized zynq board. The Xilinx tools version is 2021.2. To replicate the projects you need to install both tools following the installation guides [Vivado](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiTo8K28Lf-AhUxXaQEHfyKDOMQFnoECAMQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug973-vivado-release-notes-install-license%2FDownload-and-Installation&usg=AOvVaw3DnvsfdstplLh6SIkN30Gq) and [Petalinux](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjq55rD8Lf-AhXmUqQEHbBYCGYQFnoECAgQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug1144-petalinux-tools-reference-guide%2FInstalling-the-PetaLinux-Tool&usg=AOvVaw2rKoUMzp-5K6sm-C3m291-)
+
+### Deploying the bsp file
+To decompress the bsp file and get the Petalinux and Vivado project, run the next commands under [zynq](zynq) folder:
+```console
+source /path/to/petalinux/install/folder/settings.sh
+petalinux-create -t project -s minized_sbc_base_2021_1.bsp
+```
+A new folder will be create with the petalinux project where you can find the Vivado project under the hardware folder.
+
+### Apps cross-compilation
+Minized zynq PS (Processing System) is a ARM based architecture, so we need to cross-compile the application to be deployed in the ARM cores os the Zynq. A [makefile](zynq/apps/makefile) template is ready in the [apps](zynq/apps/) folder to be modified according our app requierements.
+* <u>Cross-compiler installation</u>
+```console
+sudo apt-get install g++-8-arm-linux-gnueabihf
+```
+* <u>Compile the user installation</u>
+    - Create a folder for the new app and copy the makefile template and all app source file.
+    - Modify the makefile template according to the app requirements.
+    - Run the following command in the new app folder.
+    ```console
+    make
+    ```
