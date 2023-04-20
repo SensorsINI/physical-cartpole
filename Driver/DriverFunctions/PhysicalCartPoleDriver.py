@@ -741,9 +741,7 @@ class PhysicalCartPoleDriver:
 
         # Check if motor power in safe boundaries, not to burn it in case you have an error before or not-corrected option
         # NEVER RUN IT WITHOUT IT
-        self.actualMotorCmd = MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd > MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd #Todo: use numpy clip
-        self.actualMotorCmd = -MOTOR_FULL_SCALE_SAFE if self.actualMotorCmd < -MOTOR_FULL_SCALE_SAFE else self.actualMotorCmd
-
+        self.actualMotorCmd = np.clip(self.actualMotorCmd, -MOTOR_FULL_SCALE_SAFE, MOTOR_FULL_SCALE_SAFE)
         self.actualMotorCmd = -self.actualMotorCmd
 
     def safety_switch_off(self):
