@@ -44,6 +44,9 @@ MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'PID' else True  # Linear
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
 
+MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026, -839.026)
+MOTOR_CORRECTION_POLOLU = (4307.69, 398.69, -342.53)  # First number multiplies Q, the other two shift it
+
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE

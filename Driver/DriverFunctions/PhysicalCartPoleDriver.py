@@ -721,22 +721,19 @@ class PhysicalCartPoleDriver:
 
             # The change dependent on velocity sign is motivated theory of classical friction
             if MOTOR == 'POLOLU':
-                self.actualMotorCmd *= 3617.43
-                if self.actualMotorCmd != 0:
-                    if np.sign(self.s[POSITIOND_IDX]) > 0:
-                        self.actualMotorCmd += 181.66
-                    elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                        self.actualMotorCmd -= 312.98
+                motor_correction = MOTOR_CORRECTION_POLOLU
             else:
-                self.actualMotorCmd *= 4729.99
-                if self.actualMotorCmd != 0:
-                    if np.sign(self.s[POSITIOND_IDX]) > 0:
-                        self.actualMotorCmd += 135.75
-                    elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                        self.actualMotorCmd -= 170.90
+                motor_correction = MOTOR_CORRECTION_ORIGINAL
+
+            self.actualMotorCmd *= motor_correction[0]
+            if self.actualMotorCmd != 0:
+                if np.sign(self.s[POSITIOND_IDX]) >= 0:
+                    self.actualMotorCmd += motor_correction[1]
+                elif np.sign(self.s[POSITIOND_IDX]) <= 0:
+                    self.actualMotorCmd -= motor_correction[1]
 
         else:
-            self.actualMotorCmd *= MOTOR_FULL_SCALE_SAFE  # Scaling to motor units
+            self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
             pass
 
         # Convert to motor encoder units
