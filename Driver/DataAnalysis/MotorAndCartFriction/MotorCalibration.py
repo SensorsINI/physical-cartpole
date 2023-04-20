@@ -1,15 +1,4 @@
 """
-
-It is a priori not clear for which range of Q to collect the date.
-The easiest solution for the first data collection is to MOTOR_DYNAMICS_CORRECTED=False
-and sweep step responses for Q in the range -1 to 1 which covers whole safe range of motor inputs.
-If you want to test it for a wider range than what is set as -1 to 1 range
-you can calculate the Q range as the safe range / factor used to convert Q to motor input.
-Notice that by doing it you are neglecting the affine shift
-and if you accidentally command command bigger than safe range the system stays safe,
-but the callibration script may produce rubbish (TODO)
-
-
 This script allows you to find right values to calibrate cartpole motors.
 To keep our simulation simple we want to model cart acceleration as
 dv/dt = a * Q - b * v      (1)
