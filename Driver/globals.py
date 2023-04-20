@@ -29,7 +29,7 @@ CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
+elif CONTROLLER_NAME == 'neural-imitator':
     CONTROL_PERIOD_MS = 8
 else:
     CONTROL_PERIOD_MS = 21  # e.g. 5 for PID or 20 for mppi
@@ -77,7 +77,8 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP = 4.0
 
 ##### Serial Port #####
-SERIAL_PORT = get_serial_port()
+serial_port_number = 0  # 4 for Santiago Sevilla, 0 for linux PC
+SERIAL_PORT = get_serial_port(serial_port_number)
 
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
