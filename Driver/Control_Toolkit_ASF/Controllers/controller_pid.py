@@ -54,9 +54,8 @@ sensitivity_aI_gain = 1.0
 sensitivity_aD_gain = 0.01
 
 class controller_pid(template_controller):
-    def __init__(self):
+    def configure(self):
 
-        self.controller_name = 'PID'
         self.time_last = None
 
         self.PARAMS_JSON_FILE = PARAMS_JSON_FILE
