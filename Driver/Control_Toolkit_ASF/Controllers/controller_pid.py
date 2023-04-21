@@ -34,6 +34,8 @@ from globals import dec, inc, JSON_PATH
 
 import numpy as np
 
+from SI_Toolkit.computation_library import TensorType
+
 # PID params from json
 PARAMS_JSON_FILE = JSON_PATH + 'control_PID.json'
 
@@ -119,9 +121,10 @@ class controller_pid(template_controller):
         self.Q = 0
 
 
-    def step(self, s, target_position, time=None):
+    def step(self, s: np.ndarray, time=None, updated_attributes: "dict[str, TensorType]" = {}):
+        self.update_attributes(updated_attributes)
 
-        self.POSITION_TARGET = target_position
+        self.POSITION_TARGET = self.variable_parameters.target_position
 
         ########################################################################################################
 
@@ -144,7 +147,7 @@ class controller_pid(template_controller):
         # Position PID
 
         # Error
-        self.position_error = (s[cartpole_state_varname_to_index('position')] - target_position)
+        self.position_error = (s[cartpole_state_varname_to_index('position')] - self.variable_parameters.target_position)
 
         # Error difference
         if time_difference > 0.0001 and (self.position_error_previous is not None):
