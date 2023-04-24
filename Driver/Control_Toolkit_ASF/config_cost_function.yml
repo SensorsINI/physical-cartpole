@@ -5,19 +5,18 @@ cost_function_name_default: default
 
 CartPole:
   default:
-    dd_weight: 500.0
-    ep_weight: 2000.0
-    ekp_weight: 8.0
-    ekc_weight: 2.0
+    dd_weight: 600.0
+    ep_weight: 20000.0
     cc_weight: 1.0
     ccrc_weight: 1.0
     R: 1.0                                # How much to punish Q, For MPPI YOU have to make sure that this is the same as in optimizer config, as it plays a special role in the optimization algorithm as well as is used in cost functions!
   quadratic_boundary_grad:
-    dd_weight: 600.0
-    ep_weight: 20000.0
-    ekp_weight: 80.0
-    cc_weight: 1.0
+    dd_weight: 1000.0
+    ep_weight: 8000.0
+    ekp_weight: 90.0
+    cc_weight: 0.0
     ccrc_weight: 1.0
+    admissible_angle: 10.0
     R: 1.0                                # How much to punish Q, For MPPI YOU have to make sure that this is the same as in optimizer config, as it plays a special role in the optimization algorithm as well as is used in cost functions!
   quadratic_boundary_nonconvex:
     dd_weight: 600.0

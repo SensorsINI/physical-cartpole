@@ -1,9 +1,12 @@
 mpc:
+#  optimizer: mppi
   optimizer: rpgd-tf
-  predictor_specification: "ODE_TF"    # Can be "ODE", "ODE_TF", network/GP name (possibly with path) e.g. 'GRU-6IN-32H1-32H2-5OUT-0'/'SGP_30' or a name of a custom predictor. For more info see config_predictors in SI_Toolkit_ASF
-  cost_function_specification: default  # One of "default", "quadratic_boundary_grad", "quadratic_boundary_nonconvex", "quadratic_boundary"
+#  predictor_specification: "./Control_Toolkit_ASF/Controllers/Dense-6IN-32H1-32H2-5OUT-0"    # Can be "ODE", "ODE_TF", network/GP name (possibly with path) e.g. 'GRU-6IN-32H1-32H2-5OUT-0'/'SGP_30' or a name of a custom predictor. For more info see config_predictors in SI_Toolkit_ASF
+  predictor_specification: "ODE_TF"
+  cost_function_specification: quadratic_boundary_grad  # One of "default", "quadratic_boundary_grad", "quadratic_boundary_nonconvex", "quadratic_boundary"
   computation_library: tensorflow  # One of "numpy", "tensorflow", "pytorch". Defaults to "numpy" if none given.
   controller_logging: false
+  calculate_optimal_trajectory: false
 mppi-cartpole:
   seed: null                            # Seed for rng, for MPPI only, put null to set random seed (do it when you generate data for training!)
   mpc_horizon: 35                       # steps
@@ -81,6 +84,7 @@ lqr:
   control_noise:  # Defined in cartpole config
   controller_logging: True
 pid:
+  computation_library: numpy
   P_angle: 9.0
   I_angle: 0.0
   D_angle: 0.0
@@ -91,17 +95,10 @@ pid:
 mpc-opti:
   mpc_horizon: 10                       # steps
   controller_logging: True
-neural-imitator-tf:
+neural-imitator:
   seed: null                            # If null, random seed based on datetime is used
-  PATH_TO_MODELS: './SI_Toolkit_ASF/Experiments/UpDown/Models/'
-  net_name: 'Dense-7IN-128H1-128H2-1OUT-0'
-#  PATH_TO_MODELS: './Controllers/models_for_neural_imitator_tf/'
-#  net_name: 'Dense-6IN-128H1-128H2-1OUT-0'
-  controller_logging: True
-neural-imitator-pytorch:
-  seed: null                            # If null, random seed based on datetime is used
-  PATH_TO_MODELS: './Controllers/models_for_neural_imitator_tf/'
-  net_name: 'GRU-6IN-32H1-32H2-1OUT-1'
+  PATH_TO_MODELS: './SI_Toolkit_ASF/'
+  net_name: 'Dense-7IN-64H1-64H2-1OUT-0'
   controller_logging: True
 secloc:
   log_base: 1.05

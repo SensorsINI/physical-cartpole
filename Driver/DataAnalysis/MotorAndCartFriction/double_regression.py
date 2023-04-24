@@ -42,14 +42,44 @@ def double_regression(x1, y1, x2, y2):
     return a, b1, b2
 
 
+def double_regression_2(x1, y1, x2, y2):
+    x2 = -x2
+    y2 = -y2
+
+    x = np.concatenate((x1, x2))
+    y = np.concatenate((y1, y2))
+
+    # number of observations/points
+    n = np.size(x)
+
+    # mean of x and y vector
+    m_x = np.mean(x)
+    m_y = np.mean(y)
+
+    # calculating cross-deviation and deviation about x
+    SS_xy = np.sum(y * x) - n * m_y * m_x
+    SS_xx = np.sum(x * x) - n * m_x * m_x
+
+    # calculating regression coefficients
+    a = SS_xy / SS_xx
+    b = m_y - a * m_x
+
+    return a, b, -b
+
+
+
+
 if __name__ == '__main__':
+    A = 5.234
+    B1 = 40.7
+    B2 = B1
     x1 = np.linspace(-20, -5, 10)
-    y1 = (100.234*x1 + 40.7)*(1+0.2*np.random.normal(size=x1.size))
+    y1 = (A*x1 + B1)*(1+0.2*np.random.normal(size=x1.size))
 
     x2 = np.linspace(10, 30, 5)
-    y2 = (5.234*x2 - 34.3)*(1+0.2*np.random.normal(size=x2.size))
+    y2 = (A*x2 - B2)*(1+0.2*np.random.normal(size=x2.size))
 
-    a, b1, b2 = double_regression(x1, y1, x2, y2)
+    a, b1, b2 = double_regression_2(x1, y1, x2, y2)
 
     print('Found coefficients:')
     print('a:  {}'.format(a))

@@ -26,23 +26,26 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 ##### Controller Settings #####
 CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'mppi'  # e.g. 'rpgd-tf', 'mppi'
+OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'neural-imitator-tf-CPS':
+elif CONTROLLER_NAME == 'neural-imitator':
     CONTROL_PERIOD_MS = 8
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 21  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'ORIGINAL'  # choose 'POLOLU' or 'ORIGINAL'
-MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'PID' else True  # Linearize and Threshold Motor Commands
+MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
+MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
+
+MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
+MOTOR_CORRECTION_POLOLU = (4307.69, 398.69)
 
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
@@ -50,8 +53,8 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values #
 
-ANGLE_HANGING_POLOLU = 1062.26  # 1213     # Value from sensor when pendulum is at stable equilibrium point
-ANGLE_HANGING_ORIGINAL = 1043  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 1054  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
@@ -77,7 +80,8 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP = 4.0
 
 ##### Serial Port #####
-SERIAL_PORT = get_serial_port()
+serial_port_number = 0  # 4 for Santiago Sevilla, 0 for linux PC
+SERIAL_PORT = get_serial_port(serial_port_number)
 
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 

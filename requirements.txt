@@ -9,10 +9,10 @@ GitPython
 PyQt5
 tk
 sympy
-sklearn
+
 PyYAML
 numba==0.56.0
-gym
+gymnasium
 tqdm
 torch
 tensorboard_plugin_profile

@@ -53,7 +53,7 @@ Attention! a, b, A and B are here are not consistent with the names used in the 
 """
 import matplotlib.pyplot as plt
 
-from double_regression import double_regression
+from double_regression import double_regression, double_regression_2
 import numpy as np
 import pandas as pd
 import platform
@@ -67,16 +67,18 @@ if platform.system() == 'Darwin':
 else:
     use('TkAgg')
 
-EVALUATION_SINGLE_FILE = False
+DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence the results of calibration
+
+EVALUATION_SINGLE_FILE = True
 
 # Define the variables
 # FILE_NAME = 'Pololu.csv'
 FILE_NAME = 'Original.csv'
 
-PLOT_CORRECTED = False #
+PLOT_CORRECTED = True
 
 v_sat_max = 0.55
-v_sat_max_lin = 0.45
+v_sat_max_lin = 0.55
 
 
 def motor_calibration(FILE_NAME):
@@ -96,7 +98,7 @@ def motor_calibration(FILE_NAME):
 
     data['dt'] = data['time'].shift(-1) - data['time']
     data['positionD_last'] = data['positionD'].shift(1)
-    data['positionD_smoothed'] = smooth(data['positionD'], 30)
+    data['positionD_smoothed'] = smooth(data['positionD'], DATA_SMOOTHING)
     try:
         data['motor_input'] = data['actualMotorSave'] # Older data sets
     except:
@@ -106,27 +108,14 @@ def motor_calibration(FILE_NAME):
     data = data.iloc[1:-1]
     data = data.reset_index(drop=True)
 
-
-    # Cut data into part when cart accelerates in positive and negative direction
-
-    motor_input_idx_min = data.motor_input.idxmin()
-    motor_input_idx_max = data.motor_input.idxmax()
-
     motor_input_max = data.motor_input.max()
     motor_input_min = data.motor_input.min()
 
-    cutting_index = min(motor_input_idx_min, motor_input_idx_max) + 400
-    if cutting_index == motor_input_idx_min + 400:
-        starting_direction = 'neg'
-    else:
-        starting_direction = 'pos'
+    data = data.loc[data['measurement'].str.contains('State:moving')]
+    data = data.loc[np.logical_and(data['motor_input'] != 0, np.sign(data['motor_input']) == np.sign(data['positionD_last']))]
 
-    if starting_direction == 'pos':
-        data_pos = data[:cutting_index]
-        data_neg = data[cutting_index:]
-    else:
-        data_pos = data[cutting_index:]
-        data_neg = data[:cutting_index]
+    data_pos = data.loc[data['motor_input'] > 0]
+    data_neg = data.loc[data['motor_input'] < 0]
 
     # Double regression
 
@@ -134,12 +123,10 @@ def motor_calibration(FILE_NAME):
     gb_pos = data_pos.groupby(['motor_input'], as_index=False)
     data_stat_pos = gb_pos.size().reset_index(drop=True)
     data_stat_pos['v_max'] = gb_pos['positionD_smoothed'].max()['positionD_smoothed']
-    data_stat_pos = data_stat_pos[(data_stat_pos['motor_input'] > 0) & (data_stat_pos['size'] > 40) & (data_stat_pos['v_max'] > 0)]
 
     gb_neg = data_neg.groupby(['motor_input'], as_index=False)
     data_stat_neg = gb_neg.size().reset_index(drop=True)
     data_stat_neg['v_max'] = gb_neg['positionD_smoothed'].min()['positionD_smoothed']
-    data_stat_neg = data_stat_neg[(data_stat_neg['motor_input'] < 0) & (data_stat_neg['size'] > 40) & (data_stat_neg['v_max'] < 0)]
 
     motor_input_pos = data_stat_pos['motor_input'].to_numpy()
     v_sat_pos = data_stat_pos['v_max'].to_numpy()
@@ -159,7 +146,7 @@ def motor_calibration(FILE_NAME):
     motor_input_neg_lin = data_stat_neg_lin['motor_input'].to_numpy()
     v_sat_neg_lin = data_stat_neg_lin['v_max'].to_numpy()
 
-    a, B_pos, B_neg = double_regression(motor_input_pos_lin, v_sat_pos_lin, motor_input_neg_lin, v_sat_neg_lin)
+    a, B_pos, B_neg = double_regression_2(motor_input_pos_lin, v_sat_pos_lin, motor_input_neg_lin, v_sat_neg_lin)
 
     print()
     print()

@@ -625,12 +625,12 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	positionCentre = (positionLimitRight + positionLimitLeft) / 2;			// average limits
 
 	// Slower to get back to middle
-	MOTOR_SetSpeed(-SPEED/2);
+	MOTOR_SetSpeed(-SPEED);
 	do {
 		fDiff = 2.0 * abs(ENCODER_Read() - positionCentre) / abs(positionLimitRight - positionLimitLeft);
 		// Slow Down even more to get more accurately to the middle
 		if(fDiff < 1e-1) {
-			MOTOR_SetSpeed(-SPEED/4);
+			MOTOR_SetSpeed(-SPEED/2);
 		}
 	} while(fDiff > 5e-4);
 	MOTOR_Stop();
