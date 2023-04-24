@@ -37,3 +37,5 @@ Driver/SI_Toolkit_ASF/Experiments/*
 *.hdf*
 *.pdf
 *.prof
+
+/zynq/minized_sbc_base_2021_1
