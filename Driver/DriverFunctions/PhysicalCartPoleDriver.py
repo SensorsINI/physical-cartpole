@@ -89,8 +89,8 @@ class PhysicalCartPoleDriver:
 
         # Dance Mode
         self.danceEnabled = False
-        self.danceAmpl = 0.14  # m
-        self.dancePeriodS = 2.0
+        self.danceAmpl = 0.1  # m
+        self.dancePeriodS = 8.0
         self.dance_start_time = 0.0
 
         # Measurement
@@ -226,7 +226,7 @@ class PhysicalCartPoleDriver:
 
         while not self.terminate_experiment:
             self.experiment_sequence()
-            self.experiment_sequence_minimal()
+            # self.experiment_sequence_minimal()
 
 
     def experiment_sequence(self):
@@ -293,55 +293,51 @@ class PhysicalCartPoleDriver:
 
         # CTN = compared to normal experiment sequence
 
-        # CTN: No keyboard input and printing to terminal, but in general you need
+        # CTN: Minimal keyboard input and printing to terminal, but in general you need
+        if self.kbAvailable & self.kb.kbhit():
+            self.new_console_output = True
 
-        self.get_state_and_time_measurement()
+            c = self.kb.getch()
+            if c == 'k':
+                if self.controlEnabled is False:
+                    self.controlEnabled = True
+
+                elif self.controlEnabled is True:
+                    self.controlEnabled = False
+
+        # This function will block at the rate of the control loop
+        (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent,
+         self.firmware_latency) = self.InterfaceInstance.read_state()
+
+        self.angleD_raw = (self.wrap_local(self.angle_raw - self.angle_raw_stable) if self.angle_raw_stable is not None else 0)
+        self.angle_raw_stable = self.angle_raw
+
+        angle, position = self.convert_angle_and_position_skale()
+
+        self.time_measurement()
+
+        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
+        position_difference = (position - self.positionPrev if self.positionPrev is not None else 0)
+        angleDerivative, positionDerivative = self.calculate_first_derivatives(angle_difference, position_difference)
+        # Keep values of angle and position for next timestep for derivative calculation
+        self.positionPrev = position
+
+        # Pack the state into interface acceptable for the self.controller
+        self.pack_features_into_state_variable(position, angle, positionDerivative, angleDerivative)
 
         # CTN: No setting of target position, it will be always 0.0
 
         if self.controlEnabled:
-            # Active Python Control: set values from controller
-            self.lastControlTime = self.timeNow
-            start = time.time()
             self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
                                                                        "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
-            performance_measurement[0] = time.time() - start
-            self.controller_steptime = time.time() - start
-            if AUTOSTART:
-                self.Q = 0
-            self.controlled_iterations += 1
-        else:
-            # Observing Firmware Control: set values from firmware for logging
-            # self.lastControlTime = self.sent
-            # self.actualMotorCmd = self.command
-            # self.Q = self.command / MOTOR_FULL_SCALE
-            self.controlled_iterations = 0
 
-        self.joystick_action()
+        # CTN: No joystick and measurement action
 
-        self.measurement_action()
-
-        if self.controlEnabled or self.current_measure.is_running():
             self.get_motor_command()
-
-        if self.controlEnabled and self.current_measure.is_idle():
             self.safety_switch_off()
-
-        if self.controlEnabled or self.current_measure.is_running():
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
-        # Logging, Plotting, Terminal
-        if self.loggingEnabled:
-            self.write_csv_row()
-        if self.livePlotEnabled:
-            self.plot_live()
-        self.write_current_data_to_terminal()
-
-        self.update_parameters_in_cartpole_instance()
-
-        self.end = time.time()
-        self.python_latency = self.end - self.InterfaceInstance.start
-
+        # CTN: No plotting, saving csv nor writing to terminal, no connection to GUI
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
