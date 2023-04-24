@@ -2,7 +2,7 @@ numpy==1.22.4
 pygame
 pyserial
 pandas
-matplotlib
+matplotlib==3.5
 engineering_notation
 scipy
 GitPython
