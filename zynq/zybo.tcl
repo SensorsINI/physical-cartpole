@@ -45,7 +45,7 @@ proc checkRequiredFiles { origin_dir} {
   }
 
   set paths [list \
- "[file normalize "$origin_dir/[file normalize "$origin_dir/../../vivado-library-zmod-v1-2019.1-2"]"]"\
+ "[file normalize "$origin_dir/[file normalize "$origin_dir/PmodDHB1_v1_0"]"]"\
   ]
   foreach ipath $paths {
     if { ![file isdirectory $ipath] } {
