@@ -48,7 +48,7 @@ CartPole:
 
     # cost weightings for the different state components for following desired cart state trajectory
     cart_pos_weight: 2e6 # weight on cart pos error
-    pole_angle_weight: 1e6 # weight on difference of angle
+    pole_angle_weight: 1e6 # weight on difference of angle;
     cart_vel_weight: 3e2 # weight on difference of cart velocity
     pole_swing_weight: 4e+4 # cart angle derivative weight
 
@@ -66,8 +66,8 @@ CartPole:
     balance_dir: +1 # 1 for up, -1 for down, multiplied by target_equilibrium
 
     # shimmy does a sinusoidal dance of cart around target position with period in seconds and amplitude in meters
-    shimmy_freq_hz: 1.125   # for 160bpm song, 2.25 Hz is beat, 1.125 is half beat, 0.5625 is quarter beat
-    shimmy_amp: .04 # in practice, 0.03 results in about .07m amplitude, not clear why
+    shimmy_freq_hz: .5   # for 160bpm song, 2.25 Hz is beat, 1.125 is half beat, 0.5625 is quarter beat
+    shimmy_amp: .06 # in practice, 0.03 results in about .07m amplitude, not clear why
     shimmy_freq2_hz: 2.
     shimmy_amp2: .025
     shimmy_duration: 8. # for shimmy that lasts a finite time and ramps from freq to freq2 and amp to amp2
@@ -80,7 +80,7 @@ CartPole:
     cartonly_duty_cycle: 0.5 # set to .5 for triangle, 0 or 1 for sawtooth
 
     # cartwheel and toandfro steps.
-    cartwheel_cycles: +5 # positive cw, negative ccw. For toandfro, must be >2 to do complete back and forth steps
+    cartwheel_cycles: -5 # positive cw, negative ccw. For toandfro, must be >2 to do complete back and forth steps
     cartwheel_balance_angle_limit_deg: 10.0
     cartwheel_balance_angled_limit_deg_per_sec: 30.0
     cartwheel_freefall_angle_limit_deg: 20.

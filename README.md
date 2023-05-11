@@ -1,7 +1,8 @@
 # physical-cartpole
 Work related to the Inverted Pendulum Hardware
 
-The Inverted Pendulum is powered by a ST32F103C8T6 microcontroller. `FactoryFirmwareImage.bin` contains the fimrware image as shipped by the factory. It was pulled directly from the micro using a debugger.
+The Inverted Pendulum is powere
+d by a ST32F103C8T6 microcontroller. `FactoryFirmwareImage.bin` contains the fimrware image as shipped by the factory. It was pulled directly from the micro using a debugger.
 
 The new firmware built during the workshop enables the following features:
 * PD control of balance and position can be run on either the micro or on a PC.
@@ -11,8 +12,10 @@ The new firmware built during the workshop enables the following features:
 
 # Requirements to Build/Program the Micro
 Jerome Jeanine found a way to program the Aliexpress ST micro using open source tools. See [his thesis MPPI on a physical cartpole](https://drive.google.com/file/d/1nSxp6x9yCe-Xci26lOERq7qKkFW_sD_q/view?usp=sharing). 
+We use [STM Cube IDE](https://www.st.com/en/development-tools/stm32cubeide.html) to reflash the firmware.
+The Segger J-Link JTAG reprogammer is hooked up to the STM32 aliexpress board using the four pins out of the top of the board.
 
-
+![jlink-to-stm32-connections.jpeg](Firmware%2FCartPole%20CubeIDE%2Fjlink-to-stm32-connections.jpeg)
 * KEIL MDK development environment.
 * STLink debugger.
 
@@ -75,7 +78,43 @@ Parameters that can be adjusted via the PC are listed below. Note that raw value
 
 ## Output
 
-If enabled, the following data is streamed to the PC at regular 5 ms intervals:
+If enabled, the following data is streamed to the PC at regular intervals:
 * Current pendulum angle.
 * Current cart position.
 * Motor speed command calculated by onboard controller (0 when running in PC-control mode).
+
+## Controlling PhysicalCartPoleDriver
+
+```text
+***********************************
+keystroke commands
+q/x/ESC quit
+k toggle control on/off (initially off)
+K trigger motor position calibration
+=/- increase/decrease (fine tune) angle offset value to obtain 0 when vertically
+[] increase/decrease position target
+; flip target pole equilibrium fron balance to hanging or vice versa; also affects other behaviors like spin
+2/1 angle proportional gain
+w/q angle integral gain
+s/a angle derivative gain
+z/x angle smoothing
+4/3 position proportional gain
+r/e position integral gain
+f/d position derivative gain
+p print PID parameters
+l toggle logging data
+S/L Save/Load param values from disk
+D Toggle dance mode
+C switch off control and center cart on track
+,./ Turn on motor left zero right
+m Toggle measurement
+n Toggle motor current measurement
+j Switch joystick control mode
+b Print averaged angle measurement from sensor
+6 Enable/Disable live plot
+5 Interrupts for histogram plot
+6789 toggle/save/reset/units of live state plotting
+ **** commands for specific controller
+M cycle dance policy
+***********************************
+```

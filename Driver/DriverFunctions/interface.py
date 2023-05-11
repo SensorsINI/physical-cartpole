@@ -1,7 +1,8 @@
 import serial
 import struct
 import time
-
+import sys
+sys.path.extend('Driver/Control_Toolkit')
 
 from Control_Toolkit.others.get_logger import get_logger
 log = get_logger(__name__)

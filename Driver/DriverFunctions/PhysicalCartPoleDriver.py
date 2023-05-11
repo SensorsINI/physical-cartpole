@@ -3,6 +3,7 @@
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
 import time
 import atexit
+import sys
 
 import os
 from typing import Tuple
@@ -10,6 +11,7 @@ from typing import Tuple
 import numpy as np
 from tqdm import trange
 
+sys.path.extend(['Driver','Driver/CartPoleSimulation','Driver/CartPoleSimulation/CartPole','Driver/CartPoleSimulation/Control_Toolkit'])
 from CartPole import CartPole
 from Control_Toolkit.Controllers import template_controller, controller_mpc
 
@@ -68,6 +70,7 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller:controller_mpc = self.CartPoleInstance.controller
+        self.print_keyboard_help()
 
         self.InterfaceInstance = Interface()
 
@@ -233,7 +236,6 @@ class PhysicalCartPoleDriver:
         except AttributeError:
             log.info('printparams not implemented for this self.controller.')
 
-        self.print_keyboard_help()
 
         self.startTime = time.time()
         self.lastTime = 0 # set to zero at start of execution
@@ -625,7 +627,7 @@ class PhysicalCartPoleDriver:
                 self.terminate_experiment = True
     def print_keyboard_help(self):
         """ Prints help message for keyboard commands to console"""
-        print("\n***********************************")
+        print("\n\n\n\n***********************************")
         print("keystroke commands")
         print("q/x/ESC quit")
         print("k toggle control on/off (initially off)")
@@ -655,11 +657,11 @@ class PhysicalCartPoleDriver:
         print("6789 toggle/save/reset/units of live state plotting")
         print(" **** commands for specific controller")
         try:
-            self.controller.print_keyboard_help()
+            self.controller.print_keyboard_help() #e.g. cartpole_trajectory_generator
         except AttributeError:
             print(f'no print_keyboard_help() for controller "{self.controller}"')
             pass
-        print("***********************************")
+        print("***********************************\n\n\n\n")
 
     def switch_off_motor(self):
         if self.InterfaceInstance:

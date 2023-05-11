@@ -21,5 +21,9 @@ seaborn
 do-mpc==4.1.1
 pypref # https://bachiraoun.github.io/pypref/
 easygui # for file dialog, e.g. to select CSV files to plot
+dictdiffer
+ruamel.yaml
+munch
+python-vlc # must also install vlc, see https://www.videolan.org/vlc/#download?
 
 -e ./Driver/CartPoleSimulation/SI_Toolkit/
