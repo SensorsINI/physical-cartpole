@@ -16,6 +16,8 @@ We use [STM Cube IDE](https://www.st.com/en/development-tools/stm32cubeide.html)
 The Segger J-Link JTAG reprogammer is hooked up to the STM32 aliexpress board using the four pins out of the top of the board.
 
 ![jlink-to-stm32-connections.jpeg](Firmware%2FCartPole%20CubeIDE%2Fjlink-to-stm32-connections.jpeg)
+![jlink-connections.JPEG](Firmware%2FCartPole%20CubeIDE%2Fjlink-connections.JPEG)
+
 * KEIL MDK development environment.
 * STLink debugger.
 
