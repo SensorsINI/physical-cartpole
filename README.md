@@ -13,13 +13,17 @@ The new firmware built during the workshop enables the following features:
 # Requirements to Build/Program the Micro
 Jerome Jeanine found a way to program the Aliexpress ST micro using open source tools. See [his thesis MPPI on a physical cartpole](https://drive.google.com/file/d/1nSxp6x9yCe-Xci26lOERq7qKkFW_sD_q/view?usp=sharing). 
 We use [STM Cube IDE](https://www.st.com/en/development-tools/stm32cubeide.html) to reflash the firmware.
+
+In STMCubeIDE, import project from the [CartPole CubeIDE](Firmware%2FCartPole%20CubeIDE)  directory
+
 The Segger J-Link JTAG reprogammer is hooked up to the STM32 aliexpress board using the four pins out of the top of the board.
 
 ![jlink-to-stm32-connections.jpeg](Firmware%2FCartPole%20CubeIDE%2Fjlink-to-stm32-connections.jpeg)
 ![jlink-connections.JPEG](Firmware%2FCartPole%20CubeIDE%2Fjlink-connections.JPEG)
 
-* KEIL MDK development environment.
-* STLink debugger.
+Set up the debugger to flash the firmware using jlink like this:
+
+![cube-debugger-setup.png](Firmware%2FCartPole%20CubeIDE%2Fcube-debugger-setup.png)
 
 # Installation
 
