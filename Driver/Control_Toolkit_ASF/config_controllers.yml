@@ -112,3 +112,9 @@ secloc:
   pid_Ki: 1.0
   #secloc_motor_map: 128
   controller_logging: True
+energy: # TODO shreyan controller CCNW2023
+  seed: null  # Seed for rng, for lqr only, put null to set random seed (do it when you generate data for training!)
+  Q: [10.0, 1.0, 1.0, 1.0]
+  R: 10.0
+  control_noise:  # Defined in cartpole config
+  controller_logging: True

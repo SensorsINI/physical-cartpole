@@ -14,6 +14,7 @@ from tqdm import trange
 sys.path.extend(['Driver','Driver/CartPoleSimulation','Driver/CartPoleSimulation/CartPole','Driver/CartPoleSimulation/Control_Toolkit'])
 from CartPole import CartPole
 from Control_Toolkit.Controllers import template_controller, controller_mpc
+from Control_Toolkit_ASF.Controllers import controller_energy
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
@@ -69,7 +70,9 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance = CartPoleInstance
         self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
-        self.controller:controller_mpc = self.CartPoleInstance.controller
+        # self.controller:controller_mpc = self.CartPoleInstance.controller
+        self.controller:controller_energy = self.CartPoleInstance.controller
+
         self.print_keyboard_help()
 
         self.InterfaceInstance = Interface()
@@ -306,10 +309,10 @@ class PhysicalCartPoleDriver:
             self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
                                                                        "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
             # tobi: predict next state so that we can measure model mismatch
-            next_states=self.controller.predictor_wrapper.predictor.predict(self.s, [self.Q], horizon=1) # Q must be a vector
-            self.predicted_next_state = next_states[0,1,:]  # take 2nd step of rollout since first step is current state
+            #next_states=self.controller.predictor_wrapper.predictor.predict(self.s, [self.Q], horizon=1) # Q must be a vector
+            #self.predicted_next_state = next_states[0,1,:]  # take 2nd step of rollout since first step is current state
 
-            self.traj_next_state= self.controller.cartpole_trajectory_generator.traj[:, 0] # what the cartpole_trajectory_generator tries to get to
+            #self.traj_next_state= self.controller.cartpole_trajectory_generator.traj[:, 0] # what the cartpole_trajectory_generator tries to get to
 
             performance_measurement[0] = time.time() - start
             self.controller_steptime = time.time() - start
@@ -1058,8 +1061,8 @@ class PhysicalCartPoleDriver:
             lprint()
 
             # cartpole trajectory controller and dancer
-            if self.controlEnabled:
-                lprint(self.controller.cartpole_trajectory_generator.last_status_text) # TODO add status of dancer here
+            # if self.controlEnabled:
+            #     lprint(self.controller.cartpole_trajectory_generator.last_status_text) # TODO add status of dancer here
 
             ############  Mode  ############
             if self.controlEnabled:
