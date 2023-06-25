@@ -80,7 +80,7 @@ If enabled, the following data is streamed to the PC at regular 5 ms intervals:
 * Current cart position.
 * Motor speed command calculated by onboard controller (0 when running in PC-control mode).
 
-## Zynq
+<!---## Zynq
 The [zynq](zynq) folder has the Vivado and Petalinux project for the Minized zynq board. The Xilinx tools version is 2021.2. To replicate the projects you need to install both tools following the installation guides [Vivado](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiTo8K28Lf-AhUxXaQEHfyKDOMQFnoECAMQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug973-vivado-release-notes-install-license%2FDownload-and-Installation&usg=AOvVaw3DnvsfdstplLh6SIkN30Gq) and [Petalinux](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjq55rD8Lf-AhXmUqQEHbBYCGYQFnoECAgQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug1144-petalinux-tools-reference-guide%2FInstalling-the-PetaLinux-Tool&usg=AOvVaw2rKoUMzp-5K6sm-C3m291-)
 
 ### Deploying the bsp file
@@ -103,4 +103,29 @@ sudo apt-get install g++-8-arm-linux-gnueabihf
     - Run the following command in the new app folder.
     ```console
     make
-    ```
+    ```-->
+## Zynq
+The [zynq](zynq) folder has the Vivado and Vitis projects for both Zybo and Zedboard boards. The Xilinx tools version is 2021.2. To replicate the projects you need to install Vivado (including Vitis) following the installation guides [Vivado](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiTo8K28Lf-AhUxXaQEHfyKDOMQFnoECAMQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug973-vivado-release-notes-install-license%2FDownload-and-Installation&usg=AOvVaw3DnvsfdstplLh6SIkN30Gq)
+
+### Creating Vivado project
+Open Vivado tool and click on the TCL console tab. This tab is place at window bottom. Navigate to [zynq](zynq) folder:
+```console
+cd path/to/zynq/folder
+```
+
+Then run the tcl script using the next command:
+```console
+source ./zybo.tcl
+```
+The vivado project will be create and it will be ready for synthesis. Yo can modify this project according your needs.
+
+### Creating Vitis project
+Vitis projects are compressed in [zybo_vitis_pot_motor_test.zip](zynq/zybo_vitis_pot_motor_test.zip) file. So to import then into Vitis follow the next steps:
+- Open Vitis using a new workspace
+- Click on File -> Import...
+- Select "Vitis project exported zip file" option
+- Browse [zybo_vitis_pot_motor_test.zip](zynq/zybo_vitis_pot_motor_test.zip) file
+- Select all the projects
+- Click Finish
+
+The projects are ready to be run in the Zybo board.

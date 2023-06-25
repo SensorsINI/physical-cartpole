@@ -39,3 +39,13 @@ Driver/SI_Toolkit_ASF/Experiments/*
 *.prof
 
 /zynq/minized_sbc_base_2021_1
+/zynq/zybo
+/zynq/zedboard
+/zynq/zybo_bkp
+/zynq/zedboard_bkp
+/zynq/vitis
+/zynq/vitis_test
+/zynq/.Xil
+zynq/minized_sbc_base_2021_1_original.bsp
+zynq/Zybo-Z7-Master.xdc
+zynq/apps/hello_world/hello_world
