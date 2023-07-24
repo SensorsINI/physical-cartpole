@@ -26,7 +26,7 @@ else:
 DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence the results of calibration
 
 # Define the variables
-FILE_NAME = 'Original.csv'
+FILE_NAME = 'C12.csv'
 # FILE_NAME = 'Pololu.csv'
 
 PATH_TO_DATA = 'DataAnalysis/MotorAndCartFriction/'

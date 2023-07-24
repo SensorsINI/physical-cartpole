@@ -36,7 +36,7 @@ else:
 
 # Define the variables
 # FILE_NAME = 'Original.csv'
-FILE_NAME = 'Pololu.csv'
+FILE_NAME = 'C11.csv'
 
 v_max_sat = 0.55
 b = 15.0
