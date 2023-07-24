@@ -109,3 +109,9 @@ secloc:
   pid_Ki: 1.0
   #secloc_motor_map: 128
   controller_logging: True
+secloc-lqr:
+  log_base: 1.05
+  ref_period: 0.006
+  angle_dead_band: 0.01 #0.0025  # Radians
+  pos_dead_band: 0.01
+  controller_logging: True

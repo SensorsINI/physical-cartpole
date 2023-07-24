@@ -226,7 +226,7 @@ class PhysicalCartPoleDriver:
 
         while not self.terminate_experiment:
             self.experiment_sequence()
-            # self.experiment_sequence_minimal()
+            #self.experiment_sequence_minimal()
 
 
     def experiment_sequence(self):
@@ -949,11 +949,13 @@ class PhysicalCartPoleDriver:
             print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
+            print("\rSTATE:  angle:{:+.3f}rad, ang_speed:{:+.3f}rad/s, angle raw:{:04}, position:{:+.2f}cm, speed:{:+.2f}cm/s, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
                 .format(
                     self.s[ANGLE_IDX],
+                    self.s[ANGLED_IDX],
                     self.angle_raw,
                     self.s[POSITION_IDX] * 100,
+                    self.s[POSITIOND_IDX] *100,
                     self.position_raw,
                     f"{self.CartPoleInstance.target_position}, {self.CartPoleInstance.target_equilibrium}",
                     self.Q,
