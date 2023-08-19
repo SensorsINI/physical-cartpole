@@ -108,6 +108,7 @@ rpgd-tf:
   sample_whole_control_space: false # If true bounds of uniform distribution are set to max limits of action space, otherwise see below
   uniform_dist_max: 0.8 # only applies if SAMPLING_DISTRIBUTION: uniform AND sample_whole_control_space: false
   uniform_dist_min: -0.8 # only applies if SAMPLING_DISTRIBUTION: uniform AND sample_whole_control_space: false
+  shift_previous: 1
   warmup: false
   warmup_iterations: 250
 rpgd-me-tf:
