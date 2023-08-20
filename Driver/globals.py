@@ -31,6 +31,8 @@ if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator':
     CONTROL_PERIOD_MS = 8
+elif CONTROLLER_NAME == 'fpga':
+    CONTROL_PERIOD_MS = 21
 else:
     CONTROL_PERIOD_MS = 21  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
