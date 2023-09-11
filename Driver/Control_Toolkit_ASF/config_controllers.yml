@@ -100,6 +100,9 @@ neural-imitator:
   PATH_TO_MODELS: './SI_Toolkit_ASF/'
   net_name: 'Dense-7IN-64H1-64H2-1OUT-0'
   controller_logging: True
+  library: tensorflow
+  input_at_input: False
+  hls4ml: false
 secloc:
   log_base: 1.05
   ref_period: 1
