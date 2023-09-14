@@ -63,21 +63,27 @@ sint16 ClassicMedianFilter(sint16* ptrArray, uint16 arraySize)
 {
 	sint16 returnValue;
 	
+	sint16 ArrayCopy[arraySize];
+
+	for (int i = 0; i < arraySize; i++) {
+		ArrayCopy[i] = ptrArray[i];
+	    }
+
 	if(arraySize > 1u)
 	{
-		InsertionSortMethod(ptrArray,arraySize);
+		InsertionSortMethod(ArrayCopy,arraySize);
 		if(0 == (arraySize&1u))
 		{/* Even number */
-			returnValue = (ptrArray[(arraySize/2)-1]+ptrArray[arraySize/2])/2;
+			returnValue = (ArrayCopy[(arraySize/2)-1]+ArrayCopy[arraySize/2])/2;
 		}
 		else
 		{/* Odd number */
-			returnValue = ptrArray[(arraySize-1)/2];
+			returnValue = ArrayCopy[(arraySize-1)/2];
 		}
 	}
 	else
 	{/* Array has only one element */
-		returnValue = ptrArray[0];
+		returnValue = ArrayCopy[0];
 	}
 	return returnValue;
 }

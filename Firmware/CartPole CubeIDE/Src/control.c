@@ -5,7 +5,7 @@
 #include "usart.h"
 #include "control.h"
 #include "timer.h"
-#include "median_filter.h"
+#include "angle_processing.h"
 
 #include <stdlib.h>
 
@@ -27,7 +27,6 @@
 
 bool            streamEnable        = false;
 short  			angle_setPoint		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
-unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
 float 			angle_smoothing		= CONTROL_ANGLE_SMOOTHING;
 float 			angle_KP			= CONTROL_ANGLE_KP;
 float 			angle_KI			= CONTROL_ANGLE_KI;
@@ -51,9 +50,6 @@ int 			controlCommand 		= 0;
 
 bool            isCalibrated 		= true;
 unsigned short  ledPeriod;
-int  			angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
-long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
-unsigned short 	angleSampIndex		= 0;
 short			angleErrPrev;
 short			positionErrPrev;
 unsigned short 	positionPeriodCnt;
@@ -64,7 +60,12 @@ int				encoderDirection	= 1;
 unsigned long	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
 bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
-int 			prevRead = 0;
+
+long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
+unsigned short 	angleSampIndex		= 0;
+int  angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
+unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
+
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[17000];
@@ -110,40 +111,7 @@ int clip(int value, int min, int max) {
 	return value;
 }
 
-const int ADC_RANGE = 4096;
-int wrapLocal(int angle) {
-    if (angle >= ADC_RANGE/2)
-		return angle - ADC_RANGE;
-	if (angle <= -ADC_RANGE/2)
-		return angle + ADC_RANGE;
-	else
-		return angle;
-}
-int unwrapLocal(int previous, int current) {
-	int diff = current-previous;
 
-	if (diff > 2000)
-		return current - ADC_RANGE;
-	if (diff < -2000)
-		return current + ADC_RANGE;
-	else
-		return current;
-}
-
-int wrap(int current) {
-	if(current > 0)
-		return current - ADC_RANGE * (current / ADC_RANGE);
-	else
-		return current + ADC_RANGE * (current / ADC_RANGE + 1);
-}
-
-int unwrap(int previous, int current) {
-    int diff = previous-current;
-	if (diff>0)
-    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE + 1) / 2);
-	else
-    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE - 1) / 2);
-}
 
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
 void CONTROL_Loop(void)
@@ -157,59 +125,22 @@ void CONTROL_Loop(void)
 	static unsigned char	buffer[30];
 	static int 				prevAngle = 0, stableAngle = 0;
 	static int 				pprevAngle = 0, ppprevAngle = 0;
-	static int 				angleD = 0, angleI = 0;
+	static int 				angleI = 0;
 	#define lastAngleLength 5
-	static unsigned char    frozen = 0;
-	int 					angle, angleErr;
+	int 					angleErr;
 	short 					positionRaw, positionErr, positionD;
 	static short 			position, position_filtered, positionErrPrev, positionPrev;
 	float 					angleErrDiff;
 	float 					positionErrDiff;
 	int   					command;
-	int angle_mean = 0;
+	int angle = 0;
+	int angleD = 0;
+	int invalid_step = 0;
+
 
 	timeMeasured = TIMER1_getSystemTime_Us();
 
-	// sum/min/max of buffer
-	/*int angle_sum = 0;
-	int angle_min = angleSamples[0];
-	int angle_max = angleSamples[0];
-	for (int i = 0; i < angle_averageLen; i++) {
-		int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
-
-		angle_min = (curr < angle_min ? curr : angle_min);
-		angle_max = (curr > angle_max ? curr : angle_max);
-		angle_sum += curr;
-	}
-
-	// Averaging & Median Filter: exclude min/max values from average
-	if (angle_averageLen > 2)
-		angle_mean = (short)((angle_sum - angle_min - angle_max) / (angle_averageLen-2));
-	else
-		angle_mean = angle_sum / angle_averageLen;*/
-
-	angle_mean = ClassicMedianFilter(angleSamples, angle_averageLen);
-	prevRead = 0;
-
-	angle = angle_mean;
-	angleD = wrapLocal(angle - prevAngle);
-	prevAngle = angle;
-
-
-	// Anomaly Detection: count invalid buffer steps
-	#define MAX_ADC_STEP 20
-	unsigned char invalid_step = 0;
-	if(angle_averageLen > 1) {
-		for (int i = 0; i < angle_averageLen; i++) {
-			// start at oldest value (since angleSampIndex is not yet overwritten)
-			int curr = angleSamples[(angleSampIndex + i) % angle_averageLen];
-			int prev = angleSamples[(angleSampIndex + i + angle_averageLen - 1) % angle_averageLen];
-
-			// previous value for oldest value not existing
-			if(i != 0 && abs(wrapLocal(curr-prev)) > MAX_ADC_STEP)
-				invalid_step++;
-		}
-	}
+	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step);
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position = (positionRaw - positionCentre);
@@ -291,17 +222,18 @@ void CONTROL_Loop(void)
 
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;
-        buffer[ 2] = 17;
+        buffer[ 2] = 19;
         *((short *)&buffer[3]) = angle;
-        *((short *)&buffer[5]) = position;
-        *((short *)&buffer[7]) = command;
-        *((unsigned char *)&buffer[9]) = invalid_step;
-        *((unsigned int *)&buffer[10]) = (unsigned int)timeMeasured;
-        *((unsigned short *)&buffer[14]) = (unsigned short)(latency / 10);
+        *((short *)&buffer[5]) = angleD;
+        *((short *)&buffer[7]) = position;
+        *((short *)&buffer[9]) = command;
+        *((unsigned char *)&buffer[11]) = invalid_step;
+        *((unsigned int *)&buffer[12]) = (unsigned int)timeMeasured;
+        *((unsigned short *)&buffer[16]) = (unsigned short)(latency / 10);
         // latency maximum: 10 * 65'535 Us = 653ms
 
-        buffer[16] = crc(buffer, 16);
-        USART_SendBuffer(buffer, 17);
+        buffer[18] = crc(buffer, 18);
+        USART_SendBuffer(buffer, 19);
 
         if(newReceived) {
         	timeSent = timeMeasured;
@@ -344,10 +276,6 @@ void CONTROL_BackgroundTask(void)
 		// conversion takes 18us
 		read = ANGLE_Read();
 		angleSamples[angleSampIndex] = read;
-		//angleSamples[angleSampIndex] = unwrap(prevRead, read);
-		//prevRead = read;
-
-		//angleSamplesTimestamp[angleSampIndex] = now;
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
 		lastRead = now;

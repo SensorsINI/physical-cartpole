@@ -7,7 +7,7 @@
 #include "timer.h"
 #include "control.h"
 
-#define UART_BAUD 230400 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
+#define UART_BAUD 115200 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 void enable_control(void);
 
