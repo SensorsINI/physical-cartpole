@@ -48,14 +48,17 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety const
 
 MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
 MOTOR_CORRECTION_POLOLU = (4307.69, 398.69)
+# MOTOR_CORRECTION_POLOLU = (?, ?)  # Zybo
 
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
-ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values #
+ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values # STM
+# ANGLE_360_DEG_IN_ADC_UNITS = 4099.64  # Range of angle values # Zybo
 
-ANGLE_HANGING_POLOLU = 1054  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 978.0  # Value from sensor when pendulum is at stable equilibrium point
+# ANGLE_HANGING_POLOLU = 942.0  # Value from sensor when pendulum is at stable equilibrium point #  Zybo
 ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
@@ -71,6 +74,7 @@ POLYFIT_ANGLED = False
 # Position unit conversion adc to meters: POSITION_TARGET_SOFTWARE = POSITION_TARGET_FIRMWARE*POSITION_NORMALIZATION_FACTOR
 # POSITION_KP_SOFTWARE = POSITION_KP_FIRMWARE/POSITION_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
 POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation # seems to be 4164 now
+# POSITION_ENCODER_RANGE = 4690 # For new implementation with Zybo
 POSITION_OFFSET = 0  # Serves to adjust starting position - position after calibration is 0
 POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2  # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
 TRACK_LENGTH = 0.396  # Total usable track length in meters
