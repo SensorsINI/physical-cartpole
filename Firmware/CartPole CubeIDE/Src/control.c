@@ -58,8 +58,14 @@ int				positionLimitLeft;
 int				positionLimitRight;
 int				encoderDirection	= 1;
 unsigned long	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
+
+unsigned int 	time_current_measurement;
+unsigned int	time_last_measurement;
+
 bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
+
+short 			position_previous = -30000;
 
 long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
@@ -128,11 +134,14 @@ void CONTROL_Loop(void)
 	static int 				angleI = 0;
 	#define lastAngleLength 5
 	int 					angleErr;
-	short 					positionRaw, positionErr, positionD;
-	static short 			position, position_filtered, positionErrPrev, positionPrev;
+	short 					positionRaw, positionErr;
+	static short 			position_filtered, positionErrPrev, positionPrev;
 	float 					angleErrDiff;
 	float 					positionErrDiff;
 	int   					command;
+
+	short 			position;
+	short 			positionD;
 	int angle = 0;
 	int angleD = 0;
 	int invalid_step = 0;
@@ -140,10 +149,21 @@ void CONTROL_Loop(void)
 
 	timeMeasured = TIMER1_getSystemTime_Us();
 
+	time_last_measurement = time_current_measurement;
+	time_current_measurement = TIMER1_getSystemTime_Us();
+
 	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step);
+
+	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
 	positionRaw = positionCentre + encoderDirection * ((short)ENCODER_Read() - positionCentre);
     position = (positionRaw - positionCentre);
+
+    if (position_previous!=-30000){
+    	positionD = position-position_previous;
+    } else {
+    	positionD = 0;
+    }
 
 	// Microcontroller Control Routine
 	if (controlEnabled)	{
@@ -222,18 +242,20 @@ void CONTROL_Loop(void)
 
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;
-        buffer[ 2] = 19;
+        buffer[ 2] = 25;
         *((short *)&buffer[3]) = angle;
         *((short *)&buffer[5]) = angleD;
         *((short *)&buffer[7]) = position;
-        *((short *)&buffer[9]) = command;
-        *((unsigned char *)&buffer[11]) = invalid_step;
-        *((unsigned int *)&buffer[12]) = (unsigned int)timeMeasured;
-        *((unsigned short *)&buffer[16]) = (unsigned short)(latency / 10);
+        *((short *)&buffer[9]) = positionD;
+        *((short *)&buffer[11]) = command;
+        *((unsigned char *)&buffer[13]) = invalid_step;
+        *((unsigned int *)&buffer[14]) = (unsigned int)time_difference_between_measurement;
+        *((unsigned int *)&buffer[18]) = (unsigned int)timeMeasured;
+        *((unsigned short *)&buffer[22]) = (unsigned short)(latency / 10);
         // latency maximum: 10 * 65'535 Us = 653ms
 
-        buffer[18] = crc(buffer, 18);
-        USART_SendBuffer(buffer, 19);
+        buffer[24] = crc(buffer, 24);
+        USART_SendBuffer(buffer, 25);
 
         if(newReceived) {
         	timeSent = timeMeasured;
