@@ -1,12 +1,9 @@
 #ifndef __CONTROL_H_
 #define __CONTROL_H_
 
-#include "sys.h"
-#include "motor.h"
 
 #define CONTROL_LOOP_PERIOD_MS	        5
 #define CONTROL_SLOWDOWN				0
-#define CONTROL_MOTOR_MAX_SPEED         ((int)(0.95 * MOTOR_FULL_SCALE + 0.5))
 #define CONTROL_SYNC					false
 #define CONTROL_LATENCY_US				0
 
