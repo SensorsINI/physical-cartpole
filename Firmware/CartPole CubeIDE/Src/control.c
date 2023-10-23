@@ -289,7 +289,7 @@ void CONTROL_BackgroundTask(void)
 	if (Message_GetFromPC(&rxBuffer[rxCnt]))
 		rxCnt++;
 
-	int current_command = get_command_from_PC_message(rxBuffer, rxCnt);
+	int current_command = get_command_from_PC_message(rxBuffer, &rxCnt);
 
 	switch (current_command){
 		case CMD_PING:

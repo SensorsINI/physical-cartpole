@@ -3,13 +3,13 @@
 unsigned char 	crc(const unsigned char * message, unsigned int len);
 bool 			crcIsValid(const unsigned char * buff, unsigned int len, unsigned char crcVal);
 
-int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int rxCnt){
+int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 	unsigned int			i;
 	unsigned int 			idx;
 	unsigned int			pktLen;
 	int current_command = CMD_DO_NOTHING;
 	// Buffer should have at least 4 bytes
-	if (rxCnt >= 4)
+	if (*rxCnt >= 4)
 	{
 		idx = 0;
 
@@ -21,7 +21,7 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int rxCnt){
 			if ((pktLen <= SERIAL_MAX_PKT_LENGTH) && (pktLen >= 4))
 			{
 				// Receive entire message packet (including CRC)
-				if (rxCnt >= pktLen)
+				if (*rxCnt >= pktLen)
 				{
 					// Validate message integrity
 					if (crcIsValid(rxBuffer, pktLen-1, rxBuffer[pktLen-1]))
@@ -158,7 +158,7 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int rxCnt){
 		// Shift buffer until first character is SOF
 		if (idx != 0)
 		{
-			for (; idx < rxCnt; idx++)
+			for (; idx < *rxCnt; idx++)
 			{
 				if (rxBuffer[idx] == SERIAL_SOF)
 				{
@@ -166,8 +166,8 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int rxCnt){
 				}
 			}
 
-			rxCnt -= idx;
-			for (i = 0; i < rxCnt; i++)
+			*rxCnt -= idx;	// This is not correctly modified!
+			for (i = 0; i < *rxCnt; i++)
 			{
 				rxBuffer[i] = rxBuffer[idx+i];
 			}

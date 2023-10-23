@@ -22,7 +22,7 @@
 #define CMD_STATE					0xCC
 #define CMD_DO_NOTHING				0x00
 
-int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int rxCnt);
+int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);
 void prepare_message_to_PC_state(
 		unsigned char * buffer,
 		int angle,
