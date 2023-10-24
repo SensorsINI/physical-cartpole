@@ -44,6 +44,25 @@ from yaml import load, FullLoader
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
+import threading
+def timeout_function(f, timeout, previous_result):
+    """Run `f` and return its result. If it takes longer than `timeout` seconds, return `previous_result`."""
+    result_container = {"result": None}
+
+    def worker():
+        result_container["result"] = f()
+
+    t = threading.Thread(target=worker)
+    t.start()
+    t.join(timeout)
+
+    if t.is_alive():
+        overtime = True
+        return previous_result, overtime
+
+    overtime = False
+    return result_container["result"], overtime
+
 @jit(nopython=False, cache=True, fastmath=True)
 def polyfit(buffer):
     p = fit_poly(np.arange(len(buffer)), buffer, 2)
@@ -252,8 +271,13 @@ class PhysicalCartPoleDriver:
             self.lastControlTime = self.timeNow
             self.controller_steptime_previous = self.controller_steptime
             start = time.time()
-            self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
-                                                                       "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
+
+            def f():
+                return float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
+                                                                   "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
+            self.Q, overtime = timeout_function(f, (CONTROL_PERIOD_MS-2)*1.0e-3, self.Q)
+            if overtime:
+                self.latency_violations += 1  # FIXME: Preciselly if it is added here it should not be added again from firmware in the next step even if despite timeout here, latency violation happens.
             performance_measurement[0] = time.time() - start
             self.controller_steptime = time.time() - start
             if AUTOSTART:
