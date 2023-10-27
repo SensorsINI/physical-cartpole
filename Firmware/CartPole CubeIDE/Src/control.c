@@ -66,6 +66,8 @@ bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
 int 			prevRead = 0;
 
+unsigned short	latency_violation = 0;
+
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[17000];
 
@@ -287,21 +289,26 @@ void CONTROL_Loop(void)
 
     	if(timeReceived > 0 && timeSent > 0 && newReceived) {
         	latency = timeReceived - timeSent;
+        	latency_violation = 0;
+    	} else{
+    		latency_violation = 1;
+    		latency = controlLoopPeriodMs*1000;
     	}
 
         buffer[ 0] = SERIAL_SOF;
         buffer[ 1] = CMD_STATE;
-        buffer[ 2] = 17;
+        buffer[ 2] = 19;
         *((short *)&buffer[3]) = angle;
         *((short *)&buffer[5]) = position;
         *((short *)&buffer[7]) = command;
         *((unsigned char *)&buffer[9]) = invalid_step;
         *((unsigned int *)&buffer[10]) = (unsigned int)timeMeasured;
         *((unsigned short *)&buffer[14]) = (unsigned short)(latency / 10);
+        *((unsigned short *)&buffer[16]) = (unsigned short)(latency_violation);
         // latency maximum: 10 * 65'535 Us = 653ms
 
-        buffer[16] = crc(buffer, 16);
-        USART_SendBuffer(buffer, 17);
+        buffer[18] = crc(buffer, 18);
+        USART_SendBuffer(buffer, 19);
 
         if(newReceived) {
         	timeSent = timeMeasured;
@@ -463,6 +470,11 @@ void CONTROL_BackgroundTask(void)
 								{
 									motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 									timeReceived = TIMER1_getSystemTime_Us();
+
+									if(newReceived){
+										timeSent = timeMeasured;
+									}
+
 									newReceived = true;
 
 									if(controlSync) {
