@@ -167,11 +167,11 @@ class Interface:
 
     def read_state(self):
         self.clear_read_buffer()
-        reply = self._receive_reply(CMD_STATE, 17, READ_STATE_TIMEOUT)
+        reply = self._receive_reply(CMD_STATE, 19, READ_STATE_TIMEOUT)
 
-        (angle, position, command, invalid_steps, sent, latency) = struct.unpack('=3hBIH', bytes(reply[3:16]))
+        (angle, position, command, invalid_steps, sent, latency, latency_violation) = struct.unpack('=3hBI2H', bytes(reply[3:18]))
 
-        return angle, 0, position, command, invalid_steps, sent/1e6, latency/1e5
+        return angle, 0, position, command, invalid_steps, sent/1e6, latency/1e5, latency_violation
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True):
         self.device.timeout = timeout

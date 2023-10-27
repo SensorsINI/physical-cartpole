@@ -167,6 +167,7 @@ class PhysicalCartPoleDriver:
         self.controller_steptime_buffer = np.zeros((0))
         self.controlled_iterations = 0
         self.total_iterations = 0
+        self.latency_violation = 0
         self.latency_violations = 0
 
         # Artificial Latency
@@ -234,6 +235,9 @@ class PhysicalCartPoleDriver:
 
         self.keyboard_input()
 
+        if self.controlEnabled:
+            self.controller_steptime_previous = self.controller_steptime
+
         self.get_state_and_time_measurement()
 
         if self.demo_program and self.controlEnabled:
@@ -250,7 +254,6 @@ class PhysicalCartPoleDriver:
         if self.controlEnabled:
             # Active Python Control: set values from controller
             self.lastControlTime = self.timeNow
-            self.controller_steptime_previous = self.controller_steptime
             start = time.time()
             self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
                                                                        "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
@@ -309,7 +312,7 @@ class PhysicalCartPoleDriver:
 
         # This function will block at the rate of the control loop
         (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent,
-         self.firmware_latency) = self.InterfaceInstance.read_state()
+         self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
 
         self.angleD_raw = (self.wrap_local(self.angle_raw - self.angle_raw_stable) if self.angle_raw_stable is not None else 0)
         self.angle_raw_stable = self.angle_raw
@@ -428,7 +431,7 @@ class PhysicalCartPoleDriver:
 
                 print("\nCalibrating motor position.... ")
                 self.InterfaceInstance.calibrate()
-                (_, _, self.position_offset, _, _, _, _) = self.InterfaceInstance.read_state()
+                (_, _, self.position_offset, _, _, _, _, _) = self.InterfaceInstance.read_state()
                 print("Done calibrating")
 
                 if self.InterfaceInstance.encoderDirection == 1:
@@ -450,7 +453,7 @@ class PhysicalCartPoleDriver:
                 time_measurement_start = time.time()
                 print('Started angle measurement.')
                 for _ in trange(number_of_measurements):
-                    (angle, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     measured_angles.append(float(angle))
                 time_measurement = time.time()-time_measurement_start
 
@@ -593,6 +596,7 @@ class PhysicalCartPoleDriver:
             self.controller.controller_report()
         self.controller.controller_reset()
         self.danceEnabled = False
+        self.latency_violations = 0
 
     def switch_on_control(self):
         print('on')
@@ -603,6 +607,7 @@ class PhysicalCartPoleDriver:
         self.controller_steptime_buffer = np.zeros((0))
         global performance_measurement, performance_measurement_buffer
         performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
+        self.latency_violations = 0
 
     def update_parameters_in_cartpole_instance(self):
         """
@@ -631,7 +636,7 @@ class PhysicalCartPoleDriver:
 
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent, self.firmware_latency) = self.InterfaceInstance.read_state()
+        (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
 
         self.treat_deadangle_with_derivative()
 
@@ -671,8 +676,8 @@ class PhysicalCartPoleDriver:
 
 
     def time_measurement(self):
-        self.timeNow = time.time()
         self.lastTime = self.timeNow
+        self.timeNow = time.time()
         self.elapsedTime = self.timeNow - self.startTime
 
         if self.lastSent is not None:
@@ -683,9 +688,14 @@ class PhysicalCartPoleDriver:
 
     def check_latency_violation(self):
         # Latency Violations
-        if self.delta_time > CONTROL_PERIOD_MS * 1e-3:
+        if self.latency_violation == 0 and self.delta_time > 1.5*CONTROL_PERIOD_MS/1000.0:
+            self.latency_violation = 1
+            self.latency_violations += 2  # Skipping a message from Chip means usually providing delayed control input twice in a row (due to communication schema)
+        if self.latency_violation == 0 and self.controlEnabled and self.firmware_latency < self.controller_steptime_previous:  # Heuristic, obviosuly wrong case
+            self.latency_violation = 1
             self.latency_violations += 1
-
+        elif self.latency_violation == 1:
+            self.latency_violations += 1
     def treat_deadangle_with_derivative(self):
 
         # Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
@@ -851,7 +861,7 @@ class PhysicalCartPoleDriver:
                      self.target_position, self.controller.position_error, self.controller.Q_angle,
                      self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.sent, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
             else:
                 self.csvwriter.writerow(
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
@@ -859,7 +869,7 @@ class PhysicalCartPoleDriver:
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                      self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
                      self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.sent, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q
