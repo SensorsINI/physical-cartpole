@@ -257,7 +257,6 @@ class PhysicalCartPoleDriver:
         if self.controlEnabled:
             # Active Python Control: set values from controller
             self.lastControlTime = self.timeNow
-            self.controller_steptime_previous = self.controller_steptime
             start = time.time()
             self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
                                                                        "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
