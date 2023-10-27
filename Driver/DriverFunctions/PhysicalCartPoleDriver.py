@@ -44,6 +44,8 @@ from yaml import load, FullLoader
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
+import threading
+
 @jit(nopython=False, cache=True, fastmath=True)
 def polyfit(buffer):
     p = fit_poly(np.arange(len(buffer)), buffer, 2)
@@ -77,6 +79,7 @@ class PhysicalCartPoleDriver:
         self.csvfile = None
         self.csvfilename = None
         self.csvwriter = None
+        self.csv_init_thread = None
 
         # Live Plot
         self.livePlotEnabled = LIVE_PLOT
@@ -395,13 +398,20 @@ class PhysicalCartPoleDriver:
 
             ##### Logging #####
             elif c == 'l':
-                self.loggingEnabled = not self.loggingEnabled
+                loggingEnabled_local = not self.loggingEnabled
                 print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
-                if self.loggingEnabled:
-                    self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
+                if loggingEnabled_local:
+                    def f():
+                        self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
+                        self.loggingEnabled = loggingEnabled_local
+
+                    self.csv_init_thread = threading.Thread(target=f)
+                    self.csv_init_thread.start()
+
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
+                    self.loggingEnabled = loggingEnabled_local
 
                 if self.controller.controller_name == 'mppi':
                     if not self.loggingEnabled and self.controlled_iterations > 1:
