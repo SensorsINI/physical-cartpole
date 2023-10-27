@@ -104,7 +104,7 @@ def csv_init(csv_name=None, controller_name=None):
         writer.writerow(
             ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angleD_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
                 'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['target_equilibrium'] + ['positionErr'] + ['angleCmd'] + [
-                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['latency'] + ['pythonLatency']+ ['controller_steptime'] + ['additionalLatency']
+                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['latency'] + ['latency_violations'] + ['pythonLatency']+ ['controller_steptime'] + ['additionalLatency']
             + ['invalid_steps'] + ['frozen'] + ['fitted'] + ['angle_raw_sensor'] + ['angleD_raw_sensor'] + ['angleD_fitted'])
 
     # TODO: Not sure if we really need to return these two things and if this is efficient implementation
