@@ -15,7 +15,7 @@ void TIMER1_Init(unsigned int _periodMS)
 
 	RCC->APB2ENR	|= 1<<11;					// TIM1 clock enable
 	TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
- 	TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
+ 	TIM1->PSC		 = 71;						// The prescaler 71 gets the count clock of 1Mhz.
  	TIM1->DIER		|= 1<<0;   					// Enable update interrupt
  	TIM1->DIER		|= 1<<6;   					// Enable triggered interrupt
  	TIM1->CR1		|= 0x01;					// Enable timer
@@ -31,13 +31,13 @@ void TIMER1_ChangePeriod(unsigned int _periodMS)
 		slowdown = 1;
 
 		TIM1->ARR		 = (periodMS * 1000) - 1;	// Setting counter automatic reload value
-		TIM1->PSC		 = 72;						// The prescaler 72 gets the count clock of 1Mhz.
+		TIM1->PSC		 = 71;						// The prescaler 71 gets the count clock of 1Mhz.
 	}
 	else {
 		slowdown = (periodMS / 60 + 1);
 
 		TIM1->ARR		 = (periodMS * 1000 / slowdown) - 1;	// Setting counter automatic reload value
-		TIM1->PSC		 = 72 * slowdown;						// The prescaler 72 gets the count clock of 1Mhz.
+		TIM1->PSC		 = 71 * slowdown;						// The prescaler 71 gets the count clock of 1Mhz.
 	}
 }
 
