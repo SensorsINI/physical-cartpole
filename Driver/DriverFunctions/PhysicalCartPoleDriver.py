@@ -700,16 +700,21 @@ class PhysicalCartPoleDriver:
             delta_time_test = 1e-6
         self.lastSent = self.sent
 
+    # FIXME: Think if these cases are right
     def check_latency_violation(self):
         # Latency Violations
-        if self.latency_violation == 0 and self.delta_time > 1.5*CONTROL_PERIOD_MS/1000.0:
+        if self.latency_violation == 1:
+            self.latency_violations += 1
+        elif self.delta_time > 1.5*CONTROL_PERIOD_MS/1000.0:
             self.latency_violation = 1
-            self.latency_violations += 2  # Skipping a message from Chip means usually providing delayed control input twice in a row (due to communication schema)
-        if self.latency_violation == 0 and self.controlEnabled and self.firmware_latency < self.controller_steptime_previous:  # Heuristic, obviosuly wrong case
+            self.latency_violations += np.floor(self.delta_time/(CONTROL_PERIOD_MS/1000.0))
+        elif self.controlEnabled and self.firmware_latency > (CONTROL_PERIOD_MS/1000.0):
             self.latency_violation = 1
             self.latency_violations += 1
-        elif self.latency_violation == 1:
+        elif self.controlEnabled and self.firmware_latency < self.controller_steptime_previous:  # Heuristic, obviosuly wrong case
+            self.latency_violation = 1
             self.latency_violations += 1
+
     def treat_deadangle_with_derivative(self):
 
         # Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
