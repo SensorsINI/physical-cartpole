@@ -191,7 +191,7 @@ void prepare_message_to_PC_state(
 
 	buffer[ 0] = SERIAL_SOF;
 	buffer[ 1] = CMD_STATE;
-	buffer[ 2] = 25;
+	buffer[ 2] = 27;
 	*((short *)&buffer[3]) = angle;
 	*((short *)&buffer[5]) = angleD;
 	*((short *)&buffer[7]) = position;
@@ -201,8 +201,9 @@ void prepare_message_to_PC_state(
 	*((unsigned int *)&buffer[14]) = (unsigned int)time_difference_between_measurement;
 	*((unsigned int *)&buffer[18]) = (unsigned int)timeMeasured;
 	*((unsigned short *)&buffer[22]) = (unsigned short)(latency / 10);
+	*((unsigned short *)&buffer[24]) = (unsigned short)(latency_violation);
 	// latency maximum: 10 * 65'535 Us = 653ms
-	buffer[24] = crc(buffer, 24);
+	buffer[26] = crc(buffer, 26);
 }
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection){

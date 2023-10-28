@@ -344,6 +344,11 @@ void CONTROL_BackgroundTask(void)
 		{
 			motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 			timeReceived = GetTimeNow();
+
+            if(newReceived){
+                timeSent = timeMeasured;
+            }
+
 			newReceived = true;
 
 			if(controlSync) {
