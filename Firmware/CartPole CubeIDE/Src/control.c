@@ -53,6 +53,8 @@ int  angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
 
 
+unsigned short	latency_violation = 0;
+
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[17000];
 
@@ -216,6 +218,10 @@ void CONTROL_Loop(void)
 
     	if(timeReceived > 0 && timeSent > 0 && newReceived) {
         	latency = timeReceived - timeSent;
+        	latency_violation = 0;
+    	} else{
+    		latency_violation = 1;
+    		latency = controlLoopPeriodMs*1000;
     	}
 
     	prepare_message_to_PC_state(
@@ -228,9 +234,10 @@ void CONTROL_Loop(void)
 				invalid_step,
 				time_difference_between_measurement,
 				timeMeasured,
-				latency);
+				latency,
+				latency_violation);
 
-    	Message_SendToPC(buffer, 25);
+    	Message_SendToPC(buffer, 27);
 
         if(newReceived) {
         	timeSent = timeMeasured;
@@ -338,6 +345,11 @@ void CONTROL_BackgroundTask(void)
 		{
 			motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 			timeReceived = GetTimeNow();
+
+            if(newReceived){
+                timeSent = timeMeasured;
+            }
+
 			newReceived = true;
 
 			if(controlSync) {

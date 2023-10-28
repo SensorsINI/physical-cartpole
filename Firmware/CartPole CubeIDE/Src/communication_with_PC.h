@@ -33,7 +33,8 @@ void prepare_message_to_PC_state(
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
 		unsigned long timeMeasured,
-		unsigned long latency);
+		unsigned long latency,
+		unsigned short	latency_violation);
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection);
 void prepare_message_to_PC_angle_config(
 		unsigned char * txBuffer,
