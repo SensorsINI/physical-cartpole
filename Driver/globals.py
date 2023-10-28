@@ -57,7 +57,7 @@ ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quick
 ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values # STM
 # ANGLE_360_DEG_IN_ADC_UNITS = 4099.64  # Range of angle values # Zybo
 
-ANGLE_HANGING_POLOLU = 978.0  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 949.0  # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING_POLOLU = 942.0  # Value from sensor when pendulum is at stable equilibrium point #  Zybo
 ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
 
