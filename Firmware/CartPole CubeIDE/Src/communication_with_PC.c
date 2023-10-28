@@ -187,7 +187,8 @@ void prepare_message_to_PC_state(
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
 		unsigned long timeMeasured,
-		unsigned long latency){
+		unsigned long latency,
+		unsigned short	latency_violation){
 
 	buffer[ 0] = SERIAL_SOF;
 	buffer[ 1] = CMD_STATE;
