@@ -25,6 +25,7 @@
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);
 void prepare_message_to_PC_state(
 		unsigned char * buffer,
+		unsigned short message_len,
 		int angle,
 		int angleD,
 		int position,
@@ -34,7 +35,9 @@ void prepare_message_to_PC_state(
 		unsigned long time_difference_between_measurement,
 		unsigned long timeMeasured,
 		unsigned long latency,
-		unsigned short	latency_violation);
+		unsigned short	latency_violation,
+		int angle_PC);
+
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection);
 void prepare_message_to_PC_angle_config(
 		unsigned char * txBuffer,

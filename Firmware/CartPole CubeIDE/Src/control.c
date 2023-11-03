@@ -4,6 +4,7 @@
 #include "communication_with_PC.h"
 #include <stdlib.h>
 
+const unsigned short 	message_len = 27;
 
 bool            streamEnable        = false;
 short  			angle_setPoint		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
@@ -51,7 +52,6 @@ long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
 int  angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
-
 
 unsigned short	latency_violation = 0;
 
@@ -122,6 +122,7 @@ void CONTROL_Loop(void)
 
 	short 			position;
 	short 			positionD;
+	int angle_PC = 0;
 	int angle = 0;
 	int angleD = 0;
 	int invalid_step = 0;
@@ -132,7 +133,7 @@ void CONTROL_Loop(void)
 	time_last_measurement = time_current_measurement;
 	time_current_measurement = GetTimeNow();
 
-	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step);
+	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step, &angle_PC);
 
 	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
@@ -226,6 +227,7 @@ void CONTROL_Loop(void)
 
     	prepare_message_to_PC_state(
     			buffer,
+				message_len,
     			angle,
 				angleD,
 				position,
@@ -237,7 +239,7 @@ void CONTROL_Loop(void)
 				latency,
 				latency_violation);
 
-    	Message_SendToPC(buffer, 27);
+    	Message_SendToPC(buffer, message_len);
 
         if(newReceived) {
         	timeSent = timeMeasured;

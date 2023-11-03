@@ -179,6 +179,7 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 void prepare_message_to_PC_state(
 		unsigned char * buffer,
+		unsigned short message_len,
 		int angle,
 		int angleD,
 		int position,
@@ -192,7 +193,7 @@ void prepare_message_to_PC_state(
 
 	buffer[ 0] = SERIAL_SOF;
 	buffer[ 1] = CMD_STATE;
-	buffer[ 2] = 27;
+	buffer[ 2] = message_len;
 	*((short *)&buffer[3]) = angle;
 	*((short *)&buffer[5]) = angleD;
 	*((short *)&buffer[7]) = position;
@@ -204,7 +205,7 @@ void prepare_message_to_PC_state(
 	*((unsigned short *)&buffer[22]) = (unsigned short)(latency / 10);
 	*((unsigned short *)&buffer[24]) = (unsigned short)(latency_violation);
 	// latency maximum: 10 * 65'535 Us = 653ms
-	buffer[26] = crc(buffer, 26);
+	buffer[message_len-1] = crc(buffer, message_len-1);
 }
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection){
