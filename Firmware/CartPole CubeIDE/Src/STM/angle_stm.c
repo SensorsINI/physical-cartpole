@@ -51,23 +51,3 @@ unsigned short Goniometer_Read_STM(void)
 	while (!(ADC1->SR & 1<<1));			// Wait for conversion end
 	return ADC1->DR;					// Return the ADC value
 }
-
-unsigned short Goniometer_ReadAvergage_STM(unsigned int n)
-{
-	unsigned int i;
-	unsigned int average = 0;
-	
-	for (i = 0; i < n; i++)
-	{
-		// Set conversion sequence		 
-		ADC1->SQR3		&= 0xFFFFFFE0;		// Regular sequence 1 channel 3
-		ADC1->SQR3		|= 3;		  			    
-		ADC1->CR2		|= 1<<22;			// Start rule conversion channel 
-		while(!(ADC1->SR & 1<<1));			// Wait for conversion end
-		
-		average += ADC1->DR;
-		//SYS_DelayUS(200);
-	}
-	
-	return (unsigned short)(average/n);
-}
