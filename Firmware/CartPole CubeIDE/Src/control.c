@@ -122,7 +122,6 @@ void CONTROL_Loop(void)
 
 	short 			position;
 	short 			positionD;
-	int angle_PC = 0;
 	int angle = 0;
 	int angleD = 0;
 	int invalid_step = 0;
@@ -133,7 +132,7 @@ void CONTROL_Loop(void)
 	time_last_measurement = time_current_measurement;
 	time_current_measurement = GetTimeNow();
 
-	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step, &angle_PC);
+	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step);
 
 	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
