@@ -42,18 +42,22 @@ void prepare_message_to_PC_angle_config(
 		unsigned char * txBuffer,
 		short angle_setPoint,
 		unsigned short angle_averageLen,
-		float angle_smoothing,
+		int controlLatencyUs,
+		bool controlSync);
+
+void prepare_message_to_PC_angle_config_PID(
+		unsigned char * txBuffer,
 		float angle_KP,
 		float angle_KI,
 		float angle_KD,
-		int controlLatencyUs,
-		bool controlSync);
+		);
+
 void prepare_message_to_PC_position_config(
 		unsigned char * txBuffer,
 		short position_setPoint,
-		unsigned short temp,
 		float position_smoothing,
 		float position_KP,
+		float position_KI,
 		float position_KD
 		);
 

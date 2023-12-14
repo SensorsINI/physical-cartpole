@@ -220,7 +220,23 @@ void prepare_message_to_PC_angle_config(
 		unsigned char * txBuffer,
 		short angle_setPoint,
 		unsigned short angle_averageLen,
-		float angle_smoothing,
+		int controlLatencyUs,
+		bool controlSync){
+
+	txBuffer[ 0] = SERIAL_SOF;
+	txBuffer[ 1] = CMD_GET_ANGLE_CONFIG;
+	txBuffer[ 2] = 13;
+	*((short          *)&txBuffer[ 3]) = angle_setPoint;
+	*((unsigned short *)&txBuffer[ 5]) = angle_averageLen;
+	*((float          *)&txBuffer[7]) = controlLatencyUs;
+	*((bool           *)&txBuffer[11]) = controlSync;
+	txBuffer[12] = crc(txBuffer, 12);
+
+}
+
+
+void prepare_message_to_PC_angle_config_PID(
+		unsigned char * txBuffer,
 		float angle_KP,
 		float angle_KI,
 		float angle_KD,
@@ -229,16 +245,11 @@ void prepare_message_to_PC_angle_config(
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_ANGLE_CONFIG;
-	txBuffer[ 2] = 28;
-	*((short          *)&txBuffer[ 3]) = angle_setPoint;
-	*((unsigned short *)&txBuffer[ 5]) = angle_averageLen;
-	*((float          *)&txBuffer[ 7]) = angle_smoothing;
-	*((float          *)&txBuffer[11]) = angle_KP;
-	*((float          *)&txBuffer[15]) = angle_KI;
-	*((float          *)&txBuffer[19]) = angle_KD;
-	*((float          *)&txBuffer[23]) = controlLatencyUs;
-	*((bool           *)&txBuffer[27]) = controlSync;
-	txBuffer[28] = crc(txBuffer, 28);
+	txBuffer[ 2] = 16;
+	*((float          *)&txBuffer[3]) = angle_KP;
+	*((float          *)&txBuffer[7]) = angle_KI;
+	*((float          *)&txBuffer[11]) = angle_KD;
+	txBuffer[15] = crc(txBuffer, 15);
 
 }
 
@@ -248,17 +259,18 @@ void prepare_message_to_PC_position_config(
 		unsigned short temp,
 		float position_smoothing,
 		float position_KP,
+		float position_KI,
 		float position_KD
 		){
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_POSITION_CONFIG;
-	txBuffer[ 2] = 20;
+	txBuffer[ 2] = 22;
 	*((short          *)&txBuffer[ 3]) = position_setPoint;
-	*((unsigned short *)&txBuffer[ 5]) = temp;
-	*((float          *)&txBuffer[ 7]) = position_smoothing;
-	*((float          *)&txBuffer[11]) = position_KP;
-	*((float          *)&txBuffer[15]) = position_KD;
-	txBuffer[19] = crc(txBuffer, 19);
+	*((float          *)&txBuffer[ 5]) = position_smoothing;
+	*((float          *)&txBuffer[9]) = position_KP;
+	*((float          *)&txBuffer[13]) = position_KI;
+	*((float          *)&txBuffer[17]) = position_KD;
+	txBuffer[21] = crc(txBuffer, 21);
 }
 
 

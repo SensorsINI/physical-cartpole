@@ -13,7 +13,6 @@ float 			angle_KI			= CONTROL_ANGLE_KI;
 float 			angle_KD			= CONTROL_ANGLE_KD;
 
 short  			position_setPoint	= CONTROL_POSITION_SET_POINT;
-unsigned short	position_ctrlPeriod	= (CONTROL_POSITION_PERIOD_MS / CONTROL_LOOP_PERIOD_MS);
 float 			position_smoothing	= CONTROL_POSITION_SMOOTHING;
 float 			position_KP			= CONTROL_POSITION_KP;
 float 			position_KI			= CONTROL_POSITION_KI;
@@ -32,7 +31,6 @@ bool            isCalibrated 		= true;
 unsigned short  ledPeriod;
 short			angleErrPrev;
 short			positionErrPrev;
-unsigned short 	positionPeriodCnt;
 int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
@@ -76,7 +74,6 @@ void CONTROL_Init(void)
     ledPeriod           = 500/controlLoopPeriodMs;
 	angleErrPrev		= 0;
 	positionErrPrev		= 0;
-	positionPeriodCnt 	= position_ctrlPeriod - 1;
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
     positionLimitLeft   = positionCentre + 2400;
     positionLimitRight  = positionCentre - 2400; // guess defaults based on 7000-8000 counts at limits
@@ -153,20 +150,17 @@ void CONTROL_Loop(void)
 		angleCmd	 = (angle_KP*angleErr + angle_KI*angleI + angle_KD*angleErrDiff);
 
 		// Position PID control
-		if (++positionPeriodCnt >= position_ctrlPeriod) {
-			positionPeriodCnt = 0;
 
-			// IIR Filter for Position
-			if(position_smoothing < 1.0)
-				position_filtered = (position_smoothing*position) + (1.0 - position_smoothing)*position_filtered;
+		// IIR Filter for Position
+		if(position_smoothing < 1.0)
+			position_filtered = (position_smoothing*position) + (1.0 - position_smoothing)*position_filtered;
 
-			// Position PID control
-			positionErr = position_filtered - position_setPoint;
-			positionErrDiff = positionErr - positionErrPrev;
-			positionErrPrev = positionErr;
-			position_I += positionErr;
-			positionCmd = (position_KP*positionErr + position_KI*position_I + position_KD*positionErrDiff);
-		}
+		// Position PID control
+		positionErr = position_filtered - position_setPoint;
+		positionErrDiff = positionErr - positionErrPrev;
+		positionErrPrev = positionErr;
+		position_I += positionErr;
+		positionCmd = (position_KP*positionErr + position_KI*position_I + position_KD*positionErrDiff);
 
 		// Limit the motor speed
 		command = - angleCmd - positionCmd;
@@ -496,7 +490,6 @@ void cmd_ControlMode(bool en)
 	{
 		angleErrPrev		= 0;
 		positionErrPrev		= 0;
-		positionPeriodCnt 	= position_ctrlPeriod - 1;
         ledPeriod           = 100/controlLoopPeriodMs;
 	}
 	else if (!en && controlEnabled)
@@ -514,19 +507,35 @@ void cmd_SetAngleConfig(const unsigned char * config)
 	disable_irq();
     angle_setPoint      = *((short          *)&config[ 0]);
     angle_averageLen    = *((unsigned short *)&config[ 2]);
-    angle_KP            = *((float          *)&config[ 4]);
-    angle_KI            = *((float          *)&config[ 8]);
-    angle_KD            = *((float          *)&config[12]);
-	angleErrPrev		= 0;
 	enable_irq();
 }
 
 void cmd_GetAngleConfig(void)
 {
-	prepare_message_to_PC_angle_config(txBuffer, angle_setPoint, angle_averageLen, angle_KP, angle_KI, angle_KD, controlLatencyUs, controlSync);
+	prepare_message_to_PC_angle_config(txBuffer, angle_setPoint, angle_averageLen, controlLatencyUs, controlSync);
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 29);
+	Message_SendToPC(txBuffer, 13);
+	enable_irq();
+}
+
+
+void cmd_SetAngleConfig_PID(const unsigned char * config)
+{
+	disable_irq();
+    angle_KP            = *((float          *)&config[ 0]);
+    angle_KI            = *((float          *)&config[ 4]);
+    angle_KD            = *((float          *)&config[8]);
+	angleErrPrev		= 0;
+	enable_irq();
+}
+
+void cmd_GetAngleConfig_PID(void)
+{
+	prepare_message_to_PC_angle_config_PID(txBuffer, angle_KP, angle_KI, angle_KD);
+
+	disable_irq();
+	Message_SendToPC(txBuffer, 16);
 	enable_irq();
 }
 
@@ -534,25 +543,21 @@ void cmd_SetPositionConfig(const unsigned char * config)
 {
 	disable_irq();
     position_setPoint   = *((short          *)&config[ 0]);
-    position_ctrlPeriod = *((unsigned short *)&config[ 2]);
-    position_smoothing  = *((float          *)&config[ 4]);
-    position_KP         = *((float          *)&config[ 8]);
-    position_KD         = *((float          *)&config[12]);
+    position_smoothing  = *((float          *)&config[ 2]);
+    position_KP         = *((float          *)&config[ 6]);
+    position_KI         = *((float          *)&config[ 10]);
+    position_KD         = *((float          *)&config[14]);
 	positionErrPrev		= 0;
-	position_ctrlPeriod	= position_ctrlPeriod / controlLoopPeriodMs;
-	positionPeriodCnt	= position_ctrlPeriod - 1;
 	enable_irq();
 }
 
 void cmd_GetPositionConfig(void)
 {
-	unsigned short temp;
 
-	temp = position_ctrlPeriod * controlLoopPeriodMs;
-	prepare_message_to_PC_position_config(txBuffer, position_setPoint, temp, position_smoothing, position_KP, position_KD);
+	prepare_message_to_PC_position_config(txBuffer, position_setPoint, position_smoothing, position_KP, position_KI, position_KD);
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 20);
+	Message_SendToPC(txBuffer, 22);
 	enable_irq();
 }
 
@@ -633,7 +638,6 @@ void cmd_SetControlConfig(const unsigned char * config)
     controlLatencyUs    = *((int            *)&config[3]);
 
     SetControlUpdatePeriod(controlLoopPeriodMs);
-	position_ctrlPeriod	= position_ctrlPeriod / controlLoopPeriodMs;
 
 	enable_irq();
 }
