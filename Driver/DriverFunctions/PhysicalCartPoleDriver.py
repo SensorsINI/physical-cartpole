@@ -210,8 +210,8 @@ class PhysicalCartPoleDriver:
 
         time.sleep(1)
 
-        #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
-        self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
+        set_firmware_parameters(self.InterfaceInstance)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0, setPoint=0, avgLen=ANGLE_AVG_LENGTH)
 
         try:
             self.controller.printparams()

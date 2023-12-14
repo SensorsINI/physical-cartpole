@@ -10,12 +10,12 @@ CMD_PING                = 0xC0
 CMD_STREAM_ON           = 0xC1
 CMD_CALIBRATE           = 0xC2
 CMD_CONTROL_MODE        = 0xC3
-CMD_SET_ANGLE_CONFIG    = 0xC4
-CMD_GET_ANGLE_CONFIG    = 0xC5
-CMD_SET_POSITION_CONFIG = 0xC6
-CMD_GET_POSITION_CONFIG = 0xC7
+CMD_SET_PID_CONFIG      = 0xC4
+CMD_GET_PID_CONFIG      = 0xC5
+CMD_SET_CONTROL_CONFIG  = 0xC6
+CMD_GET_CONTROL_CONFIG  = 0xC7
 CMD_SET_MOTOR           = 0xC8
-CMD_SET_CONTROL_CONFIG  = 0xC9
+CMD_FREE_TO_USE         = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
 
@@ -101,73 +101,54 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
+    def set_config_PID(self, setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD):
+        msg = [SERIAL_SOF, CMD_SET_PID_CONFIG, 34]
+        msg += list(struct.pack('h', setPoint))
+        msg += list(struct.pack('f', smoothing))
+        
+        msg += list(struct.pack('f', position_KP))
+        msg += list(struct.pack('f', position_KI))
+        msg += list(struct.pack('f', position_KD))
+        
+        msg += list(struct.pack('f', angle_KP))
+        msg += list(struct.pack('f', angle_KI))
+        msg += list(struct.pack('f', angle_KD))
 
-    def set_angle_config(self, setPoint, avgLen):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 8]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+        self.device.flush()
+
+    def get_config_PID(self):
+        msg = [SERIAL_SOF, CMD_GET_PID_CONFIG, 4]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+        self.device.flush()
+        reply = self._receive_reply(CMD_GET_PID_CONFIG, 34)
+        (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:33]))
+        return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
+
+    def set_config_control(self, controlLoopPeriodMs, controlSync, controlLatencyUs, setPoint, avgLen):
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 15]
+        msg += list(struct.pack('H', controlLoopPeriodMs))
+        msg += list(struct.pack('?', controlSync))
+        msg += list(struct.pack('i', controlLatencyUs))
         msg += list(struct.pack('h', setPoint))
         msg += list(struct.pack('H', avgLen))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
 
-    def get_angle_config(self):
-        msg = [SERIAL_SOF, CMD_GET_ANGLE_CONFIG, 4]
+    def get_config_control(self):
+        msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 13)
-        (setPoint, avgLen, added_latency, control_sync) = struct.unpack('hHi?', bytes(reply[3:12]))
-        return setPoint, avgLen, added_latency, control_sync
-
-    def set_angle_config_PID(self, KP, KI, KD):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 16]
-        msg += list(struct.pack('f', KP))
-        msg += list(struct.pack('f', KI))
-        msg += list(struct.pack('f', KD))
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-
-    def get_angle_config_PID(self):
-        msg = [SERIAL_SOF, CMD_GET_ANGLE_CONFIG, 4]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 16)
-        (KP, KI, KD) = struct.unpack('fff', bytes(reply[3:15]))
-        return KP, KI, KD
-
-    def set_position_config(self, setPoint, smoothing, KP, KI, KD):
-        msg = [SERIAL_SOF, CMD_SET_POSITION_CONFIG, 22]
-        msg += list(struct.pack('h', setPoint))
-        msg += list(struct.pack('f', smoothing))
-        msg += list(struct.pack('f', KP))
-        msg += list(struct.pack('f', KI))
-        msg += list(struct.pack('f', KD))
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-
-    def get_position_config(self):
-        msg = [SERIAL_SOF, CMD_GET_POSITION_CONFIG, 4]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-        reply = self._receive_reply(CMD_GET_POSITION_CONFIG, 22)
-        (setPoint, smoothing, KP, KI, KD) = struct.unpack('hffff', bytes(reply[3:21]))
-        return setPoint, smoothing, KP, KI, KD
+        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 15)
+        (controlLoopPeriodMs, controlSync, controlLatencyUs, setPoint, avgLen) = struct.unpack('H?ihH', bytes(reply[3:14]))
+        return controlLoopPeriodMs, controlSync, controlLatencyUs, setPoint, avgLen
 
     def set_motor(self, speed):
         msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-
-    def set_control_config(self, controlLoopPeriodMs, controlSync, controlLatencyUs):
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 11]
-        msg += list(struct.pack('H', controlLoopPeriodMs))
-        msg += list(struct.pack('?', controlSync))
-        msg += list(struct.pack('i', controlLatencyUs))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()

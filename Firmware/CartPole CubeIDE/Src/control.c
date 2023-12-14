@@ -59,12 +59,11 @@ void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
 void            cmd_Calibrate(const unsigned char * buff, unsigned int len);
 void 			cmd_ControlMode(bool en);
-void 			cmd_SetAngleConfig(const unsigned char * config);
-void 			cmd_GetAngleConfig(void);
-void 			cmd_SetPositionConfig(const unsigned char * config);
-void 			cmd_GetPositionConfig(void);
-void 			cmd_SetMotor(int motorCmd);
+void 			cmd_SetPIDConfig(const unsigned char * config);
+void 			cmd_GetPIDConfig(void);
 void			cmd_SetControlConfig(const unsigned char * config);
+void 			cmd_GetControlConfig(void);
+void 			cmd_SetMotor(int motorCmd);
 void			cmd_collectRawAngle(const unsigned short, const unsigned short);
 
 void CONTROL_Init(void)
@@ -315,24 +314,24 @@ void CONTROL_BackgroundTask(void)
 			cmd_ControlMode(rxBuffer[3] != 0);
 			break;
 		}
-		case CMD_SET_ANGLE_CONFIG:
+		case CMD_SET_PID_CONFIG:
 		{
-			cmd_SetAngleConfig(&rxBuffer[3]);
+			cmd_SetPIDConfig(&rxBuffer[3]);
 			break;
 		}
-		case CMD_GET_ANGLE_CONFIG:
+		case CMD_GET_PID_CONFIG:
 		{
-			cmd_GetAngleConfig();
+			cmd_GetPIDConfig();
 			break;
 		}
-		case CMD_SET_POSITION_CONFIG:
+		case CMD_SET_CONTROL_CONFIG:
 		{
-			cmd_SetPositionConfig(&rxBuffer[3]);
+			cmd_SetControlConfig(&rxBuffer[3]);
 			break;
 		}
-		case CMD_GET_POSITION_CONFIG:
+		case CMD_GET_CONTROL_CONFIG:
 		{
-			cmd_GetPositionConfig();
+			cmd_GetControlConfig();
 			break;
 		}
 		case CMD_SET_MOTOR:
@@ -351,11 +350,6 @@ void CONTROL_BackgroundTask(void)
 			} else {
 				cmd_SetMotor(motorCmd);
 			}
-			break;
-		}
-		case CMD_SET_CONTROL_CONFIG:
-		{
-			cmd_SetControlConfig(&rxBuffer[3]);
 			break;
 		}
 		case CMD_COLLECT_RAW_ANGLE_MODE_1:
@@ -502,62 +496,59 @@ void cmd_ControlMode(bool en)
 	enable_irq();
 }
 
-void cmd_SetAngleConfig(const unsigned char * config)
+
+void cmd_SetControlConfig(const unsigned char * config)
 {
 	disable_irq();
-    angle_setPoint      = *((short          *)&config[ 0]);
-    angle_averageLen    = *((unsigned short *)&config[ 2]);
+
+	controlLoopPeriodMs = *((unsigned short *)&config[0]);
+    controlSync			= *((bool	        *)&config[2]);
+    controlLatencyUs    = *((int            *)&config[3]);
+    angle_setPoint      = *((short          *)&config[ 7]);
+    angle_averageLen    = *((unsigned short *)&config[ 9]);
+
+    SetControlUpdatePeriod(controlLoopPeriodMs);
+
 	enable_irq();
 }
 
-void cmd_GetAngleConfig(void)
+
+void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_angle_config(txBuffer, angle_setPoint, angle_averageLen, controlLatencyUs, controlSync);
+	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, controlLatencyUs, angle_setPoint, angle_averageLen);
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 13);
+	Message_SendToPC(txBuffer, 15);
 	enable_irq();
 }
 
 
-void cmd_SetAngleConfig_PID(const unsigned char * config)
+void cmd_SetPIDConfig(const unsigned char * config)
 {
 	disable_irq();
-    angle_KP            = *((float          *)&config[ 0]);
-    angle_KI            = *((float          *)&config[ 4]);
-    angle_KD            = *((float          *)&config[8]);
-	angleErrPrev		= 0;
-	enable_irq();
-}
 
-void cmd_GetAngleConfig_PID(void)
-{
-	prepare_message_to_PC_angle_config_PID(txBuffer, angle_KP, angle_KI, angle_KD);
-
-	disable_irq();
-	Message_SendToPC(txBuffer, 16);
-	enable_irq();
-}
-
-void cmd_SetPositionConfig(const unsigned char * config)
-{
-	disable_irq();
     position_setPoint   = *((short          *)&config[ 0]);
     position_smoothing  = *((float          *)&config[ 2]);
     position_KP         = *((float          *)&config[ 6]);
     position_KI         = *((float          *)&config[ 10]);
     position_KD         = *((float          *)&config[14]);
 	positionErrPrev		= 0;
+
+    angle_KP            = *((float          *)&config[ 18]);
+    angle_KI            = *((float          *)&config[ 22]);
+    angle_KD            = *((float          *)&config[26]);
+	angleErrPrev		= 0;
+
 	enable_irq();
 }
 
-void cmd_GetPositionConfig(void)
-{
 
-	prepare_message_to_PC_position_config(txBuffer, position_setPoint, position_smoothing, position_KP, position_KI, position_KD);
+void cmd_GetPIDConfig(void)
+{
+	prepare_message_to_PC_config_PID(txBuffer, position_setPoint, position_smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD);
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 22);
+	Message_SendToPC(txBuffer, 34);
 	enable_irq();
 }
 
@@ -626,18 +617,5 @@ void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_
 	disable_irq();
 	Message_SendToPC(txBuffer, 4 + 2*MEASURE_LENGTH);
 	Interrupt_Set(CONTROL_Loop);
-	enable_irq();
-}
-
-void cmd_SetControlConfig(const unsigned char * config)
-{
-	disable_irq();
-
-	controlLoopPeriodMs = *((unsigned short *)&config[0]);
-    controlSync			= *((bool	        *)&config[2]);
-    controlLatencyUs    = *((int            *)&config[3]);
-
-    SetControlUpdatePeriod(controlLoopPeriodMs);
-
 	enable_irq();
 }

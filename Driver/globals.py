@@ -53,7 +53,7 @@ MOTOR_CORRECTION_POLOLU = (4307.69, 398.69)
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
 # ANGLE_KP_SOFTWARE = ANGLE_KP_FIRMWARE/ANGLE_NORMALIZATION_FACTOR/MOTOR_FULL_SCALE
-ANGLE_AVG_LENGTH = 32  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
+ANGLE_AVG_LENGTH = 16  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values # STM
 # ANGLE_360_DEG_IN_ADC_UNITS = 4099.64  # Range of angle values # Zybo
 

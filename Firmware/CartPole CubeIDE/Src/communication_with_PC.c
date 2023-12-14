@@ -62,38 +62,38 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
-							case CMD_SET_ANGLE_CONFIG:
+							case CMD_SET_PID_CONFIG:
 							{
-								if (pktLen == 24)
+								if (pktLen == 34)
 								{
-									current_command = CMD_SET_ANGLE_CONFIG;
+									current_command = CMD_SET_PID_CONFIG;
 								}
 								break;
 							}
 
-							case CMD_GET_ANGLE_CONFIG:
+							case CMD_GET_PID_CONFIG:
 							{
 								if (pktLen == 4)
 								{
-									current_command = CMD_GET_ANGLE_CONFIG;
+									current_command = CMD_GET_PID_CONFIG;
 								}
 								break;
 							}
 
-							case CMD_SET_POSITION_CONFIG:
+							case CMD_SET_CONTROL_CONFIG:
 							{
-								if (pktLen == 20)
+								if (pktLen == 15)
 								{
-									current_command = CMD_SET_POSITION_CONFIG;
+									current_command = CMD_SET_CONTROL_CONFIG;
 								}
 								break;
 							}
 
-							case CMD_GET_POSITION_CONFIG:
+							case CMD_GET_CONTROL_CONFIG:
 							{
 								if (pktLen == 4)
 								{
-									current_command = CMD_GET_POSITION_CONFIG;
+									current_command = CMD_GET_CONTROL_CONFIG;
 								}
 								break;
 							}
@@ -103,15 +103,6 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								if (pktLen == 6)
 								{
 									current_command = CMD_SET_MOTOR;
-								}
-								break;
-							}
-
-							case CMD_SET_CONTROL_CONFIG:
-							{
-								if (pktLen == 11)
-								{
-									current_command = CMD_SET_CONTROL_CONFIG;
 								}
 								break;
 							}
@@ -216,61 +207,57 @@ void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirect
 	buffer[4] = crc(buffer, 4);
 }
 
-void prepare_message_to_PC_angle_config(
+void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
+		unsigned short control_period,
+		bool controlSync,
+		int controlLatencyUs,
 		short angle_setPoint,
-		unsigned short angle_averageLen,
-		int controlLatencyUs,
-		bool controlSync){
+		unsigned short angle_averageLen
+		){
 
 	txBuffer[ 0] = SERIAL_SOF;
-	txBuffer[ 1] = CMD_GET_ANGLE_CONFIG;
-	txBuffer[ 2] = 13;
-	*((short          *)&txBuffer[ 3]) = angle_setPoint;
-	*((unsigned short *)&txBuffer[ 5]) = angle_averageLen;
-	*((float          *)&txBuffer[7]) = controlLatencyUs;
-	*((bool           *)&txBuffer[11]) = controlSync;
-	txBuffer[12] = crc(txBuffer, 12);
+	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
+	txBuffer[ 2] = 15;
+	*((unsigned short *)&txBuffer[ 3]) = control_period;
+	*((bool           *)&txBuffer[ 5]) = controlSync;
+	*((float          *)&txBuffer[ 6]) = controlLatencyUs;
+	*((short          *)&txBuffer[10]) = angle_setPoint;
+	*((unsigned short *)&txBuffer[12]) = angle_averageLen;
+	txBuffer[14] = crc(txBuffer, 14);
 
 }
 
 
-void prepare_message_to_PC_angle_config_PID(
-		unsigned char * txBuffer,
-		float angle_KP,
-		float angle_KI,
-		float angle_KD,
-		int controlLatencyUs,
-		bool controlSync){
-
-	txBuffer[ 0] = SERIAL_SOF;
-	txBuffer[ 1] = CMD_GET_ANGLE_CONFIG;
-	txBuffer[ 2] = 16;
-	*((float          *)&txBuffer[3]) = angle_KP;
-	*((float          *)&txBuffer[7]) = angle_KI;
-	*((float          *)&txBuffer[11]) = angle_KD;
-	txBuffer[15] = crc(txBuffer, 15);
-
-}
-
-void prepare_message_to_PC_position_config(
+void prepare_message_to_PC_config_PID(
 		unsigned char * txBuffer,
 		short position_setPoint,
-		unsigned short temp,
 		float position_smoothing,
 		float position_KP,
 		float position_KI,
-		float position_KD
+		float position_KD,
+		float angle_KP,
+		float angle_KI,
+		float angle_KD
 		){
+
 	txBuffer[ 0] = SERIAL_SOF;
-	txBuffer[ 1] = CMD_GET_POSITION_CONFIG;
-	txBuffer[ 2] = 22;
+	txBuffer[ 1] = CMD_GET_PID_CONFIG;
+	txBuffer[ 2] = 34;
+
 	*((short          *)&txBuffer[ 3]) = position_setPoint;
 	*((float          *)&txBuffer[ 5]) = position_smoothing;
+
 	*((float          *)&txBuffer[9]) = position_KP;
 	*((float          *)&txBuffer[13]) = position_KI;
 	*((float          *)&txBuffer[17]) = position_KD;
-	txBuffer[21] = crc(txBuffer, 21);
+
+	*((float          *)&txBuffer[21]) = angle_KP;
+	*((float          *)&txBuffer[25]) = angle_KI;
+	*((float          *)&txBuffer[29]) = angle_KD;
+
+	txBuffer[33] = crc(txBuffer, 33);
+
 }
 
 
