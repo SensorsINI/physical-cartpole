@@ -8,7 +8,6 @@ const unsigned short 	message_len = 27;
 
 bool            streamEnable        = false;
 short  			angle_setPoint		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
-float 			angle_smoothing		= CONTROL_ANGLE_SMOOTHING;
 float 			angle_KP			= CONTROL_ANGLE_KP;
 float 			angle_KI			= CONTROL_ANGLE_KI;
 float 			angle_KD			= CONTROL_ANGLE_KD;
@@ -515,17 +514,16 @@ void cmd_SetAngleConfig(const unsigned char * config)
 	disable_irq();
     angle_setPoint      = *((short          *)&config[ 0]);
     angle_averageLen    = *((unsigned short *)&config[ 2]);
-    angle_smoothing     = *((float          *)&config[ 4]);
-    angle_KP            = *((float          *)&config[ 8]);
-    angle_KI            = *((float          *)&config[12]);
-    angle_KD            = *((float          *)&config[16]);
+    angle_KP            = *((float          *)&config[ 4]);
+    angle_KI            = *((float          *)&config[ 8]);
+    angle_KD            = *((float          *)&config[12]);
 	angleErrPrev		= 0;
 	enable_irq();
 }
 
 void cmd_GetAngleConfig(void)
 {
-	prepare_message_to_PC_angle_config(txBuffer, angle_setPoint, angle_averageLen, angle_smoothing, angle_KP, angle_KI, angle_KD, controlLatencyUs, controlSync);
+	prepare_message_to_PC_angle_config(txBuffer, angle_setPoint, angle_averageLen, angle_KP, angle_KI, angle_KD, controlLatencyUs, controlSync);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 29);

@@ -13,7 +13,6 @@
 #define CONTROL_ANGLE_SET_POINT_ORIGINAL	3163
 
 /***** Angle & Position *****/
-#define CONTROL_ANGLE_SMOOTHING		1.0f        	// 0 to 1.0 (1.0 disables smoothing)
 #define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US 200
 
 #define CONTROL_POSITION_SET_POINT      0
