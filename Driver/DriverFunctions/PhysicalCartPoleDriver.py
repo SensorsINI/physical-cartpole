@@ -92,8 +92,8 @@ class PhysicalCartPoleDriver:
 
         # Dance Mode
         self.danceEnabled = False
-        self.danceAmpl = 0.1  # m
-        self.dancePeriodS = 8.0
+        self.danceAmpl = 0.14  # m
+        self.dancePeriodS = 2.0
         self.dance_start_time = 0.0
 
         # Measurement
@@ -835,7 +835,7 @@ class PhysicalCartPoleDriver:
                 if np.sign(self.s[POSITIOND_IDX]) >= 0:
                     self.actualMotorCmd += motor_correction[1]
                 elif np.sign(self.s[POSITIOND_IDX]) <= 0:
-                    self.actualMotorCmd -= motor_correction[1]
+                    self.actualMotorCmd -= motor_correction[2]
 
         else:
             self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units

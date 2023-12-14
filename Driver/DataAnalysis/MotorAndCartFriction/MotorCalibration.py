@@ -146,7 +146,7 @@ def motor_calibration(FILE_NAME):
     motor_input_neg_lin = data_stat_neg_lin['motor_input'].to_numpy()
     v_sat_neg_lin = data_stat_neg_lin['v_max'].to_numpy()
 
-    a, B_pos, B_neg = double_regression_2(motor_input_pos_lin, v_sat_pos_lin, motor_input_neg_lin, v_sat_neg_lin)
+    a, B_pos, B_neg = double_regression(motor_input_pos_lin, v_sat_pos_lin, motor_input_neg_lin, v_sat_neg_lin)
 
     print()
     print()

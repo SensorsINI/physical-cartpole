@@ -72,7 +72,7 @@ class StepResponseMeasurement:
         if Q > 0:
             return (Q * MOTOR_FULL_SCALE_SAFE - self.motor_correction[1]) / self.motor_correction[0]
         else:
-            return (Q * MOTOR_FULL_SCALE_SAFE + self.motor_correction[1]) / self.motor_correction[0]
+            return (Q * MOTOR_FULL_SCALE_SAFE + self.motor_correction[2]) / self.motor_correction[0]
 
 
     def assign_parameters(self):
