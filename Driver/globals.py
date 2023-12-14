@@ -34,7 +34,7 @@ elif CONTROLLER_NAME == 'neural-imitator':
 elif CONTROLLER_NAME == 'fpga':
     CONTROL_PERIOD_MS = 21
 else:
-    CONTROL_PERIOD_MS = 21  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 18  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
@@ -46,8 +46,8 @@ MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'pid' else True  # Linear
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
 
-MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
-MOTOR_CORRECTION_POLOLU = (4307.69, 398.69)
+MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026,  839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
+MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)
 # MOTOR_CORRECTION_POLOLU = (?, ?)  # Zybo
 
 ##### Angle Conversion #####
@@ -57,7 +57,7 @@ ANGLE_AVG_LENGTH = 16  # adc routine in firmware reads ADC this many times quick
 ANGLE_360_DEG_IN_ADC_UNITS = 4271.34  # Range of angle values # STM
 # ANGLE_360_DEG_IN_ADC_UNITS = 4099.64  # Range of angle values # Zybo
 
-ANGLE_HANGING_POLOLU = 949.0  # Value from sensor when pendulum is at stable equilibrium point
+ANGLE_HANGING_POLOLU = 929.5  # Value from sensor when pendulum is at stable equilibrium point
 # ANGLE_HANGING_POLOLU = 942.0  # Value from sensor when pendulum is at stable equilibrium point #  Zybo
 ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
 
