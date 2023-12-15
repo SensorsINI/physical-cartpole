@@ -105,17 +105,12 @@ void CONTROL_Loop(void)
 {
 	static unsigned short 	ledPeriodCnt	= 0;
 	static bool				ledState 		= false;
-    static int				angleCmd        = 0;
-    static int              positionCmd     = 0;
+
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
-	static int 				angleI = 0;
+
 	#define lastAngleLength 5
-	int 					angleErr;
-	short 					positionErr;
-	static short 			position_filtered, positionErrPrev;
-	float 					angleErrDiff;
-	float 					positionErrDiff;
+
 	int   					command;
 
 	short 			position_short;
