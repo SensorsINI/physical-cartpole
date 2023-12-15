@@ -151,7 +151,7 @@ void CONTROL_Loop(void)
     float ANGLE_NORMALIZATION_FACTOR = 0.001471;
     float POSITION_NORMALIZATION_FACTOR = 0.0000951;
 	angle = wrapLocal(angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR;
-    position = position_int * POSITION_NORMALIZATION_FACTOR;
+    position = position_short * POSITION_NORMALIZATION_FACTOR;
 
     angleD = angleD_int/time_difference_between_measurement;
     positionD = positionD_short/time_difference_between_measurement;
