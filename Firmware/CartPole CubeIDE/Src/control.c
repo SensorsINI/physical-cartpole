@@ -4,8 +4,6 @@
 #include "communication_with_PC.h"
 #include <stdlib.h>
 
-const unsigned short 	message_len = 27;
-
 #define OnChipController_PID 0
 
 unsigned short current_controller = OnChipController_PID;
@@ -221,7 +219,7 @@ void CONTROL_Loop(void)
 
     	prepare_message_to_PC_state(
     			buffer,
-				message_len,
+				27,
     			angle_int,
 				angleD_int,
 				position_short,
@@ -233,7 +231,7 @@ void CONTROL_Loop(void)
 				latency,
 				latency_violation);
 
-    	Message_SendToPC(buffer, message_len);
+    	Message_SendToPC(buffer, 27);
 
         if(newReceived) {
         	timeSent = timeMeasured;
