@@ -22,7 +22,7 @@ unsigned short	controlLoopPeriodMs = CONTROL_LOOP_PERIOD_MS;
 bool			controlSync 		= CONTROL_SYNC;				// apply motor command at next loop
 int 			controlLatencyUs 	= CONTROL_LATENCY_US;	// used to simulate Latency
 
-volatile bool 	controlEnabled;
+volatile bool 	ControlOnChip_Enabled;
 bool			controlLatencyEnable = false;
 int	 			controlLatencyTimestampUs = 0;
 int 			controlCommand 		= 0;
@@ -34,7 +34,7 @@ short			positionErrPrev;
 int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
-int				encoderDirection	= 1;
+int				encoderDirection	= -1;
 unsigned long	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
 
 unsigned int 	time_current_measurement;
@@ -68,7 +68,7 @@ void			cmd_collectRawAngle(const unsigned short, const unsigned short);
 
 void CONTROL_Init(void)
 {
-	controlEnabled		= false;
+	ControlOnChip_Enabled		= false;
     isCalibrated        = false;
     ledPeriod           = 500/controlLoopPeriodMs;
 	angleErrPrev		= 0;
@@ -80,7 +80,7 @@ void CONTROL_Init(void)
 
 void CONTROL_ToggleState(void)
 {
-	cmd_ControlMode(!controlEnabled);
+	cmd_ControlMode(!ControlOnChip_Enabled);
 }
 
 
@@ -101,16 +101,13 @@ void CONTROL_Loop(void)
 	static bool				ledState 		= false;
     static int				angleCmd        = 0;
     static int              positionCmd     = 0;
-    static unsigned char	packetCnt       = 0;
     static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
-	static int 				prevAngle = 0, stableAngle = 0;
-	static int 				pprevAngle = 0, ppprevAngle = 0;
 	static int 				angleI = 0;
 	#define lastAngleLength 5
 	int 					angleErr;
-	short 					positionRaw, positionErr;
-	static short 			position_filtered, positionErrPrev, positionPrev;
+	short 					positionErr;
+	static short 			position_filtered, positionErrPrev;
 	float 					angleErrDiff;
 	float 					positionErrDiff;
 	int   					command;
@@ -131,8 +128,7 @@ void CONTROL_Loop(void)
 
 	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
-	positionRaw = positionCentre + encoderDirection * ((short)Encoder_Read() - positionCentre);
-    position = (positionRaw - positionCentre);
+	position = encoderDirection * ((short)Encoder_Read() - positionCentre);
 
     if (position_previous!=-30000){
     	positionD = position-position_previous;
@@ -141,36 +137,28 @@ void CONTROL_Loop(void)
     }
 
 	// Microcontroller Control Routine
-	if (controlEnabled)	{
-		// Angle PID control
-        angleErr = angle - angle_setPoint;
-        angleErrDiff = angleD;
-        angle_I += angleErr;
-		angleCmd	 = (angle_KP*angleErr + angle_KI*angleI + angle_KD*angleErrDiff);
+	if (ControlOnChip_Enabled)	{
 
-		// Position PID control
+//		switch (current_controller){
+//		case OnChipController_PID:
+//		{
+//			pid_step(angle, angleD, position, positionD, target_position);
+//			break;
+//		}
+//
+//		}
+        command = 0;
 
-		// IIR Filter for Position
-		if(position_smoothing < 1.0)
-			position_filtered = (position_smoothing*position) + (1.0 - position_smoothing)*position_filtered;
 
-		// Position PID control
-		positionErr = position_filtered - position_setPoint;
-		positionErrDiff = positionErr - positionErrPrev;
-		positionErrPrev = positionErr;
-		position_I += positionErr;
-		positionCmd = (position_KP*positionErr + position_KI*position_I + position_KD*positionErrDiff);
 
-		// Limit the motor speed
-		command = - angleCmd - positionCmd;
 		if      (command >  CONTROL_MOTOR_MAX_SPEED) command =  CONTROL_MOTOR_MAX_SPEED;
 		else if (command < -CONTROL_MOTOR_MAX_SPEED) command = -CONTROL_MOTOR_MAX_SPEED;
 
         // Disable motor if falls hard on either limit
-        if ((command < 0) && (positionRaw < (positionLimitLeft + 20))) {
+        if ((command < 0) && (position < (positionLimitLeft + 20))) {
             command = 0;
             stopCnt++;
-        } else if ((command > 0) && (positionRaw > (positionLimitRight - 20))) {
+        } else if ((command > 0) && (position > (positionLimitRight - 20))) {
             command = 0;
             stopCnt++;
         } else {
@@ -447,9 +435,9 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 		int temp = positionLimitRight;
 		positionLimitRight = positionLimitLeft;
 		positionLimitLeft = temp;
-		encoderDirection = -1;
-	} else
 		encoderDirection = 1;
+	} else
+		encoderDirection = -1;
 	positionCentre = (positionLimitRight + positionLimitLeft) / 2;			// average limits
 
 	// Slower to get back to middle
@@ -463,7 +451,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	} while(fDiff > 5e-4);
 	Motor_Stop();
 
-	angle_setPoint = encoderDirection==1 ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
+	angle_setPoint = encoderDirection==-1 ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
 
 	Sleep_ms(100);
 	prepare_message_to_PC_calibration(buffer, encoderDirection);
@@ -480,19 +468,19 @@ void cmd_ControlMode(bool en)
     	cmd_Calibrate(0, 0);
     }
     disable_irq();
-	if (en && !controlEnabled)
+	if (en && !ControlOnChip_Enabled)
 	{
 		angleErrPrev		= 0;
 		positionErrPrev		= 0;
         ledPeriod           = 100/controlLoopPeriodMs;
 	}
-	else if (!en && controlEnabled)
+	else if (!en && ControlOnChip_Enabled)
 	{
 		Motor_Stop();
         ledPeriod           = 500/controlLoopPeriodMs;
 	}
 
-	controlEnabled = en;
+	ControlOnChip_Enabled = en;
 	enable_irq();
 }
 
@@ -562,7 +550,7 @@ void cmd_SetMotor(int speed)
 
 	//	Motor_SetPower(speed);
 	// Only command the motor if the on-board control routine is disabled
-	if (!controlEnabled){
+	if (!ControlOnChip_Enabled){
 				position = Encoder_Read();
 
 				// Disable motor if falls hard on either limit

@@ -440,14 +440,13 @@ class PhysicalCartPoleDriver:
 
                 print("\nCalibrating motor position.... ")
                 self.InterfaceInstance.calibrate()
-                (_, _, self.position_offset, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
                 print("Done calibrating")
 
-                if self.InterfaceInstance.encoderDirection == 1:
+                if self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'POLOLU'
                     if ANGLE_HANGING_DEFAULT:
                         ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
-                elif self.InterfaceInstance.encoderDirection == -1:
+                elif self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'ORIGINAL'
                     if ANGLE_HANGING_DEFAULT:
                         ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
@@ -678,9 +677,8 @@ class PhysicalCartPoleDriver:
 
     def convert_angle_and_position_skale(self):
         # Convert position and angle to physical units
-        self.position_centered_unconverted = -(self.position_raw - self.position_offset)
         angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
-        position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
+        position = self.position_raw * POSITION_NORMALIZATION_FACTOR
         return angle, position
 
 
