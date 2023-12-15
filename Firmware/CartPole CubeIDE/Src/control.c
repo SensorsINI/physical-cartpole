@@ -6,8 +6,12 @@
 
 const unsigned short 	message_len = 27;
 
+#define OnChipController_PID 0
+
+unsigned short current_controller = OnChipController_PID;
+
 bool            streamEnable        = false;
-short  			angle_setPoint		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
+float  			ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
 float 			angle_KP			= CONTROL_ANGLE_KP;
 float 			angle_KI			= CONTROL_ANGLE_KI;
 float 			angle_KD			= CONTROL_ANGLE_KD;
@@ -22,6 +26,7 @@ unsigned short	controlLoopPeriodMs = CONTROL_LOOP_PERIOD_MS;
 bool			controlSync 		= CONTROL_SYNC;				// apply motor command at next loop
 int 			controlLatencyUs 	= CONTROL_LATENCY_US;	// used to simulate Latency
 
+volatile bool	HardwareConfigSetFromPC;
 volatile bool 	ControlOnChip_Enabled;
 bool			controlLatencyEnable = false;
 int	 			controlLatencyTimestampUs = 0;
@@ -69,6 +74,7 @@ void			cmd_collectRawAngle(const unsigned short, const unsigned short);
 void CONTROL_Init(void)
 {
 	ControlOnChip_Enabled		= false;
+	HardwareConfigSetFromPC = false;
     isCalibrated        = false;
     ledPeriod           = 500/controlLoopPeriodMs;
 	angleErrPrev		= 0;
@@ -112,11 +118,16 @@ void CONTROL_Loop(void)
 	float 					positionErrDiff;
 	int   					command;
 
-	short 			position;
-	short 			positionD;
-	int angle = 0;
-	int angleD = 0;
+	short 			position_short;
+	short 			positionD_short;
+	int angle_int = 0;
+	int angleD_int = 0;
 	int invalid_step = 0;
+
+	float angle = 0.0;
+	float position = 0.0;
+	float angleD = 0.0;
+	float positionD = 0.0;
 
 
 	timeMeasured = GetTimeNow();
@@ -124,17 +135,26 @@ void CONTROL_Loop(void)
 	time_last_measurement = time_current_measurement;
 	time_current_measurement = GetTimeNow();
 
-	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle, &angleD, &invalid_step);
+	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle_int, &angleD_int, &invalid_step);
 
 	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
-	position = encoderDirection * ((short)Encoder_Read() - positionCentre);
+	position_short = encoderDirection * ((short)Encoder_Read() - positionCentre);
 
     if (position_previous!=-30000){
-    	positionD = position-position_previous;
+    	positionD_short = position_short-position_previous;
     } else {
-    	positionD = 0;
+    	positionD_short = 0;
     }
+
+
+    float ANGLE_NORMALIZATION_FACTOR = 0.001471;
+    float POSITION_NORMALIZATION_FACTOR = 0.0000951;
+	angle = wrapLocal(angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR;
+    position = position_int * POSITION_NORMALIZATION_FACTOR;
+
+    angleD = angleD_int/time_difference_between_measurement;
+    positionD = positionD_short/time_difference_between_measurement;
 
 	// Microcontroller Control Routine
 	if (ControlOnChip_Enabled)	{
@@ -207,10 +227,10 @@ void CONTROL_Loop(void)
     	prepare_message_to_PC_state(
     			buffer,
 				message_len,
-    			angle,
-				angleD,
-				position,
-				positionD,
+    			angle_int,
+				angleD_int,
+				position_short,
+				positionD_short,
 				command,
 				invalid_step,
 				time_difference_between_measurement,
@@ -451,7 +471,10 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	} while(fDiff > 5e-4);
 	Motor_Stop();
 
-	angle_setPoint = encoderDirection==-1 ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
+	if(!HardwareConfigSetFromPC)
+	{
+		ANGLE_DEVIATION = encoderDirection==-1 ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
+	}
 
 	Sleep_ms(100);
 	prepare_message_to_PC_calibration(buffer, encoderDirection);
@@ -492,10 +515,11 @@ void cmd_SetControlConfig(const unsigned char * config)
 	controlLoopPeriodMs = *((unsigned short *)&config[0]);
     controlSync			= *((bool	        *)&config[2]);
     controlLatencyUs    = *((int            *)&config[3]);
-    angle_setPoint      = *((short          *)&config[ 7]);
-    angle_averageLen    = *((unsigned short *)&config[ 9]);
+    ANGLE_DEVIATION      = *((float          *)&config[ 7]);
+    angle_averageLen    = *((unsigned short *)&config[ 11]);
 
     SetControlUpdatePeriod(controlLoopPeriodMs);
+    HardwareConfigSetFromPC = true;
 
 	enable_irq();
 }
@@ -503,7 +527,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, controlLatencyUs, angle_setPoint, angle_averageLen);
+	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, controlLatencyUs, ANGLE_DEVIATION, angle_averageLen);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 15);

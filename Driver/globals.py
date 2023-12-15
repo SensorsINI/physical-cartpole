@@ -94,7 +94,6 @@ SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled an
 ratio = 1.05
 
 ##### Wrong Place ##### #TODO: remove functions and calculations from parameter file
-ANGLE_HANGING = np.array(0.0)  # TODO: best would be to have theses as class variables in CartPoleDriver
 ANGLE_DEVIATION = np.array(0.0)
 
 
@@ -107,13 +106,13 @@ def angle_constants_update(new_angle_hanging):
     else:
         angle_deviation = - new_angle_hanging + ANGLE_360_DEG_IN_ADC_UNITS / 2  # moves upright to 0 and hanging to pi
 
-    return new_angle_hanging, angle_deviation
+    return angle_deviation
 
 
 if MOTOR == 'ORIGINAL':
-    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
+    ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
 elif MOTOR == 'POLOLU':
-    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
+    ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
 
 
 def inc(param):

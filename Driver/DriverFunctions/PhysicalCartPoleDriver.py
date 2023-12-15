@@ -210,8 +210,8 @@ class PhysicalCartPoleDriver:
 
         time.sleep(1)
 
-        set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0, setPoint=0, avgLen=ANGLE_AVG_LENGTH)
+        # set_firmware_parameters(self.InterfaceInstance)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
 
         try:
             self.controller.printparams()
@@ -356,7 +356,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
+        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
             self.new_console_output = True
@@ -435,7 +435,7 @@ class PhysicalCartPoleDriver:
 
             ##### Calibration #####
             elif c == 'K':
-                global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
+                global MOTOR, ANGLE_DEVIATION
                 self.controlEnabled = False
 
                 print("\nCalibrating motor position.... ")
@@ -445,14 +445,19 @@ class PhysicalCartPoleDriver:
                 if self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'POLOLU'
                     if ANGLE_HANGING_DEFAULT:
-                        ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
+                        ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
                 elif self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'ORIGINAL'
                     if ANGLE_HANGING_DEFAULT:
-                        ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
+                        ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
                 print('Detected motor: {}'.format(MOTOR))
+
+                self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+                                                          controlSync=CONTROL_SYNC, controlLatencyUs=0,
+                                                          angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
+
 
             ##### Artificial Latency  #####
             elif c == 'b':
@@ -478,8 +483,12 @@ class PhysicalCartPoleDriver:
                                                                                               angle_std))
                 print('\nMeasurement took {} s'.format(time_measurement))
                 # if abs(angle_rad) > 1.0:
-                #     ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
+                #     ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
                 #     ANGLE_HANGING_DEFAULT = False
+                # self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+                #                                           controlSync=CONTROL_SYNC, controlLatencyUs=0,
+                #                                           angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
+
             # Fine tune angle deviation
             elif c == '=':
                 ANGLE_DEVIATION_FINETUNE += 0.002

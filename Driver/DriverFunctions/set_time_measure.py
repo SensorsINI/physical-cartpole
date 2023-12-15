@@ -57,7 +57,7 @@ class SetTimeMeasure:
             self.start_angleD = self.driver.s[ANGLED_IDX]
             self.target_position = self.driver.target_position
 
-            global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
+            global MOTOR, ANGLE_DEVIATION
 
             print("\nCalibrating motor position.... ")
             self.driver.InterfaceInstance.calibrate()
@@ -67,11 +67,11 @@ class SetTimeMeasure:
             if self.driver.InterfaceInstance.encoderDirection == -1:
                 MOTOR = 'POLOLU'
                 if ANGLE_HANGING_DEFAULT:
-                    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
+                    ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
             elif self.driver.InterfaceInstance.encoderDirection == 1:
                 MOTOR = 'ORIGINAL'
                 if ANGLE_HANGING_DEFAULT:
-                    ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
+                    ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
             else:
                 raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(
                     self.driver.InterfaceInstance.encoderDirection))

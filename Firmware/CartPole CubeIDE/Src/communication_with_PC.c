@@ -212,19 +212,19 @@ void prepare_message_to_PC_control_config(
 		unsigned short control_period,
 		bool controlSync,
 		int controlLatencyUs,
-		short angle_setPoint,
+		float angle_setPoint,
 		unsigned short angle_averageLen
 		){
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
-	txBuffer[ 2] = 15;
+	txBuffer[ 2] = 17;
 	*((unsigned short *)&txBuffer[ 3]) = control_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
 	*((float          *)&txBuffer[ 6]) = controlLatencyUs;
-	*((short          *)&txBuffer[10]) = angle_setPoint;
-	*((unsigned short *)&txBuffer[12]) = angle_averageLen;
-	txBuffer[14] = crc(txBuffer, 14);
+	*((float          *)&txBuffer[10]) = angle_setPoint;
+	*((unsigned short *)&txBuffer[14]) = angle_averageLen;
+	txBuffer[16] = crc(txBuffer, 16);
 
 }
 

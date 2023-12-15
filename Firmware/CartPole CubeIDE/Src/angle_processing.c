@@ -73,6 +73,17 @@ int wrapLocal(int angle) {
 		return angle;
 }
 
+
+float wrapLocal_float(float angle) {
+    if (angle > ADC_RANGE/2)
+		return angle - ADC_RANGE;
+	if (angle <= -ADC_RANGE/2)
+		return angle + ADC_RANGE;
+	else
+		return angle;
+}
+
+
 int unwrapLocal(int previous, int current) {
 	int diff = current-previous;
 
