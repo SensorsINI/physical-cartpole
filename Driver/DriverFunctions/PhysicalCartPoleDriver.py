@@ -858,7 +858,7 @@ class PhysicalCartPoleDriver:
 
     def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
-        if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
+        if abs(self.position_raw) > 0.95 * (POSITION_ENCODER_RANGE // 2):
             self.safety_switch_counter += 1
             if self.safety_switch_counter > 10:  # Allow short bumps
                 self.safety_switch_counter = 0
