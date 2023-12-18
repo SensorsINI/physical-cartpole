@@ -252,7 +252,7 @@ void CONTROL_Loop(void)
 
 void CONTROL_BackgroundTask(void)
 {
-	static unsigned int 	rxCnt			= 0;
+	static unsigned int 	uart_received_Cnt			= 0;
 	short					motorCmd;
 	static unsigned long    lastRead = 0;
 	int						read = 0;
@@ -287,10 +287,10 @@ void CONTROL_BackgroundTask(void)
 	///////////////////////////////////////////////////
 	// Process Commands from PC
 	///////////////////////////////////////////////////
-	if (Message_GetFromPC(&rxBuffer[rxCnt]))
-		rxCnt++;
+	while (Message_GetFromPC(&rxBuffer[uart_received_Cnt]))
+		uart_received_Cnt++;
 
-	int current_command = get_command_from_PC_message(rxBuffer, &rxCnt);
+	int current_command = get_command_from_PC_message(rxBuffer, &uart_received_Cnt);
 
 	switch (current_command){
 		case CMD_PING:
