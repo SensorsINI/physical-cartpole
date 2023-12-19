@@ -58,7 +58,7 @@ void 			cmd_ControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
 void 			cmd_SetMotor(int motorCmd);
-void			cmd_collectRawAngle(const unsigned short, const unsigned short);
+void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
 
 void CONTROL_Init(void)
 {
