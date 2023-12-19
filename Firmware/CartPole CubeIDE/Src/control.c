@@ -180,7 +180,7 @@ void CONTROL_Loop(void)
         } else {
         	if(controlLatencyUs > 0) {
         		controlLatencyTimestampUs = GetTimeNow() + controlLatencyUs;
-        		controlCommand = -command;
+        		controlCommand = command;
         		controlLatencyEnable = true;
         	}
         	else
@@ -190,7 +190,7 @@ void CONTROL_Loop(void)
 	else
 	{
 		if(controlSync) {
-            Motor_SetPower(-controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
+            Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
 		} else {
 			command = 0;
 	        stopCnt = 0;
@@ -274,7 +274,7 @@ void CONTROL_BackgroundTask(void)
 	// Apoply Delayed Control Command
 	///////////////////////////////////////////////////
 	if (controlLatencyEnable && controlLatencyTimestampUs >= GetTimeNow()) {
-		Motor_SetPower(-controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
+		Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
 		controlLatencyEnable = false;
 	}
 
@@ -341,7 +341,7 @@ void CONTROL_BackgroundTask(void)
 			newReceived = true;
 
 			if(controlSync) {
-				controlCommand = -motorCmd;
+				controlCommand = motorCmd;
 			} else {
 				cmd_SetMotor(motorCmd);
 			}
