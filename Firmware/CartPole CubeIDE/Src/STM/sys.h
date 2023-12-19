@@ -70,6 +70,4 @@ void SYS_DelayUS(unsigned int n);
 void SYS_DelayMS(unsigned int ms);
 void General_Init(void);
 
-#define POLOLU_MOTOR // define if using replacement Pololu motor with reversed polarity; see also encoder.c
-
 #endif /*__SYS_H_*/

@@ -55,9 +55,6 @@ void Motor_SetPower_STM(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_cl
 
 
 void set_direction(int pwm_duty_cycle_in_clock_cycles){
-	#ifdef POLOLU_MOTOR
-		pwm_duty_cycle_in_clock_cycles=-pwm_duty_cycle_in_clock_cycles; // tobi
-	#endif
 
 	if (pwm_duty_cycle_in_clock_cycles == 0)
     {
