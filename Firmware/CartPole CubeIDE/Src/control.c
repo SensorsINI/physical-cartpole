@@ -49,7 +49,7 @@ unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
 unsigned short	latency_violation = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
-static unsigned char txBuffer[17000];
+static unsigned char txBuffer[200];
 
 void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
