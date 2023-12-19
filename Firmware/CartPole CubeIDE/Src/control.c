@@ -341,9 +341,9 @@ void CONTROL_BackgroundTask(void)
 			newReceived = true;
 
 			if(controlSync) {
-				controlCommand = motorCmd;
+				controlCommand = -motorCmd;
 			} else {
-				cmd_SetMotor(-motorCmd);
+				cmd_SetMotor(motorCmd);
 			}
 			break;
 		}
