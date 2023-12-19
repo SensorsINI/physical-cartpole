@@ -15,11 +15,6 @@
 /***** Angle & Position *****/
 #define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US 200
 
-#define CONTROL_POSITION_SMOOTHING      0.2f 		// 0.2f        // 0 to 1.0 (1.0 disables smoothing)
-#define CONTROL_POSITION_PERIOD_MS      25 			// 25
-
-
-
 void CONTROL_Init(void);
 void CONTROL_Calibrate(void);
 void CONTROL_ToggleState(void);
