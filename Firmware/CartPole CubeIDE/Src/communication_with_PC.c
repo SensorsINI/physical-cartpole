@@ -111,14 +111,8 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 							{
 								if (pktLen == 8)
 								{
-									current_command = CMD_COLLECT_RAW_ANGLE_MODE_1;
+									current_command = CMD_COLLECT_RAW_ANGLE;
 								}
-
-								else if (pktLen == 6)
-								{
-									current_command = CMD_COLLECT_RAW_ANGLE_MODE_2;
-								}
-
 								break;
 							}
 

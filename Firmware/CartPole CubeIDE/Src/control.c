@@ -347,24 +347,11 @@ void CONTROL_BackgroundTask(void)
 			}
 			break;
 		}
-		case CMD_COLLECT_RAW_ANGLE_MODE_1:
+		case CMD_COLLECT_RAW_ANGLE:
 		{
 			unsigned short length 	   = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
 			unsigned short interval_us = 256 * (unsigned short)rxBuffer[6] + (unsigned short)rxBuffer[5];
 			cmd_CollectRawAngle(length, interval_us);
-			break;
-		}
-		case CMD_COLLECT_RAW_ANGLE_MODE_2:
-		{
-			motorCmd =
-			timeReceived = GetTimeNow();
-			newReceived = true;
-
-			if(controlSync) {
-				controlCommand = motorCmd;
-			} else {
-				cmd_SetMotor(-motorCmd);
-			}
 			break;
 		}
 		default:

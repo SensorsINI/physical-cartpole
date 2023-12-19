@@ -17,8 +17,6 @@
 #define CMD_SET_MOTOR				0xC8
 #define CMD_FREE_TO_USE				0xC9  // This command is not used. RENAME it, CHANGE python code, REMOVE this command, and use it as you like
 #define CMD_COLLECT_RAW_ANGLE		0xCA
-#define CMD_COLLECT_RAW_ANGLE_MODE_1 0xB1
-#define CMD_COLLECT_RAW_ANGLE_MODE_2 0xB2
 #define CMD_STATE					0xCC
 #define CMD_DO_NOTHING				0x00
 
