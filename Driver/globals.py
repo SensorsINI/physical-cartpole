@@ -44,7 +44,7 @@ MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
 MOTOR_DYNAMICS_CORRECTED = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
 
 MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
-MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE)  # Including a safety constraint
+MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety constraint
 
 MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026,  839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
 MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)

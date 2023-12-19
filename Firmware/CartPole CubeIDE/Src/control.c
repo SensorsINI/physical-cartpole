@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "math.h"
 #include "hardware_pid.h"
+#include "control_signal_postprocessing.h"
 
 #define OnChipController_PID 0
 
@@ -145,22 +146,29 @@ void CONTROL_Loop(void)
 
 	// Microcontroller Control Routine
 	if (ControlOnChip_Enabled)	{
-//
-//		switch (current_controller){
-//		case OnChipController_PID:
-//		{
-//			float command_float = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
-//			break;
-//		}
-//
-//		}
+		float Q;
+		switch (current_controller){
+		case OnChipController_PID:
+		{
+			Q = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
+			break;
+		}
+		default:
+		{
+			Q = 0.0;
+			break;
+		}
+
+		}
+
+        // Conversion
+        command = control_signal_to_motor_command(Q, positionD);
+        motor_command_safety_check(&command);
+
+
         command = 0;
 
-
-
-		if      (command >  CONTROL_MOTOR_MAX_SPEED) command =  CONTROL_MOTOR_MAX_SPEED;
-		else if (command < -CONTROL_MOTOR_MAX_SPEED) command = -CONTROL_MOTOR_MAX_SPEED;
-
+        // Safety switch
         // Disable motor if falls hard on either limit
         if ((command < 0) && (position < (positionLimitLeft + 20))) {
             command = 0;

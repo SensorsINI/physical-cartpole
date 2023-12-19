@@ -276,9 +276,10 @@ class PhysicalCartPoleDriver:
         self.measurement_action()
 
         if self.controlEnabled or self.current_measure.is_running():
-            self.get_motor_command()
+            self.control_signal_to_motor_command()
 
         if self.controlEnabled and self.current_measure.is_idle():
+            self.motor_command_safety_check()
             self.safety_switch_off()
 
         if self.controlEnabled or self.current_measure.is_running():
@@ -340,7 +341,8 @@ class PhysicalCartPoleDriver:
 
         # CTN: No joystick and measurement action
 
-            self.get_motor_command()
+            self.control_signal_to_motor_command()
+            self.motor_command_safety_check()
             self.safety_switch_off()
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
@@ -820,7 +822,11 @@ class PhysicalCartPoleDriver:
             except TimeoutError as e:
                 self.log.warning(f'timeout in self.measurement: {e}')
 
-    def get_motor_command(self):
+
+    # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
+    #       gets the motor full scale and calculates the correction factors relative to that
+    #       When you do it, make the same correction also for firmware
+    def control_signal_to_motor_command(self):
 
         self.actualMotorCmd = self.Q
         if MOTOR_DYNAMICS_CORRECTED:
@@ -839,9 +845,9 @@ class PhysicalCartPoleDriver:
 
             self.actualMotorCmd *= motor_correction[0]
             if self.actualMotorCmd != 0:
-                if np.sign(self.s[POSITIOND_IDX]) >= 0:
+                if np.sign(self.s[POSITIOND_IDX]) > 0:
                     self.actualMotorCmd += motor_correction[1]
-                elif np.sign(self.s[POSITIOND_IDX]) <= 0:
+                elif np.sign(self.s[POSITIOND_IDX]) < 0:
                     self.actualMotorCmd -= motor_correction[2]
 
         else:
@@ -851,6 +857,7 @@ class PhysicalCartPoleDriver:
         # Convert to motor encoder units
         self.actualMotorCmd = int(self.actualMotorCmd)
 
+    def motor_command_safety_check(self):
         # Check if motor power in safe boundaries, not to burn it in case you have an error before or not-corrected option
         # NEVER RUN IT WITHOUT IT
         self.actualMotorCmd = np.clip(self.actualMotorCmd, -MOTOR_FULL_SCALE_SAFE, MOTOR_FULL_SCALE_SAFE)

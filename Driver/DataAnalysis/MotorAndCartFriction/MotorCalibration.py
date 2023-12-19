@@ -47,7 +47,7 @@ v_sat_max_lin indicates the range of saturation velocities to be used for linear
 
 Finally we determine the relationship motor_input(Q) = (v_sat_max/A) * Q - (B/A) = S * Q + I (S,I for "slope" and "intercept")
 and calculate these coefficients.
-You have to update these coefficients manually in physical cartpole driver, in get_motor_command()
+You have to update these coefficients manually in physical cartpole driver, in control_signal_to_motor_command()
 
 Attention! a, b, A and B are here are not consistent with the names used in the code. Read carefully!
 """
