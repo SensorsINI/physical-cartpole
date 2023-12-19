@@ -48,8 +48,6 @@ void prepare_message_to_PC_control_config(
 
 void prepare_message_to_PC_config_PID(
 		unsigned char * txBuffer,
-		short position_setPoint,
-		float position_smoothing,
 		float position_KP,
 		float position_KI,
 		float position_KD,

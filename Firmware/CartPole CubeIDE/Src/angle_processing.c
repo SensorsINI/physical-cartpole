@@ -1,6 +1,7 @@
 #include "angle_processing.h"
 #include "median_filter.h"
 #include <stdlib.h>
+#include "math.h"
 
 int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1, angle_raw_sensor;
 int angleD_raw = 0, angleD_raw_stable = -1, angleD_raw_sensor;
@@ -79,6 +80,16 @@ float wrapLocal_float(float angle) {
 		return angle - ADC_RANGE;
 	if (angle <= -ADC_RANGE/2)
 		return angle + ADC_RANGE;
+	else
+		return angle;
+}
+
+
+float wrapLocal_rad(float angle) {
+    if (angle > M_PI)
+		return angle - 2*M_PI;
+	if (angle <= -M_PI)
+		return angle + 2*M_PI;
 	else
 		return angle;
 }

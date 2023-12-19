@@ -3,6 +3,8 @@
 #include "angle_processing.h"
 #include "communication_with_PC.h"
 #include <stdlib.h>
+#include "math.h"
+#include "hardware_pid.h"
 
 #define OnChipController_PID 0
 
@@ -10,15 +12,6 @@ unsigned short current_controller = OnChipController_PID;
 
 bool            streamEnable        = false;
 float  			ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
-float 			angle_KP			= CONTROL_ANGLE_KP;
-float 			angle_KI			= CONTROL_ANGLE_KI;
-float 			angle_KD			= CONTROL_ANGLE_KD;
-
-short  			position_setPoint	= CONTROL_POSITION_SET_POINT;
-float 			position_smoothing	= CONTROL_POSITION_SMOOTHING;
-float 			position_KP			= CONTROL_POSITION_KP;
-float 			position_KI			= CONTROL_POSITION_KI;
-float 			position_KD			= CONTROL_POSITION_KD;
 
 unsigned short	controlLoopPeriodMs = CONTROL_LOOP_PERIOD_MS;
 bool			controlSync 		= CONTROL_SYNC;				// apply motor command at next loop
@@ -32,16 +25,15 @@ int 			controlCommand 		= 0;
 
 bool            isCalibrated 		= true;
 unsigned short  ledPeriod;
-short			angleErrPrev;
-short			positionErrPrev;
+
 int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
 int				encoderDirection	= -1;
-unsigned long	timeMeasured = 0, timeSent = 0, timeReceived = 0, latency = 0;
+unsigned long	timeSent = 0, timeReceived = 0, latency = 0;
 
-unsigned int 	time_current_measurement;
-unsigned int	time_last_measurement;
+unsigned long 	time_current_measurement = 0;
+unsigned long	time_last_measurement = 0;
 
 bool			newReceived			= true;
 float 			angle_I = 0, position_I = 0;
@@ -62,8 +54,6 @@ void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
 void            cmd_Calibrate(const unsigned char * buff, unsigned int len);
 void 			cmd_ControlMode(bool en);
-void 			cmd_SetPIDConfig(const unsigned char * config);
-void 			cmd_GetPIDConfig(void);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
 void 			cmd_SetMotor(int motorCmd);
@@ -75,8 +65,7 @@ void CONTROL_Init(void)
 	HardwareConfigSetFromPC = false;
     isCalibrated        = false;
     ledPeriod           = 500/controlLoopPeriodMs;
-	angleErrPrev		= 0;
-	positionErrPrev		= 0;
+
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
     positionLimitLeft   = positionCentre + 2400;
     positionLimitRight  = positionCentre - 2400; // guess defaults based on 7000-8000 counts at limits
@@ -123,8 +112,6 @@ void CONTROL_Loop(void)
 	float positionD = 0.0;
 
 
-	timeMeasured = GetTimeNow();
-
 	time_last_measurement = time_current_measurement;
 	time_current_measurement = GetTimeNow();
 
@@ -139,23 +126,30 @@ void CONTROL_Loop(void)
     } else {
     	positionD_short = 0;
     }
+    position_previous = position_short;
 
 
-    float ANGLE_NORMALIZATION_FACTOR = 0.001471;
-    float POSITION_NORMALIZATION_FACTOR = 0.0000951;
-	angle = wrapLocal(angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR;
+    float ANGLE_NORMALIZATION_FACTOR = 0.001471127442561364;
+    float POSITION_NORMALIZATION_FACTOR = 0.00009510086455331;
+    float angle_cos, angle_sin;
+
+    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
+	angle = wrapLocal_rad((angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR);
     position = position_short * POSITION_NORMALIZATION_FACTOR;
 
-    angleD = angleD_int/time_difference_between_measurement;
-    positionD = positionD_short/time_difference_between_measurement;
+    angle_cos = cos(angle);
+    angle_sin = sin(angle);
+    angleD = (angleD_int*ANGLE_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+    float target_position = 0.0;
 
 	// Microcontroller Control Routine
 	if (ControlOnChip_Enabled)	{
-
+//
 //		switch (current_controller){
 //		case OnChipController_PID:
 //		{
-//			pid_step(angle, angleD, position, positionD, target_position);
+//			float command_float = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
 //			break;
 //		}
 //
@@ -227,14 +221,14 @@ void CONTROL_Loop(void)
 				command,
 				invalid_step,
 				time_difference_between_measurement,
-				timeMeasured,
+				time_current_measurement,
 				latency,
 				latency_violation);
 
     	Message_SendToPC(buffer, 27);
 
         if(newReceived) {
-        	timeSent = timeMeasured;
+        	timeSent = time_current_measurement;
         	timeReceived = 0;
         	newReceived = false;
         }
@@ -322,7 +316,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_GET_PID_CONFIG:
 		{
-			cmd_GetPIDConfig();
+			cmd_GetPIDConfig(txBuffer);
 			break;
 		}
 		case CMD_SET_CONTROL_CONFIG:
@@ -341,7 +335,7 @@ void CONTROL_BackgroundTask(void)
 			timeReceived = GetTimeNow();
 
             if(newReceived){
-                timeSent = timeMeasured;
+                timeSent = time_current_measurement;
             }
 
 			newReceived = true;
@@ -486,8 +480,6 @@ void cmd_ControlMode(bool en)
     disable_irq();
 	if (en && !ControlOnChip_Enabled)
 	{
-		angleErrPrev		= 0;
-		positionErrPrev		= 0;
         ledPeriod           = 100/controlLoopPeriodMs;
 	}
 	else if (!en && ControlOnChip_Enabled)
@@ -527,35 +519,6 @@ void cmd_GetControlConfig(void)
 	enable_irq();
 }
 
-
-void cmd_SetPIDConfig(const unsigned char * config)
-{
-	disable_irq();
-
-    position_setPoint   = *((short          *)&config[ 0]);
-    position_smoothing  = *((float          *)&config[ 2]);
-    position_KP         = *((float          *)&config[ 6]);
-    position_KI         = *((float          *)&config[ 10]);
-    position_KD         = *((float          *)&config[14]);
-	positionErrPrev		= 0;
-
-    angle_KP            = *((float          *)&config[ 18]);
-    angle_KI            = *((float          *)&config[ 22]);
-    angle_KD            = *((float          *)&config[26]);
-	angleErrPrev		= 0;
-
-	enable_irq();
-}
-
-
-void cmd_GetPIDConfig(void)
-{
-	prepare_message_to_PC_config_PID(txBuffer, position_setPoint, position_smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD);
-
-	disable_irq();
-	Message_SendToPC(txBuffer, 34);
-	enable_irq();
-}
 
 void cmd_SetMotor(int speed)
 {

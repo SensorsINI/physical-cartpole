@@ -178,7 +178,7 @@ void prepare_message_to_PC_state(
 		int command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
-		unsigned long timeMeasured,
+		unsigned long time_current_measurement,
 		unsigned long latency,
 		unsigned short	latency_violation){
 
@@ -192,7 +192,7 @@ void prepare_message_to_PC_state(
 	*((short *)&buffer[11]) = command;
 	*((unsigned char *)&buffer[13]) = invalid_step;
 	*((unsigned int *)&buffer[14]) = (unsigned int)time_difference_between_measurement;
-	*((unsigned int *)&buffer[18]) = (unsigned int)timeMeasured;
+	*((unsigned int *)&buffer[18]) = (unsigned int)time_current_measurement;
 	*((unsigned short *)&buffer[22]) = (unsigned short)(latency / 10);
 	*((unsigned short *)&buffer[24]) = (unsigned short)(latency_violation);
 	// latency maximum: 10 * 65'535 Us = 653ms
@@ -231,8 +231,6 @@ void prepare_message_to_PC_control_config(
 
 void prepare_message_to_PC_config_PID(
 		unsigned char * txBuffer,
-		short position_setPoint,
-		float position_smoothing,
 		float position_KP,
 		float position_KI,
 		float position_KD,
@@ -243,20 +241,17 @@ void prepare_message_to_PC_config_PID(
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_PID_CONFIG;
-	txBuffer[ 2] = 34;
+	txBuffer[ 2] = 28;
 
-	*((short          *)&txBuffer[ 3]) = position_setPoint;
-	*((float          *)&txBuffer[ 5]) = position_smoothing;
+	*((float          *)&txBuffer[3]) = position_KP;
+	*((float          *)&txBuffer[7]) = position_KI;
+	*((float          *)&txBuffer[11]) = position_KD;
 
-	*((float          *)&txBuffer[9]) = position_KP;
-	*((float          *)&txBuffer[13]) = position_KI;
-	*((float          *)&txBuffer[17]) = position_KD;
+	*((float          *)&txBuffer[15]) = angle_KP;
+	*((float          *)&txBuffer[19]) = angle_KI;
+	*((float          *)&txBuffer[23]) = angle_KD;
 
-	*((float          *)&txBuffer[21]) = angle_KP;
-	*((float          *)&txBuffer[25]) = angle_KI;
-	*((float          *)&txBuffer[29]) = angle_KD;
-
-	txBuffer[33] = crc(txBuffer, 33);
+	txBuffer[27] = crc(txBuffer, 27);
 
 }
 

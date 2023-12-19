@@ -17,6 +17,7 @@ int anomaly_detection(int* angleSamples, unsigned short angleSampIndex, unsigned
 void treat_deadangle_with_derivative(int* anglePtr, int invalid_step);
 
 int wrapLocal(int angle);
+float wrapLocal_rad(float angle);
 int unwrapLocal(int previous, int current);
 int wrap(int current);
 int unwrap(int previous, int current);

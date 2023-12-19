@@ -9,24 +9,15 @@
 
 
 /***** Angle Set Point *****/
-#define CONTROL_ANGLE_SET_POINT_POLULU	    3342 //3355
-#define CONTROL_ANGLE_SET_POINT_ORIGINAL	3163
+#define CONTROL_ANGLE_SET_POINT_POLULU	    -3065.17
+#define CONTROL_ANGLE_SET_POINT_ORIGINAL	-3065.17
 
 /***** Angle & Position *****/
 #define CONTROL_ANGLE_MEASUREMENT_INTERVAL_US 200
 
-#define CONTROL_POSITION_SET_POINT      0
 #define CONTROL_POSITION_SMOOTHING      0.2f 		// 0.2f        // 0 to 1.0 (1.0 disables smoothing)
 #define CONTROL_POSITION_PERIOD_MS      25 			// 25
 
-/***** PID *****/
-#define CONTROL_ANGLE_KP                200.0f		// 200.0f
-#define CONTROL_ANGLE_KI                0			// 0.0f
-#define CONTROL_ANGLE_KD                200.0f		// 200.0f
-
-#define CONTROL_POSITION_KP             4.0f 		// 4.0f
-#define CONTROL_POSITION_KI             0.0f		// 0.0f
-#define CONTROL_POSITION_KD             150.0f 		// 150.0f
 
 
 void CONTROL_Init(void);

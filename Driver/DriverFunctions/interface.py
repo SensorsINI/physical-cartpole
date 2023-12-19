@@ -102,10 +102,8 @@ class Interface:
         self.device.flush()
 
     def set_config_PID(self, setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD):
-        msg = [SERIAL_SOF, CMD_SET_PID_CONFIG, 34]
-        msg += list(struct.pack('h', setPoint))
-        msg += list(struct.pack('f', smoothing))
-        
+        msg = [SERIAL_SOF, CMD_SET_PID_CONFIG, 28]
+
         msg += list(struct.pack('f', position_KP))
         msg += list(struct.pack('f', position_KI))
         msg += list(struct.pack('f', position_KD))
@@ -123,8 +121,8 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        reply = self._receive_reply(CMD_GET_PID_CONFIG, 34)
-        (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:33]))
+        reply = self._receive_reply(CMD_GET_PID_CONFIG, 28)
+        (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
     def set_config_control(self, controlLoopPeriodMs, controlSync, controlLatencyUs, angle_deviation, avgLen):
