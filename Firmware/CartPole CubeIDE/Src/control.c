@@ -343,7 +343,7 @@ void CONTROL_BackgroundTask(void)
 			if(controlSync) {
 				controlCommand = motorCmd;
 			} else {
-				cmd_SetMotor(motorCmd);
+				cmd_SetMotor(-motorCmd);
 			}
 			break;
 		}
@@ -363,7 +363,7 @@ void CONTROL_BackgroundTask(void)
 			if(controlSync) {
 				controlCommand = motorCmd;
 			} else {
-				cmd_SetMotor(motorCmd);
+				cmd_SetMotor(-motorCmd);
 			}
 			break;
 		}
@@ -534,16 +534,16 @@ void cmd_SetMotor(int speed)
 				position = Encoder_Read();
 
 				// Disable motor if falls hard on either limit
-				if ((pwm_duty_cycle_in_clock_cycles < 0) && (position < (positionLimitLeft + 10)))
+				if ((pwm_duty_cycle_in_clock_cycles > 0) && (position < (positionLimitLeft + 10)))
 				{
 						Motor_Stop();
 				}
-				else if ((pwm_duty_cycle_in_clock_cycles > 0) && (position > (positionLimitRight - 10)))
+				else if ((pwm_duty_cycle_in_clock_cycles < 0) && (position > (positionLimitRight - 10)))
 				{
 					Motor_Stop();
 				}
 		else{
-				Motor_SetPower(-pwm_duty_cycle_in_clock_cycles, pwm_period_in_clock_cycles);
+				Motor_SetPower(pwm_duty_cycle_in_clock_cycles, pwm_period_in_clock_cycles);
 		}
 	}
 }
