@@ -211,7 +211,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
 
         try:
             self.controller.printparams()
@@ -457,7 +457,7 @@ class PhysicalCartPoleDriver:
                 print('Detected motor: {}'.format(MOTOR))
 
                 self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
-                                                          controlSync=CONTROL_SYNC, controlLatencyUs=0,
+                                                          controlSync=CONTROL_SYNC,
                                                           angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
 
 

@@ -40,7 +40,6 @@ void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
 		unsigned short control_period,
 		bool controlSync,
-		int controlLatencyUs,
 		float angle_setPoint,
 		unsigned short angle_averageLen);
 

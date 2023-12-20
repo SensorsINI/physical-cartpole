@@ -477,9 +477,8 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 	controlLoopPeriodMs = *((unsigned short *)&config[0]);
     controlSync			= *((bool	        *)&config[2]);
-    controlLatencyUs    = *((int            *)&config[3]);
-    ANGLE_DEVIATION      = *((float          *)&config[ 7]);
-    angle_averageLen    = *((unsigned short *)&config[ 11]);
+    ANGLE_DEVIATION      = *((float          *)&config[ 3]);
+    angle_averageLen    = *((unsigned short *)&config[ 7]);
 
     SetControlUpdatePeriod(controlLoopPeriodMs);
     HardwareConfigSetFromPC = true;
@@ -490,7 +489,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, controlLatencyUs, ANGLE_DEVIATION, angle_averageLen);
+	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, ANGLE_DEVIATION, angle_averageLen);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 15);

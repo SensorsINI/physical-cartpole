@@ -125,11 +125,10 @@ class Interface:
         (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
-    def set_config_control(self, controlLoopPeriodMs, controlSync, controlLatencyUs, angle_deviation, avgLen):
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 17]
+    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_deviation, avgLen):
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 13]
         msg += list(struct.pack('H', controlLoopPeriodMs))
         msg += list(struct.pack('?', controlSync))
-        msg += list(struct.pack('i', controlLatencyUs))
         msg += list(struct.pack('f', angle_deviation))
         msg += list(struct.pack('H', avgLen))
         msg.append(self._crc(msg))
@@ -141,9 +140,9 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()
-        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 17)
-        (controlLoopPeriodMs, controlSync, controlLatencyUs, angle_deviation, avgLen) = struct.unpack('H?ifH', bytes(reply[3:16]))
-        return controlLoopPeriodMs, controlSync, controlLatencyUs, angle_deviation, avgLen
+        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 13)
+        (controlLoopPeriodMs, controlSync, angle_deviation, avgLen) = struct.unpack('H?fH', bytes(reply[3:12]))
+        return controlLoopPeriodMs, controlSync, angle_deviation, avgLen
 
     def set_motor(self, speed):
         msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
