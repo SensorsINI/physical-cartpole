@@ -145,7 +145,8 @@ class Interface:
         return controlLoopPeriodMs, controlSync, angle_deviation, avgLen
 
     def set_motor(self, speed):
-        msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
+        msg  = [SERIAL_SOF, CMD_SET_MOTOR, 8]
+        msg += list(struct.pack('i', speed))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         self.device.flush()

@@ -224,7 +224,6 @@ void CONTROL_Loop(void)
 void CONTROL_BackgroundTask(void)
 {
 	static unsigned int 	uart_received_Cnt			= 0;
-	int					motorCmd;
 	static unsigned long    lastRead = 0;
 	int						read = 0;
 
@@ -300,7 +299,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_MOTOR:
 		{
-			motorCmd = (int)(((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
+			int motorCmd = *((int *)&rxBuffer[3]);
 			timeReceived = GetTimeNow();
 
             if(newReceived){
