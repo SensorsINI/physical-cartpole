@@ -69,11 +69,11 @@ class DisturbanceMeasure:
             (_, _, self.position_offset, _, _, _, _) = self.driver.InterfaceInstance.read_state()
             print("Done calibrating")
 
-            if self.driver.InterfaceInstance.encoderDirection == -1:
+            if self.driver.InterfaceInstance.encoderDirection == 1:
                 MOTOR = 'POLOLU'
                 if ANGLE_HANGING_DEFAULT:
                     ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
-            elif self.driver.InterfaceInstance.encoderDirection == 1:
+            elif self.driver.InterfaceInstance.encoderDirection == -1:
                 MOTOR = 'ORIGINAL'
                 if ANGLE_HANGING_DEFAULT:
                     ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)

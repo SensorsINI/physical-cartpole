@@ -444,11 +444,11 @@ class PhysicalCartPoleDriver:
                 self.InterfaceInstance.calibrate()
                 print("Done calibrating")
 
-                if self.InterfaceInstance.encoderDirection == -1:
+                if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
                     if ANGLE_HANGING_DEFAULT:
                         ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
-                elif self.InterfaceInstance.encoderDirection == 1:
+                elif self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'ORIGINAL'
                     if ANGLE_HANGING_DEFAULT:
                         ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
