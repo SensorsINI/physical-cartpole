@@ -100,7 +100,7 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_SET_MOTOR:
 							{
-								if (pktLen == 6)
+								if (pktLen == 8)
 								{
 									current_command = CMD_SET_MOTOR;
 								}
