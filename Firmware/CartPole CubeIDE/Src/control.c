@@ -16,12 +16,10 @@ float  			ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
 
 unsigned short	controlLoopPeriodMs = CONTROL_LOOP_PERIOD_MS;
 bool			controlSync 		= CONTROL_SYNC;				// apply motor command at next loop
-int 			controlLatencyUs 	= CONTROL_LATENCY_US;	// used to simulate Latency
 
 volatile bool	HardwareConfigSetFromPC;
 volatile bool 	ControlOnChip_Enabled;
-bool			controlLatencyEnable = false;
-int	 			controlLatencyTimestampUs = 0;
+
 int 			controlCommand 		= 0;
 
 bool            isCalibrated 		= true;
@@ -164,13 +162,7 @@ void CONTROL_Loop(void)
 
         command = 0;
 
-		if(controlLatencyUs > 0) {
-			controlLatencyTimestampUs = GetTimeNow() + controlLatencyUs;
-			controlCommand = command;
-			controlLatencyEnable = true;
-		}
-		else
-			Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
+		Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
 
 	}
 	else
@@ -253,14 +245,6 @@ void CONTROL_BackgroundTask(void)
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
 		lastRead = now;
-	}
-
-	///////////////////////////////////////////////////
-	// Apoply Delayed Control Command
-	///////////////////////////////////////////////////
-	if (controlLatencyEnable && controlLatencyTimestampUs >= GetTimeNow()) {
-		Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
-		controlLatencyEnable = false;
 	}
 
 	///////////////////////////////////////////////////
