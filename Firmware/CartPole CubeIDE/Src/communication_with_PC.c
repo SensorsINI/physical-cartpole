@@ -82,7 +82,7 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_SET_CONTROL_CONFIG:
 							{
-								if (pktLen == 17)
+								if (pktLen == 13)
 								{
 									current_command = CMD_SET_CONTROL_CONFIG;
 								}
