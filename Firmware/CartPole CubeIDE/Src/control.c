@@ -222,7 +222,6 @@ void CONTROL_BackgroundTask(void)
 {
 	static unsigned int 	uart_received_Cnt			= 0;
 	static unsigned long    lastRead = 0;
-	int						read = 0;
 
 	///////////////////////////////////////////////////
 	// Collect samples of angular displacement
@@ -236,8 +235,7 @@ void CONTROL_BackgroundTask(void)
 	// read every ca. 100us
 	else if (now > lastRead + CONTROL_ANGLE_MEASUREMENT_INTERVAL_US) {
 		// conversion takes 18us
-		read = Goniometer_Read();
-		angleSamples[angleSampIndex] = read;
+		angleSamples[angleSampIndex] = Goniometer_Read();
 		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
 
 		lastRead = now;
