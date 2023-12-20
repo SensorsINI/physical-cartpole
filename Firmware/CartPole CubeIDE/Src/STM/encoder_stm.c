@@ -1,5 +1,7 @@
 #include "encoder_stm.h"
 
+short EncoderDirection = 1;
+
 // Uses Timer 4 configured in encoder mode
 void Encoder_Init_STM(void)
 {
@@ -31,7 +33,12 @@ void Encoder_Init_STM(void)
 
 short Encoder_Read_STM(void)
 {
-	return -(TIM4->CNT);
+	return EncoderDirection * (TIM4->CNT);
+}
+
+void Encoder_Set_Direction(short new_direction)
+{
+	EncoderDirection = new_direction;
 }
 
 void TIM4_IRQHandler(void)

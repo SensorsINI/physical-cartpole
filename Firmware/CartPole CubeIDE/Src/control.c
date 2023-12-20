@@ -30,7 +30,6 @@ unsigned short  ledPeriod;
 int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
-int				encoderDirection	= -1;
 unsigned long	timeSent = 0, timeReceived = 0, latency = 0;
 
 unsigned long 	time_current_measurement = 0;
@@ -57,7 +56,6 @@ void            cmd_Calibrate(const unsigned char * buff, unsigned int len);
 void 			cmd_ControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
-void 			cmd_SetMotor(int motorCmd);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
 
 void CONTROL_Init(void)
@@ -68,8 +66,8 @@ void CONTROL_Init(void)
     ledPeriod           = 500/controlLoopPeriodMs;
 
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
-    positionLimitLeft   = positionCentre + 2400;
-    positionLimitRight  = positionCentre - 2400; // guess defaults based on 7000-8000 counts at limits
+    positionLimitLeft   = positionCentre - 2400;
+    positionLimitRight  = positionCentre + 2400; // guess defaults based on 7000-8000 counts at limits
 }
 
 void CONTROL_ToggleState(void)
@@ -94,7 +92,6 @@ void CONTROL_Loop(void)
 	static unsigned short 	ledPeriodCnt	= 0;
 	static bool				ledState 		= false;
 
-    static unsigned int     stopCnt         = 0;
 	static unsigned char	buffer[30];
 
 	#define lastAngleLength 5
@@ -120,7 +117,7 @@ void CONTROL_Loop(void)
 
 	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
-	position_short = encoderDirection * ((short)Encoder_Read() - positionCentre);
+	position_short = (short)Encoder_Read() - positionCentre;
 
     if (position_previous!=-30000){
     	positionD_short = position_short-position_previous;
@@ -161,39 +158,21 @@ void CONTROL_Loop(void)
 
 		}
 
-        // Conversion
         command = control_signal_to_motor_command(Q, positionD);
         motor_command_safety_check(&command);
+        safety_switch_off(&command, positionLimitLeft, positionLimitRight);
 
 
         command = 0;
 
-        // Safety switch
-        // Disable motor if falls hard on either limit
-        if ((command < 0) && (position < (positionLimitLeft + 20))) {
-            command = 0;
-            stopCnt++;
-        } else if ((command > 0) && (position > (positionLimitRight - 20))) {
-            command = 0;
-            stopCnt++;
-        } else {
-            stopCnt = 0;
-        }
+		if(controlLatencyUs > 0) {
+			controlLatencyTimestampUs = GetTimeNow() + controlLatencyUs;
+			controlCommand = command;
+			controlLatencyEnable = true;
+		}
+		else
+			Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
 
-        // Quit control if pendulum has continously been at the end for 500 ms
-        if (stopCnt == 500/controlLoopPeriodMs) {
-            cmd_ControlMode(false);
-            Motor_SetPower(0, PWM_PERIOD_IN_CLOCK_CYCLES);
-            stopCnt = 0;
-        } else {
-        	if(controlLatencyUs > 0) {
-        		controlLatencyTimestampUs = GetTimeNow() + controlLatencyUs;
-        		controlCommand = command;
-        		controlLatencyEnable = true;
-        	}
-        	else
-        		Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
-        }
 	}
 	else
 	{
@@ -201,7 +180,6 @@ void CONTROL_Loop(void)
             Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
 		} else {
 			command = 0;
-	        stopCnt = 0;
 		}
 	}
 
@@ -255,7 +233,7 @@ void CONTROL_Loop(void)
 void CONTROL_BackgroundTask(void)
 {
 	static unsigned int 	uart_received_Cnt			= 0;
-	short					motorCmd;
+	int					motorCmd;
 	static unsigned long    lastRead = 0;
 	int						read = 0;
 
@@ -339,7 +317,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_MOTOR:
 		{
-			motorCmd = (((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
+			motorCmd = (int)(((short)rxBuffer[4])<<8) | ((short)rxBuffer[3]);
 			timeReceived = GetTimeNow();
 
             if(newReceived){
@@ -351,7 +329,8 @@ void CONTROL_BackgroundTask(void)
 			if(controlSync) {
 				controlCommand = motorCmd;
 			} else {
-				cmd_SetMotor(motorCmd);
+				safety_switch_off(&motorCmd, positionLimitLeft, positionLimitRight);
+				Motor_SetPower(motorCmd, PWM_PERIOD_IN_CLOCK_CYCLES);
 			}
 			break;
 		}
@@ -391,6 +370,9 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	int diff;
 	float fDiff;
 	static unsigned char	buffer[30];
+	short encoderDirection	= 1;
+
+	Encoder_Set_Direction(encoderDirection);
 
 	disable_irq();
 	Motor_Stop();
@@ -398,25 +380,8 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 
 	// Get left limit
 	Sleep_ms(100);
-	positionLimitLeft = Encoder_Read();
-	Motor_SetPower(SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
-
-	do {
-		Sleep_ms(100);
-		pos  = Encoder_Read();
-		diff = pos - positionLimitLeft;
-		positionLimitLeft = pos;
-
-		// if we don't move enough, must have hit limit
-	} while(abs(diff) > 15);
-
-	Motor_Stop();
-	Led_Switch(false);
-
-	// Get right limit
-	Sleep_ms(100);
 	positionLimitRight = Encoder_Read();
-	Motor_SetPower(-SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
+	Motor_SetPower(SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
 
 	do {
 		Sleep_ms(100);
@@ -428,19 +393,38 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	} while(abs(diff) > 15);
 
 	Motor_Stop();
+	Led_Switch(false);
+
+	// Get right limit
+	Sleep_ms(100);
+	positionLimitLeft = Encoder_Read();
+	Motor_SetPower(-SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
+
+	do {
+		Sleep_ms(100);
+		pos  = Encoder_Read();
+		diff = pos - positionLimitLeft;
+		positionLimitLeft = pos;
+
+		// if we don't move enough, must have hit limit
+	} while(abs(diff) > 15);
+
+	Motor_Stop();
 
 	// Move pendulum to the centre (roughly)
 	Led_Switch(true);
 	Sleep_ms(200);
 	// invert reading for original motor
-	if (positionLimitRight < positionLimitLeft) {
-		int temp = positionLimitRight;
-		positionLimitRight = positionLimitLeft;
-		positionLimitLeft = temp;
-		encoderDirection = 1;
-	} else
+	if (positionLimitLeft > positionLimitRight) {
+		positionLimitLeft *= -1;
+		positionLimitRight *= -1;
 		encoderDirection = -1;
-	positionCentre = (positionLimitRight + positionLimitLeft) / 2;			// average limits
+		Encoder_Set_Direction(encoderDirection);
+	} else {
+		encoderDirection = 1;
+	}
+
+	positionCentre = (positionLimitLeft + positionLimitRight) / 2;			// average limits
 
 	// Slower to get back to middle
 	Motor_SetPower(SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
@@ -455,7 +439,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 
 	if(!HardwareConfigSetFromPC)
 	{
-		ANGLE_DEVIATION = encoderDirection==-1 ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
+		ANGLE_DEVIATION = encoderDirection==1 ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
 	}
 
 	Sleep_ms(100);
@@ -514,34 +498,6 @@ void cmd_GetControlConfig(void)
 	enable_irq();
 }
 
-
-void cmd_SetMotor(int speed)
-{
-
-	int pwm_duty_cycle_in_clock_cycles = speed;
-	int pwm_period_in_clock_cycles = PWM_PERIOD_IN_CLOCK_CYCLES;
-
-	int position;
-
-	//	Motor_SetPower(-speed);
-	// Only command the motor if the on-board control routine is disabled
-	if (!ControlOnChip_Enabled){
-				position = Encoder_Read();
-
-				// Disable motor if falls hard on either limit
-				if ((pwm_duty_cycle_in_clock_cycles > 0) && (position < (positionLimitLeft + 10)))
-				{
-						Motor_Stop();
-				}
-				else if ((pwm_duty_cycle_in_clock_cycles < 0) && (position > (positionLimitRight - 10)))
-				{
-					Motor_Stop();
-				}
-		else{
-				Motor_SetPower(pwm_duty_cycle_in_clock_cycles, pwm_period_in_clock_cycles);
-		}
-	}
-}
 
 void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_US)
 {

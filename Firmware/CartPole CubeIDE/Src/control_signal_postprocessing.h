@@ -10,5 +10,6 @@
 
 int control_signal_to_motor_command(float Q, float positionD);
 void motor_command_safety_check(int* motor_command_ptr);
+void safety_switch_off(int* motor_command_ptr, int positionLimitLeft, int positionLimitRight);
 
 #endif /* CONTROL_SIGNAL_POSPROCESSING_H_ */

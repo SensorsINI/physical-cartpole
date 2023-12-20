@@ -38,3 +38,17 @@ void motor_command_safety_check(int* motor_command_ptr){
     if (*motor_command_ptr > MOTOR_FULL_SCALE_SAFE) *motor_command_ptr = MOTOR_FULL_SCALE_SAFE;
     else if (*motor_command_ptr < -MOTOR_FULL_SCALE_SAFE) *motor_command_ptr = -MOTOR_FULL_SCALE_SAFE;
 }
+
+
+void safety_switch_off(int* motor_command_ptr, int positionLimitLeft, int positionLimitRight){
+	int position = Encoder_Read();
+	// Disable motor if falls hard on either limit
+	if ((*motor_command_ptr < 0) && (position < (positionLimitLeft + 20)))
+	{
+		*motor_command_ptr = 0;
+	}
+	else if ((*motor_command_ptr > 0) && (position > (positionLimitRight - 20)))
+	{
+		*motor_command_ptr = 0;
+	}
+}
