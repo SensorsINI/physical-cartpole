@@ -159,9 +159,6 @@ void CONTROL_Loop(void)
         motor_command_safety_check(&command);
         safety_switch_off(&command, positionLimitLeft, positionLimitRight);
 
-
-        command = 0;
-
 		Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
 
 	}
