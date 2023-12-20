@@ -36,7 +36,6 @@ unsigned long 	time_current_measurement = 0;
 unsigned long	time_last_measurement = 0;
 
 bool			newReceived			= true;
-float 			angle_I = 0, position_I = 0;
 
 short 			position_previous = -30000;
 
