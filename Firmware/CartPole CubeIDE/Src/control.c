@@ -12,6 +12,7 @@
 unsigned short current_controller = OnChipController_PID;
 
 bool            streamEnable        = false;
+bool 			interrupt_occurred	= false;
 float  			ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
 
 unsigned short	controlLoopPeriodMs = CONTROL_LOOP_PERIOD_MS;
@@ -35,12 +36,13 @@ unsigned long	time_last_measurement = 0;
 
 bool			newReceived			= true;
 
-short 			position_previous = -30000;
-
 long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
 int  angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
+
+short 			position_short;
+short 			position_previous = -30000;
 
 unsigned short	latency_violation = 0;
 
@@ -86,140 +88,149 @@ int clip(int value, int min, int max) {
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
 void CONTROL_Loop(void)
 {
-	static unsigned short 	ledPeriodCnt	= 0;
-	static bool				ledState 		= false;
-
-	static unsigned char	buffer[30];
-
-	#define lastAngleLength 5
-
-	int   					command;
-
-	short 			position_short;
-	short 			positionD_short;
-	int angle_int = 0;
-	int angleD_int = 0;
-	int invalid_step = 0;
-
-	float angle = 0.0;
-	float position = 0.0;
-	float angleD = 0.0;
-	float positionD = 0.0;
-
-
 	time_last_measurement = time_current_measurement;
 	time_current_measurement = GetTimeNow();
+	position_short = Encoder_Read();
+	// I would love to get angle here, but as this requires some analysis of buffer, I will not put it here to keep interrupt minimal
 
-	process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle_int, &angleD_int, &invalid_step);
-
-	unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
-
-	position_short = (short)Encoder_Read() - positionCentre;
-
-    if (position_previous!=-30000){
-    	positionD_short = position_short-position_previous;
-    } else {
-    	positionD_short = 0;
-    }
-    position_previous = position_short;
-
-
-    float ANGLE_NORMALIZATION_FACTOR = 0.001471127442561364;
-    float POSITION_NORMALIZATION_FACTOR = 0.00009510086455331;
-    float angle_cos, angle_sin;
-
-    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
-	angle = wrapLocal_rad((angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR);
-    position = position_short * POSITION_NORMALIZATION_FACTOR;
-
-    angle_cos = cos(angle);
-    angle_sin = sin(angle);
-    angleD = (angleD_int*ANGLE_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
-    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
-    float target_position = 0.0;
-
-	// Microcontroller Control Routine
-	if (ControlOnChip_Enabled)	{
-		float Q;
-		switch (current_controller){
-		case OnChipController_PID:
-		{
-			Q = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
-			break;
-		}
-		default:
-		{
-			Q = 0.0;
-			break;
-		}
-
-		}
-
-        command = control_signal_to_motor_command(Q, positionD);
-        motor_command_safety_check(&command);
-        safety_switch_off(&command, positionLimitLeft, positionLimitRight);
-
-		Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
-
+	if(controlSync) {
+		Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
 	}
-	else
-	{
-		if(controlSync) {
-            Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
-		} else {
-			command = 0;
-		}
-	}
+	interrupt_occurred = true;
 
-	// Send latest state to the PC
-	static int slowdown = 0;
-    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN)
-    {
-        slowdown = 0;
 
-    	if(timeReceived > 0 && timeSent > 0 && newReceived) {
-        	latency = timeReceived - timeSent;
-        	latency_violation = 0;
-    	} else{
-    		latency_violation = 1;
-    		latency = controlLoopPeriodMs*1000;
-    	}
-
-    	prepare_message_to_PC_state(
-    			buffer,
-				27,
-    			angle_int,
-				angleD_int,
-				position_short,
-				positionD_short,
-				command,
-				invalid_step,
-				time_difference_between_measurement,
-				time_current_measurement,
-				latency,
-				latency_violation);
-
-    	Message_SendToPC(buffer, 27);
-
-        if(newReceived) {
-        	timeSent = time_current_measurement;
-        	timeReceived = 0;
-        	newReceived = false;
-        }
-    }
-
-	// Flash LED every second (500 ms on, 500 ms off)
-	ledPeriodCnt++;
-	if (ledPeriodCnt >= ledPeriod)
-	{
-		ledPeriodCnt	= 0;
-		ledState 		= !ledState;
-		Led_Switch(ledState);
-	}
 }
 
 void CONTROL_BackgroundTask(void)
 {
+
+	if(interrupt_occurred)
+	{
+
+		static unsigned char	buffer[30];
+
+		static unsigned short 	ledPeriodCnt	= 0;
+		static bool				ledState 		= false;
+
+		int   					command;
+
+		short 			positionD_short;
+		int angle_int = 0;
+		int angleD_int = 0;
+		int invalid_step = 0;
+
+		float angle = 0.0;
+		float position = 0.0;
+		float angleD = 0.0;
+		float positionD = 0.0;
+
+		process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle_int, &angleD_int, &invalid_step);
+
+		position_short = position_short - positionCentre;
+
+		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
+
+	    if (position_previous!=-30000){
+	    	positionD_short = position_short-position_previous;
+	    } else {
+	    	positionD_short = 0;
+	    }
+	    position_previous = position_short;
+
+	    float ANGLE_NORMALIZATION_FACTOR = 0.001471127442561364;
+	    float POSITION_NORMALIZATION_FACTOR = 0.00009510086455331;
+	    float angle_cos, angle_sin;
+
+	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
+		angle = wrapLocal_rad((angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR);
+	    position = position_short * POSITION_NORMALIZATION_FACTOR;
+
+	    angle_cos = cos(angle);
+	    angle_sin = sin(angle);
+	    angleD = (angleD_int*ANGLE_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+	    float target_position = 0.0;
+
+		// Microcontroller Control Routine
+		if (ControlOnChip_Enabled)	{
+			float Q;
+			switch (current_controller){
+			case OnChipController_PID:
+			{
+				Q = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
+				break;
+			}
+			default:
+			{
+				Q = 0.0;
+				break;
+			}
+
+			}
+
+	        command = control_signal_to_motor_command(Q, positionD);
+	        motor_command_safety_check(&command);
+	        safety_switch_off(&command, positionLimitLeft, positionLimitRight);
+
+	        if(!controlSync)
+	        {
+	        	Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
+	        } else {
+	        	controlCommand = command;
+	        }
+		}
+
+
+		// Send latest state to the PC
+		static int slowdown = 0;
+	    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN)
+	    {
+	        slowdown = 0;
+
+	    	if(timeReceived > 0 && timeSent > 0 && newReceived) {
+	        	latency = timeReceived - timeSent;
+	        	latency_violation = 0;
+	    	} else{
+	    		latency_violation = 1;
+	    		latency = controlLoopPeriodMs*1000;
+	    	}
+
+	    	prepare_message_to_PC_state(
+	    			buffer,
+					27,
+	    			angle_int,
+					angleD_int,
+					position_short,
+					positionD_short,
+					controlCommand,
+					invalid_step,
+					time_difference_between_measurement,
+					time_current_measurement,
+					latency,
+					latency_violation);
+
+	    	Message_SendToPC(buffer, 27);
+
+	        if(newReceived) {
+	        	timeSent = time_current_measurement;
+	        	timeReceived = 0;
+	        	newReceived = false;
+	        }
+	    }
+
+		// Flash LED every second (500 ms on, 500 ms off)
+		ledPeriodCnt++;
+		if (ledPeriodCnt >= ledPeriod)
+		{
+			ledPeriodCnt	= 0;
+			ledState 		= !ledState;
+			Led_Switch(ledState);
+		}
+
+		interrupt_occurred = false;
+
+	}
+
 	static unsigned int 	uart_received_Cnt			= 0;
 	static unsigned long    lastRead = 0;
 
