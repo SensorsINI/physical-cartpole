@@ -29,12 +29,12 @@ unsigned short  ledPeriod;
 int				positionCentre;
 int				positionLimitLeft;
 int				positionLimitRight;
-unsigned long	timeSent = 0, timeReceived = 0, latency = 0;
+unsigned long	time_measurement_done = 0, time_motor_command_obtained = 0, latency = 0;
 
 unsigned long 	time_current_measurement = 0;
 unsigned long	time_last_measurement = 0;
 
-bool			newReceived			= true;
+bool			new_motor_command_obtained			= true;
 
 long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
@@ -172,6 +172,10 @@ void CONTROL_BackgroundTask(void)
 	        motor_command_safety_check(&command);
 	        safety_switch_off(&command, positionLimitLeft, positionLimitRight);
 
+			time_motor_command_obtained = GetTimeNow();
+			new_motor_command_obtained = true;
+            time_measurement_done = time_current_measurement;
+
 	        if(!controlSync)
 	        {
 	        	Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
@@ -187,8 +191,8 @@ void CONTROL_BackgroundTask(void)
 	    {
 	        slowdown = 0;
 
-	    	if(timeReceived > 0 && timeSent > 0 && newReceived) {
-	        	latency = timeReceived - timeSent;
+	    	if(time_motor_command_obtained > 0 && time_measurement_done > 0 && new_motor_command_obtained) {
+	        	latency = time_motor_command_obtained - time_measurement_done;
 	        	latency_violation = 0;
 	    	} else{
 	    		latency_violation = 1;
@@ -211,10 +215,10 @@ void CONTROL_BackgroundTask(void)
 
 	    	Message_SendToPC(buffer, 27);
 
-	        if(newReceived) {
-	        	timeSent = time_current_measurement;
-	        	timeReceived = 0;
-	        	newReceived = false;
+	        if(new_motor_command_obtained) {
+	        	time_measurement_done = time_current_measurement;
+	        	time_motor_command_obtained = 0;
+	        	new_motor_command_obtained = false;
 	        }
 	    }
 
@@ -306,13 +310,13 @@ void CONTROL_BackgroundTask(void)
 		case CMD_SET_MOTOR:
 		{
 			int motorCmd = *((int *)&rxBuffer[3]);
-			timeReceived = GetTimeNow();
+			time_motor_command_obtained = GetTimeNow();
 
-            if(newReceived){
-                timeSent = time_current_measurement;
+            if(new_motor_command_obtained){
+                time_measurement_done = time_current_measurement;
             }
 
-			newReceived = true;
+			new_motor_command_obtained = true;
 
 			if(controlSync) {
 				controlCommand = motorCmd;
