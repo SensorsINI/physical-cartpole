@@ -169,7 +169,7 @@ void prepare_message_to_PC_state(
 		int angleD,
 		int position,
 		int positionD,
-		int command,
+		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
 		unsigned long time_current_measurement,
@@ -183,7 +183,7 @@ void prepare_message_to_PC_state(
 	*((short *)&buffer[5]) = angleD;
 	*((short *)&buffer[7]) = position;
 	*((short *)&buffer[9]) = positionD;
-	*((short *)&buffer[11]) = command;
+	*((short *)&buffer[11]) = motor_command;
 	*((unsigned char *)&buffer[13]) = invalid_step;
 	*((unsigned int *)&buffer[14]) = (unsigned int)time_difference_between_measurement;
 	*((unsigned int *)&buffer[18]) = (unsigned int)time_current_measurement;

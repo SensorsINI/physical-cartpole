@@ -4,7 +4,7 @@
 
 #define CONTROL_LOOP_PERIOD_MS	        5
 #define CONTROL_SLOWDOWN				0
-#define CONTROL_SYNC					false
+#define CONTROL_SYNC					true
 
 
 /***** Angle Set Point *****/

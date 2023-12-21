@@ -28,7 +28,7 @@ void prepare_message_to_PC_state(
 		int angleD,
 		int position,
 		int positionD,
-		int command,
+		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
 		unsigned long timeMeasured,

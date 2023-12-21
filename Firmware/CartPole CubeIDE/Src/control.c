@@ -21,7 +21,7 @@ bool			controlSync 		= CONTROL_SYNC;				// apply motor command at next loop
 volatile bool	HardwareConfigSetFromPC;
 volatile bool 	ControlOnChip_Enabled;
 
-int 			controlCommand 		= 0;
+int 			motor_command 		= 0;
 
 bool            isCalibrated 		= true;
 unsigned short  ledPeriod;
@@ -94,7 +94,7 @@ void CONTROL_Loop(void)
 	// I would love to get angle here, but as this requires some analysis of buffer, I will not put it here to keep interrupt minimal
 
 	if(controlSync) {
-		Motor_SetPower(controlCommand, PWM_PERIOD_IN_CLOCK_CYCLES);
+		Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
 	}
 	interrupt_occurred = true;
 
@@ -112,7 +112,7 @@ void CONTROL_BackgroundTask(void)
 		static unsigned short 	ledPeriodCnt	= 0;
 		static bool				ledState 		= false;
 
-		int   					command;
+		int   					motor_command_from_chip;
 
 		short 			positionD_short;
 		int angle_int = 0;
@@ -168,19 +168,19 @@ void CONTROL_BackgroundTask(void)
 
 			}
 
-	        command = control_signal_to_motor_command(Q, positionD);
-	        motor_command_safety_check(&command);
-	        safety_switch_off(&command, positionLimitLeft, positionLimitRight);
+	        motor_command_from_chip = control_signal_to_motor_command(Q, positionD);
+	        motor_command_safety_check(&motor_command_from_chip);
+	        safety_switch_off(&motor_command_from_chip, positionLimitLeft, positionLimitRight);
 
 			time_motor_command_obtained = GetTimeNow();
 			new_motor_command_obtained = true;
             time_measurement_done = time_current_measurement;
 
+            motor_command = motor_command_from_chip;
+
 	        if(!controlSync)
 	        {
-	        	Motor_SetPower(command, PWM_PERIOD_IN_CLOCK_CYCLES);
-	        } else {
-	        	controlCommand = command;
+	        	Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
 	        }
 		}
 
@@ -206,7 +206,7 @@ void CONTROL_BackgroundTask(void)
 					angleD_int,
 					position_short,
 					positionD_short,
-					controlCommand,
+					motor_command,
 					invalid_step,
 					time_difference_between_measurement,
 					time_current_measurement,
@@ -309,20 +309,20 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_MOTOR:
 		{
-			int motorCmd = *((int *)&rxBuffer[3]);
-			time_motor_command_obtained = GetTimeNow();
+			int motor_command_from_PC = *((int *)&rxBuffer[3]);
+			safety_switch_off(&motor_command_from_PC, positionLimitLeft, positionLimitRight);
 
+			time_motor_command_obtained = GetTimeNow();
             if(new_motor_command_obtained){
                 time_measurement_done = time_current_measurement;
             }
-
 			new_motor_command_obtained = true;
 
-			if(controlSync) {
-				controlCommand = motorCmd;
-			} else {
-				safety_switch_off(&motorCmd, positionLimitLeft, positionLimitRight);
-				Motor_SetPower(motorCmd, PWM_PERIOD_IN_CLOCK_CYCLES);
+			motor_command = motor_command_from_PC;
+
+			if(!controlSync)
+			{
+				Motor_SetPower(motor_command_from_PC, PWM_PERIOD_IN_CLOCK_CYCLES);
 			}
 			break;
 		}
@@ -456,7 +456,7 @@ void cmd_ControlMode(bool en)
 	else if (!en && ControlOnChip_Enabled)
 	{
 		Motor_Stop();
-		controlCommand = 0;
+		motor_command = 0;
         ledPeriod           = 500/controlLoopPeriodMs;
 	}
 
