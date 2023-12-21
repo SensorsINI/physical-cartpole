@@ -452,6 +452,7 @@ void cmd_ControlMode(bool en)
 	else if (!en && ControlOnChip_Enabled)
 	{
 		Motor_Stop();
+		controlCommand = 0;
         ledPeriod           = 500/controlLoopPeriodMs;
 	}
 
