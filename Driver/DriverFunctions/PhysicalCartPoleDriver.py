@@ -120,7 +120,6 @@ class PhysicalCartPoleDriver:
         self.angle_raw = 0
         self.angle_raw_stable = None
         self.angle_raw_prev = None
-        self.andleD_raw = 0
         self.angleD_raw_stable = None
         self.angleD_raw_prev = None
         self.angleD_raw_buffer = np.zeros((0))
