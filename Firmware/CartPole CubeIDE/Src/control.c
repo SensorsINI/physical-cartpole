@@ -450,9 +450,6 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 
 void cmd_ControlMode(bool en)
 {
-    if(en && !isCalibrated) {
-    	cmd_Calibrate(0, 0);
-    }
     disable_irq();
 	if (en && !ControlOnChip_Enabled)
 	{
