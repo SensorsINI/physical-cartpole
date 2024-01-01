@@ -129,3 +129,11 @@ Vitis projects are compressed in [zybo_vitis_pot_motor_test.zip](zynq/zybo_vitis
 - Click Finish
 
 The projects are ready to be run in the Zybo board.
+
+
+## Known issues
+
+sys.stdin.read(1) which is used for keyboard input causes the debugger of Pycharm to hang.
+
+For USB-UART bridge if you use FTDI chip - not the case for original stm board, but a default bridge for Zybo board or PMODs
+you will get 16ms latency due to FTDI chip waiting for minimal number of bytes to transfer to PC. You can disable this feature programmatically.
