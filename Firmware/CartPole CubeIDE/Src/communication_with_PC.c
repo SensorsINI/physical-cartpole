@@ -82,7 +82,7 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_SET_CONTROL_CONFIG:
 							{
-								if (pktLen == 13)
+								if (pktLen == 14)
 								{
 									current_command = CMD_SET_CONTROL_CONFIG;
 								}
@@ -103,6 +103,15 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								if (pktLen == 8)
 								{
 									current_command = CMD_SET_MOTOR;
+								}
+								break;
+							}
+
+							case CMD_SET_TARGET_POSITION:
+							{
+								if (pktLen == 8)
+								{
+									current_command = CMD_SET_TARGET_POSITION;
 								}
 								break;
 							}
@@ -166,23 +175,22 @@ void prepare_message_to_PC_state(
 		unsigned char * buffer,
 		unsigned short message_len,
 		int angle,
-		int angleD,
-		int position,
-		int positionD,
+		short position,
+		float target_position,
 		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
 		unsigned long time_current_measurement,
 		unsigned long latency,
-		unsigned short	latency_violation){
+		unsigned short	latency_violation
+		){
 
 	buffer[ 0] = SERIAL_SOF;
 	buffer[ 1] = CMD_STATE;
 	buffer[ 2] = message_len;
 	*((short *)&buffer[3]) = angle;
-	*((short *)&buffer[5]) = angleD;
-	*((short *)&buffer[7]) = position;
-	*((short *)&buffer[9]) = positionD;
+	*((short *)&buffer[5]) = position;
+	*((float *)&buffer[7]) = target_position;
 	*((short *)&buffer[11]) = motor_command;
 	*((unsigned char *)&buffer[13]) = invalid_step;
 	*((unsigned int *)&buffer[14]) = (unsigned int)time_difference_between_measurement;
@@ -206,17 +214,19 @@ void prepare_message_to_PC_control_config(
 		unsigned short control_period,
 		bool controlSync,
 		float angle_setPoint,
-		unsigned short angle_averageLen
+		unsigned short angle_averageLen,
+		bool correct_motor_dynamics
 		){
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
-	txBuffer[ 2] = 13;
+	txBuffer[ 2] = 14;
 	*((unsigned short *)&txBuffer[ 3]) = control_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
 	*((float          *)&txBuffer[6]) = angle_setPoint;
 	*((unsigned short *)&txBuffer[10]) = angle_averageLen;
-	txBuffer[12] = crc(txBuffer, 12);
+	*((bool           *)&txBuffer[ 12]) = controlSync;
+	txBuffer[13] = crc(txBuffer, 13);
 
 }
 

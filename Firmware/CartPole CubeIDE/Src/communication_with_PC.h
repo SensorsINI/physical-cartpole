@@ -15,7 +15,7 @@
 #define CMD_SET_CONTROL_CONFIG		0xC6
 #define CMD_GET_CONTROL_CONFIG		0xC7
 #define CMD_SET_MOTOR				0xC8
-#define CMD_FREE_TO_USE				0xC9  // This command is not used. RENAME it, CHANGE python code, REMOVE this command, and use it as you like
+#define CMD_SET_TARGET_POSITION		0xC9
 #define CMD_COLLECT_RAW_ANGLE		0xCA
 #define CMD_STATE					0xCC
 #define CMD_DO_NOTHING				0x00
@@ -25,15 +25,15 @@ void prepare_message_to_PC_state(
 		unsigned char * buffer,
 		unsigned short message_len,
 		int angle,
-		int angleD,
-		int position,
-		int positionD,
+		short position,
+		float target_position,
 		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
 		unsigned long timeMeasured,
 		unsigned long latency,
-		unsigned short	latency_violation);
+		unsigned short	latency_violation
+		);
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection);
 void prepare_message_to_PC_control_config(
@@ -41,7 +41,9 @@ void prepare_message_to_PC_control_config(
 		unsigned short control_period,
 		bool controlSync,
 		float angle_setPoint,
-		unsigned short angle_averageLen);
+		unsigned short angle_averageLen,
+		bool correct_motor_dynamics
+		);
 
 void prepare_message_to_PC_config_PID(
 		unsigned char * txBuffer,
