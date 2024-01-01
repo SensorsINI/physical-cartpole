@@ -49,8 +49,6 @@ short 			position_previous = -30000;
 
 unsigned short	latency_violation = 0;
 
-int debug_info = 0;
-
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[200];
 
@@ -104,6 +102,7 @@ void CONTROL_Loop(void)
 
 }
 float Q;
+float target_position = 0.0;
 
 void CONTROL_BackgroundTask(void)
 {
@@ -158,7 +157,6 @@ void CONTROL_BackgroundTask(void)
 	    angle_sin = sin(angle);
 	    angleD = (angleD_int*ANGLE_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
 	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
-	    float target_position = 0.0;
 
 		// Microcontroller Control Routine
 		if (ControlOnChip_Enabled)	{
@@ -210,20 +208,19 @@ void CONTROL_BackgroundTask(void)
 
 	    	prepare_message_to_PC_state(
 	    			buffer,
-					31,
+					27,
 	    			angle_int,
-					angleD_int,
 					position_short,
-					positionD_short,
+					target_position,
 					motor_command,
 					invalid_step,
 					time_difference_between_measurement,
 					time_current_measurement,
 					latency,
-					latency_violation,
-					debug_info);
+					latency_violation
+					);
 
-	    	Message_SendToPC(buffer, 31);
+	    	Message_SendToPC(buffer, 27);
 
 	        if(new_motor_command_obtained) {
 	        	time_measurement_done = time_current_measurement;
@@ -334,6 +331,11 @@ void CONTROL_BackgroundTask(void)
 			{
 				Motor_SetPower(motor_command_from_PC, PWM_PERIOD_IN_CLOCK_CYCLES);
 			}
+			break;
+		}
+		case CMD_SET_TARGET_POSITION:
+		{
+			target_position = *((float *)&rxBuffer[3]);
 			break;
 		}
 		case CMD_COLLECT_RAW_ANGLE:
