@@ -61,7 +61,7 @@ class SetTimeMeasure:
 
             print("\nCalibrating motor position.... ")
             self.driver.InterfaceInstance.calibrate()
-            (_, _, self.position_offset, _, _, _, _) = self.driver.InterfaceInstance.read_state()
+            (_, _, self.position_offset, _, _, _, _, _) = self.driver.InterfaceInstance.read_state()
             print("Done calibrating")
 
             if self.driver.InterfaceInstance.encoderDirection == 1:

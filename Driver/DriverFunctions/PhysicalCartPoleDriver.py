@@ -183,6 +183,8 @@ class PhysicalCartPoleDriver:
 
         self.safety_switch_counter = 0
 
+        self.debug_info_from_chip = 0
+
     def run(self):
         self.setup()
         self.run_experiment()
@@ -314,7 +316,7 @@ class PhysicalCartPoleDriver:
 
         # This function will block at the rate of the control loop
         (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.time_difference,
-         self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
+         self.firmware_latency, self.latency_violation, _) = self.InterfaceInstance.read_state()
 
         self.angleD_raw = (self.wrap_local(self.angle_raw - self.angle_raw_stable) if self.angle_raw_stable is not None else 0)
         self.angle_raw_stable = self.angle_raw
@@ -467,7 +469,7 @@ class PhysicalCartPoleDriver:
                 time_measurement_start = time.time()
                 print('Started angle measurement.')
                 for _ in trange(number_of_measurements):
-                    (angle, _, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
                     measured_angles.append(float(angle))
                 time_measurement = time.time()-time_measurement_start
 
@@ -654,7 +656,7 @@ class PhysicalCartPoleDriver:
 
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, self.angleD_raw, self.position_raw, self.positionD_raw, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.positionD_raw, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation, self.debug_info_from_chip) = self.InterfaceInstance.read_state()
 
         # self.treat_deadangle_with_derivative()  # Moved to hardware
 
