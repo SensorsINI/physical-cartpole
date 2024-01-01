@@ -93,10 +93,6 @@ int clip(int value, int min, int max) {
 // Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
 void CONTROL_Loop(void)
 {
-	time_last_measurement = time_current_measurement;
-	time_current_measurement = GetTimeNow();
-	position_short = Encoder_Read();
-	// I would love to get angle here, but as this requires some analysis of buffer, I will not put it here to keep interrupt minimal
 
 	if(controlSync) {
 		Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
@@ -105,6 +101,7 @@ void CONTROL_Loop(void)
 
 
 }
+float Q;
 
 void CONTROL_BackgroundTask(void)
 {
@@ -129,9 +126,14 @@ void CONTROL_BackgroundTask(void)
 		float angleD = 0.0;
 		float positionD = 0.0;
 
+		time_last_measurement = time_current_measurement;
+		time_current_measurement = GetTimeNow();
+		// I would love to get angle here, but as this requires some analysis of buffer, I will not put it here to keep interrupt minimal
+
+		position_short = Encoder_Read();
+		position_short = position_short - positionCentre;
 		process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle_int, &angleD_int, &invalid_step);
 
-		position_short = position_short - positionCentre;
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
@@ -158,7 +160,7 @@ void CONTROL_BackgroundTask(void)
 
 		// Microcontroller Control Routine
 		if (ControlOnChip_Enabled)	{
-			float Q;
+
 			switch (current_controller){
 			case OnChipController_PID:
 			{
