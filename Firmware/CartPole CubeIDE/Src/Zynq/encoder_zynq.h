@@ -16,9 +16,10 @@
 #define GEARBOX_RATIO        18.75
 #define ENCODER_FULL_TRACK 4690
 
-int EncoderValue;
+short EncoderValue;
 
-void  Encoder_Init_Zynq(void);
-short Encoder_Read_Zynq(void);
+void  Encoder_Init(void);
+short Encoder_Read(void);
+void Encoder_Set_Direction(short new_direction);
 
 #endif /*__ENCODER_ZYNQ_H_*/

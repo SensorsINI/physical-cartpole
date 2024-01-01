@@ -7,7 +7,7 @@
 
 XGpioPs Gpio; // Instance of the GPIO Driver
 
-void Led_Init_Zynq(void)
+void Led_Init(void)
 {
 	XGpioPs_Config *ConfigPtr;
 	int status;
@@ -28,7 +28,7 @@ void Led_Init_Zynq(void)
 	XGpioPs_SetOutputEnablePin(&Gpio, LED_PIN, 1);
 }
 
-void Led_Switch_Zynq(bool en)
+void Led_Switch(bool en)
 {
 	XGpioPs_WritePin(&Gpio, LED_PIN, (u32)(!en));
 }

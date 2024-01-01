@@ -1,10 +1,10 @@
-#include "angle_zynq.h"
+#include "goniometer_zynq.h"
 
 
 XAdcPs XADC_Driver_Instance ;
 XAdcPs *XADC_Driver_Ptr = &XADC_Driver_Instance;
 
-void Goniometer_Init_Zynq(void)
+void Goniometer_Init(void)
 {
     XAdcPs_Config* cfg = XAdcPs_LookupConfig ( XADC_DEVICE_ID ) ;
 
@@ -20,7 +20,7 @@ void Goniometer_Init_Zynq(void)
 
 }
 
-unsigned short Goniometer_Read_Zynq(void)
+unsigned short Goniometer_Read(void)
 {
 	// Set conversion sequence		 
 	unsigned short volt_raw = XAdcPs_GetAdcData (XADC_Driver_Ptr, XADCPS_CH_AUX_MAX);

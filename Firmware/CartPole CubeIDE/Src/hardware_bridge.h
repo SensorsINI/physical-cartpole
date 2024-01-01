@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 
+///*
 #define CLOCK_FREQ 						72000000
 #define PWM_PERIOD_IN_CLOCK_CYCLES      7200
 #define MOTOR_FULL_SCALE				PWM_PERIOD_IN_CLOCK_CYCLES-1
@@ -80,6 +81,85 @@
 #define Buttons_And_Switches_Init		Buttons_And_Switches_Init
 #define BUTTON_1						KEY_5
 #define Button_SetAction				Button_SetAction
+
+//*/
+
+
+/*
+
+#define CLOCK_FREQ 						333333343
+#define PWM_PERIOD_IN_CLOCK_CYCLES      2500
+#define MOTOR_FULL_SCALE				PWM_PERIOD_IN_CLOCK_CYCLES-1
+#define MOTOR_FULL_SCALE_SAFE           (int)(0.95 * MOTOR_FULL_SCALE + 0.5)
+
+
+#define UART_BAUD 230400 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
+
+#include "Zynq/goniometer_zynq.h"
+
+#define Goniometer_Init					Goniometer_Init
+#define Goniometer_Read					Goniometer_Read
+
+
+#include "Zynq/motor_zynq.h"
+
+#define Motor_Init() 		Motor_INIT(PWM_PERIOD_IN_CLOCK_CYCLES)
+#define Motor_SetPwmPeriod  Motor_SetPwmPeriod
+#define Motor_Stop			Motor_Stop
+#define Motor_SetPower 		Motor_SetPower
+
+
+#include "Zynq/encoder_zynq.h"
+
+#define Encoder_Init				Encoder_Init
+#define Encoder_Read				Encoder_Read
+#define Encoder_Set_Direction		Encoder_Set_Direction
+
+
+#include "Zynq/led_zynq.h"
+
+#define Led_Init			Led_Init
+#define Led_Switch			Led_Switch
+
+
+#include "xil_exception.h"
+
+#define enable_irq			Xil_ExceptionEnable
+#define disable_irq			Xil_ExceptionDisable
+
+
+// TODO: Currently not using interrupts, which STM probably does per default
+// This might be the reas Zynq operation is slower
+#include "Zynq/usart.h"
+
+#define PC_Connection_Init()    USART_Init(UART_BAUD, false);
+#define Message_SendToPC		USART_SendBuffer
+#define Message_GetFromPC		USART_ReceiveAsync
+
+
+#include "Zynq/timer_interrupt.h"
+
+
+#define Interruput_Init()   	TIMER1_Init(CONTROL_LOOP_PERIOD_MS)
+#define GetTimeNow				TIMER1_getSystemTime_Us  // OK
+#define Interrupt_Set    		Interrupt_Set
+#define Interrupt_Unset()	    Interrupt_Set(0)
+#define	SetControlUpdatePeriod  SetControlUpdatePeriod
+
+
+#include "Zynq/sys.h"
+#define General_Init		General_Init
+#define Sleep_ms			Sleep_ms
+
+
+#include "Zynq/buttons_and_switches.h"
+
+#define Buttons_And_Switches_Init		Buttons_And_Switches_Init
+#define BUTTON_1						PS_BTN_4
+#define Button_SetAction				Button_SetAction
+
+*/
+
 
 // Prototypes of all functions. Just comment all above to check that everything goes indeed through hardware bridge
 

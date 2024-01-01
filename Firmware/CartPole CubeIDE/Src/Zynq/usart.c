@@ -20,6 +20,11 @@ INTC InterruptController;	/* Instance of the Interrupt Controller */
 
 bool with_interrupt = false;
 
+static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
+unsigned int  rxInp;
+unsigned int  rxOut;
+unsigned int  rxCnt;
+
 void USART_Init(unsigned int baud, bool interruptEn)
 {
 
@@ -135,16 +140,16 @@ void USART_SendBuffer(unsigned char * SendBuffer, unsigned int buffer_size){
 //
 //}
 
-bool USART_ReceiveAsync(unsigned char * rxBuffer, unsigned int* rxCnt) {
+bool USART_ReceiveAsync(unsigned char * c) {
     // Calculate the space left in the buffer
-    unsigned int spaceLeft = SERIAL_MAX_PKT_LENGTH - *rxCnt;
+    unsigned int spaceLeft = SERIAL_MAX_PKT_LENGTH - rxCnt;
 
     // Receive data, ensuring we don't exceed the buffer size
-    int received_count = XUartPs_Recv(&UartPs, (u8 *)(rxBuffer + *rxCnt), spaceLeft);
+    int received_count = XUartPs_Recv(&UartPs, (u8 *)(*c + rxCnt), spaceLeft);
 
     // Update the count of received bytes
     if (received_count > 0) {
-        *rxCnt += received_count;
+        rxCnt += received_count;
     }
 
     return true; // Or return false in case of an error

@@ -24,17 +24,11 @@
 
 #define SERIAL_MAX_PKT_LENGTH		32
 
-static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
-
-unsigned int  rxInp;
-unsigned int  rxOut;
-unsigned int  rxCnt;
-
 extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driver
 
 void USART_Init(unsigned int baud, bool interruptEn);
 void USART_SendBuffer(unsigned char * SendBuffer, unsigned int buffer_size);
-bool USART_ReceiveAsync(unsigned char * rxBuffer, unsigned int* rxCnt);
+bool USART_ReceiveAsync(unsigned char * c);
 void Handler(void *CallBackRef, u32 Event, unsigned int EventData);
 
 

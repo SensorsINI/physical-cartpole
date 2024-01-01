@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-void Led_Init_Zynq(void);
-void Led_Switch_Zynq(bool en);
+void Led_Init(void);
+void Led_Switch(bool en);
 
 #endif /*__LED_ZYNQ_H_*/
