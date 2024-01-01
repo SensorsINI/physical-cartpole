@@ -210,7 +210,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
         try:
             self.controller.printparams()
@@ -457,7 +457,7 @@ class PhysicalCartPoleDriver:
 
                 self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
                                                           controlSync=CONTROL_SYNC,
-                                                          angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
+                                                          angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
 
             ##### Artificial Latency  #####
@@ -488,7 +488,7 @@ class PhysicalCartPoleDriver:
                 #     ANGLE_HANGING_DEFAULT = False
                 # self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
                 #                                           controlSync=CONTROL_SYNC, controlLatencyUs=0,
-                #                                           angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH)
+                #                                           angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
             # Fine tune angle deviation
             elif c == '=':
@@ -828,7 +828,7 @@ class PhysicalCartPoleDriver:
     def control_signal_to_motor_command(self):
 
         self.actualMotorCmd = self.Q
-        if MOTOR_DYNAMICS_CORRECTED:
+        if CORRECT_MOTOR_DYNAMICS:
             # Use Model_velocity_bidirectional.py to determine the margins and correction factor below
 
             # # We cut the region which is linear
