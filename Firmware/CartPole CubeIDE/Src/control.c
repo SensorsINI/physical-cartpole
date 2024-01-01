@@ -49,6 +49,8 @@ short 			position_previous = -30000;
 
 unsigned short	latency_violation = 0;
 
+int debug_info = 0;
+
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[200];
 
@@ -208,7 +210,7 @@ void CONTROL_BackgroundTask(void)
 
 	    	prepare_message_to_PC_state(
 	    			buffer,
-					27,
+					31,
 	    			angle_int,
 					angleD_int,
 					position_short,
@@ -218,9 +220,10 @@ void CONTROL_BackgroundTask(void)
 					time_difference_between_measurement,
 					time_current_measurement,
 					latency,
-					latency_violation);
+					latency_violation,
+					debug_info);
 
-	    	Message_SendToPC(buffer, 27);
+	    	Message_SendToPC(buffer, 31);
 
 	        if(new_motor_command_obtained) {
 	        	time_measurement_done = time_current_measurement;
