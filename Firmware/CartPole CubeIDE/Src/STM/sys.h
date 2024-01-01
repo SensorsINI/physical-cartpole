@@ -67,7 +67,7 @@ void SYS_JTAG_Set(unsigned int mode);
 void SYS_NVIC_Init(unsigned int priority, unsigned int subPriority, unsigned int channel, unsigned int group);
 void SYS_EXTI_Config(unsigned int port, unsigned int bit, unsigned int trig);
 void SYS_DelayUS(unsigned int n);
-void SYS_DelayMS(unsigned int ms);
+void Sleep_ms(unsigned int ms);
 void General_Init(void);
 
 #endif /*__SYS_H_*/

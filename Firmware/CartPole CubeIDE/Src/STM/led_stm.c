@@ -2,7 +2,7 @@
 
 // LED is connected to PA4
 
-void Led_Init_STM(void)
+void Led_Init(void)
 {
 	RCC->APB2ENR	|= 1<<2;
 	GPIOA->CRL		&= 0XFFF0FFFF;
@@ -10,7 +10,7 @@ void Led_Init_STM(void)
 	GPIOA->ODR		|= 1<<4;        // PA4 High output
 }
 
-void Led_Switch_STM(bool en)
+void Led_Switch(bool en)
 {
 	PA_OUT(4) = !en;
 }

@@ -19,30 +19,31 @@
 
 
 
-#include "STM/angle_stm.h"
+#include "STM/goniometer_stm.h"
 
-#define Goniometer_Init					Goniometer_Init_STM
-#define Goniometer_Read					Goniometer_Read_STM
+#define Goniometer_Init					Goniometer_Init
+#define Goniometer_Read					Goniometer_Read
 
 
 #include "STM/motor_stm.h"
 
-#define Motor_Init() 		Motor_Init_STM(PWM_PERIOD_IN_CLOCK_CYCLES)
-#define Motor_SetPwmPeriod  Motor_SetPwmPeriod_STM
-#define Motor_Stop			Motor_Stop_STM
-#define Motor_SetPower 		Motor_SetPower_STM
+#define Motor_Init() 		Motor_INIT(PWM_PERIOD_IN_CLOCK_CYCLES)
+#define Motor_SetPwmPeriod  Motor_SetPwmPeriod
+#define Motor_Stop			Motor_Stop
+#define Motor_SetPower 		Motor_SetPower
 
 
 #include "STM/encoder_stm.h"
 
-#define Encoder_Init		Encoder_Init_STM
-#define Encoder_Read		Encoder_Read_STM
+#define Encoder_Init				Encoder_Init
+#define Encoder_Read				Encoder_Read
+#define Encoder_Set_Direction		Encoder_Set_Direction
 
 
 #include "STM/led_stm.h"
 
-#define Led_Init			Led_Init_STM
-#define Led_Switch			Led_Switch_STM
+#define Led_Init			Led_Init
+#define Led_Switch			Led_Switch
 
 
 #include "STM/core_cm3.h"
@@ -71,14 +72,14 @@
 #include "STM/sys.h"
 
 #define General_Init		General_Init
-#define Sleep_ms			SYS_DelayMS
+#define Sleep_ms			Sleep_ms
 
 
-#include "STM/key.h"
+#include "STM/buttons_and_switches.h"
 
-#define Buttons_And_Switches_Init		KEY_Init
+#define Buttons_And_Switches_Init		Buttons_And_Switches_Init
 #define BUTTON_1						KEY_5
-#define Button_SetAction				KEY_SetCallback
+#define Button_SetAction				Button_SetAction
 
 // Prototypes of all functions. Just comment all above to check that everything goes indeed through hardware bridge
 

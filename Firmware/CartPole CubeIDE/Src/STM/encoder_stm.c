@@ -3,7 +3,7 @@
 short EncoderDirection = 1;
 
 // Uses Timer 4 configured in encoder mode
-void Encoder_Init_STM(void)
+void Encoder_Init(void)
 {
 	RCC->APB1ENR	|= 1<<2;				// TIM4 clock enable
 	RCC->APB2ENR	|= 1<<3;				// Enable PORTB clock
@@ -31,7 +31,7 @@ void Encoder_Init_STM(void)
 	TIM4->CR1		|= 0x01;				// CEN=1 Enabling timer
 }
 
-short Encoder_Read_STM(void)
+short Encoder_Read(void)
 {
 	return EncoderDirection * (TIM4->CNT);
 }

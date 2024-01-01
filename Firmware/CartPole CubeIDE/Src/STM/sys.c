@@ -125,7 +125,7 @@ void SYS_DelayUS(unsigned int us)
 }
 
 // Max delay is 1864 ms
-void SYS_DelayMS(unsigned int ms)
+void Sleep_ms(unsigned int ms)
 {	 		  	  
 	unsigned int temp;
 

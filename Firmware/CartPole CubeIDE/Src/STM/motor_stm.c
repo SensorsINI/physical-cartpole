@@ -5,7 +5,7 @@ void set_direction(int pwm_duty_cycle_in_clock_cycles);
 void set_power_magnitude(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles);
 
 // PWM base frequency is 10 kHz
-void Motor_Init_STM(int pwm_period_in_clock_cycles)
+void Motor_INIT(int pwm_period_in_clock_cycles)
 {
 	RCC->APB2ENR	|= 1<<3;		// PORTB Clock enable  
 	GPIOB->CRH		&= 0x0000FFFF;	// PORTB12 13 14 15 push-pull
@@ -35,11 +35,11 @@ void Motor_Init_STM(int pwm_period_in_clock_cycles)
 
 }
 
-void Motor_SetPwmPeriod_STM(int pwm_period_in_clock_cycles){
+void Motor_SetPwmPeriod(int pwm_period_in_clock_cycles){
 	TIM3->ARR		 = pwm_period_in_clock_cycles-1;		// Setting counter automatic reload value
 }
 
-void Motor_Stop_STM(void)
+void Motor_Stop(void)
 {
     TIM3->CCR4 = 0;
 	PB_OUT(13) = 0;					// AIN1
@@ -47,7 +47,7 @@ void Motor_Stop_STM(void)
 }
 
 
-void Motor_SetPower_STM(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles)
+void Motor_SetPower(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles)
 {
 	set_direction(pwm_duty_cycle_in_clock_cycles);
 	set_power_magnitude(pwm_duty_cycle_in_clock_cycles, pwm_period_in_clock_cycles);

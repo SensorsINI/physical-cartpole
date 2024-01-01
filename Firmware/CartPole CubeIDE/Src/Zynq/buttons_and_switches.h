@@ -1,5 +1,5 @@
-#ifndef BUTTONS_AND_SWITCHES_H
-#define BUTTONS_AND_SWITCHES_H
+#ifndef __BUTTONS_AND_SWITCHES_H_
+#define __BUTTONS_AND_SWITCHES_H_
 
 #include "xgpiops.h"
 #include "xparameters.h"
@@ -21,5 +21,5 @@ ActionHandler btn5_action_handler;
 void Buttons_And_Switches_Init(void);
 void Button_SetAction(unsigned int key, ActionHandler action);
 
-#endif // BUTTONS_AND_SWITCHES_H
+#endif // __BUTTONS_AND_SWITCHES_H_
 
