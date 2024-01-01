@@ -7,14 +7,13 @@
 
 #include "hardware_bridge.h"
 
-int MOTOR_DYNAMICS_CORRECTED = true;
 float MOTOR_CORRECTION[3] = {4898.18, 168.09, 123.46};
 
-int control_signal_to_motor_command(float Q, float positionD) {
+int control_signal_to_motor_command(float Q, float positionD, bool correct_motor_dynamics) {
 	float actualMotorCmd_float = 0.0;
     int actualMotorCmd = 0;
 
-    if (MOTOR_DYNAMICS_CORRECTED) {
+    if (correct_motor_dynamics) {
 
     	actualMotorCmd_float = Q * MOTOR_CORRECTION[0];
         if (actualMotorCmd != 0) {
@@ -25,7 +24,7 @@ int control_signal_to_motor_command(float Q, float positionD) {
             }
         }
     } else {
-    	actualMotorCmd_float = Q * MOTOR_FULL_SCALE;
+    	actualMotorCmd_float = Q * (float)MOTOR_FULL_SCALE;
     }
 
     actualMotorCmd = (int)actualMotorCmd_float;

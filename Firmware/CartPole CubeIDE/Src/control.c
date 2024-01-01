@@ -11,6 +11,9 @@
 
 unsigned short current_controller = OnChipController_PID;
 
+bool correct_motor_dynamics = true;
+
+
 bool            streamEnable        = false;
 bool 			interrupt_occurred	= false;
 float  			ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
@@ -67,6 +70,8 @@ void CONTROL_Init(void)
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
     positionLimitLeft   = positionCentre - 2400;
     positionLimitRight  = positionCentre + 2400; // guess defaults based on 7000-8000 counts at limits
+
+    correct_motor_dynamics = (current_controller == OnChipController_PID) ? false : true;
 }
 
 void CONTROL_ToggleState(void)
@@ -168,7 +173,7 @@ void CONTROL_BackgroundTask(void)
 
 			}
 
-	        motor_command_from_chip = control_signal_to_motor_command(Q, positionD);
+	        motor_command_from_chip = control_signal_to_motor_command(Q, positionD, correct_motor_dynamics);
 	        motor_command_safety_check(&motor_command_from_chip);
 	        safety_switch_off(&motor_command_from_chip, positionLimitLeft, positionLimitRight);
 
@@ -473,6 +478,7 @@ void cmd_SetControlConfig(const unsigned char * config)
     controlSync			= *((bool	        *)&config[2]);
     ANGLE_DEVIATION      = *((float          *)&config[ 3]);
     angle_averageLen    = *((unsigned short *)&config[ 7]);
+    correct_motor_dynamics = *((bool	        *)&config[9]);
 
     SetControlUpdatePeriod(controlLoopPeriodMs);
     HardwareConfigSetFromPC = true;
@@ -483,10 +489,10 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, ANGLE_DEVIATION, angle_averageLen);
+	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, ANGLE_DEVIATION, angle_averageLen, correct_motor_dynamics);
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 15);
+	Message_SendToPC(txBuffer, 16);
 	enable_irq();
 }
 
