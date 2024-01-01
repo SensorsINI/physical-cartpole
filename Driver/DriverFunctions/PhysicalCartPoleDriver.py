@@ -265,11 +265,15 @@ class PhysicalCartPoleDriver:
             self.controller_steptime = time.time() - start
             if AUTOSTART:
                 self.Q = 0
-            self.controlled_iterations += 1
         else:
+            pass
             # Observing Firmware Control: set values from firmware for logging
             # self.actualMotorCmd = self.command
             # self.Q = self.command / MOTOR_FULL_SCALE
+
+        if self.controlEnabled or self.firmwareControl:
+            self.controlled_iterations += 1
+        else:
             self.controlled_iterations = 0
 
         self.joystick_action()
