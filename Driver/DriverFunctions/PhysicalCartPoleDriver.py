@@ -804,12 +804,13 @@ class PhysicalCartPoleDriver:
 
         if self.joystickMode is None or self.joystickMode == 'not active':
             self.stickPos = 0.0
-            self.stickControl = False
-            if not self.manualMotorSetting:
+            if self.stickControl and not self.manualMotorSetting:
                 if self.controlEnabled:
                     ...
                 else:
                     self.Q = 0.0
+            self.stickControl = False
+
         else:
             self.stickPos = get_stick_position(self.stick)
             self.stickControl = True
