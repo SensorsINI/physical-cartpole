@@ -15,7 +15,7 @@ CMD_GET_PID_CONFIG      = 0xC5
 CMD_SET_CONTROL_CONFIG  = 0xC6
 CMD_GET_CONTROL_CONFIG  = 0xC7
 CMD_SET_MOTOR           = 0xC8
-CMD_FREE_TO_USE         = 0xC9
+CMD_SET_TARGET_POSITION = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
 
@@ -152,6 +152,13 @@ class Interface:
         self.device.write(bytearray(msg))
         self.device.flush()
 
+    def set_target_position(self, target_position):
+        msg  = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
+        msg += list(struct.pack('f', target_position))
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+        self.device.flush()
+
     def collect_raw_angle(self, lenght=100, interval_us=100):
         msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,  lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
         msg.append(self._crc(msg))
@@ -162,12 +169,12 @@ class Interface:
 
     def read_state(self):
         self.clear_read_buffer()
-        message_length = 31
+        message_length = 35
         reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
 
-        (angle, angleD, position, positionD, command, invalid_steps, time_difference, sent, latency, latency_violation, debug_info) = struct.unpack('=5hB2I2Hi', bytes(reply[3:message_length-1]))
+        (angle, angleD, position, positionD, target_position, command, invalid_steps, time_difference, sent, latency, latency_violation, debug_info) = struct.unpack('=4hfhB2I2Hi', bytes(reply[3:message_length-1]))
 
-        return angle, angleD, position, positionD, command, invalid_steps, time_difference/1e6, sent/1e6, latency/1e5, latency_violation, debug_info
+        return angle, angleD, position, positionD, target_position, command, invalid_steps, time_difference/1e6, sent/1e6, latency/1e5, latency_violation, debug_info
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True):
         self.device.timeout = timeout
