@@ -266,8 +266,9 @@ void CONTROL_BackgroundTask(void)
 	///////////////////////////////////////////////////
 	// Process Commands from PC
 	///////////////////////////////////////////////////
-	while (Message_GetFromPC(&rxBuffer[uart_received_Cnt]))
-		uart_received_Cnt++;
+	int newDataCount = Message_GetFromPC(&rxBuffer[uart_received_Cnt]);
+	uart_received_Cnt += newDataCount;
+
 
 	int current_command = get_command_from_PC_message(rxBuffer, &uart_received_Cnt);
 

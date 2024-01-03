@@ -55,9 +55,9 @@
 
 #include "STM/usart.h"
 
-#define PC_Connection_Init()    USART_Init(UART_BAUD, true);
-#define Message_SendToPC		USART_SendBuffer
-#define Message_GetFromPC		USART_ReceiveAsync
+#define PC_Connection_Init()    PC_Connection_Init(UART_BAUD);
+#define Message_SendToPC		Message_SendToPC
+#define Message_GetFromPC		Message_GetFromPC
 
 
 #include "STM/timer.h"

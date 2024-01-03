@@ -8,7 +8,7 @@ static unsigned int  rxInp;
 static unsigned int  rxOut;
 static unsigned int  rxCnt;
 
-void USART_Init(unsigned int baud, bool interruptEn)
+void PC_Connection_Init(unsigned int baud)
 {
 	unsigned short mantissa;
 	unsigned short fraction;
@@ -33,51 +33,35 @@ void USART_Init(unsigned int baud, bool interruptEn)
 
 	USART1->BRR		 = (mantissa << 4) + fraction; 	// Baud rate setting
 
-    if (interruptEn)
+	USART1->CR1 |= 0x202C;						// Configure UART to 8N1, enable Rx interrupt, enable Rx/Tx
+	SYS_NVIC_Init(2, 2, USART1_IRQn, 1);
+
+}
+
+
+int Message_GetFromPC(unsigned char * c)
+{
+    int count = 0;
+
+    while (rxCnt > 0)
     {
-        USART1->CR1 |= 0x202C;						// Configure UART to 8N1, enable Rx interrupt, enable Rx/Tx
-        SYS_NVIC_Init(2, 2, USART1_IRQn, 1);
-    }
-    else
-    {
-        USART1->CR1 |= 0x200C;						// Configure UART to 8N1, enable Rx/Tx
-    }
-}
-
-unsigned char USART_Receive(void)
-{
-	while ((USART1->SR & 0x0020) == 0);		// Wait for RXNE
-	return (unsigned char)USART1->DR;
-}
-
-bool USART_ReceiveNonBlocking(unsigned char * c)
-{
-	if (USART1->SR & 0x0020)	// Wait for RXNE
-	{
-		*c = (unsigned char)USART1->DR;
-		return true;
-	}
-	return false;
-}
-
-bool USART_ReceiveAsync(unsigned char * c)
-{
-	if (rxCnt > 0)
-	{
-		*c = (unsigned char)usartRxBuffer[rxOut++];
+        c[count] = (unsigned char)usartRxBuffer[rxOut++];
         if (rxOut == USART_RX_BUFFER_SIZE)
         {
             rxOut = 0;
         }
-        
+
         __disable_irq();
         rxCnt--;
         __enable_irq();
-        
-		return true;
-	}
-	return false;
+
+        count++;
+    }
+
+    return count;
 }
+
+
 
 void USART1_IRQHandler(void)
 {
@@ -112,13 +96,8 @@ void USART1_IRQHandler(void)
     }
 }
 
-void USART_Send(unsigned char c)
-{
-	while ((USART1->SR & 0x0080) == 0);		// Wait for TXE
-	USART1->DR = c;
-}
 
-void USART_SendBuffer(const unsigned char * buff, unsigned int len)
+void Message_SendToPC(const unsigned char * buff, unsigned int len)
 {
 	unsigned int i;
 
