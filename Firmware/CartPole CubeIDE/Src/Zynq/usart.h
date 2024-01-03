@@ -2,14 +2,8 @@
 #define __USART_H_
 
 #include "xparameters.h"
-#include "xstatus.h"
-#include "xil_types.h"
-#include "xil_assert.h"
-#include "xuartps_hw.h"
 #include "xuartps.h"
-#include "xil_printf.h"
 #include "stdbool.h"
-#include "xscugic.h"
 #include "../hardware_bridge.h"
 
 /************************** Constant Definitions ***************************/
@@ -20,11 +14,10 @@
  * change all the needed parameters in one place.
  */
 #define UART_BASEADDR		XPAR_XUARTPS_0_BASEADDR
+#define UART_DEVICE_ID		XPAR_XUARTPS_0_DEVICE_ID
 #define UART_CLOCK_HZ		XPAR_XUARTPS_0_CLOCK_HZ
 
 #define SERIAL_MAX_PKT_LENGTH		32
-
-extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driver
 
 void USART_Init(unsigned int baud, bool interruptEn);
 void USART_SendBuffer(unsigned char * SendBuffer, unsigned int buffer_size);
