@@ -15,6 +15,8 @@ void USART_Init(unsigned int baud, bool interruptEn)
 
 	XUartPs_CfgInitialize(&UartPs, Config, Config->BaseAddress);
 
+	XUartPs_SetBaudRate(&UartPs, baud);
+
 
 }
 
