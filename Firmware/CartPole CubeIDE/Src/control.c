@@ -369,7 +369,7 @@ void cmd_StreamOutput(bool en)
 
 void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 {
-	#define SPEED 3000
+	unsigned short SPEED_CALIBRATION = (float)MOTOR_FULL_SCALE * 0.4;
 	int pos;
 	int diff;
 	float fDiff;
@@ -385,7 +385,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	// Get left limit
 	Sleep_ms(100);
 	positionLimitRight = Encoder_Read();
-	Motor_SetPower(SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
+	Motor_SetPower(SPEED_CALIBRATION, PWM_PERIOD_IN_CLOCK_CYCLES);
 
 	do {
 		Sleep_ms(100);
@@ -402,7 +402,7 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	// Get right limit
 	Sleep_ms(100);
 	positionLimitLeft = Encoder_Read();
-	Motor_SetPower(-SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
+	Motor_SetPower(-SPEED_CALIBRATION, PWM_PERIOD_IN_CLOCK_CYCLES);
 
 	do {
 		Sleep_ms(100);
@@ -431,12 +431,12 @@ void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 	positionCentre = (positionLimitLeft + positionLimitRight) / 2;			// average limits
 
 	// Slower to get back to middle
-	Motor_SetPower(SPEED, PWM_PERIOD_IN_CLOCK_CYCLES);
+	Motor_SetPower(SPEED_CALIBRATION, PWM_PERIOD_IN_CLOCK_CYCLES);
 	do {
 		fDiff = 2.0 * abs(Encoder_Read() - positionCentre) / abs(positionLimitRight - positionLimitLeft);
 		// Slow Down even more to get more accurately to the middle
 		if(fDiff < 1e-1) {
-			Motor_SetPower(SPEED/2, PWM_PERIOD_IN_CLOCK_CYCLES);
+			Motor_SetPower(SPEED_CALIBRATION/2, PWM_PERIOD_IN_CLOCK_CYCLES);
 		}
 	} while(fDiff > 5e-4);
 	Motor_Stop();
