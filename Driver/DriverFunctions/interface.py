@@ -241,3 +241,24 @@ class Interface:
                 val >>= 1
 
         return crc8
+
+import subprocess
+def set_ftdi_latency_timer(serial_port_number):
+    print('\nSetting FTDI latency timer')
+    ftdi_timer_latency_requested_value = 2
+    command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/ttyUSB{serial_port_number}/latency_timer'"
+    command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/ttyUSB{serial_port_number}/latency_timer'
+    try:
+        subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(e.stderr)
+        if "Permission denied" in e.stderr:
+            print("Trying with sudo...")
+            command_ftdi_timer_latency_set = "sudo " + command_ftdi_timer_latency_set
+            try:
+                subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                print(e.stderr)
+
+    ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True, text=True).stdout
+    print(f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')
