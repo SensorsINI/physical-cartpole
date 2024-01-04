@@ -2,12 +2,8 @@
 
 XUartPs UartPs	;		/* Instance of the UART Device */
 
-bool with_interrupt = false;
-
-void USART_Init(unsigned int baud, bool interruptEn)
+void PC_Connection_INIT(unsigned int baud)
 {
-
-    with_interrupt = interruptEn;
 
 	XUartPs_Config *Config;
 
@@ -20,7 +16,7 @@ void USART_Init(unsigned int baud, bool interruptEn)
 
 }
 
-void USART_SendBuffer(unsigned char * SendBuffer, unsigned int buffer_size){
+void Message_SendToPC(unsigned char * SendBuffer, unsigned int buffer_size){
 
 	XUartPs_Send(&UartPs, SendBuffer, buffer_size);
 
@@ -28,15 +24,11 @@ void USART_SendBuffer(unsigned char * SendBuffer, unsigned int buffer_size){
 
 
 
-bool USART_ReceiveAsync(unsigned char * c) {
+int Message_GetFromPC(unsigned char * c) {
 
-	if (XUartPs_IsReceiveData(UART_BASEADDR))
-	{
-		*c = XUartPs_ReadReg(UART_BASEADDR, XUARTPS_FIFO_OFFSET);
-		return true;
-	} else {
-		return false;
-	}
+	int newDataCount = XUartPs_Recv(&UartPs, c, SERIAL_MAX_PKT_LENGTH);
+	return newDataCount;
+
 }
 
 

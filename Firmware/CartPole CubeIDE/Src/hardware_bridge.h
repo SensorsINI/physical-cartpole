@@ -132,9 +132,9 @@
 // This might be the reas Zynq operation is slower
 #include "Zynq/usart.h"
 
-#define PC_Connection_Init()    USART_Init(UART_BAUD, false);
-#define Message_SendToPC		USART_SendBuffer
-#define Message_GetFromPC		USART_ReceiveAsync
+#define PC_Connection_Init()    PC_Connection_INIT(UART_BAUD);
+#define Message_SendToPC		Message_SendToPC
+#define Message_GetFromPC		Message_GetFromPC
 
 
 #include "Zynq/timer_interrupt.h"

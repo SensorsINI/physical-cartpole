@@ -19,11 +19,9 @@
 
 #define SERIAL_MAX_PKT_LENGTH		32
 
-void USART_Init(unsigned int baud, bool interruptEn);
-void USART_SendBuffer(unsigned char * SendBuffer, unsigned int buffer_size);
-bool USART_ReceiveAsync(unsigned char * c);
-void Handler(void *CallBackRef, u32 Event, unsigned int EventData);
-
+void PC_Connection_INIT(unsigned int baud);
+void Message_SendToPC(unsigned char * SendBuffer, unsigned int buffer_size);
+int Message_GetFromPC(unsigned char * c);
 
 #endif /*__USART_H_*/
 
