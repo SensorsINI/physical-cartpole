@@ -14,7 +14,7 @@ import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.h
 
 from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.custom_serial_functions import setup_serial_connection
-from DriverFunctions.interface import Interface
+from DriverFunctions.interface import Interface, set_ftdi_latency_timer
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.step_response_measure import StepResponseMeasurement
 from DriverFunctions.swing_up_measure import SwingUpMeasure
