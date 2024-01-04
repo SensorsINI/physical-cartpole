@@ -245,7 +245,7 @@ class Interface:
 import subprocess
 def set_ftdi_latency_timer(serial_port_number):
     print('\nSetting FTDI latency timer')
-    ftdi_timer_latency_requested_value = 2
+    ftdi_timer_latency_requested_value = 1
     command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/ttyUSB{serial_port_number}/latency_timer'"
     command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/ttyUSB{serial_port_number}/latency_timer'
     try:
