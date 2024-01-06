@@ -71,7 +71,6 @@ class Interface:
         msg = [SERIAL_SOF, CMD_PING, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         self.prevPktNum = 1000
         return self._receive_reply(CMD_PING, 4, PING_TIMEOUT) == msg
 
@@ -79,14 +78,12 @@ class Interface:
         msg = [SERIAL_SOF, CMD_STREAM_ON, 5, en]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         self.clear_read_buffer()
 
     def calibrate(self):
         msg = [SERIAL_SOF, CMD_CALIBRATE, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
         self.clear_read_buffer()
 
@@ -99,7 +96,6 @@ class Interface:
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
     def set_config_PID(self, setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD):
         msg = [SERIAL_SOF, CMD_SET_PID_CONFIG, 28]
@@ -114,13 +110,11 @@ class Interface:
 
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
     def get_config_PID(self):
         msg = [SERIAL_SOF, CMD_GET_PID_CONFIG, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         reply = self._receive_reply(CMD_GET_PID_CONFIG, 28)
         (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
@@ -134,13 +128,11 @@ class Interface:
         msg += list(struct.pack('?', correct_motor_dynamics))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
     def get_config_control(self):
         msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
         (controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(reply[3:12]))
         return controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics
@@ -157,13 +149,11 @@ class Interface:
         msg += list(struct.pack('f', target_position))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
     def collect_raw_angle(self, lenght=100, interval_us=100):
         msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,  lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2*lenght, crc=False, timeout=100)
         return struct.unpack(str(lenght)+'H', bytes(reply[3:3+2*lenght]))
 
