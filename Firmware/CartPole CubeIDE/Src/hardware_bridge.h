@@ -55,7 +55,7 @@
 
 #include "STM/usart.h"
 
-#define PC_Connection_Init()    PC_Connection_Init(UART_BAUD);
+#define PC_Connection_Init()    PC_Connection_INIT(UART_BAUD);
 #define Message_SendToPC		Message_SendToPC
 #define Message_GetFromPC		Message_GetFromPC
 
