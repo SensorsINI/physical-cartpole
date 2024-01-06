@@ -8,7 +8,7 @@ static unsigned int  rxInp;
 static unsigned int  rxOut;
 static unsigned int  rxCnt;
 
-void PC_Connection_Init(unsigned int baud)
+void PC_Connection_INIT(unsigned int baud)
 {
 	unsigned short mantissa;
 	unsigned short fraction;

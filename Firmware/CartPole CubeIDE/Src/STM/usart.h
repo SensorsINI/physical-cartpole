@@ -5,7 +5,7 @@
 
 #define USART_RX_BUFFER_SIZE    256UL
 
-void            PC_Connection_Init(unsigned int baud);
+void            PC_Connection_INIT(unsigned int baud);
 int 			Message_GetFromPC(unsigned char * c);
 void            Message_SendToPC(const unsigned char * buff, unsigned int len);
 
