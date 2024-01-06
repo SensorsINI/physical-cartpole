@@ -80,6 +80,9 @@ class PhysicalCartPoleDriver:
         self.csvfilename = None
         self.csvwriter = None
         self.csv_init_thread = None
+        self.logging_time_limited_started = False
+        self.logging_time_limited_max = 3000
+        self.logging_counter = 0
 
         # Live Plot
         self.livePlotEnabled = LIVE_PLOT
@@ -403,9 +406,9 @@ class PhysicalCartPoleDriver:
                 print("\nself.danceEnabled= {0}".format(self.danceEnabled))
 
             ##### Logging #####
-            elif c == 'l':
+            elif c == 'l' or c == 'L':
                 loggingEnabled_local = not self.loggingEnabled
-                print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
+                print("\nself.loggingEnabled= {0}".format(loggingEnabled_local))
                 if loggingEnabled_local:
                     def f():
                         self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
@@ -413,11 +416,16 @@ class PhysicalCartPoleDriver:
 
                     self.csv_init_thread = threading.Thread(target=f)
                     self.csv_init_thread.start()
+                    if c == 'L':
+                        self.logging_time_limited_started = True
 
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
                     self.loggingEnabled = loggingEnabled_local
+
+                    self.logging_time_limited_started = False
+                    self.logging_counter = 0
 
                 if self.controller.controller_name == 'mppi':
                     if not self.loggingEnabled and self.controlled_iterations > 1:
@@ -895,6 +903,7 @@ class PhysicalCartPoleDriver:
             pass
 
     def write_csv_row(self):
+        self.logging_counter += 1
         if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
             if self.controller.controller_name == 'pid':
                 self.csvwriter.writerow(
@@ -916,6 +925,14 @@ class PhysicalCartPoleDriver:
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q
+
+        if self.logging_time_limited_started and self.logging_counter == self.logging_time_limited_max:
+            self.csvfile.close()
+            print("\n Stopped self.logging data to " + self.csvfilename)
+            self.loggingEnabled = False
+
+            self.logging_time_limited_started = False
+            self.logging_counter = 0
 
     def plot_live(self):
         BUFFER_LENGTH = 5
