@@ -560,6 +560,7 @@ class PhysicalCartPoleDriver:
                      self.current_measure.start()
                 else:
                      self.current_measure.stop()
+                     self.InterfaceInstance.set_motor(0)
                      print('\nMeasurement stopped\n')
 
             ##### Joystick  #####
