@@ -142,7 +142,6 @@ class Interface:
         msg += list(struct.pack('i', speed))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
     def set_target_position(self, target_position):
         msg  = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
