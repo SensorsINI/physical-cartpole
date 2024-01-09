@@ -103,7 +103,6 @@ def motor_calibration(FILE_NAME):
         data['motor_input'] = data['actualMotorSave'] # Older data sets
     except:
         pass
-    data['motor_input'] = -data['motor_input']
 
     data = data.iloc[1:-1]
     data = data.reset_index(drop=True)
