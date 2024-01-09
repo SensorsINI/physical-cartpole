@@ -27,7 +27,7 @@ def get_serial_port(serial_port_number=''):
     try:
         system = platform.system()
         if system == 'Darwin':  # Mac
-            SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
+            SERIAL_PORT = subprocess.check_output(f'ls -a /dev/tty.usbserial*{serial_port_number}', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
         elif system == 'Linux':
             SERIAL_PORT = '/dev/ttyUSB' + serial_port_number  # You might need to change the USB number
         elif system == 'Windows':
