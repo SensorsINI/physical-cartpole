@@ -4,6 +4,10 @@ import numpy as np
 
 from Driver.DriverFunctions.interface import get_serial_port
 
+# to switch between STM and Zybo you need to change here:
+# PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_CORRECTION_X, ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_HANGING_POLOLU
+# Where X is ORIGNAL or POLOLU
+
 DEMO_PROGRAM = False
 
 ##### Logging and Recordings #####
@@ -43,11 +47,14 @@ JSON_PATH = 'Json/'
 MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
 CORRECT_MOTOR_DYNAMICS = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
 
-MOTOR_FULL_SCALE = 7199  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+PWM_PERIOD_IN_CLOCK_CYCLES = 7200  # STM
+# PWM_PERIOD_IN_CLOCK_CYCLES = 2500  # Zynq
+MOTOR_FULL_SCALE = PWM_PERIOD_IN_CLOCK_CYCLES-1  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety constraint
 
 MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026,  839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
-MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)
+MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)  # STM
+# MOTOR_CORRECTION_POLOLU = (1480.14, 98.00, 158.89)  # Zynq
 # MOTOR_CORRECTION_POLOLU = (?, ?)  # Zybo
 
 ##### Angle Conversion #####
