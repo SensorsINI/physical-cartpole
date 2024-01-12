@@ -128,8 +128,6 @@
 #define disable_irq			Xil_ExceptionDisable
 
 
-// TODO: Currently not using interrupts, which STM probably does per default
-// This might be the reas Zynq operation is slower
 #include "Zynq/usart.h"
 
 #define PC_Connection_Init()    PC_Connection_INIT(UART_BAUD);
