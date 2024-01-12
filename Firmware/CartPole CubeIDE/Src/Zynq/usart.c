@@ -86,15 +86,9 @@ void PC_Connection_INIT(unsigned int baud)
 
 	// Initialize the interrupt controller driver
 	IntcConfig = XScuGic_LookupConfig(XPAR_SCUGIC_SINGLE_DEVICE_ID);
-	if (NULL == IntcConfig) {
-		return XST_FAILURE;
-	}
 
 	Status = XScuGic_CfgInitialize(&InterruptController, IntcConfig,
 					IntcConfig->CpuBaseAddress);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
 
 
 	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT,
@@ -104,9 +98,6 @@ void PC_Connection_INIT(unsigned int baud)
 	Status = XScuGic_Connect(&InterruptController, UART_INT_IRQ_ID,
 				  (Xil_ExceptionHandler) Handler,
 				  (void *) &UartPs);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
 
 //	Enable the interrupt for the device
 	XScuGic_Enable(&InterruptController, UART_INT_IRQ_ID);
