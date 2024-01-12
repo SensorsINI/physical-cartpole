@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "platform.h"
 
+XScuGic XScuGicInstance;
 
 void Sleep_ms(unsigned int ms) {
     usleep(ms * 1000); // Convert milliseconds to microseconds

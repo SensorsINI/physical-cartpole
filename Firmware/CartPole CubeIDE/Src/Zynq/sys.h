@@ -6,7 +6,7 @@
 
 #define INTC_DEVICE_ID      XPAR_SCUGIC_SINGLE_DEVICE_ID
 
-XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driver
+extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driver
 
 void Sleep_ms(unsigned int ms);
 void General_Init(void);
