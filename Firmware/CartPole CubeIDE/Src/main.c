@@ -6,8 +6,8 @@ int main(void)
 {
 	General_Init();
 	PC_Connection_Init();
-	Led_Init();
 	Buttons_And_Switches_Init();
+	Led_Init();
 	Button_SetAction(BUTTON_1, CONTROL_ToggleState);
 	Goniometer_Init();
 	Encoder_Init();
