@@ -8,6 +8,7 @@
 #include "xil_exception.h"
 
 extern XGpioPs GpioPS;
+extern XGpio Gpio;
 
 extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driver
 
@@ -18,8 +19,6 @@ extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driv
 #define GPIO_INTERRUPT_ID   XPAR_XGPIOPS_0_INTR
 
 typedef void (*ActionHandler)(void);
-//ActionHandler btn4_action_handler;
-//ActionHandler btn5_action_handler;
 
 void Buttons_And_Switches_Init(void);
 void Button_SetAction(unsigned int key, ActionHandler action);

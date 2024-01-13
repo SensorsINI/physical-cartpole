@@ -2,11 +2,13 @@
 #define __LED_ZYNQ_H_
 
 #include <stdbool.h>
+
 #include "xparameters.h"
 #include "xgpiops.h"
 #include "xgpio.h"
 
 extern XGpioPs GpioPS;
+extern XGpio Gpio;
 
 void Led_Init(void);
 void Led_Switch(bool en);
