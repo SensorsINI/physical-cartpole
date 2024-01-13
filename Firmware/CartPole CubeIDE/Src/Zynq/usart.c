@@ -1,4 +1,22 @@
-/*
+// Out of below 4 definitions uncomment ONE to decide which UART firmware is used
+#define USE_UART_PS
+//#define USE_UART_PS_SIMPLE
+//#define USE_UART_LITE_IP		// At PMOD JC for Zybo Z7-20
+//#define USE_UART_550_IP		// At PMOD JD for Zybo Z7-20
+
+// Check that only one condition is defined
+// Count the number of defined conditions
+#define COUNT_DEFINED (defined(USE_UART_PS) + defined(USE_UART_PS_SIMPLE) + defined(USE_UART_LITE_IP) + defined(USE_UART_550_IP))
+
+// Check that only one condition is defined
+#if COUNT_DEFINED > 1
+#error "Multiple UART firmware selected. Only one condition for UART firmware should be defined."
+#endif
+
+#undef COUNT_DEFINED // Optional: Undefine to keep the macro scope limited to this check
+
+
+#ifdef USE_UART_PS_SIMPLE
 // Communication using UART PS
 #include "usart.h"
 #include "xuartps.h"
@@ -36,11 +54,8 @@ int Message_GetFromPC(unsigned char * c) {
 
 }
 
-*/
 
-
-
-///*
+#elif defined(USE_UART_PS)
 // Communication using UART PS
 #include "usart.h"
 #include "xuartps.h"
@@ -217,7 +232,6 @@ void Handler(XUartPs *InstancePtr)
 		IsrStatus);
 
 }
-//*/
 
 
 
@@ -225,7 +239,7 @@ void Handler(XUartPs *InstancePtr)
 
 
 
-/*
+#elif defined(USE_UART_550_IP)
 // Communication using UARTNS550 IP (Info: In current hardware platform hpf_v2024_4 connected at JD)
 // The simple version like this for UART PS is not applicable as the buffer of UARTNS550 IP has only 16 bytes.
 // Hence we must use interrupts
@@ -402,7 +416,6 @@ void Handler(XUartNs550 *InstancePtr)
 	}
 
 }
-*/
 
 
 
@@ -414,7 +427,8 @@ void Handler(XUartNs550 *InstancePtr)
 
 
 
-/*
+
+#elif defined(USE_UART_LITE_IP)
 // Communication using UART LITE IP (Info: In current hardware platform hpf_v2024_4 connected at JC)
 #include "usart.h"
 #include "xuartlite.h"
@@ -570,7 +584,11 @@ void Handler(XUartLite *InstancePtr)
 	}
 
 }
-*/
+
+
+#else
+#error "No firmware for UART defined, see uart.c"
+#endif
 
 
 
