@@ -1,8 +1,8 @@
 // Out of below 4 definitions uncomment ONE to decide which UART firmware is used
 #define USE_UART_PS
 //#define USE_UART_PS_SIMPLE
-//#define USE_UART_LITE_IP		// At PMOD JC for Zybo Z7-20
 //#define USE_UART_550_IP		// At PMOD JD for Zybo Z7-20
+//#define USE_UART_LITE_IP		// At PMOD JC for Zybo Z7-20
 
 // Check that only one condition is defined
 // Count the number of defined conditions
