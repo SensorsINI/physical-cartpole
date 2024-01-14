@@ -50,13 +50,6 @@
 #define Button_SetAction				Button_SetAction
 
 
-#include "Zynq/fixed_point.hpp"
-
-#include "Zynq/EdgeDRNN/EdgeDRNN_Network.h"
-
-#include "Zynq/HLS4ML/HLS4ML_Network.h"
-
-
 //*/
 
 
