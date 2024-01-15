@@ -13,7 +13,7 @@ int main(void)
 	Encoder_Init();
 	Motor_Init();
 	CONTROL_Init();
-	Neural_Imitator_Init();
+	Neural_Imitator_Init();  // Doing nothing for STM, introduced for consistency with Zynq
 
 	Interruput_Init();
 	SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);			// Not needed for STM, introduced for consistency with Zynq

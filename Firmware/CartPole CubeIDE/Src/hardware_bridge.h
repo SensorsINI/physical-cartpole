@@ -101,7 +101,10 @@
 #define BUTTON_1						KEY_5
 #define Button_SetAction				Button_SetAction
 
+#include "STM/neural_imitator.h"  // Currently not implemented - just making the code compatible with Zynq
 
+#define Neural_Imitator_Init			Neural_Imitator_Init
+#define neural_imitator_cartpole_step	neural_imitator_cartpole_step
 
 
 #elif defined(ZYNQ)
@@ -178,6 +181,7 @@
 
 #include "Zynq/neural_imitator.h"
 
+#define Neural_Imitator_Init			Neural_Imitator_Init
 #define neural_imitator_cartpole_step	neural_imitator_cartpole_step
 
 
