@@ -8,8 +8,9 @@
 #include "control_signal_postprocessing.h"
 
 #define OnChipController_PID 0
+#define OnChipController_NeuralImitator 1
 
-unsigned short current_controller = OnChipController_PID;
+unsigned short current_controller = OnChipController_NeuralImitator;
 
 bool correct_motor_dynamics = true;
 
@@ -165,6 +166,11 @@ void CONTROL_BackgroundTask(void)
 			case OnChipController_PID:
 			{
 				Q = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
+				break;
+			}
+			case OnChipController_NeuralImitator:
+			{
+				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_position, time_current_measurement/1000000.0);
 				break;
 			}
 			default:

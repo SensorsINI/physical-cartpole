@@ -106,3 +106,31 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 void Neural_Imitator_ReleaseResources(){
 	EdgeDRNN_Network_ReleaseResources();
 }
+
+float neural_imitator_cartpole_step(float angle, float angleD, float angle_cos, float angle_sin, float position, float positionD, float target_position, float time)
+{
+	// Define input and output buffers
+	// Load proper values into input buffer
+	static unsigned char network_input_buff[NETWORK_INPUT_SIZE_IN_BYTES];
+	static unsigned char network_output_buff[NETWORK_OUTPUT_SIZE_IN_BYTES];
+
+	float target_equilibrium = 1.0;
+//	float network_input_buff[] = {angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position};
+
+	*((float *)&network_input_buff[0]) = angleD;
+	*((float *)&network_input_buff[4]) = angle_cos;
+	*((float *)&network_input_buff[8]) = angle_sin;
+	*((float *)&network_input_buff[12]) = position;
+	*((float *)&network_input_buff[16]) = positionD;
+	*((float *)&network_input_buff[20]) = target_equilibrium;
+	*((float *)&network_input_buff[24]) = target_position;
+
+	// Evaluate network value
+//	Neural_Imitator_Evaluate((unsigned char*)network_input_buff, network_output_buff);
+	Neural_Imitator_Evaluate(network_input_buff, network_output_buff);
+
+	// Output buffer for cartpole has just 1 element and this is the requested control input
+	float Q = *((float          *)&network_output_buff[ 0]);
+	return Q;
+}
+

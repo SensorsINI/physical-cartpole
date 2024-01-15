@@ -52,6 +52,15 @@ int main() {
 		}
 		uart_received_Cnt -= NETWORK_INPUT_SIZE_IN_BYTES;
 
+//		float angleD = *((float          *)&rx_uart_buffer[ 0]);
+//		float angle_cos = *((float          *)&rx_uart_buffer[ 4]);
+//		float angle_sin = *((float          *)&rx_uart_buffer[ 8]);
+//		float position = *((float          *)&rx_uart_buffer[ 12]);
+//		float positionD = *((float          *)&rx_uart_buffer[ 16]);
+//		float target_position = *((float          *)&rx_uart_buffer[ 24]);
+//		float Q = neural_imitator_cartpole_step(0.0, angleD, angle_cos, angle_sin, position, positionD, target_position, 0.0);
+//        *((float *)&tx_uart_buffer[0]) = Q;
+
 		Neural_Imitator_Evaluate(rx_uart_buffer, tx_uart_buffer);
 
 		Message_SendToPC(tx_uart_buffer, NETWORK_OUTPUT_SIZE_IN_BYTES);

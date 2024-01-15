@@ -156,6 +156,11 @@
 #define BUTTON_1						PS_BTN_4
 #define Button_SetAction				Button_SetAction
 
+
+#include "Zynq/neural_imitator.h"
+
+#define neural_imitator_cartpole_step	neural_imitator_cartpole_step
+
 */
 
 
