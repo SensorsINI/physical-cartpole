@@ -1,4 +1,5 @@
 #include "hardware_bridge.h"
+#include "parameters.h"
 #include "control.h"
 #include "angle_processing.h"
 #include "communication_with_PC.h"
@@ -17,10 +18,7 @@ bool correct_motor_dynamics = true;
 
 bool            streamEnable        = false;
 bool 			interrupt_occurred	= false;
-float  			ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
-
-unsigned short	controlLoopPeriodMs = CONTROL_LOOP_PERIOD_MS;
-bool			controlSync 		= CONTROL_SYNC;				// apply motor command at next loop
+float  			ANGLE_DEVIATION;
 
 volatile bool	HardwareConfigSetFromPC;
 volatile bool 	ControlOnChip_Enabled;
@@ -40,10 +38,8 @@ unsigned long	time_last_measurement = 0;
 
 bool			new_motor_command_obtained			= true;
 
-long  			angleSamplesTimestamp[CONTROL_ANGLE_AVERAGE_LEN];
 unsigned short 	angleSampIndex		= 0;
-int  angleSamples[CONTROL_ANGLE_AVERAGE_LEN];
-unsigned short	angle_averageLen	= CONTROL_ANGLE_AVERAGE_LEN;
+int *angleSamples;
 
 short 			position_short;
 short 			position_previous = -30000;
@@ -66,11 +62,19 @@ void CONTROL_Init(void)
 	ControlOnChip_Enabled		= false;
 	HardwareConfigSetFromPC = false;
     isCalibrated        = false;
-    ledPeriod           = 500/controlLoopPeriodMs;
+    ledPeriod           = 500/CONTROL_LOOP_PERIOD_MS;
 
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
     positionLimitLeft   = positionCentre - 2400;
     positionLimitRight  = positionCentre + 2400; // guess defaults based on 7000-8000 counts at limits
+
+    ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
+
+    angleSamples = malloc(ANGLE_AVERAGE_LEN_MAX * sizeof(int));
+    if (angleSamples == NULL) {
+        // Handle memory allocation failure
+        exit(1); // or another appropriate error handling
+    }
 
     correct_motor_dynamics = (current_controller == OnChipController_PID) ? false : true;
 }
@@ -95,7 +99,7 @@ int clip(int value, int min, int max) {
 void CONTROL_Loop(void)
 {
 
-	if(controlSync) {
+	if(CONTROL_SYNC) {
 		Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
 	}
 	interrupt_occurred = true;
@@ -134,7 +138,7 @@ void CONTROL_BackgroundTask(void)
 
 		position_short = Encoder_Read();
 		position_short = position_short - positionCentre;
-		process_angle(angleSamples, angleSampIndex, angle_averageLen, &angle_int, &angleD_int, &invalid_step);
+		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angleD_int, &invalid_step);
 
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
@@ -146,8 +150,6 @@ void CONTROL_BackgroundTask(void)
 	    }
 	    position_previous = position_short;
 
-	    float ANGLE_NORMALIZATION_FACTOR = 0.001471127442561364;
-	    float POSITION_NORMALIZATION_FACTOR = 0.00009510086455331;
 	    float angle_cos, angle_sin;
 
 	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
@@ -191,7 +193,7 @@ void CONTROL_BackgroundTask(void)
 
             motor_command = motor_command_from_chip;
 
-	        if(!controlSync)
+	        if(!CONTROL_SYNC)
 	        {
 	        	Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
 	        }
@@ -209,7 +211,7 @@ void CONTROL_BackgroundTask(void)
 	        	latency_violation = 0;
 	    	} else{
 	    		latency_violation = 1;
-	    		latency = controlLoopPeriodMs*1000;
+	    		latency = CONTROL_LOOP_PERIOD_MS*1000;
 	    	}
 
 	    	prepare_message_to_PC_state(
@@ -261,10 +263,10 @@ void CONTROL_BackgroundTask(void)
 		lastRead = now;
 	}
 	// read every ca. 100us
-	else if (now > lastRead + CONTROL_ANGLE_MEASUREMENT_INTERVAL_US) {
+	else if (now > lastRead + ANGLE_MEASUREMENT_INTERVAL_US) {
 		// conversion takes 18us
 		angleSamples[angleSampIndex] = Goniometer_Read();
-		angleSampIndex = (++angleSampIndex >= angle_averageLen ? 0 : angleSampIndex);
+		angleSampIndex = (++angleSampIndex >= ANGLE_AVERAGE_LEN ? 0 : angleSampIndex);
 
 		lastRead = now;
 	}
@@ -334,7 +336,7 @@ void CONTROL_BackgroundTask(void)
 
 			motor_command = motor_command_from_PC;
 
-			if(!controlSync)
+			if(!CONTROL_SYNC)
 			{
 				Motor_SetPower(motor_command_from_PC, PWM_PERIOD_IN_CLOCK_CYCLES);
 			}
@@ -467,13 +469,13 @@ void cmd_ControlMode(bool en)
     disable_irq();
 	if (en && !ControlOnChip_Enabled)
 	{
-        ledPeriod           = 100/controlLoopPeriodMs;
+        ledPeriod           = 100/CONTROL_LOOP_PERIOD_MS;
 	}
 	else if (!en && ControlOnChip_Enabled)
 	{
 		Motor_Stop();
 		motor_command = 0;
-        ledPeriod           = 500/controlLoopPeriodMs;
+        ledPeriod           = 500/CONTROL_LOOP_PERIOD_MS;
 	}
 
 	ControlOnChip_Enabled = en;
@@ -485,13 +487,13 @@ void cmd_SetControlConfig(const unsigned char * config)
 {
 	disable_irq();
 
-	controlLoopPeriodMs = *((unsigned short *)&config[0]);
-    controlSync			= *((bool	        *)&config[2]);
+	CONTROL_LOOP_PERIOD_MS = *((unsigned short *)&config[0]);
+    CONTROL_SYNC			= *((bool	        *)&config[2]);
     ANGLE_DEVIATION      = *((float          *)&config[ 3]);
-    angle_averageLen    = *((unsigned short *)&config[ 7]);
+    ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
 
-    SetControlUpdatePeriod(controlLoopPeriodMs);
+    SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);
     HardwareConfigSetFromPC = true;
 
 	enable_irq();
@@ -500,7 +502,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, controlLoopPeriodMs, controlSync, ANGLE_DEVIATION, angle_averageLen, correct_motor_dynamics);
+	prepare_message_to_PC_control_config(txBuffer, CONTROL_LOOP_PERIOD_MS, CONTROL_SYNC, ANGLE_DEVIATION, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 16);

@@ -1,4 +1,5 @@
 #include "angle_processing.h"
+#include "parameters.h"
 #include "median_filter.h"
 #include <stdlib.h>
 #include "math.h"

@@ -1,11 +1,5 @@
-/*
- * hardware_bridge.c
- *
- *  Created on: 21 Oct 2023
- *      Author: marcinpaluch
- */
-
 #include "hardware_bridge.h"
+
 // Only for testing
 
 //void Goniometer_Init(void){}

@@ -1,17 +1,24 @@
-/*
- * hardware_bridge.h
- *
- *  Created on: 20 Oct 2023
- *      Author: marcinpaluch
- */
-
 #ifndef HARDWARE_BRIDGE_H_
 #define HARDWARE_BRIDGE_H_
+
+
+
+
+
+
+
 
 // Select between firmware for STM and firmware for Zynq
 // UNcomment "#define STM" to use STM or UNcomment "#define Zynq" to use Zynq
 #define STM
 //#define ZYNQ
+
+
+
+
+
+
+
 
 // Check that only one condition is defined
 // Count the number of defined conditions
@@ -24,20 +31,14 @@
 
 #undef COUNT_DEFINED // Optional: Undefine to keep the macro scope limited to this check
 
+// See parameters.c to set values
+extern const unsigned int UART_BAUD;
+extern unsigned short CONTROL_LOOP_PERIOD_MS;
+extern const unsigned int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #ifdef STM
 
 #include <stdbool.h>
-
-
-#define CLOCK_FREQ 						72000000
-#define PWM_PERIOD_IN_CLOCK_CYCLES      7200
-#define MOTOR_FULL_SCALE				(PWM_PERIOD_IN_CLOCK_CYCLES-1)
-#define MOTOR_FULL_SCALE_SAFE           ((int)(0.95 * MOTOR_FULL_SCALE + 0.5))
-
-#define UART_BAUD 230400 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
-
-
 
 #include "STM/goniometer_stm.h"
 
@@ -108,14 +109,6 @@
 
 
 #elif defined(ZYNQ)
-
-#define CLOCK_FREQ 						333333343
-#define PWM_PERIOD_IN_CLOCK_CYCLES      2500
-#define MOTOR_FULL_SCALE				(PWM_PERIOD_IN_CLOCK_CYCLES-1)
-#define MOTOR_FULL_SCALE_SAFE           ((int)(0.95 * MOTOR_FULL_SCALE + 0.5))
-
-
-#define UART_BAUD 230400 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 #include "Zynq/goniometer_zynq.h"
 

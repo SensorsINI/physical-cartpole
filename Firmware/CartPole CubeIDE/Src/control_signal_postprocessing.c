@@ -6,8 +6,7 @@
  */
 
 #include "hardware_bridge.h"
-
-float MOTOR_CORRECTION[3] = {4898.18, 168.09, 123.46};
+#include "parameters.h"
 
 int control_signal_to_motor_command(float Q, float positionD, bool correct_motor_dynamics) {
 	float actualMotorCmd_float = 0.0;
