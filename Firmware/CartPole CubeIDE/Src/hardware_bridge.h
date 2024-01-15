@@ -8,9 +8,28 @@
 #ifndef HARDWARE_BRIDGE_H_
 #define HARDWARE_BRIDGE_H_
 
+// Select between firmware for STM and firmware for Zynq
+// UNcomment "#define STM" to use STM or UNcomment "#define Zynq" to use Zynq
+#define STM
+//#define ZYNQ
+
+// Check that only one condition is defined
+// Count the number of defined conditions
+#define COUNT_DEFINED (defined(STM) + defined(ZYNQ))
+
+// Check that only one condition is defined
+#if COUNT_DEFINED > 1
+#error "Both STM and Zynq firmware selected. Only one condition for firmware should be defined."
+#endif
+
+#undef COUNT_DEFINED // Optional: Undefine to keep the macro scope limited to this check
+
+
+#ifdef STM
+
 #include <stdbool.h>
 
-///*
+
 #define CLOCK_FREQ 						72000000
 #define PWM_PERIOD_IN_CLOCK_CYCLES      7200
 #define MOTOR_FULL_SCALE				(PWM_PERIOD_IN_CLOCK_CYCLES-1)
@@ -82,10 +101,10 @@
 #define BUTTON_1						KEY_5
 #define Button_SetAction				Button_SetAction
 
-//*/
 
 
-/*
+
+#elif defined(ZYNQ)
 
 #define CLOCK_FREQ 						333333343
 #define PWM_PERIOD_IN_CLOCK_CYCLES      2500
@@ -161,8 +180,6 @@
 
 #define neural_imitator_cartpole_step	neural_imitator_cartpole_step
 
-*/
-
 
 // Prototypes of all functions. Just comment all above to check that everything goes indeed through hardware bridge
 
@@ -202,5 +219,8 @@
 //typedef void (*KEY_Callback)(void);
 //void Button_SetAction(unsigned int key, KEY_Callback cb);
 
+#else
+#error "No firmware - neither for STM nor for Zynq - defined, see hardware_bridge.h"
+#endif
 
 #endif /* HARDWARE_BRIDGE_H_ */
