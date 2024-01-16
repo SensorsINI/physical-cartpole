@@ -27,10 +27,10 @@ float ANGLE_NORMALIZATION_FACTOR					=		0.001471127442561364;	// Check this
 float POSITION_NORMALIZATION_FACTOR 				=		0.00009510086455331;	// Check this
 
 const unsigned int CLOCK_FREQ						=		72000000;
-const unsigned int PWM_PERIOD_IN_CLOCK_CYCLES		=		7200;
+const int PWM_PERIOD_IN_CLOCK_CYCLES		=		7200;
 
-const unsigned int MOTOR_FULL_SCALE					=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
-const unsigned int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
+const float MOTOR_FULL_SCALE					=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
+const int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
 
 
 #elif defined(ZYNQ)
@@ -44,9 +44,9 @@ float ANGLE_NORMALIZATION_FACTOR					=		0.0015326187926694992;
 float POSITION_NORMALIZATION_FACTOR					=		0.00009510086455331;
 
 const unsigned int CLOCK_FREQ						=		333333343;
-const unsigned int PWM_PERIOD_IN_CLOCK_CYCLES		=		2500;
+const int PWM_PERIOD_IN_CLOCK_CYCLES		=		2500;
 
-const unsigned int MOTOR_FULL_SCALE					=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
-const unsigned int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
+const float MOTOR_FULL_SCALE					=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
+const int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
 
 #endif

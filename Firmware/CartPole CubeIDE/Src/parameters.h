@@ -26,9 +26,9 @@ extern float ANGLE_NORMALIZATION_FACTOR;
 extern float POSITION_NORMALIZATION_FACTOR;
 
 extern const unsigned int CLOCK_FREQ;
-extern const unsigned int PWM_PERIOD_IN_CLOCK_CYCLES;
+extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
-extern const unsigned int MOTOR_FULL_SCALE;
-extern const unsigned int MOTOR_FULL_SCALE_SAFE;
+extern const float MOTOR_FULL_SCALE;
+extern const int MOTOR_FULL_SCALE_SAFE;
 
 #endif /* PARAMETERS_H_ */
