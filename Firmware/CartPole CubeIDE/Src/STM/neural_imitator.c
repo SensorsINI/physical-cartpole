@@ -11,7 +11,7 @@ void Neural_Imitator_ReleaseResources(){}
 
 float neural_imitator_cartpole_step(float angle, float angleD, float angle_cos, float angle_sin, float position, float positionD, float target_position, float time)
 {
-	float Q = 0.0
+	float Q = 0.0;
 	return Q;
 }
 
