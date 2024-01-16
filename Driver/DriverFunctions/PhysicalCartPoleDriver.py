@@ -81,7 +81,7 @@ class PhysicalCartPoleDriver:
         self.csvwriter = None
         self.csv_init_thread = None
         self.logging_time_limited_started = False
-        self.logging_time_limited_max = 3000
+        self.logging_time_limited_max = 1000
         self.logging_counter = 0
 
         # Live Plot
