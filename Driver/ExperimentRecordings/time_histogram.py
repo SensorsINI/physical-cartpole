@@ -29,7 +29,7 @@ python_prepost = pythonLatency-dt_controller
 firmware = latency-controller_steptime
 
 
-def annotate_with_mean_and_std(data, ax, units='ms'):
+def annotate_with_mean_and_std(data, ax, units='ms', log_scale=True):
     plt.sca(ax)
     mean = np.mean(data)
     std = np.std(data)
@@ -37,9 +37,16 @@ def annotate_with_mean_and_std(data, ax, units='ms'):
     max_value = np.max(data)
     plt.axvline(mean, color='red', linestyle='dashed', linewidth=1)
     min_ylim, max_ylim = plt.ylim()
-    plt.text(mean * 1.15, max_ylim * 0.8, f'Mean: {mean:.3f} {units}')
-    plt.text(mean * 1.15, max_ylim * 0.65, f'Std: {std:.3f} {units}')
-    plt.text(mean * 1.15, max_ylim * 0.55, f"Range: {min_value:.2f} {units} - {max_value:.2f} {units}")
+    log_max = np.log10(max_ylim)  # Adjust these based on your y-axis range
+
+    if log_scale:
+        y_positions = [10**(0.90 * log_max), 10**(0.85 * log_max), 10**(0.80 * log_max)]
+    else:
+        y_positions = [0.90 * max_ylim, 0.85 * max_ylim, 0.80 * max_ylim]
+
+    plt.text(mean * 1.15, y_positions[0], f'Mean: {mean:.3f} {units}')
+    plt.text(mean * 1.15, y_positions[1], f'Std: {std:.3f} {units}')
+    plt.text(mean * 1.15, y_positions[2], f"Range: {min_value:.2f} {units} - {max_value:.2f} {units}")
     plt.xlabel(units)
 
 fig, axs = plt.subplots(1, 4, tight_layout=True, figsize=(15, 6.0), sharex=True)
@@ -64,7 +71,7 @@ axs[2].set_yscale('log')
 
 axs[3].hist(latency, bins=100, color='orange', alpha=0.7)
 axs[3].set_title('Total latency')
-annotate_with_mean_and_std(latency, axs[3])
+annotate_with_mean_and_std(latency, axs[3], log_scale=False)
 # axs[3].set_yscale('log')
 
 plt.show()
