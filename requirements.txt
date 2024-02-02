@@ -1,7 +1,5 @@
 -r ./Driver/CartPoleSimulation/CPS_list_of_packages.txt
 
-tk
-tensorboard_plugin_profile
 seaborn
 
 -e ./Driver/CartPoleSimulation/SI_Toolkit/
