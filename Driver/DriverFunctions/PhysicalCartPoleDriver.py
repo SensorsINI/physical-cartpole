@@ -712,6 +712,11 @@ class PhysicalCartPoleDriver:
         self.timeNow = time.time()
         self.elapsedTime = self.timeNow - self.startTime
 
+        if self.time_difference < 1.0e-9:
+            raise ValueError(f'\ntime_difference is {self.time_difference}. '
+                             f'\nThis might indicate that timer on the microcontroller has overflown. '
+                             f'\nTry to restart it.')
+
         self.delta_time = self.time_difference
 
         if self.lastSent is not None:
