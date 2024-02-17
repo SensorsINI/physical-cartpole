@@ -101,6 +101,7 @@ neural-imitator:
   net_name: 'Dense-7IN-64H1-64H2-1OUT-0'
   controller_logging: True
   library: tensorflow
+  input_precision: 'float'  #'ap_fixed<20,6>'   # Can be 'float' - currently do nothing, or 'ap_fixed<total number of bits, integer bits + 1 sign bit>' - adjusting the number precision of the input
   input_at_input: False
   hls4ml: false
 secloc:
