@@ -92,7 +92,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 		{
 			actv_floating_point = *((float *)&network_input_buffer[neuron_idx*DATA_WORD_BYTES]);
 			actv_floating_point = hls_normalize_a[neuron_idx]*actv_floating_point + hls_normalize_b[neuron_idx];
-			actv_fixed_point_32 = float_to_fixed_32(actv_floating_point, 14);
+			actv_fixed_point_32 = float_to_fixed_32(actv_floating_point, MLP_TOTAL_BITS_PER_VARIABLE-MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE);
 			TxBufferPtr[neuron_idx] = actv_fixed_point_32;
 		}
 
@@ -104,8 +104,8 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 		{
 //				predic_fixed_point_32 = extend_sign(RxBufferPtr[neuron_idx]);
 //				predic_floating_point = fixed_to_float(predic_fixed_point_32);
-			predic_fixed_point_32 = extend_sign_32(RxBufferPtr[neuron_idx], 19);
-			predic_floating_point = fixed_to_float_32(predic_fixed_point_32, 14);
+			predic_fixed_point_32 = extend_sign_32(RxBufferPtr[neuron_idx], MLP_TOTAL_BITS_PER_VARIABLE-1);
+			predic_floating_point = fixed_to_float_32(predic_fixed_point_32, MLP_TOTAL_BITS_PER_VARIABLE-MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE);
 			predic_floating_point = hls_denormalize_A[neuron_idx]*predic_floating_point + hls_denormalize_B[neuron_idx];
 			*((float          *)&network_output_buffer[neuron_idx*DATA_WORD_BYTES]) = predic_floating_point;
 		}
