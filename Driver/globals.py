@@ -5,11 +5,61 @@ import numpy as np
 from Driver.DriverFunctions.interface import get_serial_port
 from others.p_globals import TrackHalfLength
 
-# to switch between STM and Zybo you need to change here:
-# PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_CORRECTION_X, ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_HANGING_POLOLU, POSITION_ENCODER_RANGE
-# Where X is ORIGNAL or POLOLU
 
-CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"
+CHIP = "STM"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
+CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
+OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
+
+# Motor type selection
+# Choose 'POLOLU' or 'ORIGINAL'
+# It is set automatically during calibration
+# You must set it here correctly only if you want to skip calibration
+# Also: In our lab we have two cartpoles - with original and pololu motors
+# Setting the motor type identifies the robot instance and determines parameters which are not dependent on motor
+MOTOR = 'POLOLU'
+
+##### Controller Settings #####
+if CONTROLLER_NAME == 'pid':
+    CONTROL_PERIOD_MS = 3
+elif CONTROLLER_NAME == 'neural-imitator':
+    CONTROL_PERIOD_MS = 5
+elif CONTROLLER_NAME == 'fpga':
+    CONTROL_PERIOD_MS = 15
+else:
+    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+
+if CHIP == 'STM':
+    PWM_PERIOD_IN_CLOCK_CYCLES = 7200
+    # First number in the tuple is multiplicative factor by which control command Q (in the range[-1,1]) is multiplied.
+    # The other two shift (additive) to account for friction indep. of speed (separate for pos and neg Q)
+    # Only applied if CORRECT_MOTOR_DYNAMICS is True
+    # Otherwise Q is multiplied by MOTOR_FULL_SCALE_SAFE
+    MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026, 839.026)
+    MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)
+    # The 12-bit ADC has a range of 4096 units
+    # However due to potentiometer dead angle these 4096 units are mapped on less than full circle
+    # The full circle in adc units was determined
+    # by readout difference between up and down position on the side not including dead angle
+    ANGLE_360_DEG_IN_ADC_UNITS = 4271.34
+    ANGLE_HANGING_POLOLU = 929.5  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
+    POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
+elif CHIP == 'ZYNQ':
+    PWM_PERIOD_IN_CLOCK_CYCLES = 2500
+    MOTOR_CORRECTION_POLOLU = (1604.48, 49.15, -91.24)  # Explanation - see above, same as for STM case
+    ANGLE_360_DEG_IN_ADC_UNITS = 4068.67  # Explanation - see above for STM case.
+    # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
+    #   It is unclear if the difference comes from measuring it on different cartpoles
+    #   or is due to imprecise voltage shifting which is required on Zybo
+    #   Please think it through and adjust this comment appropriately.
+    ANGLE_HANGING_POLOLU = 857.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
+    POSITION_ENCODER_RANGE = 4705  # For new implementation with Zybo. FIXME: Not clear why different then for STM
+
+
+
+else:
+    raise Exception("Unknown chip " + CHIP)
+
 
 DEMO_PROGRAM = False
 
@@ -31,44 +81,19 @@ LIVE_PLOT_KEEPSAMPLES = 5000
 LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
 
-##### Controller Settings #####
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi'
-if CONTROLLER_NAME == 'pid':
-    CONTROL_PERIOD_MS = 5
-elif CONTROLLER_NAME == 'neural-imitator':
-    CONTROL_PERIOD_MS = 8
-elif CONTROLLER_NAME == 'fpga':
-    CONTROL_PERIOD_MS = 21
-else:
-    CONTROL_PERIOD_MS = 18  # e.g. 5 for PID or 20 for mppi
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
 JSON_PATH = 'Json/'
 
 ##### Motor Settings #####
-MOTOR = 'POLOLU'  # choose 'POLOLU' or 'ORIGINAL'
 CORRECT_MOTOR_DYNAMICS = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
 
-PWM_PERIOD_IN_CLOCK_CYCLES = 7200  # STM
-# PWM_PERIOD_IN_CLOCK_CYCLES = 2500  # Zynq
 MOTOR_FULL_SCALE = PWM_PERIOD_IN_CLOCK_CYCLES-1  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety constraint
-
-MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026,  839.026) # First number multiplies Q, the other shift it to account for friction indep. of speed
-MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)  # STM
-# MOTOR_CORRECTION_POLOLU = (1480.14, 98.00, 158.89)  # Zynq
-# MOTOR_CORRECTION_POLOLU = (?, ?)  # Zybo
 
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
 ANGLE_AVG_LENGTH = 16  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
-ANGLE_360_DEG_IN_ADC_UNITS = 4271  # 4271.34 Range of angle values # STM
-# ANGLE_360_DEG_IN_ADC_UNITS = 4099.64  # Range of angle values # Zybo
-
-ANGLE_HANGING_POLOLU = 929.5  # Value from sensor when pendulum is at stable equilibrium point
-# ANGLE_HANGING_POLOLU = 942.0  # Value from sensor when pendulum is at stable equilibrium point #  Zybo
-ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
@@ -80,8 +105,6 @@ POLYFIT_ANGLED = False
 # POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
 
 ##### Position Conversion #####
-POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation # seems to be 4164 now
-# POSITION_ENCODER_RANGE = 4690 # For new implementation with Zybo
 
 POSITION_NORMALIZATION_FACTOR = TrackHalfLength * 2 / POSITION_ENCODER_RANGE  # 0.000084978540773
 
