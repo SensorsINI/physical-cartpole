@@ -375,7 +375,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
+        global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
             self.new_console_output = True
