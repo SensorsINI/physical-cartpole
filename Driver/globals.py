@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from Driver.DriverFunctions.interface import get_serial_port
+from others.p_globals import TrackHalfLength
 
 # to switch between STM and Zybo you need to change here:
 # PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_CORRECTION_X, ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_HANGING_POLOLU, POSITION_ENCODER_RANGE
@@ -86,8 +87,8 @@ POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation # seems to b
 # POSITION_ENCODER_RANGE = 4690 # For new implementation with Zybo
 POSITION_OFFSET = 0  # Serves to adjust starting position - position after calibration is 0
 POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2  # Corrected position full scale - cart position should range over +- this value if calibrated for zero at center
-TRACK_LENGTH = 0.396  # Total usable track length in meters
-POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH / POSITION_ENCODER_RANGE  # 0.000084978540773
+
+POSITION_NORMALIZATION_FACTOR = TrackHalfLength * 2 / POSITION_ENCODER_RANGE  # 0.000084978540773
 
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 JOYSTICK_POSITION_KP = 4.0
