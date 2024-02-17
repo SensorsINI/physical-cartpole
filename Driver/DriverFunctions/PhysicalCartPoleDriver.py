@@ -200,7 +200,8 @@ class PhysicalCartPoleDriver:
             print('Run from an interactive terminal to allow keyboard input.')
             quit()
 
-        set_ftdi_latency_timer(serial_port_number)
+        if CHIP == 'ZYNQ':
+            set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
