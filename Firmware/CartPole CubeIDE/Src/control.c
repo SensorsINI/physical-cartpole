@@ -99,11 +99,7 @@ int clip(int value, int min, int max) {
 void CONTROL_Loop(void)
 {
 
-	if(CONTROL_SYNC) {
-		Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
-	}
 	interrupt_occurred = true;
-
 
 }
 float Q;
@@ -114,6 +110,11 @@ void CONTROL_BackgroundTask(void)
 
 	if(interrupt_occurred)
 	{
+		interrupt_occurred = false;
+
+		if(CONTROL_SYNC) {
+			Motor_SetPower(motor_command, PWM_PERIOD_IN_CLOCK_CYCLES);
+		}
 
 		static unsigned char	buffer[30];
 
