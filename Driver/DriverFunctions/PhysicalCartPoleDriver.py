@@ -187,6 +187,8 @@ class PhysicalCartPoleDriver:
 
         self.safety_switch_counter = 0
 
+        self.angle_deviation_finetune = 0.0
+
     def run(self):
         self.setup()
         self.run_experiment()
@@ -366,7 +368,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
+        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
             self.new_console_output = True
@@ -488,7 +490,7 @@ class PhysicalCartPoleDriver:
                 angle_average = np.mean(measured_angles)
                 angle_std = np.std(measured_angles)
 
-                angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
+                angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
                 angle_std_rad = angle_std*ANGLE_NORMALIZATION_FACTOR
                 print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
                                                                                               angle_rad,
@@ -506,12 +508,12 @@ class PhysicalCartPoleDriver:
 
             # Fine tune angle deviation
             elif c == '=':
-                ANGLE_DEVIATION_FINETUNE += 0.002
-                print("\nIncreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+                self.angle_deviation_finetune += 0.002
+                print("\nIncreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
             # Decrease Target Angle
             elif c == '-':
-                ANGLE_DEVIATION_FINETUNE -= 0.002
-                print("\nDecreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+                self.angle_deviation_finetune -= 0.002
+                print("\nDecreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
 
             ##### Target Position #####
             # Increase Target Position
@@ -702,7 +704,7 @@ class PhysicalCartPoleDriver:
 
     def convert_angle_and_position_skale(self):
         # Convert position and angle to physical units
-        angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
+        angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
         position = self.position_raw * POSITION_NORMALIZATION_FACTOR
         return angle, position
 
