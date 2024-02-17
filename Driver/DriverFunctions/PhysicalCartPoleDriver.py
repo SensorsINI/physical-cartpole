@@ -94,10 +94,15 @@ class PhysicalCartPoleDriver:
             self.kbAvailable = False
 
         # Dance Mode
-        self.danceEnabled = False
+        ## Parameters
         self.danceAmpl = 0.14  # m
         self.dancePeriodS = 6.0
         self.dance_start_time = 0.0
+        
+        ## Variables
+        self.danceEnabled = False
+        self.dance_finishing = False
+        self.dance_current_relative_position = 0.0
 
         # Measurement
         self.step_response_measure = StepResponseMeasurement()
@@ -144,6 +149,7 @@ class PhysicalCartPoleDriver:
         self.position_offset = 0
         self.target_position = 0.0
         self.target_position_previous = 0.0
+        self.base_target_position = 0.0
 
         # Joystick variable
         self.stick = None
@@ -369,7 +375,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
+        global POSITION_OFFSET, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
             self.new_console_output = True
@@ -402,11 +408,11 @@ class PhysicalCartPoleDriver:
             elif c == 'D':
                 # We want the sinusoid to start at predictable (0) position
                 if self.danceEnabled is True:
-                    self.danceEnabled = False
+                    self.dance_finishing = True
                 else:
                     self.dance_start_time = time.time()
                     self.danceEnabled = True
-                print("\nself.danceEnabled= {0}".format(self.danceEnabled))
+                    print(f"\nself.danceEnabled= {self.danceEnabled}")
 
             ##### Logging #####
             elif c == 'l' or c == 'L':
@@ -519,16 +525,16 @@ class PhysicalCartPoleDriver:
             ##### Target Position #####
             # Increase Target Position
             elif c == ']':
-                POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
-                if POSITION_TARGET > 0.8 * (POSITION_ENCODER_RANGE // 2):
-                    POSITION_TARGET = 0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nIncreased target position to {0} cm".format(POSITION_TARGET * 100))
+                self.base_target_position += 10 * POSITION_NORMALIZATION_FACTOR
+                if self.base_target_position > 0.8 * (POSITION_ENCODER_RANGE // 2):
+                    self.base_target_position = 0.8 * (POSITION_ENCODER_RANGE // 2)
+                print("\nIncreased target position to {0} cm".format(self.base_target_position * 100))
             # Decrease Target Position
             elif c == '[':
-                POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
-                if POSITION_TARGET < -0.8 * (POSITION_ENCODER_RANGE // 2):
-                    POSITION_TARGET = -0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nDecreased target position to {0} cm".format(POSITION_TARGET * 100))
+                self.base_target_position -= 10 * POSITION_NORMALIZATION_FACTOR
+                if self.base_target_position < -0.8 * (POSITION_ENCODER_RANGE // 2):
+                    self.base_target_position = -0.8 * (POSITION_ENCODER_RANGE // 2)
+                print("\nDecreased target position to {0} cm".format(self.base_target_position * 100))
 
             ##### Measurement Mode #####
             elif c == 'm':
@@ -632,6 +638,7 @@ class PhysicalCartPoleDriver:
             self.controller.controller_report()
         self.controller.controller_reset()
         self.danceEnabled = False
+        self.target_position = self.base_target_position
         self.latency_violations = 0
 
     def switch_on_control(self):
@@ -804,20 +811,25 @@ class PhysicalCartPoleDriver:
         self.s = self.LatencyAdderInstance.get_interpolated_delayed_state()
 
     def set_target_position(self):
-        # Get the target position
-        # if self.controlEnabled and self.danceEnabled:
         if self.current_measure.is_running():
             try:
                 self.target_position = self.current_measure.target_position
-                # print(self.target_position)
             except AttributeError:
                 pass
         else:
             if self.danceEnabled:
-                self.target_position = POSITION_TARGET + self.danceAmpl * np.sin(
-                    2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
-            else:
-                self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
+                if not self.dance_finishing:
+                    self.dance_current_relative_position = self.danceAmpl * np.sin(
+                        2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
+                    self.target_position = self.base_target_position + self.dance_current_relative_position
+                else:
+                    if abs(self.base_target_position-self.target_position) < 0.03:
+                        self.danceEnabled = False
+                        print(f"\nself.danceEnabled= {self.danceEnabled}")
+                        self.dance_finishing = False
+                        self.target_position = self.base_target_position
+                    else:
+                        self.target_position = 0.995 * self.target_position + 0.005 * self.base_target_position
 
         if self.firmwareControl:
             if self.target_position != self.target_position_previous:
@@ -906,6 +918,7 @@ class PhysicalCartPoleDriver:
                 if hasattr(self.controller, 'controller_reset'):
                     self.controller.controller_reset()
                 self.danceEnabled = False
+                self.target_position = self.base_target_position
                 self.actualMotorCmd = 0
         else:
             self.safety_switch_counter = 0

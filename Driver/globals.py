@@ -89,8 +89,6 @@ POSITION_FULL_SCALE_N = int(POSITION_ENCODER_RANGE) / 2  # Corrected position fu
 TRACK_LENGTH = 0.396  # Total usable track length in meters
 POSITION_NORMALIZATION_FACTOR = TRACK_LENGTH / POSITION_ENCODER_RANGE  # 0.000084978540773
 
-POSITION_TARGET = 0.0  # meters
-
 JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick is ignored
 JOYSTICK_POSITION_KP = 4.0
 
