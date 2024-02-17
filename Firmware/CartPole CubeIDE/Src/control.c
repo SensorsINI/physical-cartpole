@@ -11,7 +11,7 @@
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
 
-unsigned short current_controller = OnChipController_NeuralImitator;
+unsigned short current_controller = OnChipController_PID;
 
 bool correct_motor_dynamics = true;
 
