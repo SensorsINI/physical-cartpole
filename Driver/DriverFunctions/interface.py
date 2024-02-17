@@ -256,11 +256,12 @@ class Interface:
         return crc8
 
 import subprocess
-def set_ftdi_latency_timer(serial_port_number):
+def set_ftdi_latency_timer(SERIAL_PORT):
+    serial_port = SERIAL_PORT.split('/')[-1]
     print('\nSetting FTDI latency timer')
     ftdi_timer_latency_requested_value = 1
-    command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/ttyUSB{serial_port_number}/latency_timer'"
-    command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/ttyUSB{serial_port_number}/latency_timer'
+    command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/{serial_port}/latency_timer'"
+    command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/{serial_port}/latency_timer'
     try:
         subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
