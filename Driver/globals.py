@@ -8,6 +8,8 @@ from Driver.DriverFunctions.interface import get_serial_port
 # PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_CORRECTION_X, ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_HANGING_POLOLU, POSITION_ENCODER_RANGE
 # Where X is ORIGNAL or POLOLU
 
+CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"
+
 DEMO_PROGRAM = False
 
 ##### Logging and Recordings #####
@@ -93,8 +95,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP = 4.0
 
 ##### Serial Port #####
-serial_port_number = 0  # 4 for Santiago Sevilla, 0 for linux PC
-SERIAL_PORT = get_serial_port(serial_port_number)
+SERIAL_PORT = get_serial_port(chip_type=CHIP)
 
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 

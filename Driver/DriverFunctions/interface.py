@@ -19,23 +19,67 @@ CMD_SET_TARGET_POSITION = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
 
-def get_serial_port(serial_port_number=''):
+def get_serial_port(chip_type="STM", serial_port_number=None):
+
+    """
+    Finds the cartpole serial port, or throws exception if not present
+    :param chip_type: "ZYNQ" or "STM" depending on which one you use
+    :param serial_port_number: Only used if serial port not found using chip type, can be left None, for normal operation
+    :returns:  the string name of the COM port
+    """
+
     import platform
     import subprocess
-    serial_port_number = str(serial_port_number)
+
+    from serial.tools import list_ports
+    ports = list(serial.tools.list_ports.comports())
+    serial_ports_names = []
+    print('\nAvailable serial ports:')
+    for port in ports:
+        serial_ports_names.append(port.device)
+        print(f'port={port.device} description={port.description}')
+    print()
+
+    if chip_type == "STM":
+        expected_description = 'USB Serial'
+    elif chip_type == "ZYNQ":
+        expected_description = 'Digilent Adept USB Device - Digilent Adept USB Device'
+    else:
+        raise ValueError(f'Unknown chip type: {chip_type}')
+
     SERIAL_PORT = None
-    try:
-        system = platform.system()
-        if system == 'Darwin':  # Mac
-            SERIAL_PORT = subprocess.check_output(f'ls -a /dev/tty.usbserial*{serial_port_number}', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
-        elif system == 'Linux':
-            SERIAL_PORT = '/dev/ttyUSB' + serial_port_number  # You might need to change the USB number
-        elif system == 'Windows':
-            SERIAL_PORT = 'COM' + serial_port_number
+    for port in ports:
+        if port.description == expected_description:
+            SERIAL_PORT = port.device
+            break
+    if SERIAL_PORT is None:
+        message = f"Searching serial port by its expected description - {expected_description} - not successful."
+        if serial_port_number is not None:
+            print(message)
         else:
-            raise NotImplementedError('For system={} connection to serial port is not implemented.')
-    except Exception as err:
-        print(err)
+            raise Exception(message)
+
+    if SERIAL_PORT is None and serial_port_number is not None:
+        print(f"Trying to connect to a serial port with requested number ({serial_port_number})")
+        serial_port_number = str(serial_port_number)
+
+        try:
+            system = platform.system()
+            if system == 'Darwin':  # Mac
+                SERIAL_PORT = subprocess.check_output(f'ls -a /dev/tty.usbserial*{serial_port_number}', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
+            elif system == 'Linux':
+                SERIAL_PORT = '/dev/ttyUSB' + serial_port_number  # You might need to change the USB number
+            elif system == 'Windows':
+                SERIAL_PORT = 'COM' + serial_port_number
+            else:
+                raise NotImplementedError('For system={} connection to serial port is not implemented.')
+        except Exception as err:
+            print(err)
+
+        if SERIAL_PORT not in serial_ports_names:
+            raise ValueError(f'Tried to select a serial port {SERIAL_PORT} which is not on the list of available ports.\n'
+                             f'Available ports are: {serial_ports_names}')
+
 
     return SERIAL_PORT
 
