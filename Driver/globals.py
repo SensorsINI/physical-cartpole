@@ -5,7 +5,7 @@ import numpy as np
 from Driver.DriverFunctions.interface import get_serial_port
 
 # to switch between STM and Zybo you need to change here:
-# PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_CORRECTION_X, ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_HANGING_POLOLU
+# PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_CORRECTION_X, ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_HANGING_POLOLU, POSITION_ENCODER_RANGE
 # Where X is ORIGNAL or POLOLU
 
 DEMO_PROGRAM = False
