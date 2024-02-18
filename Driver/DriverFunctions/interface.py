@@ -57,8 +57,11 @@ def get_serial_port(chip_type="STM", serial_port_number=None):
             raise Exception(message)
 
     if SERIAL_PORT is None and serial_port_number is not None:
-        print(f"Trying to connect to a serial port with requested number ({serial_port_number})\n")
-        SERIAL_PORT = serial_ports_names[serial_port_number]
+        if len(serial_ports_names)==0:
+            print(f'No serial ports')
+        else:
+            print(f"Setting serial port with requested number ({serial_port_number})\n")
+            SERIAL_PORT = serial_ports_names[serial_port_number]
 
 
     return SERIAL_PORT
@@ -197,7 +200,7 @@ class Interface:
             c = self.device.read()
             # Timeout: reopen device, start stream, reset msg and try again
             if len(c) == 0:
-                print('\nReconnecting.')
+                print('\n_receive_reply: no response; reconnecting.')
                 self.device.close()
                 self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
                 self.clear_read_buffer()
