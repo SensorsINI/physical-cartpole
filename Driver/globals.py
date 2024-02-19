@@ -35,7 +35,7 @@ if CHIP == 'STM':
     # Only applied if CORRECT_MOTOR_DYNAMICS is True
     # Otherwise Q is multiplied by MOTOR_FULL_SCALE_SAFE
     MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026, 839.026)
-    MOTOR_CORRECTION_POLOLU = (4898.18, 168.09, 123.46)
+    MOTOR_CORRECTION_POLOLU = (4181.47, 505.0, 334.43)
     # The 12-bit ADC has a range of 4096 units
     # However due to potentiometer dead angle these 4096 units are mapped on less than full circle
     # The full circle in adc units was determined
