@@ -5,7 +5,7 @@ paths:
   # PATH HAS TO END WITH A SOLIDUS ("/") CHARACTER
   path_to_experiment: 'UpDown/'
   PATH_TO_EXPERIMENT_FOLDERS: './SI_Toolkit_ASF/Experiments/'  # Path where the experiments data is stored
-
+  DATA_FOLDER:                    'Recordings'
 training_default:
   # For training closed loop dynamics model:
 #  control_inputs: ['Q']
@@ -28,7 +28,9 @@ training_default:
     INITIAL: 1.0e-2
     MINIMAL: 1.0e-5
     PATIENCE: 1
+    REDUCE_LR_ON_PLATEAU: True
     DECREASE_FACTOR: 0.316 # sqrt(0.1)
+    MIN_DELTA: 1.0e-4
   WASH_OUT_LEN: 10
   POST_WASH_OUT_LEN: 20
   ON_FLY_DATA_GENERATION: False
@@ -37,3 +39,52 @@ training_default:
   USE_NNI: False  # Decide if you want to use NNI package
   CONSTRUCT_NETWORK: 'with cells'  # Matters only for Pytorch; 'with cells' or 'with modules'
   VALIDATE_ALSO_ON_TRAINING_SET: false
+  PLOT_WEIGHTS_DISTRIBUTION: false # CalculTFate histograms of weights and biases and activations, take long time
+
+REGULARIZATION:   # Implemented only for TF, no regularization for Pytorch
+  ACTIVATED: false
+  KERNEL:  # For all layers
+    l1: 0.01
+    l2: 0.01
+  BIAS:  # For all layers
+    l1: 0.01
+    l2: 0.01
+  ACTIVITY:  # Not for last layer, this has activity regularization set to 0
+    l1: 0.00
+    l2: 0.00
+
+
+QUANTIZATION: # Not implemented yet
+  ACTIVATED: False
+  ACTIVATION:
+    bits: 6
+  KERNEL:
+    bits: 11
+    integer: 6
+    symmetric: True
+  BIAS:
+    bits: 11
+    integer: 6
+    symmetric: True
+  RECURRENT:
+    bits: 11
+    integer: 6
+    symmetric: True
+
+PRUNING: # TF only for the moment
+  ACTIVATED: false
+  PRUNING_PARAMS:
+    PRUNING_SCHEDULE: 'CONSTANT_SPARSITY'
+  PRUNING_SCHEDULES:
+    CONSTANT_SPARSITY:
+      target_sparsity: 0.75
+      begin_step_in_epochs: 1.0  # fraction of epoch allowed
+      end_step_in_training_fraction: 1.0
+      frequency_per_epoch: 100.0 # fraction of epoch allowed
+    POLYNOMIAL_DECAY:
+      initial_sparsity: 0.0
+      final_sparsity: 0.75
+      begin_step_in_epochs: 1.0  # fraction of epoch allowed
+      end_step_in_training_fraction: 0.8
+      power: 3.0
+      frequency_per_epoch: 1000 # fraction of epoch allowed
