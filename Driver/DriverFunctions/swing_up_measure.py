@@ -1,6 +1,7 @@
 # measurements from cartpole, controlled by state machine.
 # control.py calls update_state() if state is not 'idle'
 import time
+import threading
 from globals import *
 from CartPole.state_utilities import (
     ANGLE_IDX,
@@ -14,11 +15,11 @@ from DriverFunctions.csv_helpers import csv_init
 from DriverFunctions.TargetPositionGenerator import TargetPositionGenerator
 from DriverFunctions.PID_Position import controller_PID_position
 
-NUMBER_OF_SWINGUPS = 10
+NUMBER_OF_SWINGUPS = 100
 STABLE_ANGLE_RAD = 0.2
-TIME_STABLE = 15
+TIME_STABLE = 16
 RESET_Q = 0.5
-TIME_STABLE_DOWN = 10.0
+TIME_STABLE_DOWN = 8.0
 
 class SwingUpMeasure:
     def __init__(self, driver):
@@ -63,23 +64,29 @@ class SwingUpMeasure:
         elif self.state == 'start':
             self.Q = self.driver.Q
 
-            if self.first_start:
+            def f():
                 self.driver.csvfilename, self.driver.csvfile, self.driver.csvwriter = csv_init(
                     csv_name='Experiment-' + str(self.counter_swingup),
                     controller_name=self.driver.controller.controller_name)
-                self.TPG.set_experiment()
-                self.first_start = False
-            self.target_position = np.random.uniform(low=-0.18, high=0.18)
+
+            self.driver.csv_init_thread = threading.Thread(target=f)
+            self.driver.csv_init_thread.start()
+            self.driver.csv_init_thread.join()
+            self.driver.loggingEnabled = True
+
+            self.TPG.set_experiment()
+            self.first_start = False
+            self.target_position = np.random.uniform(low=-0.12, high=0.12)
             self.start_angle = np.random.uniform(low=0.5,high=0.8) * np.pi
             self.start_angleD = np.random.uniform(low=0.5,high=0.8) * np.pi
             self.state = 'reset'
 
-            self.driver.target_equilibrium = -1
+            self.driver.CartPoleInstance.target_equilibrium = -1
 
         # Move Back to Starting Position
         elif self.state == 'reset':
 
-            self.driver.target_equilibrium = -1
+            self.driver.CartPoleInstance.target_equilibrium = -1
             self.driver.controlEnabled = True
             self.Q = self.driver.Q
 
@@ -93,7 +100,7 @@ class SwingUpMeasure:
                 self.state = 'wait inbetween'
 
         elif self.state == 'wait inbetween':
-            self.driver.target_equilibrium = -1
+            self.driver.CartPoleInstance.target_equilibrium = -1
             self.driver.controlEnabled = True
             self.Q = self.driver.Q
             self.target_position = self.TPG.get_target_position()
@@ -108,15 +115,16 @@ class SwingUpMeasure:
         # Wait until 2s stable
         elif self.state == 'swingup':
 
-            self.driver.target_equilibrium = 1
+            self.driver.CartPoleInstance.target_equilibrium = 1
 
-            self.driver.loggingEnabled = True
             self.target_position = self.TPG.get_target_position()
 
             if self.time - self.time_start > TIME_STABLE:
                 self.counter_swingup += 1
                 self.Q = self.driver.Q
-
+                self.driver.loggingEnabled = False
+                self.driver.csvfile.close()
+                self.Q = self.driver.Q = 0.0
                 if self.counter_swingup >= NUMBER_OF_SWINGUPS:
                     self.state = 'idle'
                     self.driver.loggingEnabled = False
