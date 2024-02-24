@@ -20,6 +20,7 @@ STABLE_ANGLE_RAD = 0.2
 TIME_STABLE = 16
 RESET_Q = 0.5
 TIME_STABLE_DOWN = 8.0
+RECALIBRATE_EVERY_N_SWING_UPS = 8
 
 class SwingUpMeasure:
     def __init__(self, driver):
@@ -125,6 +126,10 @@ class SwingUpMeasure:
                 self.driver.loggingEnabled = False
                 self.driver.csvfile.close()
                 self.Q = self.driver.Q = 0.0
+                if self.counter_swingup % RECALIBRATE_EVERY_N_SWING_UPS == 0:
+                    print("\nCalibrating motor position.... ")
+                    self.driver.InterfaceInstance.calibrate()
+                    print("Done calibrating")
                 if self.counter_swingup >= NUMBER_OF_SWINGUPS:
                     self.state = 'idle'
                     self.driver.loggingEnabled = False
