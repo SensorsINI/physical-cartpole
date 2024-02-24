@@ -7,9 +7,7 @@
 
 #include "fixed_point.hpp"
 
-#ifdef XPAR_EDGEDRNN_WRAPPER_0_BASEADDR
 #include "EdgeDRNN/EdgeDRNN_Network.h"
-#endif
 
 #include "HLS4ML/HLS4ML_Network.h"
 
@@ -77,9 +75,8 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 		edgedrnn_stim[7] = 0; // FIXME: This is probably just setting the target equilibrium or position to 0
 
 		// FIXME: I want to change the interface here - it should be like for HLS4ML so that it can be used for car.
-		#ifdef XPAR_EDGEDRNN_WRAPPER_0_BASEADDR
 		predic_floating_point = EdgeDRNN_Network_Evaluate((short*) (edgedrnn_stim));
-		#endif
+
 		for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS;	neuron_idx++)
 		{
 			*((float          *)&network_output_buffer[neuron_idx*DATA_WORD_BYTES]) = predic_floating_point;
@@ -118,9 +115,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 
 
 void Neural_Imitator_ReleaseResources(){
-	#ifdef XPAR_EDGEDRNN_WRAPPER_0_BASEADDR
 	EdgeDRNN_Network_ReleaseResources();
-	#endif
 }
 
 float neural_imitator_cartpole_step(float angle, float angleD, float angle_cos, float angle_sin, float position, float positionD, float target_position, float time)
