@@ -12,7 +12,7 @@ bool CONTROL_SYNC									=		true;
 unsigned short ANGLE_MEASUREMENT_INTERVAL_US		= 		200;
 
 const unsigned short ANGLE_AVERAGE_LEN_MAX			=		32;
-unsigned short ANGLE_AVERAGE_LEN					=		16;		// Number of samples to average over to determine angular displacement (max is 32)
+unsigned short ANGLE_AVERAGE_LEN					=		1;		// Number of samples to average over to determine angular displacement (max is 32)
 unsigned short MAX_ADC_STEP							=		20;		// If jump between two consecutive ADC measurements is bigger than this, the measurement counts as invalid
 
 
@@ -35,13 +35,13 @@ const int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
 
 #elif defined(ZYNQ)
 
-float MOTOR_CORRECTION[3] 							=		{1480.14, 98.00, 158.89}; // Pololu
+float MOTOR_CORRECTION[3] 							=		{1451.899,  175.347,  116.122}; // Pololu
 
-float CONTROL_ANGLE_SET_POINT_POLULU				=		-2919.82;
-float CONTROL_ANGLE_SET_POINT_ORIGINAL				=		-2919.82;
+float CONTROL_ANGLE_SET_POINT_POLULU				=		-2875.835;
+float CONTROL_ANGLE_SET_POINT_ORIGINAL				=		-2875.835;
 
-float ANGLE_NORMALIZATION_FACTOR					=		0.0015326187926694992;
-float POSITION_NORMALIZATION_FACTOR					=		0.00009510086455331;
+float ANGLE_NORMALIZATION_FACTOR					=		0.0015442848171956895;
+float POSITION_NORMALIZATION_FACTOR					=		0.0000841657806278922;
 
 const unsigned int CLOCK_FREQ						=		333333343;
 const int PWM_PERIOD_IN_CLOCK_CYCLES		=		2500;

@@ -41,18 +41,18 @@ if CHIP == 'STM':
     # The full circle in adc units was determined
     # by readout difference between up and down position on the side not including dead angle
     ANGLE_360_DEG_IN_ADC_UNITS = 4271.34
-    ANGLE_HANGING_POLOLU = 929.5  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 875.0  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
     PWM_PERIOD_IN_CLOCK_CYCLES = 2500
-    MOTOR_CORRECTION_POLOLU = (1604.48, 49.15, -91.24)  # Explanation - see above, same as for STM case
+    MOTOR_CORRECTION_POLOLU = (1451.899,  175.347,  116.122)  # Explanation - see above, same as for STM case
     ANGLE_360_DEG_IN_ADC_UNITS = 4068.67  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 857.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
+    ANGLE_HANGING_POLOLU = 841.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
     POSITION_ENCODER_RANGE = 4705  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
 
