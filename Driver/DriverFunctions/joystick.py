@@ -3,9 +3,9 @@ import pygame  # pip install -U pygame
 # older:  conda install -c cogsci pygame; maybe because it only is supplied for earlier python, might need conda install -c evindunn pygame ; sudo apt-get install libsdl-ttf2.0-0
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 from globals import JOYSTICK_POSITION_KP
-from others.p_globals import usable_track_length
+from CartPoleSimulation.CartPole.cartpole_parameters import TrackHalfLength
 
-
+usable_track_length = 2.0 * TrackHalfLength
 def setup_joystick():
     pygame.init()
     joystick.init()
