@@ -302,6 +302,8 @@ class PhysicalCartPoleDriver:
         if self.controlEnabled or self.current_measure.is_running():
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
+        if self.firmwareControl:
+            self.actualMotorCmd = self.command
         # Logging, Plotting, Terminal
         if self.loggingEnabled:
             self.write_csv_row()
