@@ -15,7 +15,7 @@ int control_signal_to_motor_command(float Q, float positionD, bool correct_motor
     if (correct_motor_dynamics) {
 
     	actualMotorCmd_float = Q * MOTOR_CORRECTION[0];
-        if (actualMotorCmd != 0) {
+        if (actualMotorCmd_float != 0) {
             if (positionD > 0) {
             	actualMotorCmd_float += MOTOR_CORRECTION[1];
             } else if (positionD < 0) {
