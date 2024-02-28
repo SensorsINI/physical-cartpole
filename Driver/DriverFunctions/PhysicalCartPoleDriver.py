@@ -126,10 +126,9 @@ class PhysicalCartPoleDriver:
         # State
         self.s = create_cartpole_state()
         self.angle_raw = 0
+        self.angleD_raw = 0
         self.angle_raw_stable = None
-        self.angle_raw_prev = None
         self.angleD_raw_stable = None
-        self.angleD_raw_prev = None
         self.angleD_raw_buffer = np.zeros((0))
         self.angle_raw_sensor = None
         self.angleD_raw_sensor = None
@@ -194,6 +193,12 @@ class PhysicalCartPoleDriver:
         self.safety_switch_counter = 0
 
         self.angle_deviation_finetune = 0.0
+
+        self.derivative_timestep_in_samples = ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES
+        self.buffer_size_for_derivative_calculation = self.derivative_timestep_in_samples + 1
+        self.angle_history = [-1] * self.buffer_size_for_derivative_calculation  # Buffer to store past angles
+        self.frozen_history = [0] * self.buffer_size_for_derivative_calculation  # Buffer to store frozen states
+        self.angle_idx_for_derivative_calculation = 0
 
     def run(self):
         self.setup()
@@ -757,13 +762,22 @@ class PhysicalCartPoleDriver:
 
     def treat_deadangle_with_derivative(self):
 
-        # Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
-        if self.angle_raw_prev is not None and ((self.invalid_steps > 5 and abs(self.wrap_local(self.angle_raw_prev)) < 200) or (abs(self.wrap_local(self.angle_raw - self.angle_raw_prev)) > 500 and self.frozen < 3)):
+        ADC_RANGE = 4096
+
+        # Calculate the index for the k-th past angle
+        kth_past_index = (self.angle_idx_for_derivative_calculation - self.derivative_timestep_in_samples + self.buffer_size_for_derivative_calculation) % self.buffer_size_for_derivative_calculation
+        kth_past_angle = self.angle_history[kth_past_index]
+        kth_past_frozen = self.frozen_history[kth_past_index]
+
+        if kth_past_angle != -1 and (
+            (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
+            (abs(self.wrap_local(self.angle_raw - kth_past_angle)) > ADC_RANGE / 8 and kth_past_frozen < 3)
+        ):
             self.frozen += 1
             self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
             self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
         else:
-            self.angleD_raw = self.wrap_local(self.angle_raw - self.angle_raw_stable) / (self.frozen + 1) if self.angle_raw_stable is not None else 0
+            self.angleD_raw = self.wrap_local(self.angle_raw - kth_past_angle) / ((self.derivative_timestep_in_samples - 1) + kth_past_frozen + 1) if kth_past_angle != -1 else 0
             self.angle_raw_stable = self.angle_raw
             self.angleD_raw_stable = self.angleD_raw
             self.frozen = 0
@@ -771,32 +785,10 @@ class PhysicalCartPoleDriver:
         self.angle_raw_sensor = self.angle_raw
         self.angleD_raw_sensor = self.angleD_raw
 
-        # Polyfit AngleD if filled buffer and inside Anomaly (close to 0 and small angleD_raw)
-        if POLYFIT_ANGLED:
-            MAX_BUFFER_LENGTH = 10 # 10 * 20ms = 200ms
-            if len(self.angleD_raw_buffer) >= 2:
-                self.angleD_fitted = polyfit(self.angleD_raw_buffer)
-                if abs(self.wrap_local(self.angle_raw_prev)) < 200 and self.fitted < 3 and len(self.angleD_raw_buffer) >= MAX_BUFFER_LENGTH:
-                    if abs(self.angleD_fitted) < 500 and (abs(self.wrap_local(self.angleD_fitted - self.angleD_raw)) > (20 + 12 * self.fitted) or abs(self.wrap_local(self.angle_raw_prev-self.angle_raw)) < 25 or abs(self.wrap_local(self.angleD_raw_prev-self.angleD_raw)) > 25):
-                        self.fitted += 1
-                        self.angleD_raw = self.angleD_fitted
-                    else:
-                        if self.fitted:
-                            self.angleD_raw_buffer = np.zeros((0))
-                        self.fitted = 0
-                else:
-                    if self.fitted:
-                        self.angleD_raw_buffer = np.zeros((0))
-                    self.fitted = 0
-            else:
-                self.fitted = 0
-
-            self.angleD_raw_buffer = np.append(self.angleD_raw_buffer, self.angleD_raw)
-            self.angleD_raw_buffer = self.angleD_raw_buffer[-(MAX_BUFFER_LENGTH+self.fitted):]
-
-        # Save previous Values
-        self.angle_raw_prev = self.angle_raw
-        self.angleD_raw_prev = self.angleD_raw
+        # Save current angle in the history buffer and update index
+        self.angle_history[self.angle_idx_for_derivative_calculation] = self.angle_raw
+        self.frozen_history[self.angle_idx_for_derivative_calculation] = self.frozen
+        self.angle_idx_for_derivative_calculation = (self.angle_idx_for_derivative_calculation + 1) % self.buffer_size_for_derivative_calculation  # Move to next index, wrap around if necessary
 
 
     def pack_features_into_state_variable(self, position, angle, positionD, angleD):

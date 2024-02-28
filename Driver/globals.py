@@ -101,9 +101,7 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 
 ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_360_DEG_IN_ADC_UNITS
 
-POLYFIT_ANGLED = False
-# POLYFIT_ANGLED = True if 'mppi' in CONTROLLER_NAME and PREDICTOR in ['RNN'] else False  # TODO: check if necessary for new controller, it seems it does not help for RNN trained only on simulated data
-
+ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES = 1  # TODO: Python only, hardware sets it separately.
 ##### Position Conversion #####
 
 POSITION_NORMALIZATION_FACTOR = TrackHalfLength * 2 / POSITION_ENCODER_RANGE  # 0.000084978540773
