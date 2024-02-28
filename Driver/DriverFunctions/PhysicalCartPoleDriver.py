@@ -137,8 +137,8 @@ class PhysicalCartPoleDriver:
         self.frozen = 0
         self.fitted = 0
         self.position_raw = 0
-        self.anglePrev = 0.0
         self.positionPrev = None
+        self.positionD_raw = 0
         self.angleDPrev = 0.0
         self.positionDPrev = 0.0
         self.angleErr = 0.0
@@ -199,6 +199,11 @@ class PhysicalCartPoleDriver:
         self.angle_history = [-1] * self.buffer_size_for_derivative_calculation  # Buffer to store past angles
         self.frozen_history = [0] * self.buffer_size_for_derivative_calculation  # Buffer to store frozen states
         self.angle_idx_for_derivative_calculation = 0
+
+        self.angleD_buffer = np.zeros(ANGLE_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for angle derivatives
+        self.positionD_buffer = np.zeros(POSITION_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for position derivatives
+        self.angleD_median_buffer_index = 0
+        self.positionD_median_buffer_index = 0
 
     def run(self):
         self.setup()
@@ -690,38 +695,82 @@ class PhysicalCartPoleDriver:
 
         self.treat_deadangle_with_derivative()  # Moved to hardware
 
-        angle, position = self.convert_angle_and_position_skale()
+        self.filter_differences()
+
+        angle, position, angle_difference, position_difference = self.convert_angle_and_position_skale()
 
         self.time_measurement()
 
         self.check_latency_violation()
 
-        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
-        position_difference = (position - self.positionPrev if self.positionPrev is not None else 0)
         angleDerivative, positionDerivative = self.calculate_first_derivatives(angle_difference, position_difference)
-        # Keep values of angle and position for next timestep for derivative calculation
-        self.positionPrev = position
 
         # Pack the state into interface acceptable for the self.controller
         self.pack_features_into_state_variable(position, angle, positionDerivative, angleDerivative)
 
         self.add_latency()
 
-    def calculate_first_derivatives(self, angle_difference, position_difference):
-        # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = angle_difference / self.delta_time  # rad/self.s
-        if self.positionPrev is not None:
-            positionDerivative = position_difference / self.delta_time  # m/self.s
-        else:
-            positionDerivative = 0
+    def treat_deadangle_with_derivative(self):
 
-        return angleDerivative, positionDerivative
+        ADC_RANGE = 4096
+
+        # Calculate the index for the k-th past angle
+        kth_past_index = (self.angle_idx_for_derivative_calculation - self.derivative_timestep_in_samples + self.buffer_size_for_derivative_calculation) % self.buffer_size_for_derivative_calculation
+        kth_past_angle = self.angle_history[kth_past_index]
+        kth_past_frozen = self.frozen_history[kth_past_index]
+
+        if kth_past_angle != -1 and (
+            (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
+            (abs(self.wrap_local(self.angle_raw - kth_past_angle)) > ADC_RANGE / 8 and kth_past_frozen < 3)
+        ):
+            self.frozen += 1
+            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
+            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
+        else:
+            self.angleD_raw = self.wrap_local(self.angle_raw - kth_past_angle) / ((self.derivative_timestep_in_samples - 1) + kth_past_frozen + 1) if kth_past_angle != -1 else 0
+            self.angle_raw_stable = self.angle_raw
+            self.angleD_raw_stable = self.angleD_raw
+            self.frozen = 0
+
+        self.angle_raw_sensor = self.angle_raw
+        self.angleD_raw_sensor = self.angleD_raw
+
+        # Save current angle in the history buffer and update index
+        self.angle_history[self.angle_idx_for_derivative_calculation] = self.angle_raw
+        self.frozen_history[self.angle_idx_for_derivative_calculation] = self.frozen
+        self.angle_idx_for_derivative_calculation = (self.angle_idx_for_derivative_calculation + 1) % self.buffer_size_for_derivative_calculation  # Move to next index, wrap around if necessary
+
+        # Position
+        self.positionD_raw = (self.position_raw - self.positionPrev if self.positionPrev is not None else 0)
+        self.positionPrev = self.position_raw
+
+
+    def filter_differences(self):
+
+        # Update angleD buffer with current value
+        self.angleD_buffer[self.angleD_median_buffer_index] = self.angleD_raw
+        self.angleD_median_buffer_index = (self.angleD_median_buffer_index + 1) % ANGLE_D_MEDIAN_LEN
+
+        # Update positionD buffer with current value
+        self.positionD_buffer[self.positionD_median_buffer_index] = self.positionD_raw
+        self.positionD_median_buffer_index = (self.positionD_median_buffer_index + 1) % POSITION_D_MEDIAN_LEN
+
+        # Calculate medians using the updated buffers
+        angle_d_median = np.median(self.angleD_buffer)
+        position_d_median = np.median(self.positionD_buffer)
+
+        self.angleD_raw = angle_d_median
+        self.positionD_raw = position_d_median
 
     def convert_angle_and_position_skale(self):
         # Convert position and angle to physical units
         angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
         position = self.position_raw * POSITION_NORMALIZATION_FACTOR
-        return angle, position
+
+        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
+        position_difference = self.positionD_raw * POSITION_NORMALIZATION_FACTOR
+
+        return angle, position, angle_difference, position_difference
 
 
     def time_measurement(self):
@@ -760,35 +809,13 @@ class PhysicalCartPoleDriver:
             self.latency_violation = 1
             self.latency_violations += 1
 
-    def treat_deadangle_with_derivative(self):
 
-        ADC_RANGE = 4096
+    def calculate_first_derivatives(self, angle_difference, position_difference):
+        # Calculating derivatives (cart velocity and angular velocity of the pole)
+        angleDerivative = angle_difference / self.delta_time  # rad/self.s
+        positionDerivative = position_difference / self.delta_time  # m/self.s
 
-        # Calculate the index for the k-th past angle
-        kth_past_index = (self.angle_idx_for_derivative_calculation - self.derivative_timestep_in_samples + self.buffer_size_for_derivative_calculation) % self.buffer_size_for_derivative_calculation
-        kth_past_angle = self.angle_history[kth_past_index]
-        kth_past_frozen = self.frozen_history[kth_past_index]
-
-        if kth_past_angle != -1 and (
-            (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
-            (abs(self.wrap_local(self.angle_raw - kth_past_angle)) > ADC_RANGE / 8 and kth_past_frozen < 3)
-        ):
-            self.frozen += 1
-            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
-            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
-        else:
-            self.angleD_raw = self.wrap_local(self.angle_raw - kth_past_angle) / ((self.derivative_timestep_in_samples - 1) + kth_past_frozen + 1) if kth_past_angle != -1 else 0
-            self.angle_raw_stable = self.angle_raw
-            self.angleD_raw_stable = self.angleD_raw
-            self.frozen = 0
-
-        self.angle_raw_sensor = self.angle_raw
-        self.angleD_raw_sensor = self.angleD_raw
-
-        # Save current angle in the history buffer and update index
-        self.angle_history[self.angle_idx_for_derivative_calculation] = self.angle_raw
-        self.frozen_history[self.angle_idx_for_derivative_calculation] = self.frozen
-        self.angle_idx_for_derivative_calculation = (self.angle_idx_for_derivative_calculation + 1) % self.buffer_size_for_derivative_calculation  # Move to next index, wrap around if necessary
+        return angleDerivative, positionDerivative
 
 
     def pack_features_into_state_variable(self, position, angle, positionD, angleD):
