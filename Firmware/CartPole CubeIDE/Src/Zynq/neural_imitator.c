@@ -118,14 +118,13 @@ void Neural_Imitator_ReleaseResources(){
 	EdgeDRNN_Network_ReleaseResources();
 }
 
-float neural_imitator_cartpole_step(float angle, float angleD, float angle_cos, float angle_sin, float position, float positionD, float target_position, float time)
+float neural_imitator_cartpole_step(float angle, float angleD, float angle_cos, float angle_sin, float position, float positionD, float target_equilibrium, float target_position, float time)
 {
 	// Define input and output buffers
 	// Load proper values into input buffer
 	static unsigned char network_input_buff[NETWORK_INPUT_SIZE_IN_BYTES];
 	static unsigned char network_output_buff[NETWORK_OUTPUT_SIZE_IN_BYTES];
 
-	float target_equilibrium = 1.0;
 //	float network_input_buff[] = {angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position};
 
 	*((float *)&network_input_buff[0]) = angleD;

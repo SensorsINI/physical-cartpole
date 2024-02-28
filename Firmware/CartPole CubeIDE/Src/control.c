@@ -103,6 +103,7 @@ void CONTROL_Loop(void)
 
 }
 float Q;
+float target_equilibrium = 1.0;
 float target_position = 0.0;
 
 void CONTROL_BackgroundTask(void)
@@ -175,7 +176,7 @@ void CONTROL_BackgroundTask(void)
 			}
 			case OnChipController_NeuralImitator:
 			{
-				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_position, time_current_measurement/1000000.0);
+				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time_current_measurement/1000000.0);
 				break;
 			}
 			default:
