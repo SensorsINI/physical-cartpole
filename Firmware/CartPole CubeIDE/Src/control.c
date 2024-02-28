@@ -381,7 +381,7 @@ void cmd_StreamOutput(bool en)
 
 void cmd_Calibrate(const unsigned char * buff, unsigned int len)
 {
-	unsigned short SPEED_CALIBRATION = (float)(MOTOR_FULL_SCALE) * 0.25;
+	unsigned short SPEED_CALIBRATION = (float)(MOTOR_FULL_SCALE) * 0.3;
 	int pos;
 	int diff;
 	float fDiff;
