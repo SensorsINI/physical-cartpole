@@ -151,6 +151,8 @@ void CONTROL_BackgroundTask(void)
 	    }
 	    position_previous = position_short;
 
+	    average_derivatives(&angleD_int, &positionD_short);
+
 	    float angle_cos, angle_sin;
 
 	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;

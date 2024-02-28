@@ -8,6 +8,7 @@
 #ifndef ANGLE_PROCESSING_H_
 #define ANGLE_PROCESSING_H_
 
+void average_derivatives(int* angleDPtr, short* positionDPtr);
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angleDPtr, int* invalid_stepPtr);
 int anomaly_detection(int* angleSamples, unsigned short angleSampIndex, unsigned short angle_averageLen);
 void treat_deadangle_with_derivative(int* anglePtr, int invalid_step);
