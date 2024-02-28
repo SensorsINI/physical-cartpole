@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from Driver.DriverFunctions.interface import get_serial_port
-from others.p_globals import TrackHalfLength
+from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "STM"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
