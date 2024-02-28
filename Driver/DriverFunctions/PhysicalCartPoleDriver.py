@@ -254,7 +254,6 @@ class PhysicalCartPoleDriver:
 
         while not self.terminate_experiment:
             self.experiment_sequence()
-            # self.experiment_sequence_minimal()
 
 
     def experiment_sequence(self):
@@ -325,57 +324,6 @@ class PhysicalCartPoleDriver:
 
         self.end = time.time()
         self.python_latency = self.end - self.InterfaceInstance.start
-
-    def experiment_sequence_minimal(self):
-
-        # CTN = compared to normal experiment sequence
-
-        # CTN: Minimal keyboard input and printing to terminal, but in general you need
-        if self.kbAvailable & self.kb.kbhit():
-            self.new_console_output = True
-
-            c = self.kb.getch()
-            if c == 'k':
-                if self.controlEnabled is False:
-                    self.controlEnabled = True
-
-                elif self.controlEnabled is True:
-                    self.controlEnabled = False
-
-        # This function will block at the rate of the control loop
-        (self.angle_raw, self.position_raw, _, self.command, self.invalid_steps, self.time_difference,
-         self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
-
-        self.angleD_raw = (self.wrap_local(self.angle_raw - self.angle_raw_stable) if self.angle_raw_stable is not None else 0)
-        self.angle_raw_stable = self.angle_raw
-
-        angle, position = self.convert_angle_and_position_skale()
-
-        self.time_measurement()
-
-        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
-        position_difference = (position - self.positionPrev if self.positionPrev is not None else 0)
-        angleDerivative, positionDerivative = self.calculate_first_derivatives(angle_difference, position_difference)
-        # Keep values of angle and position for next timestep for derivative calculation
-        self.positionPrev = position
-
-        # Pack the state into interface acceptable for the self.controller
-        self.pack_features_into_state_variable(position, angle, positionDerivative, angleDerivative)
-
-        # CTN: No setting of target position, it will be always 0.0
-
-        if self.controlEnabled:
-            self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
-                                                                       "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
-
-        # CTN: No joystick and measurement action
-
-            self.control_signal_to_motor_command()
-            self.motor_command_safety_check()
-            self.safety_switch_off()
-            self.InterfaceInstance.set_motor(self.actualMotorCmd)
-
-        # CTN: No plotting, saving csv nor writing to terminal, no connection to GUI
 
     def quit_experiment(self):
         # when x hit during loop or other loop exit
