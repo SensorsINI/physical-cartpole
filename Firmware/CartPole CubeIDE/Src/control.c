@@ -154,12 +154,12 @@ void CONTROL_BackgroundTask(void)
 	    float angle_cos, angle_sin;
 
 	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
-		angle = wrapLocal_rad((angle_int + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR);
+		angle = wrapLocal_rad(((angle_int/16) + ANGLE_DEVIATION) * (ANGLE_NORMALIZATION_FACTOR));
 	    position = position_short * POSITION_NORMALIZATION_FACTOR;
 
 	    angle_cos = cos(angle);
 	    angle_sin = sin(angle);
-	    angleD = (angleD_int*ANGLE_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+	    angleD = (angleD_int*(ANGLE_NORMALIZATION_FACTOR/16.0)/time_difference_between_measurement_s);
 	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
 
 		// Microcontroller Control Routine
@@ -218,7 +218,7 @@ void CONTROL_BackgroundTask(void)
 	    	prepare_message_to_PC_state(
 	    			buffer,
 					27,
-	    			angle_int,
+	    			angle_int/16,
 					position_short,
 					target_position,
 					motor_command,

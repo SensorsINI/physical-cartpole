@@ -34,5 +34,5 @@ unsigned short Goniometer_Read(void)
 //	unsigned short volt_raw = XAdcPs_GetAdcData(XADC_Driver_Ptr, XADCPS_CH_AUX_MAX);
 	unsigned short volt_raw = XMedian_filter_Get_median_o(XMedian_filter_Ptr);
 //	float volt_f = XSysMon_RawToExtVoltage(volt_raw);
-	return volt_raw/16;
+	return volt_raw;
 }
