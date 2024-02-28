@@ -51,7 +51,6 @@ static unsigned char txBuffer[200];
 
 void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
-void            cmd_Calibrate(const unsigned char * buff, unsigned int len);
 void 			cmd_ControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
@@ -299,7 +298,7 @@ void CONTROL_BackgroundTask(void)
 		case CMD_CALIBRATE:
 		{
 			unsigned int pktLen = rxBuffer[2];
-			cmd_Calibrate(rxBuffer, pktLen);
+			cmd_Calibrate();
 			break;
 		}
 		case CMD_CONTROL_MODE:
@@ -380,7 +379,7 @@ void cmd_StreamOutput(bool en)
 	enable_irq();
 }
 
-void cmd_Calibrate(const unsigned char * buff, unsigned int len)
+void cmd_Calibrate(void)
 {
 	unsigned short SPEED_CALIBRATION = (float)(MOTOR_FULL_SCALE) * 0.3;
 	int pos;

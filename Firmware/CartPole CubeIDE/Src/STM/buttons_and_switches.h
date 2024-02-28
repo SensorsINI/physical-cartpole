@@ -9,6 +9,7 @@
 #define KEY_7           7
 #define KEY_11          11
 #define KEY_12          12
+#define KEY_X           -1
 
 typedef void (*KEY_Callback)(void);
 

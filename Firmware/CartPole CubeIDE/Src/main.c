@@ -9,6 +9,7 @@ int main(void)
 	Buttons_And_Switches_Init();
 	Led_Init();
 	Button_SetAction(BUTTON_1, CONTROL_ToggleState);
+	Button_SetAction(BUTTON_2, cmd_Calibrate);  // Not implemented yet for STM
 	Goniometer_Init();
 	Encoder_Init();
 	Motor_Init();
