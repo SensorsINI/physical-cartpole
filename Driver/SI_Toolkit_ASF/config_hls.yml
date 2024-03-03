@@ -7,8 +7,12 @@ path_to_models: './SI_Toolkit_ASF/Experiments/'
 net_name: 'Dense-7IN-16H1-16H2-1OUT-0'
 batch_size: 1
 
-precision_layers: 'ap_fixed<16,6>'
-precision_activation: 'ap_fixed<16,6>'
+PRECISION:
+  input_and_output: 'ap_fixed<12,2>'
+  activations: 'ap_fixed<12,1>'
+  weights_and_biases: 'ap_fixed<12,4>'
+  intermediate_results: 'ap_fixed<18,6>'  # Also set as "Model precision" and used for all quantizations not included above
+
 Strategy: 'Resources'  # Resources or Latency
 ReuseFactor: 64
 
