@@ -1,9 +1,7 @@
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
-import math
 import time
-import numpy as np
 
 import os
 
@@ -13,7 +11,6 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
 from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.interface import Interface, set_ftdi_latency_timer
 from DriverFunctions.kbhit import KBHit
 from DriverFunctions.MeasurementsProtocols.step_response_measure import StepResponseMeasurement
@@ -27,19 +24,15 @@ from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, A
 from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
 from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
-from DriverFunctions.firmware_parameters import set_firmware_parameters
 from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
-import subprocess, multiprocessing, platform
+import subprocess
 from multiprocessing.connection import Client
 import sys
-import tensorflow as tf
-import serial
 from numba import jit
 from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
-from yaml import load, FullLoader
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
