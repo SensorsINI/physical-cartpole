@@ -16,10 +16,10 @@ from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.custom_serial_functions import setup_serial_connection
 from DriverFunctions.interface import Interface, set_ftdi_latency_timer
 from DriverFunctions.kbhit import KBHit
-from DriverFunctions.step_response_measure import StepResponseMeasurement
-from DriverFunctions.swing_up_measure import SwingUpMeasure
-from DriverFunctions.random_target_measure import RandomTargetMeasure
-from DriverFunctions.set_time_measure import SetTimeMeasure
+from DriverFunctions.MeasurementsProtocols.step_response_measure import StepResponseMeasurement
+from DriverFunctions.MeasurementsProtocols.swing_up_measure import SwingUpMeasure
+from DriverFunctions.MeasurementsProtocols.random_target_measure import RandomTargetMeasure
+from DriverFunctions.MeasurementsProtocols.set_time_measure import SetTimeMeasure
 from DriverFunctions.disturbance_measure import DisturbanceMeasure
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
