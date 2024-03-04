@@ -55,21 +55,21 @@ REGULARIZATION:   # Implemented only for TF, no regularization for Pytorch
 
 
 QUANTIZATION: # Not implemented yet
-  ACTIVATED: False
+  ACTIVATED: false
   QUANTIZATION_DATASET: 'ap_fixed<12,2>'  # 'float' or ap_fixed<x,y> # Corresponds to <bits, integer+1> of qkeras # This is input & output quantisation of the network
   ACTIVATION:
-    bits: 6
+    bits: 12
   KERNEL:
-    bits: 11
-    integer: 6
+    bits: 12
+    integer: 3
     symmetric: True
   BIAS:
-    bits: 11
-    integer: 6
+    bits: 12
+    integer: 3
     symmetric: True
   RECURRENT:
-    bits: 11
-    integer: 6
+    bits: 12
+    integer: 3
     symmetric: True
 
 PRUNING: # TF only for the moment
