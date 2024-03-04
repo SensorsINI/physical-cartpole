@@ -131,6 +131,7 @@ class PhysicalCartPoleDriver:
         self.position_offset = 0
         self.target_position = 0.0
         self.target_position_previous = 0.0
+        self.target_equilibrium_previous = 0 # -1 or 1, 0 is not a valid value, but this ensures that at the begining the target equilibrium is always updated
         self.base_target_position = 0.0
 
         # Joystick variable
@@ -763,6 +764,10 @@ class PhysicalCartPoleDriver:
             if self.target_position != self.target_position_previous:
                 self.InterfaceInstance.set_target_position(self.target_position)
                 self.target_position_previous = self.target_position
+
+            if self.CartPoleInstance.target_equilibrium != self.target_equilibrium_previous:
+                self.InterfaceInstance.set_target_equilibrium(self.CartPoleInstance.target_equilibrium)
+                self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
         
         self.CartPoleInstance.target_position = self.target_position
 

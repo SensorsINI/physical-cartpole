@@ -18,6 +18,7 @@ CMD_SET_MOTOR           = 0xC8
 CMD_SET_TARGET_POSITION = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
+CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 
 def get_serial_port(chip_type="STM", serial_port_number=None):
 
@@ -173,6 +174,12 @@ class Interface:
     def set_target_position(self, target_position):
         msg  = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
         msg += list(struct.pack('f', target_position))
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+    def set_target_equilibrium(self, target_equilibrium):
+        msg = [SERIAL_SOF, CMD_SET_TARGET_EQUILIBRIUM, 8]
+        msg += list(struct.pack('f', target_equilibrium))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
 

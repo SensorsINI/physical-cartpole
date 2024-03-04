@@ -18,6 +18,7 @@
 #define CMD_SET_TARGET_POSITION		0xC9
 #define CMD_COLLECT_RAW_ANGLE		0xCA
 #define CMD_STATE					0xCC
+#define CMD_SET_TARGET_EQUILIBRIUM  0xCD
 #define CMD_DO_NOTHING				0x00
 
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);

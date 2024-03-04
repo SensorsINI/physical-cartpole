@@ -350,6 +350,11 @@ void CONTROL_BackgroundTask(void)
 			target_position = *((float *)&rxBuffer[3]);
 			break;
 		}
+		case CMD_SET_TARGET_EQUILIBRIUM:
+		{
+			target_equilibrium = *((float *)&rxBuffer[3]);
+			break;
+		}
 		case CMD_COLLECT_RAW_ANGLE:
 		{
 			unsigned short length 	   = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];

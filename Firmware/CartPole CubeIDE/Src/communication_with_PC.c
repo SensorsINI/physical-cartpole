@@ -116,6 +116,15 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
+							case CMD_SET_TARGET_EQUILIBRIUM:
+							{
+								if (pktLen == 8)
+								{
+									current_command = CMD_SET_TARGET_EQUILIBRIUM;
+								}
+								break;
+							}
+
 							case CMD_COLLECT_RAW_ANGLE:
 							{
 								if (pktLen == 8)
