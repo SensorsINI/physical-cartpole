@@ -40,7 +40,7 @@ class template_experiment_protocol(ABC):
         self.current_experiment_phase = 'idle'
         self.driver.controlEnabled = False
         self.driver.Q = 0.0
-        self.driver.InterfaceInstance.set_motor(0.0)
+        self.driver.InterfaceInstance.set_motor(0)
         print(f'\nStopped {self.experiment_protocol_name} experiments!\n')
 
 

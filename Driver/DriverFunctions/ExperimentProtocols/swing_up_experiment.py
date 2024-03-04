@@ -37,7 +37,7 @@ class swing_up_experiment(template_experiment_protocol):
         if first_iteration:
             self.counter_swingup = 0
 
-        if self.counter_swingup % RECALIBRATE_EVERY_N_SWING_UPS == 0:
+        if RECALIBRATE_EVERY_N_SWING_UPS is not None and self.counter_swingup % RECALIBRATE_EVERY_N_SWING_UPS == 0:
             print("\nCalibrating motor position.... ")
             self.driver.InterfaceInstance.calibrate()
             print("Done calibrating")
