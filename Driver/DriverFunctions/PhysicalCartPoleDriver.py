@@ -13,11 +13,9 @@ import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.h
 from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.interface import Interface, set_ftdi_latency_timer
 from DriverFunctions.kbhit import KBHit
-from DriverFunctions.MeasurementsProtocols.step_response_measure import StepResponseMeasurement
-from DriverFunctions.MeasurementsProtocols.swing_up_measure import SwingUpMeasure
-from DriverFunctions.MeasurementsProtocols.random_target_measure import RandomTargetMeasure
-from DriverFunctions.MeasurementsProtocols.set_time_measure import SetTimeMeasure
-from DriverFunctions.disturbance_measure import DisturbanceMeasure
+
+from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
+
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
@@ -97,17 +95,9 @@ class PhysicalCartPoleDriver:
         self.dance_finishing = False
         self.dance_current_relative_position = 0.0
 
-        # Measurement
-        self.step_response_measure = StepResponseMeasurement()
-        self.swing_up_measure = SwingUpMeasure(self)
-        self.random_target_measure = RandomTargetMeasure(self)
-        self.set_time_measure = SetTimeMeasure(self)
-        self.disturbance_measure = DisturbanceMeasure(self)
-
-        # self.current_measure = self.disturbance_measure
-        # self.current_measure = self.set_time_measure
-        # self.current_measure = self.swing_up_measure
-        self.current_measure = self.random_target_measure
+        # Experiment Protocols
+        self.experiment_protocols_manager = experiment_protocols_manager_class(self)
+        self.current_experiment_protocol = self.experiment_protocols_manager.get_experiment_protocol()
 
         # Motor Commands
         self.Q = 0.0 # Motor command normed to be in a range -1 to 1
@@ -267,6 +257,8 @@ class PhysicalCartPoleDriver:
                 else:
                     self.CartPoleInstance.target_equilibrium = 1
 
+        self.experiment_protocol_step()
+
         self.set_target_position()
 
         if self.controlEnabled:
@@ -292,16 +284,14 @@ class PhysicalCartPoleDriver:
 
         self.joystick_action()
 
-        self.measurement_action()
-
-        if self.controlEnabled or self.current_measure.is_running():
+        if self.controlEnabled or self.current_experiment_protocol.is_running():
             self.control_signal_to_motor_command()
 
-        if self.controlEnabled and self.current_measure.is_idle():
+        if self.controlEnabled or self.current_experiment_protocol.is_running():
             self.motor_command_safety_check()
             self.safety_switch_off()
 
-        if self.controlEnabled or self.current_measure.is_running():
+        if self.controlEnabled or (self.current_experiment_protocol.is_running() and self.current_experiment_protocol is not None):
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
         if self.firmwareControl:
@@ -491,39 +481,17 @@ class PhysicalCartPoleDriver:
 
             ##### Measurement Mode #####
             elif c == 'm':
-                if self.current_measure is self.step_response_measure:
-                    if self.current_measure.is_running():
-                        print('Closing step_response_measure')
-                        self.current_measure.stop()
-                    print('Setting swing_up_measure')
-                    self.current_measure = self.swing_up_measure
-
-                elif self.current_measure is self.swing_up_measure:
-                    if self.current_measure.is_running():
-                        print('Closing swing_up_measure')
-                        self.current_measure.stop()
-                    print('Setting random_target_measure')
-                    self.current_measure = self.random_target_measure
-
-                elif self.current_measure is self.random_target_measure:
-                    if self.current_measure.is_running():
-                        print('Closing random_target_measure')
-                        self.current_measure.stop()
-                    print('Setting step_response_measure')
-                    self.current_measure = self.step_response_measure
-                else:
-                    print('No recognized measure loaded. Setting step_response_measure')
-                    self.current_measure = self.step_response_measure
+                if self.current_experiment_protocol.is_running():
+                    self.current_experiment_protocol.stop()
+                self.current_experiment_protocol = self.experiment_protocols_manager.get_next_experiment_protocol()
 
             elif c == 'n':
-
-                if self.current_measure.is_idle():
-                     print('\nMeasurement started!\n')
-                     self.current_measure.start()
+                if self.current_experiment_protocol.is_idle():
+                    self.current_experiment_protocol.start()
                 else:
-                     self.current_measure.stop()
-                     self.InterfaceInstance.set_motor(0)
-                     print('\nMeasurement stopped\n')
+                    self.current_experiment_protocol.stop()
+                    self.Q = 0.0
+                    self.InterfaceInstance.set_motor(0)
 
             ##### Joystick  #####
             elif c == 'j':
@@ -773,12 +741,8 @@ class PhysicalCartPoleDriver:
         self.s = self.LatencyAdderInstance.get_interpolated_delayed_state()
 
     def set_target_position(self):
-        if self.current_measure.is_running():
-            try:
-                self.target_position = self.current_measure.target_position
-            except AttributeError:
-                pass
-        else:
+
+        if self.current_experiment_protocol.is_idle():
             if self.danceEnabled:
                 if not self.dance_finishing:
                     self.dance_current_relative_position = self.danceAmpl * np.sin(
@@ -816,13 +780,22 @@ class PhysicalCartPoleDriver:
             self.stickControl = True
             self.Q = motorCmd_from_joystick(self.joystickMode, self.stickPos, self.s[POSITION_IDX])
 
-    def measurement_action(self):
-        if self.current_measure.is_running():
+    def experiment_protocol_step(self):
+        if self.current_experiment_protocol.is_running():
             try:
-                self.current_measure.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.timeNow)
-                self.Q = self.current_measure.Q
+                self.current_experiment_protocol.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.timeNow)
+                if self.current_experiment_protocol.Q is not None:
+                    self.Q = self.current_experiment_protocol.Q
             except TimeoutError as e:
+                if self.current_experiment_protocol.Q is not None:
+                    self.Q = 0.0
                 self.log.warning(f'timeout in self.measurement: {e}')
+
+            if self.current_experiment_protocol.target_position is not None:
+                self.target_position = self.current_experiment_protocol.target_position
+
+            if self.current_experiment_protocol.target_equilibrium is not None:
+                self.CartPoleInstance.target_equilibrium = self.current_experiment_protocol.target_equilibrium
 
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
@@ -896,7 +869,7 @@ class PhysicalCartPoleDriver:
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angle_error,
                      self.target_position, self.controller.position_error, self.controller.Q_angle,
                      self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                     self.stickControl, self.stickPos, self.step_response_experiment, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
                      self.time_difference, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
             else:
                 self.csvwriter.writerow(
@@ -904,7 +877,7 @@ class PhysicalCartPoleDriver:
                      self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                      self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                     self.stickControl, self.stickPos, self.step_response_experiment, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
                      self.time_difference, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 
         self.actualMotorCmd_prev = self.actualMotorCmd
@@ -1002,7 +975,7 @@ class PhysicalCartPoleDriver:
             print("\r" + mode +  '\033[K')
 
             ############  Mode  ############
-            print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
+            print("\r" + f'MEASUREMENT: {self.current_experiment_protocol}' +  '\033[K')
 
             ############  State  ############
             print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"

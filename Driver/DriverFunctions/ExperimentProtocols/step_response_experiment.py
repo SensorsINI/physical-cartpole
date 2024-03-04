@@ -1,5 +1,6 @@
 # measurements from cartpole, controlled by state machine.
 # control.py calls update_state() if state is not 'idle'
+from DriverFunctions.ExperimentProtocols import template_experiment_protocol
 import time
 from globals import *
 from CartPoleSimulation.CartPole.state_utilities import (
@@ -38,8 +39,11 @@ def get_parameters_opposite_direction():
     ENDING_SPEED = -ENDING_SPEED
 
 
-class StepResponseMeasurement:
-    def __init__(self):
+class step_response_experiment(template_experiment_protocol):
+    def __init__(self, driver):
+        super().__init__(
+            driver=driver,
+            experiment_protocol_name=self.__class__.__name__[:-len('_experiment')],)
 
         self.motor = MOTOR
 
@@ -57,12 +61,9 @@ class StepResponseMeasurement:
 
         self.second_round = False  # In case of bidirectional measurement, detect second "round", the opposite direction
 
-        self.state = 'idle'
         self.speed = self.reset_Q
-        self.Q = 0.0
-        self.time_state_changed = time.time()
 
-        self.state_logging = 'idle'
+        self.time_state_changed = time.time()
 
         if abs(STARTING_SPEED * MOTOR_FULL_SCALE_SAFE) - self.motor_correction[1] < 0:
             minimal_starting_speed = self.motor_correction[1]/MOTOR_FULL_SCALE_SAFE
@@ -88,97 +89,75 @@ class StepResponseMeasurement:
             self.starting_speed = STARTING_SPEED
             self.ending_speed = ENDING_SPEED
 
-    def start(self):
-        print('Start measurement!')
-        self.state = 'start'
-        self.Q = 0.0
 
-    def stop(self):
-        print('Stop measurement!')
-        self.Q = 0.0
-        self.state = 'idle'
-
-    def get_state(self):
-        return self.state
-
-    def is_idle(self):
-        return self.state == 'idle'
-
-    def is_running(self):
-        return not self.is_idle()
+    def set_up_experiment(self, first_iteration=True):
+        self.time_state_changed = None
+        self.speed = self.starting_speed
+        self.current_experiment_phase = 'resetting'
 
     def update_state(self, angle: int, position: int, time: float):
-        if self.state == 'idle':
-            self.state_logging = 'idle'
-            self.Q = 0.0
-            return
-        elif self.state == 'start':  # init measurement
-            self.state_logging = 'start'
-            self.speed = self.starting_speed
-            self.state = 'resetting'
-            self.time_state_changed = time
-        elif self.state == 'resetting':  # moving back to start
-            self.state_logging = 'resetting'
+        if self.current_experiment_phase == 'idle':
+            pass
+
+        elif self.current_experiment_phase == 'resetting':  # moving back to start
+            if self.time_state_changed is None:
+                self.time_state_changed = time
             if (STARTING_POSITION < 0 and position > STARTING_POSITION) or (
                     STARTING_POSITION > 0 and position < STARTING_POSITION):
                 self.Q = -self.reset_Q
             else:
                 self.Q = 0.0
-                self.state = 'pausing_before_step'
+                self.current_experiment_phase = 'pausing_before_step'
                 self.time_state_changed = time
             self._check_timeout(time, raise_error=True)
-        elif self.state == 'pausing_before_step':
-            self.state_logging = 'pausing_before_step'
+        elif self.current_experiment_phase == 'pausing_before_step':
             if time - self.time_state_changed > PAUSE_BEFORE_STEP_S:
-                self.state = 'starting_step'
+                self.current_experiment_phase = 'starting_step'
                 self.time_state_changed = time
-        elif self.state == 'starting_step':
-            self.state_logging = 'starting_step'
+        elif self.current_experiment_phase == 'starting_step':
             if abs(self.speed) < abs(self.ending_speed):
                 self.speed += self.speed_step
                 print(self.speed)
                 self.Q = self.speed
-                self.state = 'moving'
+                self.current_experiment_phase = 'moving'
                 self.time_state_changed = time
             else:
                 if BIDIRECTIONAL and (self.second_round is False):
                     get_parameters_opposite_direction()
                     self.assign_parameters()
                     self.second_round = True
-                    self.state = 'start'
+                    self.set_up_experiment(first_iteration=False)
                 else:
                     if BIDIRECTIONAL:
                         get_parameters_opposite_direction()
                         self.assign_parameters()
                         self.second_round = False
-                    self.state = 'idle'
+                    self.current_experiment_phase = 'idle'
 
                 self.speed = 0
                 self.Q = 0.0
                 self.time_state_changed = time
-        elif self.state == 'moving':
-            self.state_logging = 'moving'
+        elif self.current_experiment_phase == 'moving':
             if (0 < ENDING_POSITION < position) or (0 > ENDING_POSITION > position):
                 self.Q = 0.0
                 if FRICTION_SLOWDOWN:
-                    self.state = 'friction_slowdown'
+                    self.current_experiment_phase = 'friction_slowdown'
                 else:
-                    self.state = 'resetting'
+                    self.current_experiment_phase = 'resetting'
                 self.time_state_changed = time
             if self._check_timeout(time, raise_error=False):
                 self.Q = 0.0
                 if FRICTION_SLOWDOWN:
-                    self.state = 'friction_slowdown'
+                    self.current_experiment_phase = 'friction_slowdown'
                 else:
-                    self.state = 'resetting'
-        elif self.state == 'friction_slowdown':
-            self.state_logging = 'friction_slowdown'
+                    self.current_experiment_phase = 'resetting'
+        elif self.current_experiment_phase == 'friction_slowdown':
             self.Q = 0.0
             if time - self.time_state_changed > FRICTION_SLOWDOWN_TIME_S:
-                self.state = 'resetting'
+                self.current_experiment_phase = 'resetting'
                 self.time_state_changed = time
         else:
-            raise Exception(f'unknown state {self.state}')
+            raise Exception(f'unknown state {self.current_experiment_phase}')
 
     def _check_timeout(self, time, raise_error=False):
         if time - self.time_state_changed > STEP_TIMEOUT_S:
@@ -191,4 +170,4 @@ class StepResponseMeasurement:
             return False
 
     def __str__(self):
-        return f' Step Response (State:{self.state_logging}, Speed:{self.speed}, Q:{self.Q})'
+        return f' Step Response (State:{self.current_experiment_phase}, Speed:{self.speed}, Q:{self.Q})'

@@ -24,7 +24,7 @@ v_sat = v_sat_max * Q,
     v_sat_max is maximal saturation velocity at each deviation from linear behaviour is negligible
 
 We determine A, B_pos, B_neg by fitting to recorded data of v_sat vs motor_input.
-Use bidirectional StepResponseMeasurement in step_response_measure.py to get the data
+Use bidirectional step_response_experiment in step_response_experiment.py to get the data
 and double_regression to fit two lines with identical slope but different intercept.
 (in fact physics would suggest B_pos = -B_neg
  we allowed B_pos and B_neg to take arbitrary values,
