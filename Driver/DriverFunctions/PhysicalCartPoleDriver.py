@@ -261,6 +261,11 @@ class PhysicalCartPoleDriver:
 
         self.set_target_position()
 
+        if self.controlEnabled or self.firmwareControl:
+            self.controlled_iterations += 1
+        else:
+            self.controlled_iterations = 0
+
         if self.controlEnabled:
             # Active Python Control: set values from controller
             self.lastControlTime = self.timeNow
@@ -277,10 +282,7 @@ class PhysicalCartPoleDriver:
             # self.actualMotorCmd = self.command
             # self.Q = self.command / MOTOR_FULL_SCALE
 
-        if self.controlEnabled or self.firmwareControl:
-            self.controlled_iterations += 1
-        else:
-            self.controlled_iterations = 0
+
 
         self.joystick_action()
 
