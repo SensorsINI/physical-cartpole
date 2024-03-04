@@ -6,16 +6,18 @@
 
 
 
+// Averaging derivatives with median filter
+#define ANGLE_D_BUFFER_SIZE 3 // Median filter for pole's angular velocity
+#define POSITION_D_BUFFER_SIZE 3 // Median filter for cart's velocity
+#define timesteps_for_derivatives 10 // Based on how many timesteps should the derivative be calculated
+
+
+
 const int ADC_RANGE = 65536;
 
 int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1, angle_raw_sensor;
 int angleD_raw = 0, angleD_raw_stable = -1, angleD_raw_sensor;
 int frozen = 0;
-
-
-// Averaging derivatives with median filter
-#define ANGLE_D_BUFFER_SIZE 3 // Example size, adjust as needed
-#define POSITION_D_BUFFER_SIZE 3 // Example size, adjust as needed
 
 int angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
 int positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
@@ -79,8 +81,7 @@ int anomaly_detection(int* angleSamples, unsigned short angleSampIndex, unsigned
 
 
 
-#define k 1 // Example value for k, adjust as needed
-#define BUFFER_SIZE (k+1)
+#define BUFFER_SIZE (timesteps_for_derivatives+1)
 int angle_history[BUFFER_SIZE]; // Buffer to store past angles
 int frozen_history[BUFFER_SIZE]; // Buffer to store past angles
 int angleIndex = 0; // Current index in the buffer
@@ -105,7 +106,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
 
     // Calculate the index for the k-th past angle
-    int kth_past_index = (angleIndex - k + BUFFER_SIZE) % BUFFER_SIZE;
+    int kth_past_index = (angleIndex - timesteps_for_derivatives + BUFFER_SIZE) % BUFFER_SIZE;
     int kth_past_angle = angle_history[kth_past_index];
     int kth_past_frozen = frozen_history[kth_past_index];
 
@@ -118,7 +119,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         *anglePtr = angle_raw_stable != -1 ? angle_raw_stable : 0;
         angleD_raw = angleD_raw_stable != -1 ? angleD_raw_stable : 0;
     } else {
-        angleD_raw = angle_raw_stable != -1 ? wrapLocal(*anglePtr - kth_past_angle) / ((k-1) + kth_past_frozen + 1) : 0;
+        angleD_raw = angle_raw_stable != -1 ? wrapLocal(*anglePtr - kth_past_angle) / ((timesteps_for_derivatives-1) + kth_past_frozen + 1) : 0;
         angle_raw_stable = *anglePtr;
         angleD_raw_stable = angleD_raw;
         frozen = 0;
