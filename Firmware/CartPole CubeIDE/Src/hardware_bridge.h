@@ -100,6 +100,7 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define Buttons_And_Switches_Init		Buttons_And_Switches_Init
 #define BUTTON_1						KEY_5
+#define BUTTON_2						KEY_X  // Not implemented yet
 #define Button_SetAction				Button_SetAction
 
 #include "STM/neural_imitator.h"  // Currently not implemented - just making the code compatible with Zynq
@@ -169,6 +170,7 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define Buttons_And_Switches_Init		Buttons_And_Switches_Init
 #define BUTTON_1						PS_BTN_4
+#define BUTTON_2						PS_BTN_5
 #define Button_SetAction				Button_SetAction
 
 
