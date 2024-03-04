@@ -56,6 +56,7 @@ REGULARIZATION:   # Implemented only for TF, no regularization for Pytorch
 
 QUANTIZATION: # Not implemented yet
   ACTIVATED: False
+  QUANTIZATION_DATASET: 'ap_fixed<12,2>'  # 'float' or ap_fixed<x,y> # Corresponds to <bits, integer+1> of qkeras # This is input & output quantisation of the network
   ACTIVATION:
     bits: 6
   KERNEL:
