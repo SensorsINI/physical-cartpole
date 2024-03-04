@@ -1,5 +1,6 @@
 # measurements from cartpole, controlled by state machine.
 # control.py calls update_state() if state is not 'idle'
+import numpy as np
 from DriverFunctions.ExperimentProtocols import template_experiment_protocol
 from CartPole.state_utilities import (
     ANGLE_IDX,
@@ -10,18 +11,18 @@ from CartPole.state_utilities import (
 
 NUMBER_OF_ITERATIONS = 1
 
-TARGET_POSITION_0 = -0.1
-TARGET_POSITION_1 = 0.1
-TARGET_POSITION_2 = -0.1
+TARGET_POSITION_0 = -0.09
+TARGET_POSITION_1 = 0.09
+TARGET_POSITION_2 = -0.09
 
-TIME_OF_EXPERIMENT = 8.0
-TIME_FOR_SWINGUP = 5.0
+TIME_OF_EXPERIMENT = 10.0
+TIME_FOR_SWINGUP = 7.0
 RECALIBRATE_EVERY_N_SWING_UPS = None
 
 SKIP_RESET = False  # Use for PID to avoid
 
 
-class swing_up_experiment(template_experiment_protocol):
+class iros24_ex1_experiment(template_experiment_protocol):
     def __init__(self, driver):
         super().__init__(
             driver=driver,
@@ -41,7 +42,7 @@ class swing_up_experiment(template_experiment_protocol):
         self.target_position = TARGET_POSITION_0
         self.target_equilibrium = -1
         
-        # self.driver.controlEnabled = True  # We are not enabling control automatically in case we want to use hardware controller and only provide target position and equilibrium from PC
+        self.driver.controlEnabled = True  # We are not enabling control automatically in case we want to use hardware controller and only provide target position and equilibrium from PC
         if SKIP_RESET:
             self.start_new_recording(index=self.counter_iterations)
             self.current_experiment_phase = 'swingup'
@@ -71,7 +72,7 @@ class swing_up_experiment(template_experiment_protocol):
 
         if (abs(self.position - self.target_position) < 0.01
                 and
-                abs(self.angle) < 0.1
+                abs(self.angle) > np.pi-0.1
                 and abs(self.angleD) < 0.1
         ):
             self.start_new_recording(index=self.counter_iterations)

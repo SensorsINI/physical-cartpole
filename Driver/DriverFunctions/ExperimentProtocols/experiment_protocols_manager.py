@@ -1,7 +1,7 @@
 from DriverFunctions.ExperimentProtocols.step_response_experiment import step_response_experiment
 from DriverFunctions.ExperimentProtocols.swing_up_experiment import swing_up_experiment
 from DriverFunctions.ExperimentProtocols.follow_a_random_target_experiment import follow_a_random_target_experiment
-
+from DriverFunctions.ExperimentProtocols.iros24_ex1_experiment import iros24_ex1_experiment
 
 class experiment_protocols_manager_class:
     def __init__(self, driver):
@@ -9,6 +9,7 @@ class experiment_protocols_manager_class:
         self.driver = driver
 
         self.experiment_protocols = [
+            iros24_ex1_experiment,
             step_response_experiment,
             swing_up_experiment,
             follow_a_random_target_experiment,
