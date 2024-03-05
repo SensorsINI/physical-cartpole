@@ -52,7 +52,7 @@ elif CHIP == 'ZYNQ':
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 841.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
+    ANGLE_HANGING_POLOLU = 816.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
     POSITION_ENCODER_RANGE = 4705  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
 
