@@ -91,3 +91,17 @@ PRUNING: # TF only for the moment
       end_step_in_training_fraction: 0.8
       power: 3.0
       frequency_per_epoch: 1000 # fraction of epoch allowed
+
+FILTERS:
+# You can apply filters do dataset loaded for training. E.g.
+#  - column: angleD
+#    condition: "< 20.0"
+#    absolute: true
+# Translates to a condition df = df[abs(df['angleD']) < 20.0]
+# Allowed are <, <=, >, >=, ==, !=
+  - column: angleD
+    condition: "< 20.0"
+    absolute: true
+  - column: positionD
+    condition: "< 1.0"
+    absolute: true
