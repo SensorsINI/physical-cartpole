@@ -6,8 +6,8 @@ from Driver.DriverFunctions.interface import get_serial_port
 from CartPole.cartpole_parameters import TrackHalfLength
 
 
-CHIP = "STM"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
+CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 # Motor type selection
@@ -103,8 +103,8 @@ ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_360_DEG_IN_ADC_UNITS
 
 ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES = 1  # TODO: Python only, hardware sets it separately.
 
-ANGLE_D_MEDIAN_LEN = 3
-POSITION_D_MEDIAN_LEN = 3
+ANGLE_D_MEDIAN_LEN = 1
+POSITION_D_MEDIAN_LEN = 1
 ##### Position Conversion #####
 
 POSITION_NORMALIZATION_FACTOR = TrackHalfLength * 2 / POSITION_ENCODER_RANGE  # 0.000084978540773

@@ -1,9 +1,9 @@
 library: 'TF'  # TF or Pytorch
 modeling:
-  NET_NAME: 'Dense-128H1-128H2'
+  NET_NAME: 'Dense-32H1-32H2'
 paths:
   # PATH HAS TO END WITH A SOLIDUS ("/") CHARACTER
-  path_to_experiment: 'UpDown/'
+  path_to_experiment: 'Experiment-15'
   PATH_TO_EXPERIMENT_FOLDERS: './SI_Toolkit_ASF/Experiments/'  # Path where the experiments data is stored
   DATA_FOLDER:                    'Recordings'
 training_default:
@@ -20,26 +20,26 @@ training_default:
 #   For training of a network imitating MPC:
   control_inputs: []
   state_inputs: ['position', 'positionD', 'angle_cos', 'angle_sin', 'angleD', 'target_equilibrium', 'target_position']
-  outputs:  ['Q']
-  EPOCHS: 20
-  BATCH_SIZE: 16
+  outputs:  ['Q_calculated']
+  EPOCHS: 60
+  BATCH_SIZE: 64
   SEED: 1873
   LR:
-    INITIAL: 1.0e-2
+    INITIAL: 2.0e-3
     REDUCE_LR_ON_PLATEAU: True
-    MINIMAL: 1.0e-5
-    PATIENCE: 1
-    DECREASE_FACTOR: 0.316 # sqrt(0.1)
-    MIN_DELTA: 1.0e-4
-  WASH_OUT_LEN: 10
-  POST_WASH_OUT_LEN: 20
+    MINIMAL: 1.0e-7
+    PATIENCE: 2
+    DECREASE_FACTOR: 0.5 # sqrt(0.1)
+    MIN_DELTA: 1.0e-6
+  WASH_OUT_LEN: 0
+  POST_WASH_OUT_LEN: 1
   ON_FLY_DATA_GENERATION: False
   NORMALIZE: True
-  SHIFT_LABELS: 1  # for k, as a label to row i is taken row i+k
+  SHIFT_LABELS: 0  # for k, as a label to row i is taken row i+k
   USE_NNI: False  # Decide if you want to use NNI package
   CONSTRUCT_NETWORK: 'with cells'  # Matters only for Pytorch; 'with cells' or 'with modules'
   VALIDATE_ALSO_ON_TRAINING_SET: false
-  PLOT_WEIGHTS_DISTRIBUTION: false # CalculTFate histograms of weights and biases and activations, take long time
+  PLOT_WEIGHTS_DISTRIBUTION: true # CalculTFate histograms of weights and biases and activations, take long time
 
 REGULARIZATION:   # Implemented only for TF, no regularization for Pytorch
   ACTIVATED: false
