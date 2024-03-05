@@ -294,7 +294,7 @@ class PhysicalCartPoleDriver:
             self.motor_command_safety_check()
             self.safety_switch_off()
 
-        if self.controlEnabled or (self.current_experiment_protocol.is_running() and self.current_experiment_protocol is not None):
+        if self.controlEnabled or (self.current_experiment_protocol.is_running() and self.current_experiment_protocol.Q is not None):
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
         if self.firmwareControl:
