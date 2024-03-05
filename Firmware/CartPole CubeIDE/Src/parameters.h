@@ -31,4 +31,6 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 extern const float MOTOR_FULL_SCALE;
 extern const int MOTOR_FULL_SCALE_SAFE;
 
+extern bool USE_TARGET_SWITCHES;
+
 #endif /* PARAMETERS_H_ */

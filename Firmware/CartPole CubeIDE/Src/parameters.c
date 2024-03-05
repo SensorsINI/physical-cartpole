@@ -32,6 +32,8 @@ const int PWM_PERIOD_IN_CLOCK_CYCLES		=		7200;
 const float MOTOR_FULL_SCALE					=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
 const int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
 
+bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
+
 
 #elif defined(ZYNQ)
 
@@ -48,5 +50,7 @@ const int PWM_PERIOD_IN_CLOCK_CYCLES		=		2500;
 
 const float MOTOR_FULL_SCALE					=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
 const int MOTOR_FULL_SCALE_SAFE			=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
+
+bool USE_TARGET_SWITCHES							=		true;					// You can set it true or false
 
 #endif

@@ -11,6 +11,11 @@
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
 
+// The 3 variables below only matter on Zynq
+#define	CONTROLLERS_SWITCH_NUMBER		0
+#define	POSITION_JUMPS_SWITCH_NUMBER	1
+#define	EQUILIBRIUM_SWITCH_NUMBER		2
+
 unsigned short current_controller = OnChipController_PID;
 
 bool correct_motor_dynamics = true;
@@ -105,6 +110,12 @@ float Q;
 float target_equilibrium = 1.0;
 float target_position = 0.0;
 
+// The 4 variable below only matter on Zynq if USE_TARGET_SWITCHES==TRUE
+int position_period  = 1000;  // In a unit of control updates
+float position_jumps_target = 0.12;
+int position_jumps_enabled = 0;
+int position_jumps_interval_counter = 0;
+
 void CONTROL_BackgroundTask(void)
 {
 
@@ -167,6 +178,21 @@ void CONTROL_BackgroundTask(void)
 		// Microcontroller Control Routine
 		if (ControlOnChip_Enabled)	{
 
+#ifdef ZYNQ
+			if(USE_TARGET_SWITCHES && position_jumps_enabled){
+
+				if (position_jumps_interval_counter >= position_period)
+				{
+					position_jumps_target = -position_jumps_target;
+					target_position = position_jumps_target;
+					position_jumps_interval_counter = 0;
+				} else {
+					++position_jumps_interval_counter;
+				}
+
+
+			}
+#endif
 			switch (current_controller){
 			case OnChipController_PID:
 			{
@@ -273,6 +299,33 @@ void CONTROL_BackgroundTask(void)
 
 		lastRead = now;
 	}
+
+#ifdef ZYNQ
+	if(Switch_GetState(CONTROLLERS_SWITCH_NUMBER)){
+		current_controller = OnChipController_PID;
+	} else{
+		current_controller = OnChipController_NeuralImitator;
+	}
+
+	if (USE_TARGET_SWITCHES)
+	{
+		if(Switch_GetState(POSITION_JUMPS_SWITCH_NUMBER)){
+			position_jumps_enabled = 1;
+		} else{
+			target_position = 0.0;
+			position_jumps_interval_counter = 0;
+			position_jumps_enabled = 0;
+		}
+
+		if(Switch_GetState(EQUILIBRIUM_SWITCH_NUMBER)){
+			target_equilibrium = 1.0;
+		} else{
+			target_equilibrium = -1.0;
+		}
+	}
+	
+	Leds_over_switches_Update(Switches_GetState());
+#endif
 
 	///////////////////////////////////////////////////
 	// Process Commands from PC
