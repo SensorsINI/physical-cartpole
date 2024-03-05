@@ -16,7 +16,7 @@
 #define	POSITION_JUMPS_SWITCH_NUMBER	1
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
-unsigned short current_controller = OnChipController_PID;
+unsigned short current_controller = OnChipController_NeuralImitator;
 
 bool correct_motor_dynamics = true;
 
