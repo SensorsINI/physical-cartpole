@@ -41,14 +41,26 @@ class iros24_ex1_experiment(template_experiment_protocol):
 
         self.target_position = TARGET_POSITION_0
         self.target_equilibrium = -1
-        
-        self.driver.controlEnabled = True  # We are not enabling control automatically in case we want to use hardware controller and only provide target position and equilibrium from PC
+
+        if FIRMWARE_CONTROL:
+            self.driver.firmwareControl = True
+            self.driver.InterfaceInstance.control_mode(self.driver.firmwareControl)
+        else:
+            self.driver.controlEnabled = True  # We are not enabling control automatically in case we want to use hardware controller and only provide target position and equilibrium from PC
+
         if SKIP_RESET:
             self.start_new_recording(index=self.counter_iterations)
+            self.target_position = TARGET_POSITION_1
+            self.target_equilibrium = 1.0
+            self.time_start_stable_down = None
             self.current_experiment_phase = 'swingup'
         else:
             self.current_experiment_phase = 'reset'
 
+    def stop(self):
+        super().stop()
+        self.driver.firmwareControl = False
+        self.driver.InterfaceInstance.control_mode(self.driver.firmwareControl)
     def update_state(self, angle, position, time):
         self.angle = angle
         self.angleD = self.driver.s[ANGLED_IDX]
@@ -62,8 +74,10 @@ class iros24_ex1_experiment(template_experiment_protocol):
             self.action_reset()
         elif self.current_experiment_phase == 'swingup':
             self.action_swing_up()
-        elif self.current_experiment_phase == 'go-to-target':
-            self.action_go_to_target()
+        elif self.current_experiment_phase == 'go-to-target_1':
+            self.action_go_to_target_1()
+        elif self.current_experiment_phase == 'go-to-target_2':
+            self.action_go_to_target_2()
         else:
             raise Exception(f'unknown experiment phase: {self.current_experiment_phase}')
 
@@ -73,21 +87,28 @@ class iros24_ex1_experiment(template_experiment_protocol):
         if (abs(self.position - self.target_position) < 0.01
                 and
                 abs(self.angle) > np.pi-0.1
-                and abs(self.angleD) < 0.1
+                # and abs(self.angleD) < 0.1
         ):
             self.start_new_recording(index=self.counter_iterations)
             self.target_position = TARGET_POSITION_1
-            self.target_equilibrium = 1
+            self.target_equilibrium = 1.0
             self.time_start_stable_down = self.time
             self.current_experiment_phase = 'swingup'
 
 
     def action_swing_up(self):
+        if self.time_start_stable_down is None:
+            self.time_start_stable_down = self.time
         if self.time - self.time_start_stable_down >= TIME_FOR_SWINGUP:
-            self.target_position = TARGET_POSITION_2
-            self.current_experiment_phase = 'go-to-target'
+            self.target_position = TARGET_POSITION_1
+            self.current_experiment_phase = 'go-to-target_1'
 
-    def action_go_to_target(self):
+    def action_go_to_target_1(self):
+        if self.time - self.time_start_stable_down > TIME_FOR_TARGET_1:
+            self.target_position = TARGET_POSITION_2
+            self.current_experiment_phase = 'go-to-target_2'
+
+    def action_go_to_target_2(self):
         if self.time - self.time_start_stable_down > TIME_OF_EXPERIMENT:
             self.counter_iterations += 1
             self.finish_recording()
@@ -96,3 +117,6 @@ class iros24_ex1_experiment(template_experiment_protocol):
                 self.driver.controller.controller_report()
             else:
                 self.set_up_experiment(first_iteration=False)
+
+    def __str__(self):
+        return f'IROS Exp1 (Experiment Phase: {self.current_experiment_phase})'
