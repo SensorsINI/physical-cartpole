@@ -93,7 +93,7 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety
 
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
-ANGLE_AVG_LENGTH = 16  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
+ANGLE_AVG_LENGTH = 1  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
