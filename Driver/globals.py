@@ -22,7 +22,7 @@ MOTOR = 'POLOLU'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 3
 elif CONTROLLER_NAME == 'neural-imitator':
-    CONTROL_PERIOD_MS = 7
+    CONTROL_PERIOD_MS = 3
 elif CONTROLLER_NAME == 'fpga':
     CONTROL_PERIOD_MS = 15
 else:
