@@ -17,12 +17,12 @@ TARGET_POSITION_1 = 0.09
 TARGET_POSITION_2 = -0.09
 
 TIME_FOR_SWINGUP = 10.0
-TIME_FOR_TARGET_1 = 20.0
-TIME_OF_EXPERIMENT = 30.0
+TIME_FOR_TARGET_1 = 15.0
+TIME_OF_EXPERIMENT = 20.0
 
 RECALIBRATE_EVERY_N_SWING_UPS = None
 
-FIRMWARE_CONTROL = True
+FIRMWARE_CONTROL = False
 
 SKIP_RESET = False  # Use for PID to avoid
 
@@ -55,7 +55,7 @@ class iros24_ex1_experiment(template_experiment_protocol):
 
         if SKIP_RESET:
             self.start_new_recording(index=self.counter_iterations)
-            self.target_position = TARGET_POSITION_1
+            self.target_position = TARGET_POSITION_SWING_UP
             self.target_equilibrium = 1.0
             self.time_start_stable_down = None
             self.current_experiment_phase = 'swingup'
@@ -95,7 +95,7 @@ class iros24_ex1_experiment(template_experiment_protocol):
                 # and abs(self.angleD) < 0.1
         ):
             self.start_new_recording(index=self.counter_iterations)
-            self.target_position = TARGET_POSITION_1
+            self.target_position = TARGET_POSITION_SWING_UP
             self.target_equilibrium = 1.0
             self.time_start_stable_down = self.time
             self.current_experiment_phase = 'swingup'
