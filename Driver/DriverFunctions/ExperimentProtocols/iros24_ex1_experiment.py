@@ -47,12 +47,6 @@ class iros24_ex1_experiment(template_experiment_protocol):
         self.target_position = TARGET_POSITION_0
         self.target_equilibrium = -1
 
-        if FIRMWARE_CONTROL:
-            self.driver.firmwareControl = True
-            self.driver.InterfaceInstance.control_mode(self.driver.firmwareControl)
-        else:
-            self.driver.controlEnabled = True  # We are not enabling control automatically in case we want to use hardware controller and only provide target position and equilibrium from PC
-
         if SKIP_RESET:
             self.start_new_recording(index=self.counter_iterations)
             self.target_position = TARGET_POSITION_SWING_UP
@@ -61,6 +55,16 @@ class iros24_ex1_experiment(template_experiment_protocol):
             self.current_experiment_phase = 'swingup'
         else:
             self.current_experiment_phase = 'reset'
+
+        if FIRMWARE_CONTROL:
+            self.driver.firmwareControl = True
+            self.driver.InterfaceInstance.set_target_position(self.target_position)
+            self.driver.InterfaceInstance.set_target_equilibrium(self.target_equilibrium)
+            self.driver.InterfaceInstance.control_mode(self.driver.firmwareControl)
+        else:
+            self.driver.controlEnabled = True  # We are not enabling control automatically in case we want to use hardware controller and only provide target position and equilibrium from PC
+
+
 
     def stop(self):
         super().stop()
