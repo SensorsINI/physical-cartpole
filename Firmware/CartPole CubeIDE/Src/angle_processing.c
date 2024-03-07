@@ -42,8 +42,8 @@ void average_derivatives(int* angleDPtr, short* positionDPtr){
     updateCircularBuffer(positionDBuffer, &positionDBufferIndex, POSITION_D_BUFFER_SIZE, positionDInt);
 
     // Calculate medians using the updated buffers
-    int angleDMedian = ClassicMedianFilter((sint16*)angleDBuffer, ANGLE_D_BUFFER_SIZE); // Adjust casting if necessary
-    int positionDMedian = ClassicMedianFilter((sint16*)positionDBuffer, POSITION_D_BUFFER_SIZE); // Adjust casting if necessary
+    int angleDMedian = ClassicMedianFilter(angleDBuffer, ANGLE_D_BUFFER_SIZE); // Adjust casting if necessary
+    int positionDMedian = ClassicMedianFilter((int*)positionDBuffer, POSITION_D_BUFFER_SIZE); // Adjust casting if necessary
 
     // Update pointers with median values
     *angleDPtr = angleDMedian;
