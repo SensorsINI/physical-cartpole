@@ -350,7 +350,6 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_CALIBRATE:
 		{
-			unsigned int pktLen = rxBuffer[2];
 			cmd_Calibrate();
 			break;
 		}
