@@ -240,10 +240,35 @@ void CONTROL_BackgroundTask(void)
 	        }
 		}
 
+        HardwareExperimentProtocol(position, angle, time,
+        		&target_position, &target_equilibrium,
+				&run_hardware_experiment, &save_to_offline_buffers,
+				&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
+
+        if(save_to_offline_buffers){
+            fill_data_buffers(
+                    time,
+                    angle,
+                    position,
+                    angleD,
+                    positionD,
+                    target_equilibrium,
+                    target_position,
+                    Q
+            );
+        }
+
+		if (run_hardware_experiment==2){
+			unsigned short experiment_length = get_buffers_index();
+		    send_information_experiment_done(buffer, experiment_length);
+		    Message_SendToPC(buffer, 6);
+		    run_hardware_experiment=0;
+		}
+
 
 		// Send latest state to the PC
 		static int slowdown = 0;
-	    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN)
+	    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN && run_hardware_experiment==0)
 	    {
 	        slowdown = 0;
 
@@ -342,8 +367,14 @@ void CONTROL_BackgroundTask(void)
 	///////////////////////////////////////////////////
 	// Process Commands from PC
 	///////////////////////////////////////////////////
-	int newDataCount = Message_GetFromPC(&rxBuffer[uart_received_Cnt]);
-	uart_received_Cnt += newDataCount;
+	if(run_hardware_experiment==0)
+	{
+	    int newDataCount = Message_GetFromPC(&rxBuffer[uart_received_Cnt]);
+        uart_received_Cnt += newDataCount;
+	} else
+	{
+	    uart_received_Cnt = 0;
+	 }
 
 
 	int current_command = get_command_from_PC_message(rxBuffer, &uart_received_Cnt);
@@ -365,6 +396,20 @@ void CONTROL_BackgroundTask(void)
 			cmd_Calibrate();
 			break;
 		}
+
+		case CMD_RUN_HARDWARE_EXPERIMENT:
+        {
+        	
+            cmd_RunHardwareExperiment();
+            break;
+        }
+
+        case CMD_TRANSFER_BUFFERS:
+        {
+            cmd_transfer_buffers();
+            break;
+        }
+
 		case CMD_CONTROL_MODE:
 		{
 			cmd_ControlMode(rxBuffer[3] != 0);
@@ -446,6 +491,17 @@ void cmd_StreamOutput(bool en)
 	disable_irq();
 	streamEnable = en;
 	enable_irq();
+}
+
+void cmd_RunHardwareExperiment(void)
+{
+	streamEnable = false;
+    run_hardware_experiment = 1;
+}
+
+void cmd_transfer_buffers(void)
+{
+    send_buffers();
 }
 
 void cmd_Calibrate(void)

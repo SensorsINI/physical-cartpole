@@ -148,6 +148,7 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define PC_Connection_Init()    PC_Connection_INIT(UART_BAUD);
 #define Message_SendToPC		Message_SendToPC
+#define Message_SendToPC_blocking Message_SendToPC_blocking
 #define Message_GetFromPC		Message_GetFromPC
 
 

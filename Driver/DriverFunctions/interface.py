@@ -86,7 +86,7 @@ class Interface:
     def open(self, port, baud):
         self.port = port
         self.baud = baud
-        self.device = serial.Serial(port, baudrate=baud, timeout=None)
+        self.device = serial.Serial(port, baudrate=baud)
         self.device.reset_input_buffer()
 
     def close(self):
@@ -263,7 +263,7 @@ class Interface:
 
         return angle, position, target_position, command, invalid_steps, time_difference/1e6, sent/1e6, latency/1e5, latency_violation
 
-    def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True):
+    def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout
         self.start = False
 
@@ -271,14 +271,15 @@ class Interface:
             c = self.device.read()
             # Timeout: reopen device, start stream, reset msg and try again
             if len(c) == 0:
-                print('\n_receive_reply: no response; reconnecting.')
-                self.device.close()
-                self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
-                self.clear_read_buffer()
-                time.sleep(1)
-                self.stream_output(True)
-                self.msg = []
-                self.start = False
+                if reconnect_at_timeout:
+                    print('\n_receive_reply: no response; reconnecting.')
+                    self.device.close()
+                    self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
+                    self.clear_read_buffer()
+                    time.sleep(1)
+                    self.stream_output(True)
+                    self.msg = []
+                    self.start = False
             else:
                 self.msg.append(ord(c))
                 if self.start == False:

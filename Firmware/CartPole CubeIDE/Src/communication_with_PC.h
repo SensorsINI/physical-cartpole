@@ -60,4 +60,8 @@ void prepare_message_to_PC_config_PID(
 		float angle_KD
 		);
 
+unsigned char crc(const unsigned char * buff, unsigned int len);
+
+void prepare_buffer_to_send_long(unsigned char* Buffer, unsigned char CMD, unsigned int message_length);
+
 #endif /*__COMMUNICATION_WITH_PC_H_*/

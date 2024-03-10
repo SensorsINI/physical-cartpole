@@ -13,7 +13,7 @@
 
 #define TIME_FOR_SWINGUP             0.01
 #define TIME_FOR_TARGET_1            4.02
-#define TIME_OF_EXPERIMENT           10.03
+#define TIME_OF_EXPERIMENT           4.03
 
 #define UPDATE_INTERVAL              2
 

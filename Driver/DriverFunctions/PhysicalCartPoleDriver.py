@@ -233,6 +233,7 @@ class PhysicalCartPoleDriver:
         self.lastControlTime = self.startTime
 
         self.InterfaceInstance.stream_output(True)  # now start streaming state
+        self.InterfaceInstance.run_hardware_experiment()
 
     def run_experiment(self):
 
