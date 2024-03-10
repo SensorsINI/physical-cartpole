@@ -1,9 +1,11 @@
 import serial
 import struct
 import time
+import pandas as pd
 
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
+HARDWARE_EXPERIMENT_TIMEOUT = 30.0      # Seconds
 READ_STATE_TIMEOUT      = 1.0      # Seconds
 SERIAL_SOF              = 0xAA
 CMD_PING                = 0xC0
@@ -19,6 +21,8 @@ CMD_SET_TARGET_POSITION = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
 CMD_SET_TARGET_EQUILIBRIUM = 0xCD
+CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
+CMD_TRANSFER_BUFFERS    = 0xD1
 
 def get_serial_port(chip_type="STM", serial_port_number=None):
 
@@ -77,6 +81,8 @@ class Interface:
 
         self.encoderDirection = None
 
+        self.hardware_experiment_length = 0
+
     def open(self, port, baud):
         self.port = port
         self.baud = baud
@@ -119,6 +125,64 @@ class Interface:
         self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
 
         return True
+
+    def run_hardware_experiment(self):
+        msg = [SERIAL_SOF, CMD_RUN_HARDWARE_EXPERIMENT, 4]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+        self.clear_read_buffer()
+
+        reply = self._receive_reply(CMD_RUN_HARDWARE_EXPERIMENT, 6, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+        self.hardware_experiment_length = struct.unpack('H', bytes(reply[3:5]))[0]
+        print(f'Hardware experiment finished with length {self.hardware_experiment_length}')
+
+        msg = [SERIAL_SOF, CMD_TRANSFER_BUFFERS, 4]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+        self.clear_read_buffer()
+        variables_bytes = []
+        message_length = 4 * self.hardware_experiment_length + 7
+        for i in range(7):  # There are seven floats to receive
+            c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+            variables_bytes.append(c)
+
+        message_length = self.hardware_experiment_length + 7  # target equilibrium,
+        c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+        variables_bytes.append(c)
+
+        variables = []
+        unpack_string = f'<{self.hardware_experiment_length}f'
+        for i in range(len(variables_bytes)-1):
+            variable_byte = variables_bytes[i]
+            variable = struct.unpack(unpack_string, bytes(variable_byte[6:-1]))
+            variables.append(variable)
+
+        unpack_string = f'<{self.hardware_experiment_length}b'
+        variable_byte = variables_bytes[7]
+        variable = struct.unpack(unpack_string, bytes(variable_byte[6:-1]))
+        variables.append(variable)
+
+
+        # Creating a DataFrame
+        df = pd.DataFrame({
+            'time': variables[0],
+            'angle': variables[1],
+            'angleD': variables[2],
+            'position': variables[3],
+            'positionD': variables[4],
+            'target_equilibrium': variables[7],
+            'target_position': variables[5],
+            'Q': variables[6],
+        })
+
+        # Saving to CSV without index
+        df.to_csv('hardware_experiment_recording.csv', index=False)
+
+
+        return True
+
 
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]

@@ -7,6 +7,8 @@
 #include "math.h"
 #include "hardware_pid.h"
 #include "control_signal_postprocessing.h"
+#include "experiment_protocol.h"
+#include "offline_data_manager.h"
 
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
@@ -60,6 +62,8 @@ void 			cmd_ControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
+void			cmd_RunHardwareExperiment(void);
+void 			cmd_transfer_buffers(void);
 
 void CONTROL_Init(void)
 {
@@ -116,6 +120,16 @@ float position_jumps_target = 0.12;
 int position_jumps_enabled = 0;
 int position_jumps_interval_counter = 0;
 
+int run_hardware_experiment = 0;
+int save_to_offline_buffers = 0;
+
+float time = 0.0;
+
+float angle = 0.0;
+float position = 0.0;
+float angleD = 0.0;
+float positionD = 0.0;
+
 void CONTROL_BackgroundTask(void)
 {
 
@@ -139,14 +153,10 @@ void CONTROL_BackgroundTask(void)
 		int angleD_int = 0;
 		int invalid_step = 0;
 
-		float angle = 0.0;
-		float position = 0.0;
-		float angleD = 0.0;
-		float positionD = 0.0;
+
 
 		time_last_measurement = time_current_measurement;
 		time_current_measurement = GetTimeNow();
-		// I would love to get angle here, but as this requires some analysis of buffer, I will not put it here to keep interrupt minimal
 
 		position_short = Encoder_Read();
 		position_short = position_short - positionCentre;
@@ -175,6 +185,8 @@ void CONTROL_BackgroundTask(void)
 	    angleD = (angleD_int*(ANGLE_NORMALIZATION_FACTOR/16.0)/time_difference_between_measurement_s);
 	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
 
+        time = time_current_measurement/1000000.0;
+
 		// Microcontroller Control Routine
 		if (ControlOnChip_Enabled)	{
 
@@ -196,12 +208,12 @@ void CONTROL_BackgroundTask(void)
 			switch (current_controller){
 			case OnChipController_PID:
 			{
-				Q = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
+				Q = pid_step(angle, angleD, position, positionD, target_position, time);
 				break;
 			}
 			case OnChipController_NeuralImitator:
 			{
-				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time_current_measurement/1000000.0);
+				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time);
 				break;
 			}
 			default:

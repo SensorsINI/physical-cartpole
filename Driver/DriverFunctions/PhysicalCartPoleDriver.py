@@ -496,6 +496,12 @@ class PhysicalCartPoleDriver:
                     self.Q = 0.0
                     self.InterfaceInstance.set_motor(0)
 
+            elif c == 'N':
+                self.controlEnabled = False
+                if self.current_experiment_protocol.is_running():
+                    self.current_experiment_protocol.stop()
+
+
             ##### Joystick  #####
             elif c == 'j':
                 if self.joystickMode is None:

@@ -137,7 +137,13 @@ void Message_SendToPC(unsigned char * SendBuffer, unsigned int buffer_size){
 
 }
 
+void Message_SendToPC_blocking(unsigned char * SendBuffer, unsigned int buffer_size){
 
+	XUartPs_Send(&UartPs, SendBuffer, buffer_size);
+	while(UartPs.SendBuffer.RemainingBytes != 0)
+	{}
+
+}
 
 int Message_GetFromPC(unsigned char * c) {
     int count = 0;

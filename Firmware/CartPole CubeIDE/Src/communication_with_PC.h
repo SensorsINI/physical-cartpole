@@ -19,6 +19,8 @@
 #define CMD_COLLECT_RAW_ANGLE		0xCA
 #define CMD_STATE					0xCC
 #define CMD_SET_TARGET_EQUILIBRIUM  0xCD
+#define CMD_RUN_HARDWARE_EXPERIMENT 0xCE
+#define CMD_TRANSFER_BUFFERS        0xD1
 #define CMD_DO_NOTHING				0x00
 
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);
@@ -37,6 +39,8 @@ void prepare_message_to_PC_state(
 		);
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection);
+void send_information_experiment_done(unsigned char * buffer, unsigned short experiment_length);
+
 void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
 		unsigned short control_period,

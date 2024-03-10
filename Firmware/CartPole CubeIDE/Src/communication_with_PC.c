@@ -53,6 +53,27 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
+							case CMD_RUN_HARDWARE_EXPERIMENT:
+                            {
+                                if (pktLen == 4)
+                                {
+                                    current_command = CMD_RUN_HARDWARE_EXPERIMENT;
+                                }
+                                break;
+                            }
+
+
+                            case CMD_TRANSFER_BUFFERS:
+                            {
+                                if (pktLen == 4)
+                                {
+                                    current_command = CMD_TRANSFER_BUFFERS;
+                                }
+                                break;
+                            }
+
+
+
 							case CMD_CONTROL_MODE:
 							{
 								if (pktLen == 5)
@@ -218,6 +239,15 @@ void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirect
 	buffer[4] = crc(buffer, 4);
 }
 
+void send_information_experiment_done(unsigned char * buffer, unsigned short experiment_length){
+
+	buffer[ 0] = SERIAL_SOF;
+	buffer[ 1] = CMD_RUN_HARDWARE_EXPERIMENT;
+	buffer[ 2] = 6;
+	*((unsigned short *)&buffer[3]) = (unsigned short)experiment_length;
+	buffer[5] = crc(buffer, 5);
+}
+
 void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
 		unsigned short control_period,
@@ -295,4 +325,14 @@ unsigned char crc(const unsigned char * buff, unsigned int len)
 bool crcIsValid(const unsigned char * buff, unsigned int len, unsigned char crcVal)
 {
     return crcVal == crc(buff, len);
+}
+
+void prepare_buffer_to_send_long(unsigned char* Buffer, unsigned char CMD, unsigned int message_length) {
+    Buffer[0] = SERIAL_SOF; // Assuming SERIAL_SOF is defined elsewhere
+    Buffer[1] = CMD;
+    *((unsigned int*)&Buffer[2]) = message_length; // Correctly places message_length in the buffer
+
+    // Assuming crc function exists and calculates CRC correctly
+    // This assumes the CRC is to be placed at the end of the message and message_length includes the CRC byte
+    Buffer[message_length - 1] = crc(Buffer, message_length - 1);
 }
