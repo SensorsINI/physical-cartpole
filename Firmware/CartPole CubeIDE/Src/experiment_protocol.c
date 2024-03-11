@@ -84,7 +84,7 @@ void action_reset(float position, float angle, float time, float* target_positio
     *target_position = TARGET_POSITION_0;
     *target_equilibrium = -1.0;
     if (fabs(position - *target_position) < 0.01 && fabs(angle) > M_PI - 0.1) {
-        *target_position = TARGET_POSITION_1;
+        *target_position = TARGET_POSITION_SWING_UP;
         *target_equilibrium = 1.0;
         time_start_stable_down = time;
         current_experiment_phase = SWINGUP;
