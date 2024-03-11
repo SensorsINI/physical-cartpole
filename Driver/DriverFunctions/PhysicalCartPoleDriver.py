@@ -233,7 +233,6 @@ class PhysicalCartPoleDriver:
         self.lastControlTime = self.startTime
 
         self.InterfaceInstance.stream_output(True)  # now start streaming state
-        self.InterfaceInstance.run_hardware_experiment()
 
     def run_experiment(self):
 
@@ -501,6 +500,8 @@ class PhysicalCartPoleDriver:
                 self.controlEnabled = False
                 if self.current_experiment_protocol.is_running():
                     self.current_experiment_protocol.stop()
+                self.InterfaceInstance.run_hardware_experiment()
+
 
 
             ##### Joystick  #####
