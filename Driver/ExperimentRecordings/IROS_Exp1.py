@@ -13,33 +13,31 @@ def get_data(dataset):
     return time, position, target_position, angle
 
 
-def break_line_on_angle_jump(time, angle):
-    # Threshold for the difference
-    threshold = 1.0  # radians
+def break_line_on_jump(x, y, threshold=1.0):
 
     # Containers for the modified data
-    time_modified = []
-    angle_modified = []
+    x_modified = []
+    y_modified = []
 
     # Loop through the data and insert np.nan where the difference exceeds the threshold
-    for i in range(1, len(angle)):
-        time_modified.append(time[i - 1])
-        angle_modified.append(angle[i - 1])
+    for i in range(1, len(y)):
+        x_modified.append(x[i - 1])
+        y_modified.append(y[i - 1])
 
-        if np.abs(angle[i] - angle[i - 1]) > threshold:
+        if np.abs(y[i] - y[i - 1]) > threshold:
             # Insert np.nan to break the line
-            time_modified.append(np.nan)
-            angle_modified.append(np.nan)
+            x_modified.append(np.nan)
+            y_modified.append(np.nan)
 
     # Don't forget to add the last point
-    time_modified.append(time[-1])
-    angle_modified.append(angle[-1])
+    x_modified.append(x[-1])
+    y_modified.append(y[-1])
 
     # Convert to numpy arrays
-    time_modified = np.array(time_modified)
-    angle_modified = np.array(angle_modified)
+    x_modified = np.array(x_modified)
+    y_modified = np.array(y_modified)
 
-    return time_modified, angle_modified
+    return x_modified, y_modified
 
 
 def get_colors():
@@ -140,9 +138,9 @@ def plot_angle(axs, dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc, axis_labels
     angle_swing_up_nni_pc, time_swing_up_nni_pc = get_swing_up_data(angle_nni_pc, time_nni_pc, 8.0)
     angle_swing_up_mpc_pc, time_swing_up_mpc_pc = get_swing_up_data(angle_mpc_pc, time_mpc_pc, 8.0)
 
-    time_swing_up_nni_hls, angle_swing_up_nni_hls = break_line_on_angle_jump(time_swing_up_nni_hls, angle_swing_up_nni_hls)
-    time_swing_up_nni_pc, angle_swing_up_nni_pc = break_line_on_angle_jump(time_swing_up_nni_pc, angle_swing_up_nni_pc)
-    time_swing_up_mpc_pc, angle_swing_up_mpc_pc = break_line_on_angle_jump(time_swing_up_mpc_pc, angle_swing_up_mpc_pc)
+    time_swing_up_nni_hls, angle_swing_up_nni_hls = break_line_on_jump(time_swing_up_nni_hls, angle_swing_up_nni_hls)
+    time_swing_up_nni_pc, angle_swing_up_nni_pc = break_line_on_jump(time_swing_up_nni_pc, angle_swing_up_nni_pc)
+    time_swing_up_mpc_pc, angle_swing_up_mpc_pc = break_line_on_jump(time_swing_up_mpc_pc, angle_swing_up_mpc_pc)
 
     # Second subplot for angle with condition for time < 8.0
     axs[1].plot(time_swing_up_nni_hls, angle_swing_up_nni_hls*180.0/np.pi, color=color_hls, label='angle nc zynq')
