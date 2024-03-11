@@ -13,7 +13,8 @@ track_boundaries = 19.8  # boundaries of the track, cm
 
 time, position, target_position, angle = get_data(dataset_nni_hls)
 
-time4angle, angle, position4angle = break_line_on_jump(time, angle, threshold=0.3, z=position)
+time4angle, angle, position4angle = break_line_on_jump(time, angle, threshold=0.03, z=position)
+# time4angle, angle, position4angle = time, angle, position
 time4target, target_position = break_line_on_jump(time, target_position, threshold=0.01)
 
 angle_sin = np.sin(angle)
@@ -22,50 +23,30 @@ angle_cos = np.cos(angle)
 boundary_plus = np.full_like(time, track_boundaries)  # Create an array filled with 19.8
 boundary_minus = np.full_like(time, -track_boundaries)  # Create an array filled with -19.8
 
-print(plt.style.available)
-# plt.style.use('seaborn-v0_8-poster')
 
-
-
-fig = plt.figure(figsize=(14, 8))
+fig = plt.figure()  # Adjust figure size
 ax = fig.add_subplot(111, projection='3d')
 
-# Set larger linewidth and smooth lines, similar to Plotly
-ax.plot((-angle_sin * l + position4angle) * 100.0, time4angle, (angle_cos * l) * 100.0, label="Pole's Tip", color='blue', linewidth=4, alpha=0.9)
+# 3D curve
+ax.plot((-angle_sin * l + position4angle) * 100.0, time4angle, (angle_cos * l) * 100.0, label="Pole's Tip", color='b')
 
-ax.plot(position * 100.0, time, zs=0, zdir='z', label='Cart', color='red', linewidth=4, alpha=0.9)
+# Adding 2D line on the same plot. We use one of the axes for position and another for time, with a constant value for the third axis.
+# Adjust the 'zs' parameter to control the position's depth, making it appear as a 2D line.
+ax.plot(position * 100.0, time, zs=0, zdir='z', label='Cart', color='r')
 
-ax.plot(target_position * 100.0, time4target, zs=0, zdir='z', label='Target Position', color='brown', linewidth=6, alpha=0.9)
+ax.plot(target_position * 100.0, time4target, zs=0, zdir='z', label='Target Position', color='brown')
 
-ax.plot(boundary_plus, time, zs=0, zdir='z', label='Track Boundaries', linestyle='--', color='black', linewidth=2, alpha=0.7)
-ax.plot(boundary_minus, time, zs=0, zdir='z', linestyle='--', color='black', linewidth=2, alpha=0.7)
+ax.plot(boundary_plus, time, zs=0, zdir='z', label='Track Boundaries', linestyle='--', color='black')
+ax.plot(boundary_minus, time, zs=0, zdir='z', linestyle='--', color='black')
 
-# Add labels and title with a bigger font size
-ax.set_xlabel('Position [cm]', fontsize=16, labelpad=20)
-ax.set_ylabel('Time [s]', fontsize=16, labelpad=20)
-ax.set_zlabel('Height [cm]', fontsize=16, labelpad=20)
-plt.title('Cart & Pole Dynamics', fontsize=20)
 
-# Legend with large font size and without the frame
-ax.legend(fontsize=14, frameon=False)
+# Set axis labels with increased labelpad for more distance
+ax.set_xlabel('Position [cm]', labelpad=5)
+ax.set_ylabel('Time [s]', labelpad=15)
+ax.set_zlabel('Height [cm]', labelpad=5)
 
-# Removing the grid to mimic Plotly's default look
-ax.grid(False)
-# Set pane colors to white for a cleaner look
-ax.xaxis.pane.fill = False
-ax.yaxis.pane.fill = False
-ax.zaxis.pane.fill = False
-# Remove pane lines
-ax.xaxis.pane.set_edgecolor('white')
-ax.yaxis.pane.set_edgecolor('white')
-ax.zaxis.pane.set_edgecolor('white')
+# plt.legend(loc='lower right')
 
-# Set the tick parameters for the axes
-ax.tick_params(axis='both', which='major', labelsize=14)
-
-# Optionally, you can disable the offset on the axes if you want to mimic Plotly's style further
-ax.get_xaxis().get_major_formatter().set_useOffset(False)
-ax.get_yaxis().get_major_formatter().set_useOffset(False)
-ax.get_zaxis().get_major_formatter().set_useOffset(False)
-
+ax.set_box_aspect((1, 3, 1))
+plt.tight_layout()
 plt.show()
