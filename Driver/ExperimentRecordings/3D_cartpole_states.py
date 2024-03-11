@@ -6,13 +6,14 @@ from mpl_toolkits.mplot3d import Axes3D
 from IROS_Exp1 import get_data, break_line_on_jump
 
 # Load the datasets
-dataset_nni_hls = './nc_zynq_v1/iros24-ex1-experiment-4.csv'
+dataset_nni_hls = 'hardware_experiment_recording.csv'
 
 l = 0.395  # length of the pole, m
 track_boundaries = 19.8  # boundaries of the track, cm
 
 time, position, target_position, angle = get_data(dataset_nni_hls)
 
+time4angle, angle, position4angle = break_line_on_jump(time, angle, threshold=0.3, z=position)
 time4target, target_position = break_line_on_jump(time, target_position, threshold=0.01)
 
 angle_sin = np.sin(angle)
@@ -30,7 +31,7 @@ fig = plt.figure(figsize=(14, 8))
 ax = fig.add_subplot(111, projection='3d')
 
 # Set larger linewidth and smooth lines, similar to Plotly
-ax.plot((-angle_sin * l + position) * 100.0, time, (angle_cos * l) * 100.0, label="Pole's Tip", color='blue', linewidth=4, alpha=0.9)
+ax.plot((-angle_sin * l + position4angle) * 100.0, time4angle, (angle_cos * l) * 100.0, label="Pole's Tip", color='blue', linewidth=4, alpha=0.9)
 
 ax.plot(position * 100.0, time, zs=0, zdir='z', label='Cart', color='red', linewidth=4, alpha=0.9)
 
@@ -43,7 +44,7 @@ ax.plot(boundary_minus, time, zs=0, zdir='z', linestyle='--', color='black', lin
 ax.set_xlabel('Position [cm]', fontsize=16, labelpad=20)
 ax.set_ylabel('Time [s]', fontsize=16, labelpad=20)
 ax.set_zlabel('Height [cm]', fontsize=16, labelpad=20)
-plt.title('3D Plot of Pole Dynamics', fontsize=20)
+plt.title('Cart & Pole Dynamics', fontsize=20)
 
 # Legend with large font size and without the frame
 ax.legend(fontsize=14, frameon=False)
