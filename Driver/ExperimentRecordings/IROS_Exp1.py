@@ -13,59 +13,73 @@ def get_data(dataset):
     return time, position, target_position, angle
 
 
-def break_line_on_jump(x, y, threshold=1.0):
+def break_line_on_jump(x, y, threshold=1.0, z=None):
 
     # Containers for the modified data
     x_modified = []
     y_modified = []
+    z_modified = []
 
     # Loop through the data and insert np.nan where the difference exceeds the threshold
     for i in range(1, len(y)):
         x_modified.append(x[i - 1])
         y_modified.append(y[i - 1])
+        if z is not None:
+            z_modified.append(z[i - 1])
 
         if np.abs(y[i] - y[i - 1]) > threshold:
             # Insert np.nan to break the line
             x_modified.append(np.nan)
             y_modified.append(np.nan)
+            if z is not None:
+                z_modified.append(np.nan)
 
     # Don't forget to add the last point
     x_modified.append(x[-1])
     y_modified.append(y[-1])
+    if z is not None:
+        z_modified.append(z[-1])
 
     # Convert to numpy arrays
     x_modified = np.array(x_modified)
     y_modified = np.array(y_modified)
+    z_modified = np.array(z_modified)
 
-    return x_modified, y_modified
+    if z is not None:
+        return x_modified, y_modified, z_modified
+    else:
+        return x_modified, y_modified
 
 
 def get_colors():
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
 
-    color_hls = colors[2]
-    color_nc_pc = colors[1]
+    A = colors[2]
+    B = colors[1]
     color_target = colors[3]
-    color_mpc = colors[0]
+    C = colors[0]
+    D = colors[4]
 
-    colors = (color_hls, color_nc_pc, color_target, color_mpc)
+    colors = (color_target, A, B, C, D)
 
     return colors
 
 
-def plot_position(axs, dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc, axis_labels_fontsize):
-    # First subplot for position
-    time_nni_hls, position_nni_hls, target_position_nni_hls, angle_nni_hls = get_data(dataset_nni_hls)
-    time_nni_pc, position_nni_pc, target_position_nni_pc, angle_nni_pc = get_data(dataset_nni_pc)
-    time_mpc_pc, position_mpc_pc, target_position_mpc_pc, angle_mpc_pc = get_data(dataset_mpc_pc)
+def plot_position(axs, datasets, labels, axis_labels_fontsize):
 
-    color_hls, color_nc_pc, color_target, color_mpc = get_colors()
-    axs[0].plot(time_nni_hls, position_nni_hls * 100.0, color=color_hls, label='position nc zynq')
-    axs[0].plot(time_nni_pc, position_nni_pc * 100.0, color=color_nc_pc, label='position nc pc')
-    axs[0].plot(time_mpc_pc, position_mpc_pc * 100.0, color=color_mpc, label='position mpc pc')
-    axs[0].plot(time_nni_hls, target_position_nni_hls * 100.0, color=color_target, label='target_position')
-    # axs[0].plot(time_nni_pc, target_position_nni_pc*100.0, label='target_position_pc')
+    colors = get_colors()
+
+    for i, dataset in enumerate(datasets):
+        time, position, _, _ = get_data(dataset)
+        axs[0].plot(time, position * 100.0, color=colors[i + 1], label='Position ' + labels[i])
+
+
+    # Plot target position using first dataset - assumed is that it is same everywhere
+    time, _, target_position, _ = get_data(datasets[0])
+    axs[0].plot(time, target_position * 100.0, color=colors[0], label='Target Position')
+
+
     axs[0].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)
     axs[0].set_ylabel('Position [cm]', fontsize=axis_labels_fontsize)
     axs[0].legend()
@@ -126,71 +140,61 @@ def get_stable_data(angle, time, threshold):
     return angle_stable, time_stable
 
 
-def plot_angle(axs, dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc, axis_labels_fontsize):
+def plot_angle(axs, datasets, labels, axis_labels_fontsize):
 
-    time_nni_hls, position_nni_hls, target_position_nni_hls, angle_nni_hls = get_data(dataset_nni_hls)
-    time_nni_pc, position_nni_pc, target_position_nni_pc, angle_nni_pc = get_data(dataset_nni_pc)
-    time_mpc_pc, position_mpc_pc, target_position_mpc_pc, angle_mpc_pc = get_data(dataset_mpc_pc)
-
-    color_hls, color_nc_pc, color_target, color_mpc = get_colors()
-
-    angle_swing_up_nni_hls, time_swing_up_nni_hls = get_swing_up_data(angle_nni_hls, time_nni_hls, 8.0)
-    angle_swing_up_nni_pc, time_swing_up_nni_pc = get_swing_up_data(angle_nni_pc, time_nni_pc, 8.0)
-    angle_swing_up_mpc_pc, time_swing_up_mpc_pc = get_swing_up_data(angle_mpc_pc, time_mpc_pc, 8.0)
-
-    time_swing_up_nni_hls, angle_swing_up_nni_hls = break_line_on_jump(time_swing_up_nni_hls, angle_swing_up_nni_hls)
-    time_swing_up_nni_pc, angle_swing_up_nni_pc = break_line_on_jump(time_swing_up_nni_pc, angle_swing_up_nni_pc)
-    time_swing_up_mpc_pc, angle_swing_up_mpc_pc = break_line_on_jump(time_swing_up_mpc_pc, angle_swing_up_mpc_pc)
-
-    # Second subplot for angle with condition for time < 8.0
-    axs[1].plot(time_swing_up_nni_hls, angle_swing_up_nni_hls*180.0/np.pi, color=color_hls, label='angle nc zynq')
-    axs[1].plot(time_swing_up_nni_pc, angle_swing_up_nni_pc*180.0/np.pi, color=color_nc_pc, label='angle nc pc')
-    axs[1].plot(time_swing_up_mpc_pc, angle_swing_up_mpc_pc*180.0/np.pi, color=color_mpc, label='angle mpc pc')
+    colors = get_colors()
+    threshold = 8.0
+    # First subplot for angle with condition for time < 8.0
+    for i, dataset in enumerate(datasets):
+        time, _, _, angle = get_data(dataset)
+        angle_swing_up, time_swing_up = get_swing_up_data(angle, time, threshold)
+        time_swing_up, angle_swing_up = break_line_on_jump(time_swing_up, angle_swing_up)
+        axs[1].plot(time_swing_up, angle_swing_up*180.0/np.pi, color=colors[i + 1], label='Angle ' + labels[i])
 
     # Use twinx() for angles where time >= 8.0
     ax2 = axs[1].twinx()
 
-    angle_stable_nni_hls, time_stable_nni_hls = get_stable_data(angle_nni_hls, time_nni_hls, 8.0)
-    angle_stable_nni_pc, time_stable_nni_pc = get_stable_data(angle_nni_pc, time_nni_pc, 8.0)
-    angle_stable_mpc_pc, time_stable_mpc_pc = get_stable_data(angle_mpc_pc, time_mpc_pc, 8.0)
-
-    ax2.plot(time_stable_nni_hls, angle_stable_nni_hls*180.0/np.pi, color=color_hls, label='angle nc zynq')
-    ax2.plot(time_stable_nni_pc, angle_stable_nni_pc*180.0/np.pi, color=color_nc_pc, label='angle nc pc')
-    ax2.plot(time_stable_mpc_pc, angle_stable_mpc_pc*180.0/np.pi, color=color_mpc, label='angle mpc pc')
+    for i, dataset in enumerate(datasets):
+        time, _, _, angle = get_data(dataset)
+        angle_stable, time_stable = get_stable_data(angle, time, threshold)
+        time_stable, angle_stable = break_line_on_jump(time_stable, angle_stable)
+        ax2.plot(time_stable, angle_stable*180.0/np.pi, color=colors[i + 1], label='Angle ' + labels[i])
 
     # Set labels for the y-axes
-    axs[1].set_ylabel('Angle [deg] for t < 8s', fontsize=axis_labels_fontsize)
-    ax2.set_ylabel('Angle [deg] for t >= 8s', fontsize=axis_labels_fontsize)
+    axs[1].set_ylabel(f'Angle [deg] for t < {int(threshold)}s', fontsize=axis_labels_fontsize)
+    ax2.set_ylabel(f'Angle [deg] for t >= {int(threshold)}s', fontsize=axis_labels_fontsize)
     axs[1].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)  # No change here
 
 
     prepare_legend_angle(axs[1], ax2)
 
-    add_vertical_division_line(axs[1], 8.0)
+    add_vertical_division_line(axs[1], threshold)
 
     factor = 1.1
     center_0(axs[1], factor)
     center_0(ax2, factor)
 
-    grid_for_twinx(axs[1], ax2, 8.0)
+    grid_for_twinx(axs[1], ax2, threshold)
 
 
 if __name__ == '__main__':
     # Load the datasets
-    dataset_nni_hls = './nc_zynq_v1/iros24-ex1-experiment-4.csv'
+    dataset_nni_hls = 'hardware_experiment_recording.csv'
     dataset_nni_pc = './nc_pc_v1/iros24-ex1-experiment-1.csv'
     # dataset_mpc_pc = './rpgd_pc_v1/iros24-ex1-experiment-2.csv'
-    dataset_mpc_pc = './iros24-ex1-experiment-1.csv'
+    dataset_mpc_pc = './mpc_pc_v2/iros24-ex1-experiment-0-1.csv'
     # dataset_nni_pc = './nc_zynq_v1/iros24-ex1-experiment-2.csv' # hls, just to compare
 
+    datasets = [dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc]
+    labels = ['NC Zynq', 'NC PC', 'MPC PC']
     axis_labels_fontsize = 12
 
     # Create a figure with 2 subplots
     fig, axs = plt.subplots(2, 1, figsize=(10, 8))  # Adjust figsize as needed
 
     # Plot the position data
-    plot_position(axs, dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc, axis_labels_fontsize)
-    plot_angle(axs, dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc, axis_labels_fontsize)
+    plot_position(axs, datasets, labels, axis_labels_fontsize)
+    plot_angle(axs, datasets, labels, axis_labels_fontsize)
     plt.tight_layout()  # Adjust subplots to fit into the figure area.
     # Show the plot
     plt.show()
