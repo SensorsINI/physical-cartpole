@@ -21,68 +21,50 @@ angle_cos = np.cos(angle)
 boundary_plus = np.full_like(time, track_boundaries)  # Create an array filled with 19.8
 boundary_minus = np.full_like(time, -track_boundaries)  # Create an array filled with -19.8
 
-#Plot the 3D curve
-# Version 2: Use Plotly for an interactive plot
-import plotly.graph_objects as go
+print(plt.style.available)
+# plt.style.use('seaborn-v0_8-poster')
 
-# ... (Your data loading and processing here) ...
 
-# Create traces
-trace0 = go.Scatter3d(
-    x=(-angle_sin * l + position) * 100.0,
-    y=time,
-    z=(angle_cos * l) * 100.0,
-    mode='lines',
-    name="Pole's Tip",
-    line=dict(color='blue', width=6)
-)
 
-trace1 = go.Scatter3d(
-    x=position * 100.0,
-    y=time,
-    z=[0]*len(time),
-    mode='lines',
-    name='Cart',
-    line=dict(color='red', width=6)
-)
+fig = plt.figure(figsize=(14, 8))
+ax = fig.add_subplot(111, projection='3d')
 
-trace2 = go.Scatter3d(
-    x=target_position * 100.0,
-    y=time4target,
-    z=[0]*len(time4target),
-    mode='lines',
-    name='Target Position',
-    line=dict(color='brown', width=6)
-)
+# Set larger linewidth and smooth lines, similar to Plotly
+ax.plot((-angle_sin * l + position) * 100.0, time, (angle_cos * l) * 100.0, label="Pole's Tip", color='blue', linewidth=4, alpha=0.9)
 
-trace3 = go.Scatter3d(
-    x=[track_boundaries]*len(time),
-    y=time,
-    z=[0]*len(time),
-    mode='lines',
-    name='Track Boundaries +',
-    line=dict(color='black', width=6, dash='dash')
-)
+ax.plot(position * 100.0, time, zs=0, zdir='z', label='Cart', color='red', linewidth=4, alpha=0.9)
 
-trace4 = go.Scatter3d(
-    x=[-track_boundaries]*len(time),
-    y=time,
-    z=[0]*len(time),
-    mode='lines',
-    name='Track Boundaries -',
-    line=dict(color='black', width=6, dash='dash')
-)
+ax.plot(target_position * 100.0, time4target, zs=0, zdir='z', label='Target Position', color='brown', linewidth=6, alpha=0.9)
 
-data = [trace0, trace1, trace2, trace3, trace4]
+ax.plot(boundary_plus, time, zs=0, zdir='z', label='Track Boundaries', linestyle='--', color='black', linewidth=2, alpha=0.7)
+ax.plot(boundary_minus, time, zs=0, zdir='z', linestyle='--', color='black', linewidth=2, alpha=0.7)
 
-layout = go.Layout(
-    title='Interactive 3D Plot of Pole Dynamics',
-    scene=dict(
-        xaxis_title='Position [cm]',
-        yaxis_title='Time [s]',
-        zaxis_title='Height [cm]'
-    )
-)
+# Add labels and title with a bigger font size
+ax.set_xlabel('Position [cm]', fontsize=16, labelpad=20)
+ax.set_ylabel('Time [s]', fontsize=16, labelpad=20)
+ax.set_zlabel('Height [cm]', fontsize=16, labelpad=20)
+plt.title('3D Plot of Pole Dynamics', fontsize=20)
 
-fig = go.Figure(data=data, layout=layout)
-fig.show()
+# Legend with large font size and without the frame
+ax.legend(fontsize=14, frameon=False)
+
+# Removing the grid to mimic Plotly's default look
+ax.grid(False)
+# Set pane colors to white for a cleaner look
+ax.xaxis.pane.fill = False
+ax.yaxis.pane.fill = False
+ax.zaxis.pane.fill = False
+# Remove pane lines
+ax.xaxis.pane.set_edgecolor('white')
+ax.yaxis.pane.set_edgecolor('white')
+ax.zaxis.pane.set_edgecolor('white')
+
+# Set the tick parameters for the axes
+ax.tick_params(axis='both', which='major', labelsize=14)
+
+# Optionally, you can disable the offset on the axes if you want to mimic Plotly's style further
+ax.get_xaxis().get_major_formatter().set_useOffset(False)
+ax.get_yaxis().get_major_formatter().set_useOffset(False)
+ax.get_zaxis().get_major_formatter().set_useOffset(False)
+
+plt.show()
