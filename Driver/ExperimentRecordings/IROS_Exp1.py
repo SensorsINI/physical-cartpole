@@ -176,31 +176,52 @@ def plot_angle(axs, datasets, labels, axis_labels_fontsize):
 
     grid_for_twinx(axs[1], ax2, threshold)
 
+def plot_Q_fun(axs, datasets, labels, axis_labels_fontsize):
+    colors = get_colors()
+
+    for i, dataset in enumerate(datasets):
+        df_raw = pd.read_csv(dataset, comment='#')
+        time = df_raw['time'].to_numpy()
+        time = time - time[0]
+        Q = df_raw['Q'].to_numpy()
+        axs[2].plot(time, Q, color=colors[i + 1], label='Q ' + labels[i])
+
+
+    # Set labels for the y-axes
+    axs[2].set_ylabel(f'Q', fontsize=axis_labels_fontsize)
+    axs[2].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)  # No change here
+
 
 if __name__ == '__main__':
     # Load the datasets
     dataset_nni_hls = 'hardware_experiment_recording.csv'
     dataset_nni_pc = './nc_pc_v1/iros24-ex1-experiment-1.csv'
     # dataset_mpc_pc = './rpgd_pc_v1/iros24-ex1-experiment-2.csv'
-    dataset_mpc_pc = './mpc_pc_v2/iros24-ex1-experiment-0-1.csv'
+    dataset_mpc_pc = 'iros24-ex1-experiment-1-3.csv'
     # dataset_nni_pc = './nc_zynq_v1/iros24-ex1-experiment-2.csv' # hls, just to compare
 
     datasets = [dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc]
     labels = ['NC Zynq', 'NC PC', 'MPC PC']
     axis_labels_fontsize = 12
+    plot_Q = True
 
-    # Create a figure with 2 subplots
-    fig, axs = plt.subplots(2, 1, figsize=(10, 8))  # Adjust figsize as needed
+    # Create a figure with 2 or 3 subplots
+    if plot_Q:
+        fig, axs = plt.subplots(3, 1, figsize=(15, 12))
+    else:
+        fig, axs = plt.subplots(2, 1, figsize=(10, 8))  # Adjust figsize as needed
 
     # Plot the position data
     plot_position(axs, datasets, labels, axis_labels_fontsize)
     plot_angle(axs, datasets, labels, axis_labels_fontsize)
+    if plot_Q:
+        # Plot the Q data
+        plot_Q_fun(axs, datasets, labels, axis_labels_fontsize)
     plt.tight_layout()  # Adjust subplots to fit into the figure area.
     # Show the plot
     plt.show()
 
     fig.savefig('IROS_Exp1.pdf')
-
 
 
 
