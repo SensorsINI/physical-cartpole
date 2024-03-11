@@ -11,11 +11,11 @@
 #define TARGET_POSITION_1            0.09
 #define TARGET_POSITION_2            -0.09
 
-#define TIME_FOR_SWINGUP             0.01
-#define TIME_FOR_TARGET_1            4.02
-#define TIME_OF_EXPERIMENT           4.03
+#define TIME_FOR_SWINGUP             10.00
+#define TIME_FOR_TARGET_1            15.00
+#define TIME_OF_EXPERIMENT           20.00
 
-#define UPDATE_INTERVAL              2
+#define UPDATE_INTERVAL              1
 
 int current_experiment_phase = -1;
 float time_start_stable_down;
@@ -113,7 +113,6 @@ void action_go_to_target_2(
         current_experiment_phase = -1;
         *save_to_offline_buffers = 0;
         *ControlOnChip_Enabled_var = ControlOnChip_Enabled_var_original;
-        if (ControlOnChip_Enabled_var_original)
         *motor_command = 0;
         *USE_TARGET_SWITCHES_var = USE_TARGET_SWITCHES_var_original;
         SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);

@@ -5,7 +5,7 @@
 
 
 
-#define OFFLINE_BUFFER_SIZE 5000 + 7 // 20s at 1kHz, *29 for total size of all buffers, that is 0.58MB; 5 bytess for SOF, command code, message length and CRC
+#define OFFLINE_BUFFER_SIZE 20000 + 7 // 20s at 1kHz, *29 for total size of all buffers, that is 0.58MB; 5 bytess for SOF, command code, message length and CRC
 #define OFFLINE_BUFFER_SIZE_FLOAT 4*(OFFLINE_BUFFER_SIZE-7) + 7
 
 //static float time_Buffer[OFFLINE_BUFFER_SIZE];
