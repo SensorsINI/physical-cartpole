@@ -134,7 +134,7 @@ void InsertionSortMethod_float(float* ptrArray, unsigned int arraySize)
 
 float ClassicMedianFilter_float(float* ptrArray, unsigned int arraySize)
 {
-	int returnValue;
+	float returnValue;
 
 	float ArrayCopy[arraySize];
 
@@ -144,7 +144,7 @@ float ClassicMedianFilter_float(float* ptrArray, unsigned int arraySize)
 
 	if(arraySize > 1u)
 	{
-		InsertionSortMethod(ArrayCopy,arraySize);
+		InsertionSortMethod_float(ArrayCopy,arraySize);
 		if(0 == (arraySize&1u))
 		{/* Even number */
 			returnValue = (ArrayCopy[(arraySize/2)-1]+ArrayCopy[arraySize/2])/2;
