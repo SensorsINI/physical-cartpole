@@ -8,3 +8,6 @@
 /* Export function */
 void InsertionSortMethod(int*, unsigned int);
 int ClassicMedianFilter(int*, unsigned int);
+
+void InsertionSortMethod_float(float*, unsigned int);
+float ClassicMedianFilter_float(float*, unsigned int);

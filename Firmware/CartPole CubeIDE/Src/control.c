@@ -150,7 +150,6 @@ void CONTROL_BackgroundTask(void)
 
 		short 			positionD_short;
 		int angle_int = 0;
-		int angleD_int = 0;
 		int invalid_step = 0;
 
 
@@ -160,7 +159,7 @@ void CONTROL_BackgroundTask(void)
 
 		position_short = Encoder_Read();
 		position_short = position_short - positionCentre;
-		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angleD_int, &invalid_step);
+		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angleD, &invalid_step);
 
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
@@ -172,17 +171,17 @@ void CONTROL_BackgroundTask(void)
 	    }
 	    position_previous = position_short;
 
-	    average_derivatives(&angleD_int, &positionD_short);
+	    average_derivatives(&angleD, &positionD_short);
 
 	    float angle_cos, angle_sin;
 
 	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
-		angle = wrapLocal_rad(((angle_int/16) + ANGLE_DEVIATION) * (ANGLE_NORMALIZATION_FACTOR));
+		angle = wrapLocal_rad(((angle_int) + ANGLE_DEVIATION) * (ANGLE_NORMALIZATION_FACTOR));
 	    position = position_short * POSITION_NORMALIZATION_FACTOR;
 
 	    angle_cos = cos(angle);
 	    angle_sin = sin(angle);
-	    angleD = (angleD_int*(ANGLE_NORMALIZATION_FACTOR/16.0)/time_difference_between_measurement_s);
+	    angleD = (angleD*(ANGLE_NORMALIZATION_FACTOR)/time_difference_between_measurement_s);
 	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
 
         time = time_current_measurement/1000000.0;
@@ -283,7 +282,7 @@ void CONTROL_BackgroundTask(void)
 	    	prepare_message_to_PC_state(
 	    			buffer,
 					27,
-	    			angle_int/16,
+	    			angle_int,
 					position_short,
 					target_position,
 					motor_command,
