@@ -114,6 +114,7 @@ void action_go_to_target_2(
         *save_to_offline_buffers = 0;
         *ControlOnChip_Enabled_var = ControlOnChip_Enabled_var_original;
         *motor_command = 0;
+        Motor_Stop();
         *USE_TARGET_SWITCHES_var = USE_TARGET_SWITCHES_var_original;
         SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);
         *run_hardware_experiment = 2;
