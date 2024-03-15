@@ -7,9 +7,9 @@
 
 
 // Averaging derivatives with median filter
-#define ANGLE_D_BUFFER_SIZE 3 // Median filter for pole's angular velocity
-#define POSITION_D_BUFFER_SIZE 3 // Median filter for cart's velocity
-#define timesteps_for_derivatives 10 // Based on how many timesteps should the derivative be calculated, This is also used to determine invalid steps so you need it even if you don't use derivative from chip!
+#define ANGLE_D_BUFFER_SIZE 1// Median filter for pole's angular velocity
+#define POSITION_D_BUFFER_SIZE 1 // Median filter for cart's velocity
+#define timesteps_for_derivatives 2 // Based on how many timesteps should the derivative be calculated, This is also used to determine invalid steps so you need it even if you don't use derivative from chip!
 
 
 

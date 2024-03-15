@@ -6,7 +6,7 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short CONTROL_LOOP_PERIOD_MS				=		3;
+unsigned short CONTROL_LOOP_PERIOD_MS				=		5;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 unsigned short ANGLE_MEASUREMENT_INTERVAL_US		= 		200;
@@ -37,10 +37,10 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 #elif defined(ZYNQ)
 
-float MOTOR_CORRECTION[3] 							=		{1451.899,  175.347,  116.122}; // Pololu
+float MOTOR_CORRECTION[3] 							=		{1488.070,  80.797,  96.254}; // Pololu
 
-float CONTROL_ANGLE_SET_POINT_POLULU				=		-2845.935;
-float CONTROL_ANGLE_SET_POINT_ORIGINAL				=		-2845.935;
+float CONTROL_ANGLE_SET_POINT_POLULU				=		-3042.835;
+float CONTROL_ANGLE_SET_POINT_ORIGINAL				=		-3042.835;
 
 float ANGLE_NORMALIZATION_FACTOR					=		0.0015442848171956895;
 float POSITION_NORMALIZATION_FACTOR					=		0.0000841657806278922;
