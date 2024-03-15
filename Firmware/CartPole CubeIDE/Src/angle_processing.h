@@ -12,6 +12,7 @@ void average_derivatives(float* angleDPtr, float* positionDPtr);
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, float* angleDPtr, int* invalid_stepPtr);
 int anomaly_detection(int* angleSamples, unsigned short angleSampIndex, unsigned short angle_averageLen);
 void treat_deadangle_with_derivative(int* anglePtr, int invalid_step);
+void calculate_position_difference_per_timestep(short* positionPtr, float* positionDPtr);
 
 int wrapLocal(int angle);
 float wrapLocal_rad(float angle);

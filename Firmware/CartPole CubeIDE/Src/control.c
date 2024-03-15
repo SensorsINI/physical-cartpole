@@ -49,7 +49,6 @@ unsigned short 	angleSampIndex		= 0;
 int *angleSamples;
 
 short 			position_short;
-short 			position_previous = -30000;
 
 unsigned short	latency_violation = 0;
 
@@ -148,7 +147,6 @@ void CONTROL_BackgroundTask(void)
 
 		int   					motor_command_from_chip;
 
-		short 			positionD_short;
 		int angle_int = 0;
 		int invalid_step = 0;
 
@@ -164,14 +162,8 @@ void CONTROL_BackgroundTask(void)
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
-	    if (position_previous!=-30000){
-	    	positionD_short = position_short-position_previous;
-	    } else {
-	    	positionD_short = 0;
-	    }
-	    position_previous = position_short;
+		calculate_position_difference_per_timestep(&position_short, &positionD);
 
-        positionD = (float)positionD_short;
 	    average_derivatives(&angleD, &positionD);
 
 	    float angle_cos, angle_sin;

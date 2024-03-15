@@ -2,6 +2,7 @@
 #include "parameters.h"
 #include "median_filter.h"
 #include <stdlib.h>
+#include <limits.h> // For SHRT_MAX
 #include "math.h"
 
 
@@ -139,6 +140,42 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     angle_history[idx_for_derivative_calculation_angle] = *anglePtr;
     frozen_history[idx_for_derivative_calculation_angle] = frozen;
     idx_for_derivative_calculation_angle = (idx_for_derivative_calculation_angle + 1) % ANGLE_HISTORY_BUFFER_SIZE; // Move to next index, wrap around if necessary
+}
+
+
+#define POSITION_HISTORY_BUFFER_SIZE (timesteps_for_derivatives+1)
+
+short position_history[POSITION_HISTORY_BUFFER_SIZE]; // Buffer to store past positions
+
+int idx_for_derivative_calculation_position = 0; // Current index in the buffer
+int position_history_initialised = 0;
+
+// Initialize the angle history buffer to -1
+void init_position_history() {
+    for (int i = 0; i < POSITION_HISTORY_BUFFER_SIZE; ++i) {
+        position_history[i] = SHRT_MAX;
+        frozen_history[i] = 0;
+    }
+}
+
+
+void calculate_position_difference_per_timestep(short* positionPtr, float* positionDPtr) {
+
+	if (position_history_initialised == 0)
+	{
+		init_position_history();
+		position_history_initialised = 1;
+	}
+
+    // Calculate the index for the k-th past angle
+    int kth_past_index = (idx_for_derivative_calculation_position - timesteps_for_derivatives + POSITION_HISTORY_BUFFER_SIZE) % POSITION_HISTORY_BUFFER_SIZE;
+    int kth_past_position = position_history[kth_past_index];
+
+    short not_normed_positionD_raw = kth_past_position != SHRT_MAX ? (*positionPtr - kth_past_position) :0;
+    *positionDPtr =  (float)(not_normed_positionD_raw)/ timesteps_for_derivatives;
+    position_history[idx_for_derivative_calculation_position] = *positionPtr;
+
+    idx_for_derivative_calculation_position = (idx_for_derivative_calculation_position + 1) % POSITION_HISTORY_BUFFER_SIZE; // Move to next index, wrap around if necessary
 }
 
 
