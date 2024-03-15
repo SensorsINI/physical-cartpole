@@ -20,7 +20,7 @@ float angleD_raw = 0, angleD_raw_stable = -1, angleD_raw_sensor;
 int frozen = 0;
 
 float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
-int positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
+float positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
 
 // Initialize buffer indices
 unsigned short angleDBufferIndex = 0;
@@ -38,21 +38,19 @@ void updateCircularBuffer_float(float* buffer, unsigned short* index, unsigned s
 }
 
 // Function to average derivatives
-void average_derivatives(float* angleDPtr, short* positionDPtr){
+void average_derivatives(float* angleDPtr, float* positionDPtr){
     // Update angleD buffer with current value
     updateCircularBuffer_float(angleDBuffer, &angleDBufferIndex, ANGLE_D_BUFFER_SIZE, *angleDPtr);
 
-    // Convert short value to int and update positionD buffer
-    int positionDInt = (int)*positionDPtr; // Convert short to int for processing
-    updateCircularBuffer(positionDBuffer, &positionDBufferIndex, POSITION_D_BUFFER_SIZE, positionDInt);
+    updateCircularBuffer_float(positionDBuffer, &positionDBufferIndex, POSITION_D_BUFFER_SIZE, *positionDPtr);
 
     // Calculate medians using the updated buffers
     float angleDMedian = ClassicMedianFilter_float(angleDBuffer, ANGLE_D_BUFFER_SIZE); // Adjust casting if necessary
-    int positionDMedian = ClassicMedianFilter((int*)positionDBuffer, POSITION_D_BUFFER_SIZE); // Adjust casting if necessary
+    float positionDMedian = ClassicMedianFilter_float(positionDBuffer, POSITION_D_BUFFER_SIZE); // Adjust casting if necessary
 
     // Update pointers with median values
     *angleDPtr = angleDMedian;
-    *positionDPtr = (short)positionDMedian; // Convert int back to short
+    *positionDPtr = positionDMedian; // Convert int back to short
 }
 
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, float* angleDPtr, int* invalid_stepPtr){

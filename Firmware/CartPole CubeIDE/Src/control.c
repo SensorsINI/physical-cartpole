@@ -171,7 +171,8 @@ void CONTROL_BackgroundTask(void)
 	    }
 	    position_previous = position_short;
 
-	    average_derivatives(&angleD, &positionD_short);
+        positionD = (float)positionD_short;
+	    average_derivatives(&angleD, &positionD);
 
 	    float angle_cos, angle_sin;
 
@@ -182,7 +183,7 @@ void CONTROL_BackgroundTask(void)
 	    angle_cos = cos(angle);
 	    angle_sin = sin(angle);
 	    angleD = (angleD*(ANGLE_NORMALIZATION_FACTOR)/time_difference_between_measurement_s);
-	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+	    positionD = (positionD*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
 
         time = time_current_measurement/1000000.0;
 
