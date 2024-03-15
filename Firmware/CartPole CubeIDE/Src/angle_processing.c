@@ -7,7 +7,7 @@
 
 
 // Averaging derivatives with median filter
-#define ANGLE_D_BUFFER_SIZE 1// Median filter for pole's angular velocity
+#define ANGLE_D_BUFFER_SIZE 1 // Median filter for pole's angular velocity
 #define POSITION_D_BUFFER_SIZE 1 // Median filter for cart's velocity
 #define timesteps_for_derivatives 2 // Based on how many timesteps should the derivative be calculated, This is also used to determine invalid steps so you need it even if you don't use derivative from chip!
 
@@ -86,15 +86,15 @@ int anomaly_detection(int* angleSamples, unsigned short angleSampIndex, unsigned
 
 
 
-#define BUFFER_SIZE (timesteps_for_derivatives+1)
-int angle_history[BUFFER_SIZE]; // Buffer to store past angles
-int frozen_history[BUFFER_SIZE]; // Buffer to store past angles
-int angleIndex = 0; // Current index in the buffer
+#define ANGLE_HISTORY_BUFFER_SIZE (timesteps_for_derivatives+1)
+int angle_history[ANGLE_HISTORY_BUFFER_SIZE]; // Buffer to store past angles
+int frozen_history[ANGLE_HISTORY_BUFFER_SIZE]; // Buffer to store past angles
+int idx_for_derivative_calculation_angle = 0; // Current index in the buffer
 int angle_history_initialised = 0;
 
 // Initialize the angle history buffer to -1
 void init_angle_history() {
-    for (int i = 0; i < BUFFER_SIZE; ++i) {
+    for (int i = 0; i < ANGLE_HISTORY_BUFFER_SIZE; ++i) {
         angle_history[i] = -1;
         frozen_history[i] = 0;
     }
@@ -111,7 +111,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
 
     // Calculate the index for the k-th past angle
-    int kth_past_index = (angleIndex - timesteps_for_derivatives + BUFFER_SIZE) % BUFFER_SIZE;
+    int kth_past_index = (idx_for_derivative_calculation_angle - timesteps_for_derivatives + ANGLE_HISTORY_BUFFER_SIZE) % ANGLE_HISTORY_BUFFER_SIZE;
     int kth_past_angle = angle_history[kth_past_index];
     int kth_past_frozen = frozen_history[kth_past_index];
 
@@ -138,9 +138,9 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     angle_raw_prev = *anglePtr;
 
     // Save current angle in the history buffer and update index
-    angle_history[angleIndex] = *anglePtr;
-    frozen_history[angleIndex] = frozen;
-    angleIndex = (angleIndex + 1) % BUFFER_SIZE; // Move to next index, wrap around if necessary
+    angle_history[idx_for_derivative_calculation_angle] = *anglePtr;
+    frozen_history[idx_for_derivative_calculation_angle] = frozen;
+    idx_for_derivative_calculation_angle = (idx_for_derivative_calculation_angle + 1) % ANGLE_HISTORY_BUFFER_SIZE; // Move to next index, wrap around if necessary
 }
 
 
