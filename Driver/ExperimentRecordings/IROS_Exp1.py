@@ -70,27 +70,29 @@ def get_colors():
     return colors
 
 
-def plot_position(axs, datasets, labels, axis_labels_fontsize):
-
+def plot_position(axs, datasets, labels, fontsizes):
+    axis_labels_fontsize, legend_fontsize, your_tick_fontsize = fontsizes
     colors = get_colors()
 
     for i, dataset in enumerate(datasets):
         time, position, _, _ = get_data(dataset)
-        axs[0].plot(time, position * 100.0, color=colors[i + 1], label='Position ' + labels[i])
+        label = labels[i]
+        # label = 'Position ' + labels[i]
+        axs[0].plot(time, position * 100.0, color=colors[i + 1], label=label)
 
 
     # Plot target position using first dataset - assumed is that it is same everywhere
     time, _, target_position, _ = get_data(datasets[0])
     axs[0].plot(time, target_position * 100.0, color=colors[0], label='Target Position')
 
-
+    axs[0].tick_params(axis='both', labelsize=your_tick_fontsize)
     axs[0].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)
     axs[0].set_ylabel('Position [cm]', fontsize=axis_labels_fontsize)
-    axs[0].legend()
+    axs[0].legend(fontsize=legend_fontsize)
     axs[0].grid()
 
 
-def prepare_legend_angle(ax1, ax2):
+def prepare_legend_angle(ax1, ax2, fontsize=16):
     # Since we use the same labels for matching datasets, we can just create one legend.
     # No need to manually handle the labels and handles from both axes.
     handles, labels = ax1.get_legend_handles_labels()
@@ -100,7 +102,7 @@ def prepare_legend_angle(ax1, ax2):
     by_label = OrderedDict(zip(labels, handles))  # Filters out duplicates
 
     # Now use this deduplicated dictionary to create the legend
-    ax2.legend(by_label.values(), by_label.keys(), loc='upper right')
+    ax2.legend(by_label.values(), by_label.keys(), loc='upper right', fontsize=fontsize)
 
 
 def add_vertical_division_line(ax, threshold):
@@ -145,7 +147,7 @@ def get_stable_data(angle, time, threshold):
 
 
 def plot_angle(axs, datasets, labels, axis_labels_fontsize):
-
+    axis_labels_fontsize, legend_fontsize, your_tick_fontsize = fontsizes
     colors = get_colors()
     threshold = 8.0
     # First subplot for angle with condition for time < 8.0
@@ -169,8 +171,10 @@ def plot_angle(axs, datasets, labels, axis_labels_fontsize):
     ax2.set_ylabel(f'Angle [deg] for t >= {int(threshold)}s', fontsize=axis_labels_fontsize)
     axs[1].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)  # No change here
 
+    axs[1].tick_params(axis='both', labelsize=your_tick_fontsize)
+    ax2.tick_params(axis='both', labelsize=your_tick_fontsize)
 
-    prepare_legend_angle(axs[1], ax2)
+    # prepare_legend_angle(axs[1], ax2, fontsize=legend_fontsize)
 
     add_vertical_division_line(axs[1], threshold)
 
@@ -180,34 +184,53 @@ def plot_angle(axs, datasets, labels, axis_labels_fontsize):
 
     grid_for_twinx(axs[1], ax2, threshold)
 
-def plot_Q_fun(axs, datasets, labels, axis_labels_fontsize):
+def plot_Q_fun(axs, datasets, labels, fontsizes, plotting_order=None):
     colors = get_colors()
+    axis_labels_fontsize, legend_fontsize, your_tick_fontsize = fontsizes
 
-    for i, dataset in enumerate(datasets):
-        df_raw = pd.read_csv(dataset, comment='#')
+    if plotting_order is None:
+        plotting_order = range(len(datasets))
+
+    # Dictionary to store line objects keyed by their label for easy lookup
+    handle_dict = {}
+
+    for i in plotting_order:
+        df_raw = pd.read_csv(datasets[i], comment='#')
         time = df_raw['time'].to_numpy()
-        time = time - time[0]
+        time = time - time[0]  # Adjust time if necessary
         Q = df_raw['Q'].to_numpy()
-        axs[2].plot(time, Q, color=colors[i + 1], label='Q ' + labels[i])
+        # Plot and store the line object using the label as key
+        line, = axs[2].plot(time, Q, color=colors[i + 1], label='Q ' + labels[i])
+        handle_dict['Q ' + labels[i]] = line
 
+    # Reorder handles based on the original labels order
+    ordered_handles = [handle_dict['Q ' + label] for label in labels if 'Q ' + label in handle_dict]
 
-    # Set labels for the y-axes
-    axs[2].set_ylabel(f'Q', fontsize=axis_labels_fontsize)
-    axs[2].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)  # No change here
+    # Create legend with handles in the order of original labels
+    axs[2].legend(handles=ordered_handles, labels=['Q ' + label for label in labels])
+
+    # Set labels for the axes
+    axs[2].set_ylabel('Q', fontsize=axis_labels_fontsize)
+    axs[2].set_xlabel('Time [s]', fontsize=axis_labels_fontsize)
 
 
 if __name__ == '__main__':
     # Load the datasets
-    dataset_nni_hls = 'hardware_experiment_recording.csv'
-    dataset_nni_pc = './nc_pc_v1/iros24-ex1-experiment-1.csv'
-    # dataset_mpc_pc = './rpgd_pc_v1/iros24-ex1-experiment-2.csv'
-    dataset_mpc_pc = 'iros24-ex1-experiment-1-3.csv'
-    # dataset_nni_pc = './nc_zynq_v1/iros24-ex1-experiment-2.csv' # hls, just to compare
+    dataset_nni_hls = 'iros24-ex1-experiment-1kHz-v1.csv'
+    dataset_nni_pc = './positionD_window_10/iros24-ex1-experiment-0.csv'
+    dataset_mpc_pc = './mpc_pc/iros24-ex1-experiment-9.csv'
+    # datasets = [dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc]
+    # labels = ['NC Zynq 1kHz', 'NC PC 200 Hz', 'MPC PC 50Hz']
 
-    datasets = [dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc]
-    labels = ['NC Zynq', 'NC PC', 'MPC PC']
-    axis_labels_fontsize = 12
-    plot_Q = True
+    datasets = [dataset_nni_hls, dataset_mpc_pc]
+    labels = ['NC Zynq 1kHz', 'MPC PC 50Hz']
+
+    axis_labels_fontsize = 18
+    legend_fontsize = 16
+    ticks_fontsize = 16
+
+    fontsizes = [axis_labels_fontsize, legend_fontsize, ticks_fontsize]
+    plot_Q = False
 
     # Create a figure with 2 or 3 subplots
     if plot_Q:
@@ -216,11 +239,13 @@ if __name__ == '__main__':
         fig, axs = plt.subplots(2, 1, figsize=(10, 8))  # Adjust figsize as needed
 
     # Plot the position data
-    plot_position(axs, datasets, labels, axis_labels_fontsize)
+    plot_position(axs, datasets, labels, fontsizes)
     plot_angle(axs, datasets, labels, axis_labels_fontsize)
+
+    plotting_order = [1, 2, 0]
     if plot_Q:
         # Plot the Q data
-        plot_Q_fun(axs, datasets, labels, axis_labels_fontsize)
+        plot_Q_fun(axs, datasets, labels, axis_labels_fontsize, plotting_order)
     plt.tight_layout()  # Adjust subplots to fit into the figure area.
     # Show the plot
     plt.show()
