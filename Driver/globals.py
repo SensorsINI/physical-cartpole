@@ -46,13 +46,13 @@ if CHIP == 'STM':
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
     PWM_PERIOD_IN_CLOCK_CYCLES = 2500
-    MOTOR_CORRECTION_POLOLU = (1451.899,  175.347,  116.122)  # Explanation - see above, same as for STM case
+    MOTOR_CORRECTION_POLOLU = (1488.070,  80.797,  96.254)  # Explanation - see above, same as for STM case
     ANGLE_360_DEG_IN_ADC_UNITS = 4068.67  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 811.6  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
+    ANGLE_HANGING_POLOLU = 1008.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
     POSITION_ENCODER_RANGE = 4705  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
 
