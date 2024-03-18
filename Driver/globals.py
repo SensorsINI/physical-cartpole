@@ -26,7 +26,7 @@ elif CONTROLLER_NAME == 'neural-imitator':
 elif CONTROLLER_NAME == 'fpga':
     CONTROL_PERIOD_MS = 15
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 16  # e.g. 5 for PID or 20 for mppi
 
 if CHIP == 'STM':
     PWM_PERIOD_IN_CLOCK_CYCLES = 7200
