@@ -221,6 +221,7 @@ if __name__ == '__main__':
     dataset_mpc_pc = './mpc_pc/iros24-ex1-experiment-9.csv'
     # datasets = [dataset_nni_hls, dataset_nni_pc, dataset_mpc_pc]
     # labels = ['NC Zynq 1kHz', 'NC PC 200 Hz', 'MPC PC 50Hz']
+    # labels = ['run 1', 'run 2', 'run 3']
 
     datasets = [dataset_nni_hls, dataset_mpc_pc]
     labels = ['NC Zynq 1kHz', 'MPC PC 50Hz']
@@ -245,7 +246,7 @@ if __name__ == '__main__':
     plotting_order = [1, 2, 0]
     if plot_Q:
         # Plot the Q data
-        plot_Q_fun(axs, datasets, labels, axis_labels_fontsize, plotting_order)
+        plot_Q_fun(axs, datasets, labels, fontsizes, plotting_order)
     plt.tight_layout()  # Adjust subplots to fit into the figure area.
     # Show the plot
     plt.show()
