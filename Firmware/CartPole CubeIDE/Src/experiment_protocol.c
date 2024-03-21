@@ -12,8 +12,8 @@
 #define TARGET_POSITION_2            -0.09
 
 #define TIME_FOR_SWINGUP             10.00
-#define TIME_FOR_TARGET_1            15.00
-#define TIME_OF_EXPERIMENT           20.00
+#define TIME_FOR_TARGET_1            13.00
+#define TIME_OF_EXPERIMENT           16.00
 
 #define UPDATE_INTERVAL              1
 
@@ -35,7 +35,7 @@ void action_reset(float position, float angle, float time, float* target_positio
 void action_swing_up(float time, float* target_position);
 void action_go_to_target_1(float time, float* target_position);
 void action_go_to_target_2(
-		float time,
+		float time, float* target_position,
 		int* run_hardware_experiment, int* save_to_offline_buffers,
 		bool* ControlOnChip_Enabled_var, int* motor_command, bool* USE_TARGET_SWITCHES_var);
 
@@ -68,7 +68,7 @@ void HardwareExperimentProtocol(
                 break;
             case GO_TO_TARGET_2:
                 action_go_to_target_2(
-                		time,
+                		time, target_position,
                 		run_hardware_experiment, save_to_offline_buffers,
 						ControlOnChip_Enabled_var, motor_command, USE_TARGET_SWITCHES_var);
                 break;
@@ -106,11 +106,12 @@ void action_go_to_target_1(float time, float* target_position) {
 }
 
 void action_go_to_target_2(
-		float time,
+		float time, float* target_position,
 		int* run_hardware_experiment, int* save_to_offline_buffers,
 		bool* ControlOnChip_Enabled_var, int* motor_command, bool* USE_TARGET_SWITCHES_var) {
     if (time - time_start_stable_down > TIME_OF_EXPERIMENT) {
         current_experiment_phase = -1;
+        *target_position = 0.0;
         *save_to_offline_buffers = 0;
         *ControlOnChip_Enabled_var = ControlOnChip_Enabled_var_original;
         *motor_command = 0;
