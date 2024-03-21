@@ -115,7 +115,7 @@ float target_position = 0.0;
 
 // The 4 variable below only matter on Zynq if USE_TARGET_SWITCHES==TRUE
 int position_period  = 1000;  // In a unit of control updates
-float position_jumps_target = 0.12;
+float position_jumps_target = 0.09;
 int position_jumps_enabled = 0;
 int position_jumps_interval_counter = 0;
 
