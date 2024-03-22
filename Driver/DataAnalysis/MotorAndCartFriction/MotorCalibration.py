@@ -24,7 +24,7 @@ v_sat = v_sat_max * Q,
     v_sat_max is maximal saturation velocity at each deviation from linear behaviour is negligible
 
 We determine A, B_pos, B_neg by fitting to recorded data of v_sat vs motor_input.
-Use bidirectional StepResponseMeasurement in step_response_measure.py to get the data
+Use bidirectional step_response_experiment in step_response_experiment.py to get the data
 and double_regression to fit two lines with identical slope but different intercept.
 (in fact physics would suggest B_pos = -B_neg
  we allowed B_pos and B_neg to take arbitrary values,
@@ -47,7 +47,7 @@ v_sat_max_lin indicates the range of saturation velocities to be used for linear
 
 Finally we determine the relationship motor_input(Q) = (v_sat_max/A) * Q - (B/A) = S * Q + I (S,I for "slope" and "intercept")
 and calculate these coefficients.
-You have to update these coefficients manually in physical cartpole driver, in get_motor_command()
+You have to update these coefficients manually in physical cartpole driver, in control_signal_to_motor_command()
 
 Attention! a, b, A and B are here are not consistent with the names used in the code. Read carefully!
 """
@@ -103,7 +103,6 @@ def motor_calibration(FILE_NAME):
         data['motor_input'] = data['actualMotorSave'] # Older data sets
     except:
         pass
-    data['motor_input'] = -data['motor_input']
 
     data = data.iloc[1:-1]
     data = data.reset_index(drop=True)
@@ -146,7 +145,7 @@ def motor_calibration(FILE_NAME):
     motor_input_neg_lin = data_stat_neg_lin['motor_input'].to_numpy()
     v_sat_neg_lin = data_stat_neg_lin['v_max'].to_numpy()
 
-    a, B_pos, B_neg = double_regression_2(motor_input_pos_lin, v_sat_pos_lin, motor_input_neg_lin, v_sat_neg_lin)
+    a, B_pos, B_neg = double_regression(motor_input_pos_lin, v_sat_pos_lin, motor_input_neg_lin, v_sat_neg_lin)
 
     print()
     print()

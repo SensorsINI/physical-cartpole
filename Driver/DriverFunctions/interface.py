@@ -1,41 +1,73 @@
 import serial
 import struct
 import time
+import pandas as pd
 
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
+HARDWARE_EXPERIMENT_TIMEOUT = 30.0      # Seconds
 READ_STATE_TIMEOUT      = 1.0      # Seconds
 SERIAL_SOF              = 0xAA
 CMD_PING                = 0xC0
 CMD_STREAM_ON           = 0xC1
 CMD_CALIBRATE           = 0xC2
 CMD_CONTROL_MODE        = 0xC3
-CMD_SET_ANGLE_CONFIG    = 0xC4
-CMD_GET_ANGLE_CONFIG    = 0xC5
-CMD_SET_POSITION_CONFIG = 0xC6
-CMD_GET_POSITION_CONFIG = 0xC7
+CMD_SET_PID_CONFIG      = 0xC4
+CMD_GET_PID_CONFIG      = 0xC5
+CMD_SET_CONTROL_CONFIG  = 0xC6
+CMD_GET_CONTROL_CONFIG  = 0xC7
 CMD_SET_MOTOR           = 0xC8
-CMD_SET_CONTROL_CONFIG  = 0xC9
+CMD_SET_TARGET_POSITION = 0xC9
 CMD_COLLECT_RAW_ANGLE   = 0xCA
 CMD_STATE               = 0xCC
+CMD_SET_TARGET_EQUILIBRIUM = 0xCD
+CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
+CMD_TRANSFER_BUFFERS    = 0xD1
 
-def get_serial_port(serial_port_number=''):
-    import platform
-    import subprocess
-    serial_port_number = str(serial_port_number)
+def get_serial_port(chip_type="STM", serial_port_number=None):
+
+    """
+    Finds the cartpole serial port, or throws exception if not present
+    :param chip_type: "ZYNQ" or "STM" depending on which one you use
+    :param serial_port_number: Only used if serial port not found using chip type, can be left None, for normal operation
+    :returns:  the string name of the COM port
+    """
+
+    from serial.tools import list_ports
+    ports = list(serial.tools.list_ports.comports())
+    serial_ports_names = []
+    print('\nAvailable serial ports:')
+    for index, port in enumerate(ports):
+        serial_ports_names.append(port.device)
+        print(f'{index}: port={port.device}; description={port.description}')
+    print()
+
+    if chip_type == "STM":
+        expected_description = 'USB Serial'
+    elif chip_type == "ZYNQ":
+        expected_description = 'Digilent Adept USB Device - Digilent Adept USB Device'
+    else:
+        raise ValueError(f'Unknown chip type: {chip_type}')
+
     SERIAL_PORT = None
-    try:
-        system = platform.system()
-        if system == 'Darwin':  # Mac
-            SERIAL_PORT = subprocess.check_output('ls -a /dev/tty.usbserial*', shell=True).decode("utf-8").strip()  # Probably '/dev/tty.usbserial-110'
-        elif system == 'Linux':
-            SERIAL_PORT = '/dev/ttyUSB' + serial_port_number  # You might need to change the USB number
-        elif system == 'Windows':
-            SERIAL_PORT = 'COM' + serial_port_number
+    for port in ports:
+        if port.description == expected_description:
+            SERIAL_PORT = port.device
+            break
+    if SERIAL_PORT is None:
+        message = f"Searching serial port by its expected description - {expected_description} - not successful."
+        if serial_port_number is not None:
+            print(message)
         else:
-            raise NotImplementedError('For system={} connection to serial port is not implemented.')
-    except Exception as err:
-        print(err)
+            raise Exception(message)
+
+    if SERIAL_PORT is None and serial_port_number is not None:
+        if len(serial_ports_names)==0:
+            print(f'No serial ports')
+        else:
+            print(f"Setting serial port with requested number ({serial_port_number})\n")
+            SERIAL_PORT = serial_ports_names[serial_port_number]
+
 
     return SERIAL_PORT
 
@@ -48,6 +80,8 @@ class Interface:
         self.end = None
 
         self.encoderDirection = None
+
+        self.hardware_experiment_length = 0
 
     def open(self, port, baud):
         self.port = port
@@ -71,7 +105,6 @@ class Interface:
         msg = [SERIAL_SOF, CMD_PING, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         self.prevPktNum = 1000
         return self._receive_reply(CMD_PING, 4, PING_TIMEOUT) == msg
 
@@ -79,14 +112,12 @@ class Interface:
         msg = [SERIAL_SOF, CMD_STREAM_ON, 5, en]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         self.clear_read_buffer()
 
     def calibrate(self):
         msg = [SERIAL_SOF, CMD_CALIBRATE, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
         self.clear_read_buffer()
 
@@ -95,85 +126,144 @@ class Interface:
 
         return True
 
+    def run_hardware_experiment(self):
+        msg = [SERIAL_SOF, CMD_RUN_HARDWARE_EXPERIMENT, 4]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+        self.clear_read_buffer()
+
+        reply = self._receive_reply(CMD_RUN_HARDWARE_EXPERIMENT, 6, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+        self.hardware_experiment_length = struct.unpack('H', bytes(reply[3:5]))[0]
+        print(f'Hardware experiment finished with length {self.hardware_experiment_length}')
+
+        msg = [SERIAL_SOF, CMD_TRANSFER_BUFFERS, 4]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+        self.clear_read_buffer()
+        variables_bytes = []
+        message_length = 4 * self.hardware_experiment_length + 7
+        for i in range(7):  # There are seven floats to receive
+            c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+            variables_bytes.append(c)
+
+        message_length = self.hardware_experiment_length + 7  # target equilibrium,
+        c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+        variables_bytes.append(c)
+
+        variables = []
+        unpack_string = f'<{self.hardware_experiment_length}f'
+        for i in range(len(variables_bytes)-1):
+            variable_byte = variables_bytes[i]
+            variable = struct.unpack(unpack_string, bytes(variable_byte[6:-1]))
+            variables.append(variable)
+
+        unpack_string = f'<{self.hardware_experiment_length}b'
+        variable_byte = variables_bytes[7]
+        variable = struct.unpack(unpack_string, bytes(variable_byte[6:-1]))
+        variables.append(variable)
+
+
+        # Creating a DataFrame
+        df = pd.DataFrame({
+            'time': variables[0],
+            'angle': variables[1],
+            'angleD': variables[2],
+            'position': variables[3],
+            'positionD': variables[4],
+            'target_equilibrium': variables[7],
+            'target_position': variables[5],
+            'Q': variables[6],
+        })
+
+        # Saving to CSV without index
+        df.to_csv('hardware_experiment_recording.csv', index=False)
+
+
+        return True
+
+
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
-    def set_angle_config(self, setPoint, avgLen, smoothing, KP, KI, KD):
-        msg  = [SERIAL_SOF, CMD_SET_ANGLE_CONFIG, 24]
-        msg += list(struct.pack('h', setPoint))
-        msg += list(struct.pack('H', avgLen))
-        msg += list(struct.pack('f', smoothing))
-        msg += list(struct.pack('f', KP))
-        msg += list(struct.pack('f', KI))
-        msg += list(struct.pack('f', KD))
+    def set_config_PID(self, setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD):
+        msg = [SERIAL_SOF, CMD_SET_PID_CONFIG, 28]
+
+        msg += list(struct.pack('f', position_KP))
+        msg += list(struct.pack('f', position_KI))
+        msg += list(struct.pack('f', position_KD))
+        
+        msg += list(struct.pack('f', angle_KP))
+        msg += list(struct.pack('f', angle_KI))
+        msg += list(struct.pack('f', angle_KD))
+
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
 
-    def get_angle_config(self):
-        msg = [SERIAL_SOF, CMD_GET_ANGLE_CONFIG, 4]
+    def get_config_PID(self):
+        msg = [SERIAL_SOF, CMD_GET_PID_CONFIG, 4]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
-        reply = self._receive_reply(CMD_GET_ANGLE_CONFIG, 29)
-        (setPoint, avgLen, smoothing, KP, KI, KD) = struct.unpack('hHffff', bytes(reply[3:20]))
-        return setPoint, avgLen, smoothing, KP, KI, KD
+        reply = self._receive_reply(CMD_GET_PID_CONFIG, 28)
+        (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:27]))
+        return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
-    def set_position_config(self, setPoint, ctrlPeriod_ms, smoothing, KP, KD):
-        msg = [SERIAL_SOF, CMD_SET_POSITION_CONFIG, 20]
-        msg += list(struct.pack('h', setPoint))
-        msg += list(struct.pack('H', ctrlPeriod_ms))
-        msg += list(struct.pack('f', smoothing))
-        msg += list(struct.pack('f', KP))
-        msg += list(struct.pack('f', KD))
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-
-    def get_position_config(self):
-        msg = [SERIAL_SOF, CMD_GET_POSITION_CONFIG, 4]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-        reply = self._receive_reply(CMD_GET_POSITION_CONFIG, 20)
-        (setPoint, ctrlPeriod_ms, smoothing, KP, KD) = struct.unpack('hHfff', bytes(reply[3:19]))
-        return setPoint, ctrlPeriod_ms, smoothing, KP, KD
-
-    def set_motor(self, speed):
-        msg  = [SERIAL_SOF, CMD_SET_MOTOR, 6, speed & 0xFF, (speed >> 8) & 0xFF]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
-        self.device.flush()
-
-    def set_control_config(self, controlLoopPeriodMs, controlSync, controlLatencyUs):
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 11]
+    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics):
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 14]
         msg += list(struct.pack('H', controlLoopPeriodMs))
         msg += list(struct.pack('?', controlSync))
-        msg += list(struct.pack('i', controlLatencyUs))
+        msg += list(struct.pack('f', angle_deviation))
+        msg += list(struct.pack('H', avgLen))
+        msg += list(struct.pack('?', correct_motor_dynamics))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
+
+    def get_config_control(self):
+        msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
+        (controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(reply[3:12]))
+        return controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics
+
+    def set_motor(self, speed):
+        msg  = [SERIAL_SOF, CMD_SET_MOTOR, 8]
+        msg += list(struct.pack('i', speed))
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+    def set_target_position(self, target_position):
+        msg  = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
+        msg += list(struct.pack('f', target_position))
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+    def set_target_equilibrium(self, target_equilibrium):
+        msg = [SERIAL_SOF, CMD_SET_TARGET_EQUILIBRIUM, 8]
+        msg += list(struct.pack('f', target_equilibrium))
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
 
     def collect_raw_angle(self, lenght=100, interval_us=100):
         msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,  lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        self.device.flush()
         reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2*lenght, crc=False, timeout=100)
         return struct.unpack(str(lenght)+'H', bytes(reply[3:3+2*lenght]))
 
     def read_state(self):
         self.clear_read_buffer()
-        reply = self._receive_reply(CMD_STATE, 19, READ_STATE_TIMEOUT)
+        message_length = 27
+        reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
 
-        (angle, position, command, invalid_steps, sent, latency, latency_violation) = struct.unpack('=3hBI2H', bytes(reply[3:18]))
+        (angle, position, target_position, command, invalid_steps, time_difference, sent, latency, latency_violation) = struct.unpack('=2hfhB2I2H', bytes(reply[3:message_length-1]))
 
-        return angle, 0, position, command, invalid_steps, sent/1e6, latency/1e5, latency_violation
+        return angle, position, target_position, command, invalid_steps, time_difference/1e6, sent/1e6, latency/1e5, latency_violation
 
-    def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True):
+    def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout
         self.start = False
 
@@ -181,14 +271,15 @@ class Interface:
             c = self.device.read()
             # Timeout: reopen device, start stream, reset msg and try again
             if len(c) == 0:
-                print('\nReconnecting.')
-                self.device.close()
-                self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
-                self.clear_read_buffer()
-                time.sleep(1)
-                self.stream_output(True)
-                self.msg = []
-                self.start = False
+                if reconnect_at_timeout:
+                    print('\n_receive_reply: no response; reconnecting.')
+                    self.device.close()
+                    self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
+                    self.clear_read_buffer()
+                    time.sleep(1)
+                    self.stream_output(True)
+                    self.msg = []
+                    self.start = False
             else:
                 self.msg.append(ord(c))
                 if self.start == False:
@@ -238,3 +329,25 @@ class Interface:
                 val >>= 1
 
         return crc8
+
+import subprocess
+def set_ftdi_latency_timer(SERIAL_PORT):
+    serial_port = SERIAL_PORT.split('/')[-1]
+    print('\nSetting FTDI latency timer')
+    ftdi_timer_latency_requested_value = 1
+    command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/{serial_port}/latency_timer'"
+    command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/{serial_port}/latency_timer'
+    try:
+        subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(e.stderr)
+        if "Permission denied" in e.stderr:
+            print("Trying with sudo...")
+            command_ftdi_timer_latency_set = "sudo " + command_ftdi_timer_latency_set
+            try:
+                subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                print(e.stderr)
+
+    ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True, text=True).stdout.rstrip()
+    print(f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')

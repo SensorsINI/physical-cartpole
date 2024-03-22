@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-UpDown = [
+UpDown = [  # STM
 [3200.988, 1062.653],
 [3200.455, 1063.622],
 [3198.458, 1063.781],
@@ -16,6 +16,12 @@ UpDown = [
 [3196.404, 1060.326],
 ]
 
+# Zybo
+UpDown = [
+[2989.559,	940.132],
+[2991.048,	942.507],
+[2992.806,	941.31],
+]
 UpDown = np.array(UpDown)
 
 average = np.mean(UpDown, axis=0)
@@ -25,6 +31,8 @@ diff = UpDown[:, 0] - UpDown[:, 1]
 full_circle_in_adc_units = 2*diff
 full_circle_in_adc_units_avg = np.mean(full_circle_in_adc_units)
 full_circle_in_adc_units_std = np.std(full_circle_in_adc_units)
+
+print(f"Full circle in ADC units is {full_circle_in_adc_units_avg} +/- {full_circle_in_adc_units_std}")
 
 adc_range = 4096
 adc_units_2_deg = 360.0/adc_range
@@ -37,6 +45,8 @@ angle_std_deg = (adc_units_2_deg**2)*full_circle_in_adc_units_std
 dead_angle_in_adc_units = full_circle_in_adc_units_avg-adc_range
 dead_angle_rad = dead_angle_in_adc_units*adc_units_2_rad
 dead_angle_deg = dead_angle_in_adc_units*adc_units_2_deg
+
+print(f"Dead angle is at least {dead_angle_deg} deg")
 
 pass
 

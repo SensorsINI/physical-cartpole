@@ -1,9 +1,7 @@
 # TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
 # TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
-import math
 import time
-import numpy as np
 
 import os
 
@@ -13,33 +11,26 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
 
 from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.custom_serial_functions import setup_serial_connection
-from DriverFunctions.interface import Interface
+from DriverFunctions.interface import Interface, set_ftdi_latency_timer
 from DriverFunctions.kbhit import KBHit
-from DriverFunctions.step_response_measure import StepResponseMeasurement
-from DriverFunctions.swing_up_measure import SwingUpMeasure
-from DriverFunctions.random_target_measure import RandomTargetMeasure
-from DriverFunctions.set_time_measure import SetTimeMeasure
-from DriverFunctions.disturbance_measure import DisturbanceMeasure
+
+from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
+
 from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
 
 from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
 from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
 from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
-from DriverFunctions.firmware_parameters import set_firmware_parameters
 from DriverFunctions.csv_helpers import csv_init
 
 from globals import *
 
-import subprocess, multiprocessing, platform
+import subprocess
 from multiprocessing.connection import Client
 import sys
-import tensorflow as tf
-import serial
 from numba import jit
 from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
-from yaml import load, FullLoader
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
@@ -80,6 +71,9 @@ class PhysicalCartPoleDriver:
         self.csvfilename = None
         self.csvwriter = None
         self.csv_init_thread = None
+        self.logging_time_limited_started = False
+        self.logging_time_limited_max = 1000
+        self.logging_counter = 0
 
         # Live Plot
         self.livePlotEnabled = LIVE_PLOT
@@ -91,22 +85,19 @@ class PhysicalCartPoleDriver:
             self.kbAvailable = False
 
         # Dance Mode
-        self.danceEnabled = False
-        self.danceAmpl = 0.1  # m
-        self.dancePeriodS = 8.0
+        ## Parameters
+        self.danceAmpl = 0.14  # m
+        self.dancePeriodS = 6.0
         self.dance_start_time = 0.0
+        
+        ## Variables
+        self.danceEnabled = False
+        self.dance_finishing = False
+        self.dance_current_relative_position = 0.0
 
-        # Measurement
-        self.step_response_measure = StepResponseMeasurement()
-        self.swing_up_measure = SwingUpMeasure(self)
-        self.random_target_measure = RandomTargetMeasure(self)
-        self.set_time_measure = SetTimeMeasure(self)
-        self.disturbance_measure = DisturbanceMeasure(self)
-
-        # self.current_measure = self.disturbance_measure
-        # self.current_measure = self.set_time_measure
-        # self.current_measure = self.swing_up_measure
-        self.current_measure = self.random_target_measure
+        # Experiment Protocols
+        self.experiment_protocols_manager = experiment_protocols_manager_class(self)
+        self.current_experiment_protocol = self.experiment_protocols_manager.get_experiment_protocol()
 
         # Motor Commands
         self.Q = 0.0 # Motor command normed to be in a range -1 to 1
@@ -118,22 +109,18 @@ class PhysicalCartPoleDriver:
         # State
         self.s = create_cartpole_state()
         self.angle_raw = 0
+        self.angleD_raw = 0
         self.angle_raw_stable = None
-        self.angle_raw_prev = None
-        self.andleD_raw = 0
         self.angleD_raw_stable = None
-        self.angleD_raw_prev = None
         self.angleD_raw_buffer = np.zeros((0))
         self.angle_raw_sensor = None
         self.angleD_raw_sensor = None
-        self.angle_raw_sensor_prev = None
         self.angleD_fitted = None
         self.invalid_steps = 0
         self.frozen = 0
         self.fitted = 0
         self.position_raw = 0
-        self.anglePrev = 0.0
-        self.positionPrev = None
+        self.positionD_raw = 0
         self.angleDPrev = 0.0
         self.positionDPrev = 0.0
         self.angleErr = 0.0
@@ -142,6 +129,9 @@ class PhysicalCartPoleDriver:
         # Target
         self.position_offset = 0
         self.target_position = 0.0
+        self.target_position_previous = 0.0
+        self.target_equilibrium_previous = 0 # -1 or 1, 0 is not a valid value, but this ensures that at the begining the target equilibrium is always updated
+        self.base_target_position = 0.0
 
         # Joystick variable
         self.stick = None
@@ -157,6 +147,7 @@ class PhysicalCartPoleDriver:
         self.elapsedTime = None
         self.sent = 0
         self.lastSent = None
+        self.time_difference = 0
 
         # Performance
         self.delta_time = 0
@@ -184,6 +175,20 @@ class PhysicalCartPoleDriver:
 
         self.safety_switch_counter = 0
 
+        self.angle_deviation_finetune = 0.0
+
+        self.derivative_timestep_in_samples = ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES
+        self.buffer_size_for_derivative_calculation = self.derivative_timestep_in_samples + 1
+        self.angle_history = [-1] * self.buffer_size_for_derivative_calculation  # Buffer to store past angles
+        self.position_history = [-1] * self.buffer_size_for_derivative_calculation  # Buffer to store past positions
+        self.frozen_history = [0] * self.buffer_size_for_derivative_calculation  # Buffer to store frozen states
+        self.idx_for_derivative_calculation = 0
+
+        self.angleD_buffer = np.zeros(ANGLE_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for angle derivatives
+        self.positionD_buffer = np.zeros(POSITION_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for position derivatives
+        self.angleD_median_buffer_index = 0
+        self.positionD_median_buffer_index = 0
+
     def run(self):
         self.setup()
         self.run_experiment()
@@ -195,6 +200,8 @@ class PhysicalCartPoleDriver:
             print('Run from an interactive terminal to allow keyboard input.')
             quit()
 
+        if CHIP == 'ZYNQ':
+            set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
@@ -210,8 +217,8 @@ class PhysicalCartPoleDriver:
 
         time.sleep(1)
 
-        #set_firmware_parameters(self.InterfaceInstance, ANGLE_AVG_LENGTH=ANGLE_AVG_LENGTH)
-        self.InterfaceInstance.set_control_config(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, controlLatencyUs=0)
+        # set_firmware_parameters(self.InterfaceInstance)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
         try:
             self.controller.printparams()
@@ -231,7 +238,6 @@ class PhysicalCartPoleDriver:
 
         while not self.terminate_experiment:
             self.experiment_sequence()
-            # self.experiment_sequence_minimal()
 
 
     def experiment_sequence(self):
@@ -252,39 +258,47 @@ class PhysicalCartPoleDriver:
                 else:
                     self.CartPoleInstance.target_equilibrium = 1
 
+        self.experiment_protocol_step()
+
         self.set_target_position()
+
+        if self.controlEnabled or self.firmwareControl:
+            self.controlled_iterations += 1
+        else:
+            self.controlled_iterations = 0
 
         if self.controlEnabled:
             # Active Python Control: set values from controller
             self.lastControlTime = self.timeNow
             start = time.time()
-            self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
+            self.Q = float(self.controller.step(self.s, self.time_of_measurement, {"target_position": self.target_position,
                                                                        "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
             performance_measurement[0] = time.time() - start
             self.controller_steptime = time.time() - start
             if AUTOSTART:
                 self.Q = 0
-            self.controlled_iterations += 1
         else:
+            pass
             # Observing Firmware Control: set values from firmware for logging
-            # self.lastControlTime = self.sent
             # self.actualMotorCmd = self.command
             # self.Q = self.command / MOTOR_FULL_SCALE
-            self.controlled_iterations = 0
+
+
 
         self.joystick_action()
 
-        self.measurement_action()
+        if self.controlEnabled or self.current_experiment_protocol.is_running():
+            self.control_signal_to_motor_command()
 
-        if self.controlEnabled or self.current_measure.is_running():
-            self.get_motor_command()
-
-        if self.controlEnabled and self.current_measure.is_idle():
+        if self.controlEnabled or self.current_experiment_protocol.is_running():
+            self.motor_command_safety_check()
             self.safety_switch_off()
 
-        if self.controlEnabled or self.current_measure.is_running():
+        if self.controlEnabled or (self.current_experiment_protocol.is_running() and self.current_experiment_protocol.Q is not None):
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
+        if self.firmwareControl:
+            self.actualMotorCmd = self.command
         # Logging, Plotting, Terminal
         if self.loggingEnabled:
             self.write_csv_row()
@@ -297,56 +311,6 @@ class PhysicalCartPoleDriver:
         self.end = time.time()
         self.python_latency = self.end - self.InterfaceInstance.start
 
-    def experiment_sequence_minimal(self):
-
-        # CTN = compared to normal experiment sequence
-
-        # CTN: Minimal keyboard input and printing to terminal, but in general you need
-        if self.kbAvailable & self.kb.kbhit():
-            self.new_console_output = True
-
-            c = self.kb.getch()
-            if c == 'k':
-                if self.controlEnabled is False:
-                    self.controlEnabled = True
-
-                elif self.controlEnabled is True:
-                    self.controlEnabled = False
-
-        # This function will block at the rate of the control loop
-        (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent,
-         self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
-
-        self.angleD_raw = (self.wrap_local(self.angle_raw - self.angle_raw_stable) if self.angle_raw_stable is not None else 0)
-        self.angle_raw_stable = self.angle_raw
-
-        angle, position = self.convert_angle_and_position_skale()
-
-        self.time_measurement()
-
-        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
-        position_difference = (position - self.positionPrev if self.positionPrev is not None else 0)
-        angleDerivative, positionDerivative = self.calculate_first_derivatives(angle_difference, position_difference)
-        # Keep values of angle and position for next timestep for derivative calculation
-        self.positionPrev = position
-
-        # Pack the state into interface acceptable for the self.controller
-        self.pack_features_into_state_variable(position, angle, positionDerivative, angleDerivative)
-
-        # CTN: No setting of target position, it will be always 0.0
-
-        if self.controlEnabled:
-            self.Q = float(self.controller.step(self.s, self.timeNow, {"target_position": self.target_position,
-                                                                       "target_equilibrium": self.CartPoleInstance.target_equilibrium}))
-
-        # CTN: No joystick and measurement action
-
-            self.get_motor_command()
-            self.safety_switch_off()
-            self.InterfaceInstance.set_motor(self.actualMotorCmd)
-
-        # CTN: No plotting, saving csv nor writing to terminal, no connection to GUI
-
     def quit_experiment(self):
         # when x hit during loop or other loop exit
         self.InterfaceInstance.set_motor(0)  # turn off motor
@@ -357,7 +321,7 @@ class PhysicalCartPoleDriver:
             self.csvfile.close()
 
     def keyboard_input(self):
-        global POSITION_OFFSET, POSITION_TARGET, ANGLE_DEVIATION_FINETUNE, ANGLE_HANGING, ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
+        global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
             self.new_console_output = True
@@ -390,16 +354,16 @@ class PhysicalCartPoleDriver:
             elif c == 'D':
                 # We want the sinusoid to start at predictable (0) position
                 if self.danceEnabled is True:
-                    self.danceEnabled = False
+                    self.dance_finishing = True
                 else:
                     self.dance_start_time = time.time()
                     self.danceEnabled = True
-                print("\nself.danceEnabled= {0}".format(self.danceEnabled))
+                    print(f"\nself.danceEnabled= {self.danceEnabled}")
 
             ##### Logging #####
-            elif c == 'l':
+            elif c == 'l' or c == 'L':
                 loggingEnabled_local = not self.loggingEnabled
-                print("\nself.loggingEnabled= {0}".format(self.loggingEnabled))
+                print("\nself.loggingEnabled= {0}".format(loggingEnabled_local))
                 if loggingEnabled_local:
                     def f():
                         self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
@@ -407,11 +371,16 @@ class PhysicalCartPoleDriver:
 
                     self.csv_init_thread = threading.Thread(target=f)
                     self.csv_init_thread.start()
+                    if c == 'L':
+                        self.logging_time_limited_started = True
 
                 else:
                     self.csvfile.close()
                     print("\n Stopped self.logging data to " + self.csvfilename)
                     self.loggingEnabled = loggingEnabled_local
+
+                    self.logging_time_limited_started = False
+                    self.logging_counter = 0
 
                 if self.controller.controller_name == 'mppi':
                     if not self.loggingEnabled and self.controlled_iterations > 1:
@@ -436,25 +405,29 @@ class PhysicalCartPoleDriver:
 
             ##### Calibration #####
             elif c == 'K':
-                global MOTOR, ANGLE_HANGING, ANGLE_DEVIATION
+                global MOTOR, ANGLE_DEVIATION
                 self.controlEnabled = False
 
                 print("\nCalibrating motor position.... ")
                 self.InterfaceInstance.calibrate()
-                (_, _, self.position_offset, _, _, _, _, _) = self.InterfaceInstance.read_state()
                 print("Done calibrating")
 
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
                     if ANGLE_HANGING_DEFAULT:
-                        ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
+                        ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
                 elif self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'ORIGINAL'
                     if ANGLE_HANGING_DEFAULT:
-                        ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
+                        ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
                 print('Detected motor: {}'.format(MOTOR))
+
+                self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+                                                          controlSync=CONTROL_SYNC,
+                                                          angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+
 
             ##### Artificial Latency  #####
             elif c == 'b':
@@ -463,14 +436,14 @@ class PhysicalCartPoleDriver:
                 time_measurement_start = time.time()
                 print('Started angle measurement.')
                 for _ in trange(number_of_measurements):
-                    (angle, _, _, _, _, _, _, _) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
                     measured_angles.append(float(angle))
                 time_measurement = time.time()-time_measurement_start
 
                 angle_average = np.mean(measured_angles)
                 angle_std = np.std(measured_angles)
 
-                angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
+                angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
                 angle_std_rad = angle_std*ANGLE_NORMALIZATION_FACTOR
                 print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
                                                                                               angle_rad,
@@ -480,65 +453,56 @@ class PhysicalCartPoleDriver:
                                                                                               angle_std))
                 print('\nMeasurement took {} s'.format(time_measurement))
                 # if abs(angle_rad) > 1.0:
-                #     ANGLE_HANGING[...], ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
+                #     ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
                 #     ANGLE_HANGING_DEFAULT = False
+                # self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+                #                                           controlSync=CONTROL_SYNC, controlLatencyUs=0,
+                #                                           angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+
             # Fine tune angle deviation
             elif c == '=':
-                ANGLE_DEVIATION_FINETUNE += 0.002
-                print("\nIncreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+                self.angle_deviation_finetune += 0.002
+                print("\nIncreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
             # Decrease Target Angle
             elif c == '-':
-                ANGLE_DEVIATION_FINETUNE -= 0.002
-                print("\nDecreased angle deviation fine tune value to {0}".format(ANGLE_DEVIATION_FINETUNE))
+                self.angle_deviation_finetune -= 0.002
+                print("\nDecreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
 
             ##### Target Position #####
             # Increase Target Position
             elif c == ']':
-                POSITION_TARGET += 10 * POSITION_NORMALIZATION_FACTOR
-                if POSITION_TARGET > 0.8 * (POSITION_ENCODER_RANGE // 2):
-                    POSITION_TARGET = 0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nIncreased target position to {0} cm".format(POSITION_TARGET * 100))
+                self.base_target_position += 10 * POSITION_NORMALIZATION_FACTOR
+                if self.base_target_position > 0.8 * (POSITION_ENCODER_RANGE // 2):
+                    self.base_target_position = 0.8 * (POSITION_ENCODER_RANGE // 2)
+                print("\nIncreased target position to {0} cm".format(self.base_target_position * 100))
             # Decrease Target Position
             elif c == '[':
-                POSITION_TARGET -= 10 * POSITION_NORMALIZATION_FACTOR
-                if POSITION_TARGET < -0.8 * (POSITION_ENCODER_RANGE // 2):
-                    POSITION_TARGET = -0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nDecreased target position to {0} cm".format(POSITION_TARGET * 100))
+                self.base_target_position -= 10 * POSITION_NORMALIZATION_FACTOR
+                if self.base_target_position < -0.8 * (POSITION_ENCODER_RANGE // 2):
+                    self.base_target_position = -0.8 * (POSITION_ENCODER_RANGE // 2)
+                print("\nDecreased target position to {0} cm".format(self.base_target_position * 100))
 
             ##### Measurement Mode #####
             elif c == 'm':
-                if self.current_measure is self.step_response_measure:
-                    if self.current_measure.is_running():
-                        print('Closing step_response_measure')
-                        self.current_measure.stop()
-                    print('Setting swing_up_measure')
-                    self.current_measure = self.swing_up_measure
-
-                elif self.current_measure is self.swing_up_measure:
-                    if self.current_measure.is_running():
-                        print('Closing swing_up_measure')
-                        self.current_measure.stop()
-                    print('Setting random_target_measure')
-                    self.current_measure = self.random_target_measure
-
-                elif self.current_measure is self.random_target_measure:
-                    if self.current_measure.is_running():
-                        print('Closing random_target_measure')
-                        self.current_measure.stop()
-                    print('Setting step_response_measure')
-                    self.current_measure = self.step_response_measure
-                else:
-                    print('No recognized measure loaded. Setting step_response_measure')
-                    self.current_measure = self.step_response_measure
+                if self.current_experiment_protocol.is_running():
+                    self.current_experiment_protocol.stop()
+                self.current_experiment_protocol = self.experiment_protocols_manager.get_next_experiment_protocol()
 
             elif c == 'n':
-
-                if self.current_measure.is_idle():
-                     print('\nMeasurement started!\n')
-                     self.current_measure.start()
+                if self.current_experiment_protocol.is_idle():
+                    self.current_experiment_protocol.start()
                 else:
-                     self.current_measure.stop()
-                     print('\nMeasurement stopped\n')
+                    self.current_experiment_protocol.stop()
+                    self.Q = 0.0
+                    self.InterfaceInstance.set_motor(0)
+
+            elif c == 'N':
+                self.controlEnabled = False
+                if self.current_experiment_protocol.is_running():
+                    self.current_experiment_protocol.stop()
+                self.InterfaceInstance.run_hardware_experiment()
+
+
 
             ##### Joystick  #####
             elif c == 'j':
@@ -606,6 +570,7 @@ class PhysicalCartPoleDriver:
             self.controller.controller_report()
         self.controller.controller_reset()
         self.danceEnabled = False
+        self.target_position = self.base_target_position
         self.latency_violations = 0
 
     def switch_on_control(self):
@@ -646,43 +611,86 @@ class PhysicalCartPoleDriver:
 
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, _, self.position_raw, self.command, self.invalid_steps, self.sent, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.position_raw, self.target_position_from_chip, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
 
-        self.treat_deadangle_with_derivative()
+        self.treat_deadangle_with_derivative()  # Moved to hardware
 
-        angle, position = self.convert_angle_and_position_skale()
+        self.filter_differences()
+
+        angle, position, angle_difference, position_difference = self.convert_angle_and_position_skale()
 
         self.time_measurement()
 
         self.check_latency_violation()
 
-        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
-        position_difference = (position - self.positionPrev if self.positionPrev is not None else 0)
         angleDerivative, positionDerivative = self.calculate_first_derivatives(angle_difference, position_difference)
-        # Keep values of angle and position for next timestep for derivative calculation
-        self.positionPrev = position
 
         # Pack the state into interface acceptable for the self.controller
         self.pack_features_into_state_variable(position, angle, positionDerivative, angleDerivative)
 
         self.add_latency()
 
-    def calculate_first_derivatives(self, angle_difference, position_difference):
-        # Calculating derivatives (cart velocity and angular velocity of the pole)
-        angleDerivative = angle_difference / self.delta_time  # rad/self.s
-        if self.positionPrev is not None:
-            positionDerivative = position_difference / self.delta_time  # m/self.s
-        else:
-            positionDerivative = 0
+    def treat_deadangle_with_derivative(self):
 
-        return angleDerivative, positionDerivative
+        ADC_RANGE = 4096
+
+        # Calculate the index for the k-th past angle
+        kth_past_index = (self.idx_for_derivative_calculation - self.derivative_timestep_in_samples + self.buffer_size_for_derivative_calculation) % self.buffer_size_for_derivative_calculation
+        kth_past_angle = self.angle_history[kth_past_index]
+        kth_past_position = self.position_history[kth_past_index]
+        kth_past_frozen = self.frozen_history[kth_past_index]
+
+        if kth_past_angle != -1 and (
+            (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
+            (abs(self.wrap_local(self.angle_raw - kth_past_angle)) > ADC_RANGE / 8 and kth_past_frozen < 3)
+        ):
+            self.frozen += 1
+            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
+            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
+        else:
+            self.angleD_raw = self.wrap_local(self.angle_raw - kth_past_angle) / ((self.derivative_timestep_in_samples - 1) + kth_past_frozen + 1) if kth_past_angle != -1 else 0
+            self.angle_raw_stable = self.angle_raw
+            self.angleD_raw_stable = self.angleD_raw
+            self.frozen = 0
+
+        self.positionD_raw = (self.position_raw - kth_past_position) / self.derivative_timestep_in_samples if kth_past_position != -1 else 0
+
+        self.angle_raw_sensor = self.angle_raw
+        self.angleD_raw_sensor = self.angleD_raw
+
+        # Save current angle in the history buffer and update index
+        self.angle_history[self.idx_for_derivative_calculation] = self.angle_raw
+        self.position_history[self.idx_for_derivative_calculation] = self.position_raw
+        self.frozen_history[self.idx_for_derivative_calculation] = self.frozen
+        self.idx_for_derivative_calculation = (self.idx_for_derivative_calculation + 1) % self.buffer_size_for_derivative_calculation  # Move to next index, wrap around if necessary
+
+
+    def filter_differences(self):
+
+        # Update angleD buffer with current value
+        self.angleD_buffer[self.angleD_median_buffer_index] = self.angleD_raw
+        self.angleD_median_buffer_index = (self.angleD_median_buffer_index + 1) % ANGLE_D_MEDIAN_LEN
+
+        # Update positionD buffer with current value
+        self.positionD_buffer[self.positionD_median_buffer_index] = self.positionD_raw
+        self.positionD_median_buffer_index = (self.positionD_median_buffer_index + 1) % POSITION_D_MEDIAN_LEN
+
+        # Calculate medians using the updated buffers
+        angle_d_median = np.median(self.angleD_buffer)
+        position_d_median = np.median(self.positionD_buffer)
+
+        self.angleD_raw = angle_d_median
+        self.positionD_raw = position_d_median
 
     def convert_angle_and_position_skale(self):
         # Convert position and angle to physical units
-        self.position_centered_unconverted = -(self.position_raw - self.position_offset)
-        angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - ANGLE_DEVIATION_FINETUNE)
-        position = self.position_centered_unconverted * POSITION_NORMALIZATION_FACTOR
-        return angle, position
+        angle = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
+        position = self.position_raw * POSITION_NORMALIZATION_FACTOR
+
+        angle_difference = self.angleD_raw * ANGLE_NORMALIZATION_FACTOR
+        position_difference = self.positionD_raw * POSITION_NORMALIZATION_FACTOR
+
+        return angle, position, angle_difference, position_difference
 
 
     def time_measurement(self):
@@ -690,12 +698,23 @@ class PhysicalCartPoleDriver:
         self.timeNow = time.time()
         self.elapsedTime = self.timeNow - self.startTime
 
+        if self.time_difference < 1.0e-9:
+            raise ValueError(f'\ntime_difference is {self.time_difference}. '
+                             f'\nThis might indicate that timer on the microcontroller has overflown. '
+                             f'\nTry to restart it.')
+
+        self.delta_time = self.time_difference
+
         if self.lastSent is not None:
-            self.delta_time = self.sent - self.lastSent
+            delta_time_test = self.sent - self.lastSent
+            if abs(delta_time_test-self.delta_time)>2e-6 and delta_time_test!=0.0:
+                raise ValueError(f"dt={self.delta_time}; dtt={delta_time_test}")
+
         else:
-            self.delta_time = 1e-6
+            delta_time_test = 1e-6
         self.lastSent = self.sent
 
+    # FIXME: Think if these cases are right
     def check_latency_violation(self):
         # Latency Violations
         if self.latency_violation == 1:
@@ -710,48 +729,13 @@ class PhysicalCartPoleDriver:
             self.latency_violation = 1
             self.latency_violations += 1
 
-    def treat_deadangle_with_derivative(self):
 
-        # Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
-        if (self.invalid_steps > 5 and self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw_prev)) < 200) or (self.angle_raw_prev is not None and abs(self.wrap_local(self.angle_raw - self.angle_raw_prev)) > 500 and self.frozen < 3):
-            self.frozen += 1
-            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
-            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
-        else:
-            self.angleD_raw = self.wrap_local(self.angle_raw - self.angle_raw_stable) / (self.frozen + 1) if self.angle_raw_stable is not None else 0
-            self.angle_raw_stable = self.angle_raw
-            self.angleD_raw_stable = self.angleD_raw
-            self.frozen = 0
+    def calculate_first_derivatives(self, angle_difference, position_difference):
+        # Calculating derivatives (cart velocity and angular velocity of the pole)
+        angleDerivative = angle_difference / self.delta_time  # rad/self.s
+        positionDerivative = position_difference / self.delta_time  # m/self.s
 
-        self.angle_raw_sensor = self.angle_raw
-        self.angleD_raw_sensor = self.angleD_raw
-
-        # Polyfit AngleD if filled buffer and inside Anomaly (close to 0 and small angleD_raw)
-        if POLYFIT_ANGLED:
-            MAX_BUFFER_LENGTH = 10 # 10 * 20ms = 200ms
-            if len(self.angleD_raw_buffer) >= 2:
-                self.angleD_fitted = polyfit(self.angleD_raw_buffer)
-                if abs(self.wrap_local(self.angle_raw_prev)) < 200 and self.fitted < 3 and len(self.angleD_raw_buffer) >= MAX_BUFFER_LENGTH:
-                    if abs(self.angleD_fitted) < 500 and (abs(self.wrap_local(self.angleD_fitted - self.angleD_raw)) > (20 + 12 * self.fitted) or abs(self.wrap_local(self.angle_raw_prev-self.angle_raw)) < 25 or abs(self.wrap_local(self.angleD_raw_prev-self.angleD_raw)) > 25):
-                        self.fitted += 1
-                        self.angleD_raw = self.angleD_fitted
-                    else:
-                        if self.fitted:
-                            self.angleD_raw_buffer = np.zeros((0))
-                        self.fitted = 0
-                else:
-                    if self.fitted:
-                        self.angleD_raw_buffer = np.zeros((0))
-                    self.fitted = 0
-            else:
-                self.fitted = 0
-
-            self.angleD_raw_buffer = np.append(self.angleD_raw_buffer, self.angleD_raw)
-            self.angleD_raw_buffer = self.angleD_raw_buffer[-(MAX_BUFFER_LENGTH+self.fitted):]
-
-        # Save previous Values
-        self.angle_raw_prev = self.angle_raw
-        self.angleD_raw_prev = self.angleD_raw
+        return angleDerivative, positionDerivative
 
 
     def pack_features_into_state_variable(self, position, angle, positionD, angleD):
@@ -768,20 +752,30 @@ class PhysicalCartPoleDriver:
         self.s = self.LatencyAdderInstance.get_interpolated_delayed_state()
 
     def set_target_position(self):
-        # Get the target position
-        # if self.controlEnabled and self.danceEnabled:
-        if self.current_measure.is_running():
-            try:
-                self.target_position = self.current_measure.target_position
-                # print(self.target_position)
-            except AttributeError:
-                pass
-        else:
+
+        if self.current_experiment_protocol.is_idle():
             if self.danceEnabled:
-                self.target_position = POSITION_TARGET + self.danceAmpl * np.sin(
-                    2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
-            else:
-                self.target_position = 0.995 * self.target_position + 0.005 * POSITION_TARGET
+                if not self.dance_finishing:
+                    self.dance_current_relative_position = self.danceAmpl * np.sin(
+                        2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
+                    self.target_position = self.base_target_position + self.dance_current_relative_position
+                else:
+                    if abs(self.base_target_position-self.target_position) < 0.03:
+                        self.danceEnabled = False
+                        print(f"\nself.danceEnabled= {self.danceEnabled}")
+                        self.dance_finishing = False
+                        self.target_position = self.base_target_position
+                    else:
+                        self.target_position = 0.995 * self.target_position + 0.005 * self.base_target_position
+
+        if SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl:
+            if self.target_position != self.target_position_previous:
+                self.InterfaceInstance.set_target_position(self.target_position)
+                self.target_position_previous = self.target_position
+
+            if self.CartPoleInstance.target_equilibrium != self.target_equilibrium_previous:
+                self.InterfaceInstance.set_target_equilibrium(self.CartPoleInstance.target_equilibrium)
+                self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
         
         self.CartPoleInstance.target_position = self.target_position
 
@@ -789,29 +783,43 @@ class PhysicalCartPoleDriver:
 
         if self.joystickMode is None or self.joystickMode == 'not active':
             self.stickPos = 0.0
-            self.stickControl = False
-            if not self.manualMotorSetting:
+            if self.stickControl and not self.manualMotorSetting:
                 if self.controlEnabled:
                     ...
                 else:
                     self.Q = 0.0
+            self.stickControl = False
+
         else:
             self.stickPos = get_stick_position(self.stick)
             self.stickControl = True
             self.Q = motorCmd_from_joystick(self.joystickMode, self.stickPos, self.s[POSITION_IDX])
 
-    def measurement_action(self):
-        if self.current_measure.is_running():
+    def experiment_protocol_step(self):
+        if self.current_experiment_protocol.is_running():
             try:
-                self.current_measure.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.timeNow)
-                self.Q = self.current_measure.Q
+                self.current_experiment_protocol.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.timeNow)
+                if self.current_experiment_protocol.Q is not None:
+                    self.Q = self.current_experiment_protocol.Q
             except TimeoutError as e:
+                if self.current_experiment_protocol.Q is not None:
+                    self.Q = 0.0
                 self.log.warning(f'timeout in self.measurement: {e}')
 
-    def get_motor_command(self):
+            if self.current_experiment_protocol.target_position is not None:
+                self.target_position = self.current_experiment_protocol.target_position
+
+            if self.current_experiment_protocol.target_equilibrium is not None:
+                self.CartPoleInstance.target_equilibrium = self.current_experiment_protocol.target_equilibrium
+
+
+    # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
+    #       gets the motor full scale and calculates the correction factors relative to that
+    #       When you do it, make the same correction also for firmware
+    def control_signal_to_motor_command(self):
 
         self.actualMotorCmd = self.Q
-        if MOTOR_DYNAMICS_CORRECTED:
+        if CORRECT_MOTOR_DYNAMICS:
             # Use Model_velocity_bidirectional.py to determine the margins and correction factor below
 
             # # We cut the region which is linear
@@ -827,10 +835,10 @@ class PhysicalCartPoleDriver:
 
             self.actualMotorCmd *= motor_correction[0]
             if self.actualMotorCmd != 0:
-                if np.sign(self.s[POSITIOND_IDX]) >= 0:
+                if np.sign(self.s[POSITIOND_IDX]) > 0:
                     self.actualMotorCmd += motor_correction[1]
-                elif np.sign(self.s[POSITIOND_IDX]) <= 0:
-                    self.actualMotorCmd -= motor_correction[1]
+                elif np.sign(self.s[POSITIOND_IDX]) < 0:
+                    self.actualMotorCmd -= motor_correction[2]
 
         else:
             self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
@@ -839,14 +847,14 @@ class PhysicalCartPoleDriver:
         # Convert to motor encoder units
         self.actualMotorCmd = int(self.actualMotorCmd)
 
+    def motor_command_safety_check(self):
         # Check if motor power in safe boundaries, not to burn it in case you have an error before or not-corrected option
         # NEVER RUN IT WITHOUT IT
         self.actualMotorCmd = np.clip(self.actualMotorCmd, -MOTOR_FULL_SCALE_SAFE, MOTOR_FULL_SCALE_SAFE)
-        self.actualMotorCmd = -self.actualMotorCmd
 
     def safety_switch_off(self):
         # Temporary safety switch off if goes to the boundary
-        if abs(self.position_centered_unconverted) > 0.95 * (POSITION_ENCODER_RANGE // 2):
+        if abs(self.position_raw) > 0.95 * (POSITION_ENCODER_RANGE // 2):
             self.safety_switch_counter += 1
             if self.safety_switch_counter > 10:  # Allow short bumps
                 self.safety_switch_counter = 0
@@ -860,12 +868,14 @@ class PhysicalCartPoleDriver:
                 if hasattr(self.controller, 'controller_reset'):
                     self.controller.controller_reset()
                 self.danceEnabled = False
+                self.target_position = self.base_target_position
                 self.actualMotorCmd = 0
         else:
             self.safety_switch_counter = 0
             pass
 
     def write_csv_row(self):
+        self.logging_counter += 1
         if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
             if self.controller.controller_name == 'pid':
                 self.csvwriter.writerow(
@@ -874,19 +884,27 @@ class PhysicalCartPoleDriver:
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angle_error,
                      self.target_position, self.controller.position_error, self.controller.Q_angle,
                      self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.stickControl, self.stickPos, self.current_experiment_protocol, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                     self.time_difference, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
             else:
                 self.csvwriter.writerow(
                     [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
                      self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
                      self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
                      self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.step_response_measure, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.sent, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
+                     self.stickControl, self.stickPos, self.current_experiment_protocol, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
+                     self.time_difference, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q
+
+        if self.logging_time_limited_started and self.logging_counter == self.logging_time_limited_max:
+            self.csvfile.close()
+            print("\n Stopped self.logging data to " + self.csvfilename)
+            self.loggingEnabled = False
+
+            self.logging_time_limited_started = False
+            self.logging_counter = 0
 
     def plot_live(self):
         BUFFER_LENGTH = 5
@@ -908,7 +926,7 @@ class PhysicalCartPoleDriver:
             if self.live_buffer_index < BUFFER_LENGTH:
                 if LIVE_PLOT_UNITS == 'raw':
                     self.live_buffer[self.live_buffer_index, :] = np.array([
-                        self.sent,
+                        self.time_difference,
                         self.angle_raw,
                         self.angleD_raw,
                         self.position_raw,
@@ -918,7 +936,7 @@ class PhysicalCartPoleDriver:
                     ])
                 else:
                     self.live_buffer[self.live_buffer_index, :] = np.array([
-                        self.sent,
+                        self.time_difference,
                         self.s[ANGLE_IDX],
                         self.s[ANGLED_IDX],
                         self.s[POSITION_IDX] * 100,
@@ -972,7 +990,7 @@ class PhysicalCartPoleDriver:
             print("\r" + mode +  '\033[K')
 
             ############  Mode  ############
-            print("\r" + f'MEASUREMENT: {self.current_measure}' +  '\033[K')
+            print("\r" + f'MEASUREMENT: {self.current_experiment_protocol}' +  '\033[K')
 
             ############  State  ############
             print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
