@@ -86,7 +86,7 @@ class Interface:
     def open(self, port, baud):
         self.port = port
         self.baud = baud
-        self.device = serial.Serial(port, baudrate=baud)
+        self.device = serial.Serial(port, baudrate=baud, timeout=None)
         self.device.reset_input_buffer()
 
     def close(self):
@@ -345,7 +345,6 @@ def set_ftdi_latency_timer(SERIAL_PORT):
             print("Trying with sudo...")
             command_ftdi_timer_latency_set = "sudo " + command_ftdi_timer_latency_set
             try:
-                subprocess.run("echo Teresa | sudo -S :", shell=True)
                 subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
             except subprocess.CalledProcessError as e:
                 print(e.stderr)

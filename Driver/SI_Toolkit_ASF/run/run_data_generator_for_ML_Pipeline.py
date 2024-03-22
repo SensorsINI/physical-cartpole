@@ -1,12 +1,8 @@
 import os
 import shutil
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # TF: If uncommented, only uses CPU
-
-
 from others.globals_and_utils import load_config
 from run_data_generator import run_data_generator
-
 
 config_SI = load_config(os.path.join("SI_Toolkit_ASF", "config_training.yml"))
 config_cartpole = load_config(os.path.join("cartpole_physical_parameters.yml"))
