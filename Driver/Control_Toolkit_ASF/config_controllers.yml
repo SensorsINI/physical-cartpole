@@ -98,8 +98,8 @@ mpc-opti:
   controller_logging: True
 neural-imitator:
   seed: null                            # If null, random seed based on datetime is used
-  PATH_TO_MODELS: './SI_Toolkit_ASF/Experiments/Experiment-14/Models/'
-  net_name: 'Dense-7IN-32H1-32H2-1OUT-8'
+  PATH_TO_MODELS: './SI_Toolkit_ASF/Experiments/Experiment-29-30-quant-10-shiftD-1/Models/'
+  net_name: 'Dense-7IN-32H1-32H2-1OUT-1'
   controller_logging: True
   library: tensorflow
   input_precision: 'float'  #'ap_fixed<20,6>'   # Can be 'float' - currently do nothing, or 'ap_fixed<total number of bits, integer bits + 1 sign bit>' - adjusting the number precision of the input
