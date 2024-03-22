@@ -768,7 +768,7 @@ class PhysicalCartPoleDriver:
                     else:
                         self.target_position = 0.995 * self.target_position + 0.005 * self.base_target_position
 
-        if self.firmwareControl:
+        if SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl:
             if self.target_position != self.target_position_previous:
                 self.InterfaceInstance.set_target_position(self.target_position)
                 self.target_position_previous = self.target_position

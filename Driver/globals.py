@@ -123,6 +123,8 @@ ratio = 1.05
 ##### Wrong Place ##### #TODO: remove functions and calculations from parameter file
 ANGLE_DEVIATION = np.array(0.0)
 
+SEND_CHANGE_IN_TARGET_POSITION_ALWAYS = True  # If false it sends change in target position only if firmware control is active.
+
 
 def angle_constants_update(new_angle_hanging):
     global ANGLE_360_DEG_IN_ADC_UNITS
