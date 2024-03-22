@@ -7,6 +7,8 @@
 #include "math.h"
 #include "hardware_pid.h"
 #include "control_signal_postprocessing.h"
+#include "experiment_protocol.h"
+#include "offline_data_manager.h"
 
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
@@ -16,7 +18,7 @@
 #define	POSITION_JUMPS_SWITCH_NUMBER	1
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
-unsigned short current_controller = OnChipController_PID;
+unsigned short current_controller = OnChipController_NeuralImitator;
 
 bool correct_motor_dynamics = true;
 
@@ -47,7 +49,6 @@ unsigned short 	angleSampIndex		= 0;
 int *angleSamples;
 
 short 			position_short;
-short 			position_previous = -30000;
 
 unsigned short	latency_violation = 0;
 
@@ -60,6 +61,8 @@ void 			cmd_ControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
+void			cmd_RunHardwareExperiment(void);
+void 			cmd_transfer_buffers(void);
 
 void CONTROL_Init(void)
 {
@@ -112,9 +115,19 @@ float target_position = 0.0;
 
 // The 4 variable below only matter on Zynq if USE_TARGET_SWITCHES==TRUE
 int position_period  = 1000;  // In a unit of control updates
-float position_jumps_target = 0.12;
+float position_jumps_target = 0.09;
 int position_jumps_enabled = 0;
 int position_jumps_interval_counter = 0;
+
+int run_hardware_experiment = 0;
+int save_to_offline_buffers = 0;
+
+float time = 0.0;
+
+float angle = 0.0;
+float position = 0.0;
+float angleD = 0.0;
+float positionD = 0.0;
 
 void CONTROL_BackgroundTask(void)
 {
@@ -134,46 +147,37 @@ void CONTROL_BackgroundTask(void)
 
 		int   					motor_command_from_chip;
 
-		short 			positionD_short;
 		int angle_int = 0;
-		int angleD_int = 0;
 		int invalid_step = 0;
 
-		float angle = 0.0;
-		float position = 0.0;
-		float angleD = 0.0;
-		float positionD = 0.0;
+
 
 		time_last_measurement = time_current_measurement;
 		time_current_measurement = GetTimeNow();
-		// I would love to get angle here, but as this requires some analysis of buffer, I will not put it here to keep interrupt minimal
 
 		position_short = Encoder_Read();
 		position_short = position_short - positionCentre;
-		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angleD_int, &invalid_step);
+		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angleD, &invalid_step);
 
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
-	    if (position_previous!=-30000){
-	    	positionD_short = position_short-position_previous;
-	    } else {
-	    	positionD_short = 0;
-	    }
-	    position_previous = position_short;
+		calculate_position_difference_per_timestep(&position_short, &positionD);
 
-	    average_derivatives(&angleD_int, &positionD_short);
+	    average_derivatives(&angleD, &positionD);
 
 	    float angle_cos, angle_sin;
 
 	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
-		angle = wrapLocal_rad(((angle_int/16) + ANGLE_DEVIATION) * (ANGLE_NORMALIZATION_FACTOR));
+		angle = wrapLocal_rad(((angle_int) + ANGLE_DEVIATION) * (ANGLE_NORMALIZATION_FACTOR));
 	    position = position_short * POSITION_NORMALIZATION_FACTOR;
 
 	    angle_cos = cos(angle);
 	    angle_sin = sin(angle);
-	    angleD = (angleD_int*(ANGLE_NORMALIZATION_FACTOR/16.0)/time_difference_between_measurement_s);
-	    positionD = (positionD_short*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+	    angleD = (angleD*(ANGLE_NORMALIZATION_FACTOR)/time_difference_between_measurement_s);
+	    positionD = (positionD*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
+
+        time = time_current_measurement/1000000.0;
 
 		// Microcontroller Control Routine
 		if (ControlOnChip_Enabled)	{
@@ -196,12 +200,12 @@ void CONTROL_BackgroundTask(void)
 			switch (current_controller){
 			case OnChipController_PID:
 			{
-				Q = pid_step(angle, angleD, position, positionD, target_position, time_current_measurement/1000000.0);
+				Q = pid_step(angle, angleD, position, positionD, target_position, time);
 				break;
 			}
 			case OnChipController_NeuralImitator:
 			{
-				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time_current_measurement/1000000.0);
+				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time);
 				break;
 			}
 			default:
@@ -228,10 +232,35 @@ void CONTROL_BackgroundTask(void)
 	        }
 		}
 
+        HardwareExperimentProtocol(position, angle, time,
+        		&target_position, &target_equilibrium,
+				&run_hardware_experiment, &save_to_offline_buffers,
+				&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
+
+        if(save_to_offline_buffers){
+            fill_data_buffers(
+                    time,
+                    angle,
+                    position,
+                    angleD,
+                    positionD,
+                    target_equilibrium,
+                    target_position,
+                    Q
+            );
+        }
+
+		if (run_hardware_experiment==2){
+			unsigned short experiment_length = get_buffers_index();
+		    send_information_experiment_done(buffer, experiment_length);
+		    Message_SendToPC(buffer, 6);
+		    run_hardware_experiment=0;
+		}
+
 
 		// Send latest state to the PC
 		static int slowdown = 0;
-	    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN)
+	    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN && run_hardware_experiment==0)
 	    {
 	        slowdown = 0;
 
@@ -246,7 +275,7 @@ void CONTROL_BackgroundTask(void)
 	    	prepare_message_to_PC_state(
 	    			buffer,
 					27,
-	    			angle_int/16,
+	    			angle_int,
 					position_short,
 					target_position,
 					motor_command,
@@ -325,13 +354,21 @@ void CONTROL_BackgroundTask(void)
 	}
 	
 	Leds_over_switches_Update(Switches_GetState());
+	indicate_target_position_with_leds(&target_position);
+
 #endif
 
 	///////////////////////////////////////////////////
 	// Process Commands from PC
 	///////////////////////////////////////////////////
-	int newDataCount = Message_GetFromPC(&rxBuffer[uart_received_Cnt]);
-	uart_received_Cnt += newDataCount;
+	if(run_hardware_experiment==0)
+	{
+	    int newDataCount = Message_GetFromPC(&rxBuffer[uart_received_Cnt]);
+        uart_received_Cnt += newDataCount;
+	} else
+	{
+	    uart_received_Cnt = 0;
+	 }
 
 
 	int current_command = get_command_from_PC_message(rxBuffer, &uart_received_Cnt);
@@ -350,10 +387,23 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_CALIBRATE:
 		{
-			unsigned int pktLen = rxBuffer[2];
 			cmd_Calibrate();
 			break;
 		}
+
+		case CMD_RUN_HARDWARE_EXPERIMENT:
+        {
+        	
+            cmd_RunHardwareExperiment();
+            break;
+        }
+
+        case CMD_TRANSFER_BUFFERS:
+        {
+            cmd_transfer_buffers();
+            break;
+        }
+
 		case CMD_CONTROL_MODE:
 		{
 			cmd_ControlMode(rxBuffer[3] != 0);
@@ -401,6 +451,9 @@ void CONTROL_BackgroundTask(void)
 		case CMD_SET_TARGET_POSITION:
 		{
 			target_position = *((float *)&rxBuffer[3]);
+#ifdef ZYNQ
+			USE_TARGET_SWITCHES = false;
+#endif
 			break;
 		}
 		case CMD_SET_TARGET_EQUILIBRIUM:
@@ -435,6 +488,17 @@ void cmd_StreamOutput(bool en)
 	disable_irq();
 	streamEnable = en;
 	enable_irq();
+}
+
+void cmd_RunHardwareExperiment(void)
+{
+	streamEnable = false;
+    run_hardware_experiment = 1;
+}
+
+void cmd_transfer_buffers(void)
+{
+    send_buffers();
 }
 
 void cmd_Calibrate(void)

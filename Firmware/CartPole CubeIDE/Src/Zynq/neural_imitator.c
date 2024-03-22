@@ -19,10 +19,27 @@
 #define TX_BUFFER_BASE		(MEM_BASE_ADDR + 0x00100000)
 #define RX_BUFFER_BASE		(MEM_BASE_ADDR + 0x00300000)
 
-// Normalization Cartpole
-float hls_normalize_a[] = {0.04595453,1.00000000,1.00000000,5.21186209,0.82011247,1.00000000,6.31313133
+// Normalization Cartpole hpf_v2024_x3232_12_2_v1
+//float hls_normalize_a[] = {0.04595453,1.00000000,1.00000000,5.21186209,0.82011247,1.00000000,6.31313133
+//};
+//float hls_normalize_b[] = {0.02537525,0.00000000,0.00000000,0.01761615,-0.05823207,0.00000000,0.00000000
+//};
+//float hls_denormalize_A[] = {1.0};
+//float hls_denormalize_B[] = {0.0};
+
+
+//// Normalization Cartpole hpf_v2024_cpp_x3232_12_2_v2
+//float hls_normalize_a[] = {0.05373850,1.00000000,1.00000000,5.44010401,0.86096680,1.00000000,6.31313133
+//};
+//float hls_normalize_b[] = {-0.07883823,0.00000000,0.00000000,0.01648343,-0.01449436,0.00000000,0.00000000
+//};
+//float hls_denormalize_A[] = {1.0};
+//float hls_denormalize_B[] = {0.0};
+
+// Normalization Cartpole hpf_v2024_cpp_x3232_14_3_short_v1
+float hls_normalize_a[] = {0.03312271,1.00000000,1.00000000,5.43271589,1.19410825,1.00000000,6.31313133
 };
-float hls_normalize_b[] = {0.02537525,0.00000000,0.00000000,0.01761615,-0.05823207,0.00000000,0.00000000
+float hls_normalize_b[] = {-0.01278764,0.00000000,0.00000000,-0.00592160,-0.01507568,0.00000000,0.00000000
 };
 float hls_denormalize_A[] = {1.0};
 float hls_denormalize_B[] = {0.0};

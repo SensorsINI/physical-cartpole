@@ -6,7 +6,7 @@ from Driver.DriverFunctions.interface import get_serial_port
 from CartPole.cartpole_parameters import TrackHalfLength
 
 
-CHIP = "STM"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
+CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
 CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
@@ -26,7 +26,7 @@ elif CONTROLLER_NAME == 'neural-imitator':
 elif CONTROLLER_NAME == 'fpga':
     CONTROL_PERIOD_MS = 15
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 16  # e.g. 5 for PID or 20 for mppi
 
 if CHIP == 'STM':
     PWM_PERIOD_IN_CLOCK_CYCLES = 7200
@@ -46,13 +46,13 @@ if CHIP == 'STM':
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
     PWM_PERIOD_IN_CLOCK_CYCLES = 2500
-    MOTOR_CORRECTION_POLOLU = (1451.899,  175.347,  116.122)  # Explanation - see above, same as for STM case
+    MOTOR_CORRECTION_POLOLU = (1488.070,  80.797,  96.254)  # Explanation - see above, same as for STM case
     ANGLE_360_DEG_IN_ADC_UNITS = 4068.67  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 816.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
+    ANGLE_HANGING_POLOLU = 1008.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
     POSITION_ENCODER_RANGE = 4705  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
 
@@ -93,7 +93,7 @@ MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety
 
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
-ANGLE_AVG_LENGTH = 16  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
+ANGLE_AVG_LENGTH = 1  # adc routine in firmware reads ADC this many times quickly in succession to reduce noise
 
 ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a respective cartpole when motor is detected at calibration
 #  This variable changes to false after b is pressed - you can first measure angle hanging and than calibrate without overwritting
@@ -101,10 +101,10 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 
 ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_360_DEG_IN_ADC_UNITS
 
-ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES = 1  # TODO: Python only, hardware sets it separately.
+ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES = 2  # TODO: Python only, hardware sets it separately.
 
-ANGLE_D_MEDIAN_LEN = 3
-POSITION_D_MEDIAN_LEN = 3
+ANGLE_D_MEDIAN_LEN = 1
+POSITION_D_MEDIAN_LEN = 1
 ##### Position Conversion #####
 
 POSITION_NORMALIZATION_FACTOR = TrackHalfLength * 2 / POSITION_ENCODER_RANGE  # 0.000084978540773
@@ -122,6 +122,8 @@ ratio = 1.05
 
 ##### Wrong Place ##### #TODO: remove functions and calculations from parameter file
 ANGLE_DEVIATION = np.array(0.0)
+
+SEND_CHANGE_IN_TARGET_POSITION_ALWAYS = True  # If false it sends change in target position only if firmware control is active.
 
 
 def angle_constants_update(new_angle_hanging):
