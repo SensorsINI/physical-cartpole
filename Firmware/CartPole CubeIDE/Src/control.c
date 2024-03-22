@@ -451,6 +451,9 @@ void CONTROL_BackgroundTask(void)
 		case CMD_SET_TARGET_POSITION:
 		{
 			target_position = *((float *)&rxBuffer[3]);
+#ifdef ZYNQ
+			USE_TARGET_SWITCHES = false;
+#endif
 			break;
 		}
 		case CMD_SET_TARGET_EQUILIBRIUM:
