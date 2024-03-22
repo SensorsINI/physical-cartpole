@@ -354,6 +354,8 @@ void CONTROL_BackgroundTask(void)
 	}
 	
 	Leds_over_switches_Update(Switches_GetState());
+	indicate_target_position_with_leds(&target_position);
+
 #endif
 
 	///////////////////////////////////////////////////
