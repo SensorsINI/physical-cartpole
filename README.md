@@ -64,10 +64,10 @@ regarding input and output pins and buttons, LEDs and switches assignments.
     * SD card and SD card reader - to flash Zybo board from it without need to connect to computer after start up
       (should be also possible to program the chip with flash memory on Zybo board, but we did not test it)
     * Spare STM boards if you want to work mostly with them - they seem to be fragile
-    * metal bars for experiments with poles of different mass and length
-  - we had these in-house so you have to find on your own where to buy them.
-  With a rough measurement the pole mounting hole is 6mm in diameter, the pole is 5.7mm in diameter.
-    * Some material to decorate the cartpole - don't forget the artistic side of the project! ;-)
+    * metal bars for experiments with poles of different mass and length -
+we had these in-house so you have to find on your own where to buy them.
+With a rough measurement the pole mounting hole is 6mm in diameter, the pole is 5.7mm in diameter.
+  * Some material to decorate the cartpole - don't forget the artistic side of the project! ;-)
 
 ### Original setup
 
