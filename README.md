@@ -1,37 +1,148 @@
-# physical-cartpole
-Work related to the Inverted Pendulum Hardware
+# Physical Cartpole Robot (physical-cartpole)
 
-The Inverted Pendulum is powered by a ST32F103C8T6 microcontroller. `FactoryFirmwareImage.bin` contains the fimrware image as shipped by the factory. It was pulled directly from the micro using a debugger.
+![NC_short_pole_1kHz.gif](Docs%2FNC_short_pole_1kHz.gif)
 
-The new firmware built during the workshop enables the following features:
-* PD control of balance and position can be run on either the micro or on a PC.
-* USB interface to a PC (send angle and position, receive motor velocity).
-* Real-time tunable gains on the micro.
-* Motor safety cut off - prevents the motor from melting if the cart hits a limit.
+## Overview
+This repository contains software, firmware and hardware to operate a 
+[commercial cartpole robot](https://de.aliexpress.com/item/1005004322352088.html).
+It provides integration with [Neural Control Tools](https://github.com/SensorsINI/Neural-Control-Tools).
+The cartpole robot producer and developers of this repository are independent parties
+hence we cannot guarantee the compatibility with future versions of the robot.
 
-# Requirements to Build/Program the Micro
+## Features
+
+* USB interface to a PC
+* Support for original STM but also for Zybo Z7-20
+* Integration with tailored [Cartpole Simulator](https://github.com/SensorsINI/CartPoleSimulation)
+and tools for [system identification with neural networks](https://github.com/SensorsINI/SI_Toolkit) and [control](https://github.com/SensorsINI/Control_Toolkit).
+* Various control modes 
+  * Control from PC: PID, MPC and neural controller
+  * Control from STM: PID
+  * Control from Zybo Z7-20: PID and FPGA-accelerated neural controller
+    
+  All controllers can stabilize the pole in the upright position and follow target position.
+MPC and neural controller can also swing-up the pole.
+* Template with examples for programing experiment sequence for automated data collection.
+* Auxiliary functions allowing easier calibration of the robot, motor safety cut off, and more.
+
+
+## Hardware
+
+### BOM in short
+To operate cartpole, beyond the cartpole robot itself (see "Original setup" below), you need:
+* If you want to use it with STM32:
+  * Make sure to buy cartpole **with STM32 board**.
+  * STM32 programmer (e.g. STLink or J-Link)
+* If you want to use it with Zybo-Z7-20:
+  * [Zybo-Z7-20 board](https://digilent.com/shop/zybo-z7-zynq-7000-arm-fpga-soc-development-board/)
+  
+     We are using Zybo-Z7 **-20** board, and our current designs consumes over the half of the FPGA resources.
+With some additional optimization it should be possible to fit well performing neural controllers on even smaller Zynq chips.
+No matter if you switch to smaller or bigger board, you will probably need to adjust the design
+regarding input and output pins and buttons, LEDs and switches assignments.
+  * You need to prepare the analog filter with voltage divider for angle (ADC) input and H-bridge for motor.
+  See below for the details, here just list of items:
+      * 12V, 5A power supply for the motor (usually comes with the cartpole robot)
+      * 2 x [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/) (12-pin Test Point Header),
+        we use it to solder H-bridge and analog filter on it
+      * H-Bridge: [Pololu TB6612FNG Dualer Motortreiber](https://www.berrybase.ch/pololu-tb6612fng-dualer-motortreiber)
+      * 1 x Ferrite bead, we took just what we had in house to clean power supply for potentiometer
+      * Capacitors: 
+        * 1 x 1uF for filtering angle signal from potentiometer (RC time constant  =  0.1 ms; you can adjust this one)
+        * 1 x 20uF and 1 x 4.7 uF for filtering power supply for potentiometer
+        * 1 x 470uF for filtering power supply for H-Bridge - probably facultative, just any big capacitor will do
+      * Resistors:
+        * 12 kOhm for voltage divider for potentiometer
+        * 100 Ohm for filtering angle signal from potentiometer (RC time constant  =  0.1 ms)
+      * Some wires to solder connections
+      * Barrel connector for power supply to be soldered to H-Bridge
+* Additionally, you might want to buy:
+    * Possibly a cable to connect the STM32 or Zybo board (micro USB) to PC, not sure if included with cartpole robot or Zybo.
+      You probably want a rather long one for convenience (1-2m).
+    * Spare motor **with Encoder** - we use Pololu 19:1 Metal Gearmotor, 37Dx68Lmm, 12V with 64 CPR Encoder [#4751](https://www.pololu.com/product/4751) 
+    * Power supply for Zybo-Z7 board - 5V, 2.5A, barrel connector; the board can be powered also from USB.
+    * SD card and SD card reader - to flash Zybo board from it without need to connect to computer after start up
+      (should be also possible to program the chip with flash memory on Zybo board, but we did not test it)
+    * Spare STM boards if you want to work mostly with them - they seem to be fragile
+    * metal bars for experiments with poles of different mass and length
+  - we had these in-house so you have to find on your own where to buy them.
+  With a rough measurement the pole mounting hole is 6mm in diameter, the pole is 5.7mm in diameter.
+    * Some material to decorate the cartpole - don't forget the artistic side of the project! ;-)
+
+### Original setup
+
+We bought our cartpole robot on AliExpress.
+As of today there are a few links to the product e.g. [this](https://de.aliexpress.com/item/1005004322352088.html).
+It is worth to search for "inverted pendulum" on AliExpress to find the cheapest option and compare with the picture below.
+Out of different versions we have the one using STM32 (ST32F103C8T6) board. **Not** the one with Arduino.
+If you plan to use Zybo-Z7-20 instead, you might be fine buying just the mechanical part of the robot
+(but probably need to buy power supply for the motor separately in such a case).
+![cartpole_official_picture.jpg](Docs%2Fcartpole_official_picture.jpg).
+
+
+### Custom PMOD connectors for Zybo-Z7-20
+#### H-bridge
+Unfortunately the Digilent h-bridge PMODs does not meet specification of the cartpole motor.
+The original setup with STM32 uses TB6612FNG H-brdige.
+We bought it as [Pololu TB6612FNG Dualer Motortreiber](https://www.berrybase.ch/pololu-tb6612fng-dualer-motortreiber)
+and build our own PMOD H-Bridge by soldering it to [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/)
+Below hopefully self-explanatory picture on how to prepare the h-bridge.
+The PMOD should be connected to the Zybo's JE PMOD connector, the other end should be connected the motor.
+The barrel connector is for motor supply (12V, 5A).
+![HBridgePMOD.png](Docs%2FHBridgePMOD.png)
+
+#### Analog Filter
+To get a clean angle measurement from the potentiometer, we designed an analog filter.
+We also need a voltage divider as the board delivers 3.3V to the potentiometer
+and ADC (XADC) on Zynq operate in a range 0-1V.
+The potentiometer output is read from PIN 3 of PMOD connector JA on Zybo Z7-20.
+The schematic is provided below:
+![Analog-Filter-Zynq-Angle.png](Docs%2FAnalog-Filter-Zynq-Angle.png)
+
+Below some picture to facilitate the assembly.
+![pot_pmod_front.png](Docs%2Fpot_pmod_front.png)
+Visible capacitor is 1uF for filtering angle signal from potentiometer.
+It is place so that it can be easily replaced with different value to adjust the filter's time constant.
+Also visible a lot of glue to keep the connection stable when the cartpole is moving.
+
+![pot_pmod_back.png](Docs%2Fpot_pmod_back.png)
+From top to bottom visible is the ferrite bead, the 20 uF capacitor filtering potentiometer input and connection shorting pin 9 to ground.
+The remaining resistors and capacitor are hidden under heat shrink tube.
+
+
+## BELOW NOT UPDATED YET
+## Firmware
+
+### Original firmware
+`FactoryFirmwareImage.bin` and [FactoryFirmware CubeIDE](Firmware%2FFactoryFirmware%20CubeIDE) contains the fimrware image as shipped by the seller.
+It was pulled directly from the STM using a debugger.
+It was done long time ago so it might not represent the latest version of the firmware shipped by the seller.
+We were able to reload it and operate cartpole with it.
+
+
+## Requirements to Build/Program the Micro
 Jerome Jeanine found a way to program the Aliexpress ST micro using open source tools. See [his thesis MPPI on a physical cartpole](https://drive.google.com/file/d/1nSxp6x9yCe-Xci26lOERq7qKkFW_sD_q/view?usp=sharing). 
 
 
 * KEIL MDK development environment.
 * STLink debugger.
 
-# Installation
+### Installation of the PC software
 
 Preferable way to install python packages:
 `pip install -r requirements.txt` in a conda env or pip venv.
 
-# Running
+## Running
 The main module is [control.py](Driver/control.py).
 
 Parameters are distributed in [globals.py](Driver/globals.py) and [config_CPP.yml](Drivers/config_CPP.yml).
 
-# Notes
+## Notes
 
-## Firmware
+### Firmware
 The [firmware](Firmware) folder has the ST firmware.
 
-## Modes of Operation
+### Modes of Operation
 
 The pendulum microcontroller firmware has two modes of operation:
 
@@ -43,7 +154,7 @@ In this mode, the pendulum firmware runs as an interface to the physical hardwar
 
 In either mode, when enabling control of the pendulum for the first time, the firmware will automatically run a calibration routine. During this routine, the cart will slowly move from left to right in order to determine the maximum limits of movement.
 
-## Buttons
+### Buttons
 
 Two buttons are used by the firmware
 
@@ -53,15 +164,15 @@ This is the CPU's hard reset.
 _S2_  
 Used to switch between the 2 modes of operation in the pendulum firmware.
 
-## LEDs
+### LEDs
 
 There is a blue LED (L2) that flashes periodically, fast or slow depending on which mode the firmware is operating in. Fast (200 ms period) -> Self-contained mode. Slow (1 s period) -> PC control mode.
 
-## PC Interface
+### PC Interface
 
 The interface to the pendulum firmware is through the `pendulum.py` module, which provides a series of high-level functions to configure and command various things on the microcontroller. `control.py` contains an example implementation of a PD controller running the PC and interfacing directly with the pendulum firmware.
 
-## Parameters
+### Parameters
 
 Parameters that can be adjusted via the PC are listed below. Note that raw values are used for set points and control gains.
 * Angle set point (~3110 is vertical).
@@ -73,7 +184,7 @@ Parameters that can be adjusted via the PC are listed below. Note that raw value
 * Position smoothing factor (0 to 1.0 - used in 1st order low-pass filter).
 * Position control gains (P and D).
 
-## Output
+### Output
 
 If enabled, the following data is streamed to the PC at regular 5 ms intervals:
 * Current pendulum angle.
