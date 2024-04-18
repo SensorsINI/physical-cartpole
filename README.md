@@ -85,16 +85,17 @@ If you plan to use Zybo-Z7-20 instead, you might be fine buying just the mechani
 Unfortunately the Digilent h-bridge PMODs does not meet specification of the cartpole motor.
 The original setup with STM32 uses TB6612FNG H-brdige.
 We bought it as [Pololu TB6612FNG Dualer Motortreiber](https://www.berrybase.ch/pololu-tb6612fng-dualer-motortreiber)
-and build our own PMOD H-Bridge by soldering it to [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/)
+and build our own PMOD H-Bridge by soldering it to [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/).
 Below hopefully self-explanatory picture on how to prepare the h-bridge.
-The PMOD should be connected to the Zybo's JE PMOD connector, the other end should be connected the motor.
+The PMOD should be connected to the Zybo's JE PMOD connector, the other end should be connected to the motor.
+The colors of the wires on the picture match the colors of the wires at the Pololu motor connector.
 The barrel connector is for motor supply (12V, 5A).
 ![HBridgePMOD.png](Docs%2FHBridgePMOD.png)
 
 #### Analog Filter
 To get a clean angle measurement from the potentiometer, we designed an analog filter.
 We also need a voltage divider as the board delivers 3.3V to the potentiometer
-and ADC (XADC) on Zynq operate in a range 0-1V.
+and ADC (XADC) on Zynq operate in the range 0-1V.
 The potentiometer output is read from PIN 3 of PMOD connector JA on Zybo Z7-20.
 The schematic is provided below:
 ![Analog-Filter-Zynq-Angle.png](Docs%2FAnalog-Filter-Zynq-Angle.png)
@@ -106,7 +107,9 @@ It is place so that it can be easily replaced with different value to adjust the
 Also visible a lot of glue to keep the connection stable when the cartpole is moving.
 
 ![pot_pmod_back.png](Docs%2Fpot_pmod_back.png)
-From top to bottom visible is the ferrite bead, the 20 uF capacitor filtering potentiometer input and connection shorting pin 9 to ground.
+From top to bottom visible is the ferrite bead,
+the 20 uF capacitor filtering potentiometer input
+ and connection shorting pin 9 to ground (the last one just because haw we placed the circuits).
 The remaining resistors and capacitor are hidden under heat shrink tube.
 
 
