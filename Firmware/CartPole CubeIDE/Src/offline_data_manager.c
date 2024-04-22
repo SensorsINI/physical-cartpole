@@ -4,9 +4,15 @@
 
 
 
-
+#ifdef ZYNQ
 #define OFFLINE_BUFFER_SIZE 20000 + 7 // 20s at 1kHz, *29 for total size of all buffers, that is 0.58MB; 5 bytess for SOF, command code, message length and CRC
 #define OFFLINE_BUFFER_SIZE_FLOAT 4*(OFFLINE_BUFFER_SIZE-7) + 7
+#elif defined(STM)
+// TODO: Minimal buffer size. It must be smaller than Zynq as STM has less RAM.
+// I don't need it so I am not searching what would be a reasonable value for STM
+#define OFFLINE_BUFFER_SIZE 1 + 7
+#define OFFLINE_BUFFER_SIZE_FLOAT 4*(OFFLINE_BUFFER_SIZE-7) + 7
+#endif
 
 //static float time_Buffer[OFFLINE_BUFFER_SIZE];
 //
