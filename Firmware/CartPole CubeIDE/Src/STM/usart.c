@@ -107,3 +107,13 @@ void Message_SendToPC(const unsigned char * buff, unsigned int len)
 		USART1->DR = buff[i];
 	}
 }
+
+
+// TODO: Not tested yet. Just added a plausible code for compatibility with Zynq, not to crash at compilation
+// Not needed for basic operations.
+void Message_SendToPC_blocking(const unsigned char * buff, unsigned int len)
+{
+    Message_SendToPC(buff, len);  // Use the non-blocking function to send all data
+
+    while (!(USART1->SR & 0x0040));  // Wait for TC (Transmission Complete)
+}

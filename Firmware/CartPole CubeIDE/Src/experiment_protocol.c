@@ -25,7 +25,7 @@ bool USE_TARGET_SWITCHES_var_original;
 
 // Enum for experiment phases
 typedef enum {
-    RESET,
+    EXP_RESET,
     SWINGUP,
     GO_TO_TARGET_1,
     GO_TO_TARGET_2
@@ -53,10 +53,10 @@ void HardwareExperimentProtocol(
             *ControlOnChip_Enabled_var = true;
             *USE_TARGET_SWITCHES_var = false;
 
-            current_experiment_phase = RESET;
+            current_experiment_phase = EXP_RESET;
         }
         switch(current_experiment_phase) {
-            case RESET:
+            case EXP_RESET:
                 action_reset(position, angle, time, target_position, target_equilibrium);
                 break;
             case SWINGUP:

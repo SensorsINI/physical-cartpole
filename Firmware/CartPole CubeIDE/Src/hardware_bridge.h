@@ -76,9 +76,10 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #include "STM/usart.h"
 
-#define PC_Connection_Init()    PC_Connection_INIT(UART_BAUD);
-#define Message_SendToPC		Message_SendToPC
-#define Message_GetFromPC		Message_GetFromPC
+#define PC_Connection_Init()            PC_Connection_INIT(UART_BAUD);
+#define Message_SendToPC		        Message_SendToPC
+#define Message_SendToPC_blocking       Message_SendToPC_blocking
+#define Message_GetFromPC		        Message_GetFromPC
 
 
 #include "STM/timer.h"
@@ -105,6 +106,7 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 #define Button_SetAction				Button_SetAction
 
 #include "STM/neural_imitator.h"  // Currently not implemented - just making the code compatible with Zynq
+// In future this could be a neural network running on STM
 
 #define Neural_Imitator_Init			Neural_Imitator_Init
 #define neural_imitator_cartpole_step	neural_imitator_cartpole_step

@@ -49,6 +49,6 @@ unsigned short Goniometer_Read(void)
 	ADC1->SQR3		|= 3;		  			    
 	ADC1->CR2		|= 1<<22;			// Start rule conversion channel 
 	while (!(ADC1->SR & 1<<1));			// Wait for conversion end
-	short angle = (ADC1->DR)
+	short angle = (ADC1->DR);
 	return angle*16;					// Return the ADC value
 }
