@@ -79,6 +79,25 @@ If you plan to use Zybo-Z7-20 instead, you might be fine buying just the mechani
 (but probably need to buy power supply for the motor separately in such a case).
 ![cartpole_official_picture.jpg](Docs%2Fcartpole_official_picture.jpg).
 
+### Motors
+
+As the replacement of the original motor
+we use Pololu 19:1 Metal Gearmotor, 37Dx68Lmm, 12V with 64 CPR Encoder [#4751](https://www.pololu.com/product/4751).
+This motor has a similar characteristics to the original one, but its connector has wires in different order.
+For STM setup the original motor is the default, the Pololu needs additional "adapter".
+This adapter is shown below:
+![motor_adapter.png](Docs%2Fmotor_adapter.png)
+
+TODO:
+As for my understanding same adapter (up to the male-female reverse endings) would do to port original motor to Zybo-Z7-20.
+I have not tried this yet.
+In this case the end with the white tape should be on the Zybo side - all the cables keep their color-indicated meaning as on the picture -
+and the other end connected to motor taking care that the wiring is as if it were connected directly to the stm board.
+
+You can notice that the polulu motor with the adapter has still the reversed sign of the encoder signal.
+We use this feature in the calibration to distinguish the motors:
+while applying the same voltage to the motor, the encoder signal should have the opposite sign for the Pololu motor.
+
 
 ### Custom PMOD connectors for Zybo-Z7-20
 #### H-bridge
@@ -102,6 +121,7 @@ The schematic is provided below:
 
 Below some picture to facilitate the assembly.
 ![pot_pmod_front.png](Docs%2Fpot_pmod_front.png)
+
 Visible capacitor is 1uF for filtering angle signal from potentiometer.
 It is place so that it can be easily replaced with different value to adjust the filter's time constant.
 Also visible a lot of glue to keep the connection stable when the cartpole is moving.
@@ -113,32 +133,99 @@ the 20 uF capacitor filtering potentiometer input
 The remaining resistors and capacitor are hidden under heat shrink tube.
 
 
-## BELOW NOT UPDATED YET
-## Firmware
 
-### Original firmware
-`FactoryFirmwareImage.bin` and [FactoryFirmware CubeIDE](Firmware%2FFactoryFirmware%20CubeIDE) contains the fimrware image as shipped by the seller.
-It was pulled directly from the STM using a debugger.
-It was done long time ago so it might not represent the latest version of the firmware shipped by the seller.
-We were able to reload it and operate cartpole with it.
+## Set up and installation
+
+### PC (Python project)
+
+0. Create python 3.11 environment, if you haven't done it yet. e.g.
+
+    `conda create -n CPP python=3.11`
+
+    `conda activate CPP`
+
+    `conda install pip`
+
+    Where CPP is the name of the environment (stands for CartPole Physical).
+
+1. Clone the repository
+
+    `git clone https://github.com/SensorsINI/physical-cartpole`
+
+2. Install the dependencies
+
+    `pip install -r requirements.txt`
+
+    This installs all the dependencies - it is quite a lot of packages, so it may take a while.
 
 
-## Requirements to Build/Program the Micro
-Jerome Jeanine found a way to program the Aliexpress ST micro using open source tools. See [his thesis MPPI on a physical cartpole](https://drive.google.com/file/d/1nSxp6x9yCe-Xci26lOERq7qKkFW_sD_q/view?usp=sharing). 
+### STM32
+* Connect the STLink or the J-link to the STM32 board and to the PC. For j-link we attach the picture, for st-link, you have to figure it out on your own.
+![jtag_programming.png](Docs%2Fjtag_programming.png)
+* Open STM32CubeIDE and go to `File -> Import... -> Existing Projects into Workspace`
+and import project from [Firmware/FactoryFirmware CubeIDE](Firmware%2FCartPole%20CubeIDE).
+* Go to hardware_bridge.h and comment out `#define ZYNQ` and uncomment `#define STM`.
+* Build the project (hammer icon).
+* Right click on the project and select `Run As -> STM32 C/C++ Application`. Go to `Debugger` tab and set up your J-link or ST-link.
+For us it looks as follows:
+![RunConfigurationSTM.png](Docs%2FRunConfigurationSTM.png)
 
+* Run the project. The firmware should be loaded to the STM32 board.
+For STM board, the firmware is saved in the flash memory,
+so you do not need to load it every time you start the board.
+This also means that the original firmware will be overwritten,
+so if you intend to use it later, make sure to fetch it from the chip and save.
 
-* KEIL MDK development environment.
-* STLink debugger.
+* Open `Driver/globals.py` and set `CHIP` variable to `STM`
 
-### Installation of the PC software
+## BELOW NOT FULLY UPDATED YET
 
-Preferable way to install python packages:
-`pip install -r requirements.txt` in a conda env or pip venv.
+### ZYNQ
+* The project is configured to work with ZYNQ as default after download.
+In case you used it first with STM, you need to undo the relevant changes:
+  * Go to hardware_bridge.h and comment out `#define STM` and uncomment `#define ZYNQ`.
+  * Open globals.py and set `CHIP` variable to `ZYNQ`
+
+  Otherwise you can ignore this first point.
+* 
 
 ## Running
-The main module is [control.py](Driver/control.py).
+Do the steps as described in `Set up and installation` section.
 
-Parameters are distributed in [globals.py](Driver/globals.py) and [config_CPP.yml](Drivers/config_CPP.yml).
+The main module to control the cartpole from PC is [control.py](Driver/control.py).
+
+Parameters are in [globals.py](Driver/globals.py).
+
+To get working controllers you first need to calibrate the cartpole.
+
+## Calibration
+
+There are mainly three things which need to be calibrated:
+
+* middle of the cartpole track
+* motor power
+* vertical angle
+
+There is also a friction which might play an important role in cartpole modeling and control,
+but you should be able to get a working controller without adjusting it.
+Hence for friction, see the wiki page.
+
+### Middle of the cartpole track
+This is the only calibration value that is not hardcoded and needs to be recalibrated each time cartpole is powered on.
+After starting the python program to drive cartpole from PC,
+press `Shift+K`.
+The cartpole will move to the left and right boundary of the track.
+and stop in the middle. 
+
+If the cartpole get stuck it might mean that the motor power is too low to overcome friction.
+This usually happens just before stopping in the middle (as it slows down not to overshoot),
+hence it might be confusing - the cartpole seems in the middle but PC is still waiting for the calibration to finish.
+In this case you need to increase it in calibration function in firmware.
+
+If you are running multiple dozens of experiments,
+you might want to recalibrate the cartpole from time to time.
+
+The calibration also allows cartpole to distinguish 
 
 ## Notes
 
