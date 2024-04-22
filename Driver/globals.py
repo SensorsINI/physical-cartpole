@@ -83,7 +83,7 @@ LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for 
 
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
-JSON_PATH = 'Json/'
+JSON_PATH = 'CartPoleSimulation/Control_Toolkit_ASF/'
 
 ##### Motor Settings #####
 CORRECT_MOTOR_DYNAMICS = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
