@@ -28,13 +28,15 @@ Use bidirectional step_response_experiment in step_response_experiment.py to get
 and double_regression to fit two lines with identical slope but different intercept.
 (in fact physics would suggest B_pos = -B_neg
  we allowed B_pos and B_neg to take arbitrary values,
- maybe one should change it in future, more check necessary, what is numerically more convenient)
+ maybe one should change it in future,
+ but the results suggest much better fit if we allow them to be different,
+ maybe this is some asymmetry due to construction of the motor?)
 
 We determine v_sat_max by eye.
 
 There is a plot which allows you to distinguish:
 points taken for linear regression (green)
-points which abs < v_sat_max (orange)
+points which abs(v_sat) < v_sat_max (orange) - this is a range in which motor will operate: Q in the range [-1, 1]
 all the remaining points (red)
 
 With PLOT_CORRECTED you can set if the data is plotted after or before correcting for sliding friction and
@@ -47,9 +49,11 @@ v_sat_max_lin indicates the range of saturation velocities to be used for linear
 
 Finally we determine the relationship motor_input(Q) = (v_sat_max/A) * Q - (B/A) = S * Q + I (S,I for "slope" and "intercept")
 and calculate these coefficients.
-You have to update these coefficients manually in physical cartpole driver, in control_signal_to_motor_command()
+You have to update these coefficients manually in physical cartpole driver,
+in globals.py for control from PC and in firmware for control from STM or Zynq.
+Refer to physical cartpole readme for more details.
 
-Attention! a, b, A and B are here are not consistent with the names used in the code. Read carefully!
+Attention! a, b, A and B are here unfortunately not consistent with the names used in the code. Read carefully!
 """
 import matplotlib.pyplot as plt
 
@@ -83,7 +87,7 @@ v_sat_max_lin = 0.55
 
 def motor_calibration(FILE_NAME):
 
-    PATH_TO_DATA = 'DataAnalysis/MotorAndCartFriction/'
+    PATH_TO_DATA = './'
     file_path = PATH_TO_DATA + FILE_NAME
 
     # Define functions

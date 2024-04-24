@@ -79,6 +79,14 @@ If you plan to use Zybo-Z7-20 instead, you might be fine buying just the mechani
 (but probably need to buy power supply for the motor separately in such a case).
 ![cartpole_official_picture.jpg](Docs%2Fcartpole_official_picture.jpg).
 
+#### Belt tension
+The belt tension is crucial for the cartpole to work properly.
+Unfortunately we have no method to quantify it.
+It should be tight enough to prevent the belt from slipping on the motor pulley,
+but not too tight not to cause too much lateral force on the motor.
+It seems to work best if when I push down the upper part of the belt with my finger,
+I can touch the lower part of the belt and it gets tense when I do it.
+
 ### Motors
 
 As the replacement of the original motor
@@ -189,7 +197,7 @@ In case you used it first with STM, you need to undo the relevant changes:
   Otherwise you can ignore this first point.
 * 
 
-## Running
+## Running from PC
 Do the steps as described in `Set up and installation` section.
 
 The main module to control the cartpole from PC is [control.py](Driver/control.py).
@@ -225,24 +233,165 @@ In this case you need to increase it in calibration function in firmware.
 If you are running multiple dozens of experiments,
 you might want to recalibrate the cartpole from time to time.
 
-The calibration also allows cartpole to distinguish 
+#### Calibration and motor selection
+
+The calibration also allows cartpole to distinguish between the original and the Pololu motor,
+see Motors subsection of Hardware section.
+
+
+Take care! The default motor is hardcoded independently in firmware and in the python program.
+When starting python program, the motor value from software is send to the board and overwrites the value in firmware.
+If you run calibration from python program, this default value will be overwritten for both software and firware control.
+If you run calibration with button press from the board, the default value in firmware will be overwritten but not in the python program.
+After restarting the board or python program, the motor selections is reset to its respective default value.
+
+TODO: Can we make the motor value management simpler?
+
+In our lab we have two cartpole robots,
+one with the original motor and one with the Pololu motor.
+Setting the motor type identifies the robot instance
+and determines parameters which are not dependent on motor: ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL.
+I.e. for what reading of the potentiometer the pole is hanging vertically, which is different for each robot.
+
+FIXME: Calibration with STM not running now
+
+
+### Motor power
+Each motor has a bit different power characteristics.
+Additionally, the power might change with time.
+Hence, we try to determine the relation between the motor power and the cartpole acceleration.
+We do it based on the saturation velocity, during the step response experiment.
+The experiment script is in [step_response_experiment.py](Driver%2FDriverFunctions%2FExperimentProtocols%2Fstep_response_experiment.py)
+The scripts for this calibration are in [MotorAndCartFriction](Driver%2FDataAnalysis%2FMotorAndCartFriction)
+
+#### motor power calibration procedure
+* Start the cartpole control software (control.py)
+* Calibrate (`Shift+K`)
+* Press `m` untill you see in terminal:
+`Loading step-response experiment protocol!`
+* Press `l` to start the recording of cartpole states to csv file (TODO: make it automatic!)
+* Press `m` to start the step response experiment.
+    
+    The cartpole will accelerate a few time to the left and to the right.
+    
+    Potential issues:
+  * If the minimal speed it too low the cart might get stuck due to friction.
+      You can either very, very gently push it (not to skew the measurement) or increase the minimal speed in experiment script.
+
+* As soon as the cartpole stops, press `l` to stop the recording.
+The data will be saved in the [Driver/ExperimentRecordings](Driver%2FExperimentRecordings) folder
+(does not exist until you record first data).
+* Copy the data to the [Driver/DataAnalysis/MotorAndCartFriction](Driver%2FDataAnalysis%2FMotorAndCartFriction) folder.
+* Open [Driver/DataAnalysis/MotorCalibration.py](Driver%2FDataAnalysis%2FMotorAndCartFriction%2FMotorCalibration.py)
+You will find there detailed explanations how the calibration coefficients are calculated.
+Change variable `FILE_NAME` to the name of the file with the data and run the script.
+You will see the plot of the saturation velocity vs. motor power and calibration coefficients in the terminal.
+Copy the calibration coefficients to the globals.py (MOTOR_CORRECTION_ORIGINAL or MOTOR_CORRECTION_POLOLU)
+and in firmware to parameters.c (MOTOR_CORRECTION).
+
+FIXME: MotorCalibration returns Nan now.
+
+### Angle calibration
+
+#### Potentiometer dead zone
+The potentiometer has a dead zone between 0 and max value.
+To minimise how it interferes with the control,
+we set the dead zone to the position when the pole is horizontal,
+with the hope this the state not crucial for control and which the pole is usually passing rarely & quickly.
+We place it to the left, but all should work if you place it to the right.
+To change it
+* Run the cartpole control software, you will see the raw angle reading in the terminal.
+* While holding the pole in the horizontal position,
+use a screwdriver to rotate the joint on which it is mounted until you find the dead zone.
+If necessary loose a bit the screw holding the pole to the potentiometer - and if not necessary tighten it afterwards! Otherwise the angle reading might drift!
+
+#### Full circle in the ADC units
+Although the ADC is 12-bit, which would correspond to 4096 units per full circle,
+due to the dead zone the full circle corresponds to more units.
+To determine how many units corresponds to the full circle,
+gently balance the pole up and down and note the difference in ADC reading.
+The full circle is then double this value.
+You can use my script in [Driver/DataAnalysis/AngleUpDown](Driver%2FDataAnalysis%2FAngleUpDown)
+or do this simple measurement evaluation on your own.
+While running to cartpole software you can press `b`
+to measure the angle multiple times and get more precise results.
+Insert the result in globals.py in ANGLE_360_DEG_IN_ADC_UNITS
+FIXME: This should depend on both the motor (different robot = different potentiometer)
+and the chip (Zynq setup uses voltage shifter which is generally not 100% precise).
+
+FIXME: Too complicated!
+In firmware there is no ANGLE_360_DEG_IN_ADC_UNITS instead currently you need to read out angle and position normalization.
+Currently you can read this varable only if running the software in debug mode.
+In firmware in parameters.c in ANGLE_360_DEG_IN_ADC_UNITS.
+
+#### Zero angle calibration
+To get a rough estimation you can let the pole hang down and note the angle reading.
+To get more precise measurement press `b`.
+Fill it in ANGLE_HANGING_ORIGINAL or ANGLE_HANGING_POLOLU in globals.py.
+Rerun the cartpole software and very gently balance the pole up
+and make sure that the angle reading is oscillating around 0.
+If it is not (probably it is not),
+adjust the value in globals.py by trial and error and rerun the software.
+
+
+BRAVO! You have calibrated the cartpole! And I am done with writing this section!
+Now a more fun part - control!
+
+## Cartpole control with PC
+
+## Cartpole control without PC
+
+After you have **calibrating** your cartpole
+and hardcoded the respected values in firmware
+You can also control the cartpole without connecting to PC at all.
+We however strongly recommend that you first make sure
+that the cartpole is working properly with PC control
+also regarding firmware controllers - it is much easier to debug!
+
+### STM32
+
+STM32 board has 2 buttons on top.
+The reset button reloads the firmware.
+TODO: The USER button switches the firmware PID on and off.
+While switching it on it first calibrates the cartpole.
+Please keep the pole vertical during the calibration -
+the PID control starts immediately after the calibration! 
+The PID cannot swing-up the pole,
+and it will crash the cart into track boundaries,
+if it starts with the pole not roughly vertical.
+As the PID is not our main focus,
+it is by far not as well tuned as the PID originally shipped with the cartpole.
+
+### Zybo-Z7-20
+
 
 ## Notes
-
-### Firmware
-The [firmware](Firmware) folder has the ST firmware.
 
 ### Modes of Operation
 
 The pendulum microcontroller firmware has two modes of operation:
 
 _(1) Self-Contained Mode_  
-In this mode, the pendulum is controlled directly by the firmware using an onboard basic PD control scheme. A PC is not required at all for this mode. However you can use the PC to adjust the control parameters on-the-fly, as well as read out set points and other useful values generated by the on-board control algorithm in real time. If you want 'factory mode', just boot up the controller and set it running.
+In this mode, the pendulum is controlled directly by the firmware
+using an onboard basic PD control scheme.
+A PC is not required at all for this mode.
+However you can use the PC to adjust the control parameters on-the-fly,
+as well as read out set points and other useful values
+generated by the on-board control algorithm in real time.
+If you want 'factory mode', just boot up the controller and set it running.
 
 _(2) PC Control Mode_  
-In this mode, the pendulum firmware runs as an interface to the physical hardware. Control is performed over USB by an algorithm running on another connected device (PC, FPGA, etc). The firmware outputs the current pendulum angle and cart position at regular intervals, and accepts motor speed and direction as input. The frequency of the control loop running on the PC is governed by the period set for outputting angle/position from the pendulum micro (currently hardcoded to 5 ms).
+In this mode,
+the pendulum firmware runs as an interface to the physical hardware.
+Control is performed over USB by an algorithm running on another connected device (PC, FPGA, etc).
+The firmware outputs the current pendulum angle and cart position at regular intervals,
+and accepts motor speed and direction as input.
+The frequency of the control loop running on the PC is governed by the period set for outputting angle/position from the pendulum micro (currently hardcoded to 5 ms).
 
-In either mode, when enabling control of the pendulum for the first time, the firmware will automatically run a calibration routine. During this routine, the cart will slowly move from left to right in order to determine the maximum limits of movement.
+In either mode,
+when enabling control of the pendulum for the first time,
+the firmware will automatically run a calibration routine.
+During this routine, the cart will slowly move from left to right in order to determine the maximum limits of movement.
 
 ### Buttons
 
