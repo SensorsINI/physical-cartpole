@@ -240,10 +240,10 @@ see Motors subsection of Hardware section.
 
 
 Take care! The default motor is hardcoded independently in firmware and in the python program.
-When starting python program, the motor value from software is send to the board and overwrites the value in firmware.
-If you run calibration from python program, this default value will be overwritten for both software and firware control.
-If you run calibration with button press from the board, the default value in firmware will be overwritten but not in the python program.
-After restarting the board or python program, the motor selections is reset to its respective default value.
+When starting python program, the motor value from software is sent to the board and overwrites the value in firmware.
+If you run calibration from python program, this value will be overwritten for both software and firmware control.
+If you run calibration with button press from the board, the value in firmware will be overwritten but not in the python program.
+After restarting the board or python program, the motor selections is reset to its respective hardcoded default value.
 
 TODO: Can we make the motor value management simpler?
 
