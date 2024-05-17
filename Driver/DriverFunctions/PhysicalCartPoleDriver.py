@@ -22,7 +22,10 @@ from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, A
 from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
 from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
-from DriverFunctions.csv_helpers import csv_init
+from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
+from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
+from CartPole.data_manager import DataManager
+from SI_Toolkit.Functions.FunctionalDict import FunctionalDict
 
 from globals import *
 
@@ -65,16 +68,6 @@ class PhysicalCartPoleDriver:
         self.manualMotorSetting = False
         self.terminate_experiment = False
 
-        # CSV Logging
-        self.loggingEnabled = False
-        self.csvfile = None
-        self.csvfilename = None
-        self.csvwriter = None
-        self.csv_init_thread = None
-        self.logging_time_limited_started = False
-        self.logging_time_limited_max = 1000
-        self.logging_counter = 0
-
         # Live Plot
         self.livePlotEnabled = LIVE_PLOT
 
@@ -115,10 +108,8 @@ class PhysicalCartPoleDriver:
         self.angleD_raw_buffer = np.zeros((0))
         self.angle_raw_sensor = None
         self.angleD_raw_sensor = None
-        self.angleD_fitted = None
         self.invalid_steps = 0
         self.frozen = 0
-        self.fitted = 0
         self.position_raw = 0
         self.positionD_raw = 0
         self.angleDPrev = 0.0
@@ -188,6 +179,65 @@ class PhysicalCartPoleDriver:
         self.positionD_buffer = np.zeros(POSITION_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for position derivatives
         self.angleD_median_buffer_index = 0
         self.positionD_median_buffer_index = 0
+
+        # The below dict lists variables to be logged with csv file when recording is on
+        # Just add new variable here and it will be logged
+        self.dict_data_to_save_basic = FunctionalDict({
+
+            'time': lambda: self.elapsedTime,
+            'deltaTimeMs': lambda: self.delta_time * 1000,
+
+            'angle_raw': lambda: self.angle_raw,
+            'angleD_raw': lambda: self.angleD_raw,
+            'angle': lambda: self.s[ANGLE_IDX],
+            'angleD': lambda: self.s[ANGLED_IDX],
+            'angle_cos': lambda: self.s[ANGLE_COS_IDX],
+            'angle_sin': lambda: self.s[ANGLE_SIN_IDX],
+            'position_raw': lambda: self.position_raw,
+            'position': lambda: self.s[POSITION_IDX],
+            'positionD': lambda: self.s[POSITIOND_IDX],
+
+            'target_position': lambda: self.target_position,
+            'target_equilibrium': lambda: self.CartPoleInstance.target_equilibrium,
+
+            'actualMotorSave': lambda: self.actualMotorCmd_prev,
+            'Q': lambda: self.Q_prev,
+
+            'measurement': lambda: self.current_experiment_protocol,
+
+            'angle_squared': lambda: self.s[ANGLE_IDX] ** 2,
+            'position_squared': lambda: (self.s[POSITION_IDX] - self.target_position) ** 2,
+            'Q_squared': lambda: self.Q_prev ** 2,
+
+            'sent': lambda: self.time_difference,
+            'latency': lambda: self.firmware_latency,
+            'latency_violations': lambda: self.latency_violations,
+            'pythonLatency': lambda: self.python_latency,
+            'controller_steptime': lambda: self.controller_steptime_previous,
+            'additionalLatency': lambda: self.additional_latency,
+            'invalid_steps': lambda: self.invalid_steps,
+            'frozen': lambda: self.frozen,
+
+            'angle_raw_sensor': lambda: self.angle_raw_sensor,
+            'angleD_raw_sensor': lambda: self.angleD_raw_sensor,
+        })
+
+        self.data_to_save_measurement = {}
+        self.data_to_save_controller = {}
+
+        self.data_manager = DataManager()
+
+        self.csv_name = None
+        self.recording_length = np.inf
+        self.start_recording_flag = False  # Gives signal to start recording during the current control iteration, starting recording may take more than one control iteration
+
+    @property
+    def recording_running(self):
+        return self.data_manager.recording_running
+
+    @property
+    def starting_recording(self):
+        return self.data_manager.starting_recording
 
     def run(self):
         self.setup()
@@ -260,6 +310,10 @@ class PhysicalCartPoleDriver:
 
         self.experiment_protocol_step()
 
+        if self.start_recording_flag:
+            self.start_csv_recording()
+            self.start_recording_flag = False
+
         self.set_target_position()
 
         if self.controlEnabled or self.firmwareControl:
@@ -283,8 +337,6 @@ class PhysicalCartPoleDriver:
             # self.actualMotorCmd = self.command
             # self.Q = self.command / MOTOR_FULL_SCALE
 
-
-
         self.joystick_action()
 
         if self.controlEnabled or self.current_experiment_protocol.is_running():
@@ -299,12 +351,17 @@ class PhysicalCartPoleDriver:
 
         if self.firmwareControl:
             self.actualMotorCmd = self.command
+
         # Logging, Plotting, Terminal
-        if self.loggingEnabled:
-            self.write_csv_row()
+
+        self.csv_recording_step()
+
         if self.livePlotEnabled:
             self.plot_live()
         self.write_current_data_to_terminal()
+
+        self.actualMotorCmd_prev = self.actualMotorCmd
+        self.Q_prev = self.Q
 
         self.update_parameters_in_cartpole_instance()
 
@@ -317,8 +374,7 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.close()
         joystick.quit()
 
-        if self.loggingEnabled:
-            self.csvfile.close()
+        self.finish_csv_recording()
 
     def keyboard_input(self):
         global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
@@ -361,30 +417,25 @@ class PhysicalCartPoleDriver:
                     print(f"\nself.danceEnabled= {self.danceEnabled}")
 
             ##### Logging #####
-            elif c == 'l' or c == 'L':
-                loggingEnabled_local = not self.loggingEnabled
-                print("\nself.loggingEnabled= {0}".format(loggingEnabled_local))
-                if loggingEnabled_local:
-                    def f():
-                        self.csvfilename, self.csvfile, self.csvwriter = csv_init(controller_name = self.controller.controller_name)
-                        self.loggingEnabled = loggingEnabled_local
-
-                    self.csv_init_thread = threading.Thread(target=f)
-                    self.csv_init_thread.start()
+            # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
+            elif (c == 'l' or c == 'L') and self.starting_recording is False:
+                if not self.recording_running:
+                    if self.controller.has_optimizer:
+                        optimizer_name = self.controller.optimizer_name
+                    else:
+                        optimizer_name = ''
+                    self.csv_name = create_csv_file_name(controller_name=self.controller.controller_name,
+                                                    controller=self.controller,
+                                                    optimizer_name=optimizer_name, prefix='CPP')
                     if c == 'L':
-                        self.logging_time_limited_started = True
+                        self.recording_length = TIME_LIMITED_RECORDING_LENGTH
+                    else:
+                        self.recording_length = np.inf
+
+                    self.start_recording_flag = True
 
                 else:
-                    self.csvfile.close()
-                    print("\n Stopped self.logging data to " + self.csvfilename)
-                    self.loggingEnabled = loggingEnabled_local
-
-                    self.logging_time_limited_started = False
-                    self.logging_counter = 0
-
-                if self.controller.controller_name == 'mppi':
-                    if not self.loggingEnabled and self.controlled_iterations > 1:
-                        self.controller.controller_report()
+                    self.finish_csv_recording(wait_till_complete=False)
 
             ##### Control Mode #####
             elif c == 'u':  # toggle firmware control
@@ -874,37 +925,6 @@ class PhysicalCartPoleDriver:
             self.safety_switch_counter = 0
             pass
 
-    def write_csv_row(self):
-        self.logging_counter += 1
-        if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
-            if self.controller.controller_name == 'pid':
-                self.csvwriter.writerow(
-                    [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
-                     self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-                     self.s[POSITION_IDX], self.s[POSITIOND_IDX], self.controller.ANGLE_TARGET, self.controller.angle_error,
-                     self.target_position, self.controller.position_error, self.controller.Q_angle,
-                     self.controller.Q_position, self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.current_experiment_protocol, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.time_difference, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
-            else:
-                self.csvwriter.writerow(
-                    [self.elapsedTime, self.delta_time * 1000, self.angle_raw, self.angleD_raw, self.s[ANGLE_IDX], self.s[ANGLED_IDX],
-                     self.s[ANGLE_COS_IDX], self.s[ANGLE_SIN_IDX], self.position_raw,
-                     self.s[POSITION_IDX], self.s[POSITIOND_IDX], 'NA', 'NA',
-                     self.target_position, self.CartPoleInstance.target_equilibrium, 'NA', 'NA', 'NA', self.actualMotorCmd_prev, self.Q_prev,
-                     self.stickControl, self.stickPos, self.current_experiment_protocol, self.s[ANGLE_IDX] ** 2, (self.s[POSITION_IDX] - self.target_position) ** 2, self.Q_prev ** 2,
-                     self.time_difference, self.firmware_latency, self.latency_violation, self.python_latency, self.controller_steptime_previous, self.additional_latency, self.invalid_steps, self.frozen, self.fitted, self.angle_raw_sensor, self.angleD_raw_sensor, self.angleD_fitted])
-
-        self.actualMotorCmd_prev = self.actualMotorCmd
-        self.Q_prev = self.Q
-
-        if self.logging_time_limited_started and self.logging_counter == self.logging_time_limited_max:
-            self.csvfile.close()
-            print("\n Stopped self.logging data to " + self.csvfilename)
-            self.loggingEnabled = False
-
-            self.logging_time_limited_started = False
-            self.logging_counter = 0
 
     def plot_live(self):
         BUFFER_LENGTH = 5
@@ -950,6 +970,36 @@ class PhysicalCartPoleDriver:
                 self.live_connection.send(self.live_buffer)
                 self.live_buffer_index = 0
                 self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+
+    def start_csv_recording(self):
+
+        combined_keys = list(self.dict_data_to_save_basic.keys()) + list(
+            self.data_to_save_measurement.keys()) + list(self.data_to_save_controller.keys())
+
+        self.data_manager.start_csv_recording(
+            self.csv_name,
+            combined_keys,
+            create_csv_title(),
+            create_csv_header(),
+            PATH_TO_EXPERIMENT_RECORDINGS,
+            mode='online',
+            wait_till_complete=False,
+            recording_length=self.recording_length
+        )
+
+    def csv_recording_step(self):
+        if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
+            if self.recording_running:
+                self.data_manager.step([
+                    self.dict_data_to_save_basic,
+                    self.data_to_save_measurement,
+                    self.data_to_save_controller
+                ])
+
+    def finish_csv_recording(self, wait_till_complete=True):
+        if self.recording_running:
+            self.data_manager.finish_experiment(wait_till_complete=wait_till_complete)
+        self.recording_length = np.inf
 
     def write_current_data_to_terminal(self):
         self.printCount += 1

@@ -11,8 +11,6 @@ from CartPole.state_utilities import (
 )
 import numpy as np
 
-from DriverFunctions.csv_helpers import csv_init
-
 NUMBER_OF_RANDOM_TARGETS = 20
 STABLE_POSITION_TOLERANCE = 0.015
 TIME_STABLE = 1.0

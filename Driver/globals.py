@@ -63,6 +63,8 @@ else:
 
 DEMO_PROGRAM = False
 
+TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = CONTROL_PERIOD_MS)
+
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored

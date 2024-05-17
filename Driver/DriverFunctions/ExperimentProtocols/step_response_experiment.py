@@ -18,7 +18,7 @@ FRICTION_SLOWDOWN = False
 # Direction for measurement.py with the cart accelerating to right:
 STARTING_POSITION = -0.15  # cart starting position (in m)
 ENDING_POSITION = 0.1  # position to turn off motor
-RESET_Q = 0.5
+RESET_Q = 0.3
 SPEED_STEP = 0.1
 STARTING_SPEED = 0.25  # doesn't work for low values for some reason
 ENDING_SPEED = 1.0
@@ -158,6 +158,8 @@ class step_response_experiment(template_experiment_protocol):
                 self.time_state_changed = time
         else:
             raise Exception(f'unknown state {self.current_experiment_phase}')
+
+        self.data_to_save_measurement = {'measurement': self}
 
     def _check_timeout(self, time, raise_error=False):
         if time - self.time_state_changed > STEP_TIMEOUT_S:
