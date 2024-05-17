@@ -245,7 +245,7 @@ If you run calibration from python program, this value will be overwritten for b
 If you run calibration with button press from the board, the value in firmware will be overwritten but not in the python program.
 After restarting the board or python program, the motor selections is reset to its respective hardcoded default value.
 
-TODO: Can we make the motor value management simpler?
+<strong style="color:yellow;">TODO: Can we make the motor value management simpler?</strong>
 
 In our lab we have two cartpole robots,
 one with the original motor and one with the Pololu motor.
@@ -253,7 +253,7 @@ Setting the motor type identifies the robot instance
 and determines parameters which are not dependent on motor: ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL.
 I.e. for what reading of the potentiometer the pole is hanging vertically, which is different for each robot.
 
-FIXME: Calibration with STM not running now
+<strong style="color:red;">FIXME: Calibration with STM not running now.</strong>
 
 
 ### Motor power
@@ -289,7 +289,7 @@ You will see the plot of the saturation velocity vs. motor power and calibration
 Copy the calibration coefficients to the globals.py (MOTOR_CORRECTION_ORIGINAL or MOTOR_CORRECTION_POLOLU)
 and in firmware to parameters.c (MOTOR_CORRECTION).
 
-FIXME: MotorCalibration returns Nan now.
+<strong style="color:red;">FIXME: MotorCalibration returns NaN now.</strong>
 
 ### Angle calibration
 
