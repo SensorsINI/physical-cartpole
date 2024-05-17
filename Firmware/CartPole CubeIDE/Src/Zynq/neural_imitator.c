@@ -7,7 +7,11 @@
 
 #include "fixed_point.hpp"
 
-#include "EdgeDRNN/EdgeDRNN_Network.h"
+//#define EdgeDRNN
+
+#ifdef EdgeDRNN
+#include "EdgeDRNNEdgeDRNN_Network.h"
+#endif
 
 #include "HLS4ML/HLS4ML_Network.h"
 
@@ -61,7 +65,9 @@ short* edgedrnn_stim; //[] = {131,256,8,36,2,256,14,0};
 void Neural_Imitator_Init()
 {
 	HLS4ML_Network_Init();
+#ifdef EdgeDRNN
 	EdgeDRNN_Network_Init();
+#endif
 
 }
 
@@ -83,6 +89,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 
 	if(Switch_GetState(NETWORKS_SWITCH_NUMBER))
 	{
+#ifdef EdgeDRNN
 		// Use EdgeDRNN accelerator
 
 		for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS;	neuron_idx++)
@@ -100,7 +107,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 		{
 			*((float          *)&network_output_buffer[neuron_idx*DATA_WORD_BYTES]) = predic_floating_point;
 		}
-
+#endif
 
 	}
 	else
@@ -134,7 +141,9 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 
 
 void Neural_Imitator_ReleaseResources(){
+#ifdef EdgeDRNN
 	EdgeDRNN_Network_ReleaseResources();
+#endif
 }
 
 float neural_imitator_cartpole_step(float angle, float angleD, float angle_cos, float angle_sin, float position, float positionD, float target_equilibrium, float target_position, float time)
