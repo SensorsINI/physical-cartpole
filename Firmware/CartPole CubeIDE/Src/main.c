@@ -7,6 +7,9 @@ int main(void)
 	General_Init();
 	PC_Connection_Init();
 	Buttons_And_Switches_Init();
+#ifdef USE_EXTERNAL_INTERFACE
+	ExternalInterfaceInit();
+#endif
 	Led_Init();
 	Button_SetAction(BUTTON_1, CONTROL_ToggleState);
 	Button_SetAction(BUTTON_2, cmd_Calibrate);  // Not implemented yet for STM

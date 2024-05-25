@@ -13,23 +13,23 @@ void Buttons_And_Switches_Init(){
     XGpioPs_Config *GPIOConfigPtr;
 
     // GPIO driver initialization
-    GPIOConfigPtr = XGpioPs_LookupConfig(GPIO_DEVICE_ID);
+    GPIOConfigPtr = XGpioPs_LookupConfig(XPAR_XGPIOPS_0_DEVICE_ID);
     XGpioPs_CfgInitialize(&GpioPS, GPIOConfigPtr, GPIOConfigPtr->BaseAddr);
 
     // Register GPIO interrupt handler
-    XScuGic_Connect(&XScuGicInstance, GPIO_INTERRUPT_ID,
+    XScuGic_Connect(&XScuGicInstance, XPAR_XGPIOPS_0_INTR,
 					(Xil_InterruptHandler)Btn_Intr_Handler,
 					(void *)&GpioPS);
 
     // Enable GPIO interrupts in the controller
-    XScuGic_Enable(&XScuGicInstance, GPIO_INTERRUPT_ID);
+    XScuGic_Enable(&XScuGicInstance, XPAR_XGPIOPS_0_INTR);
 
     // Set direction for button pins
     XGpioPs_SetDirectionPin(&GpioPS, PS_BTN_4, 0);
     XGpioPs_SetDirectionPin(&GpioPS, PS_BTN_5, 0);
 
     // GPIO for Switches on PL
-    XGpio_Initialize(&Gpio, XPAR_GPIO_0_DEVICE_ID);
+    XGpio_Initialize(&Gpio, XPAR_SWITCHES_AND_LEDS_GPIO_DEVICE_ID);
     XGpio_SetDataDirection(&Gpio, 1, 1);
 }
 

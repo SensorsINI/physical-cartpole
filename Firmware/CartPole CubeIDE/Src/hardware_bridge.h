@@ -18,6 +18,11 @@
 //#define ZEDBOARD
 
 
+//configuration for Zynq
+#define USE_EXTERNAL_INTERFACE
+
+
+
 
 
 
@@ -182,6 +187,11 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define Neural_Imitator_Init			Neural_Imitator_Init
 #define neural_imitator_cartpole_step	neural_imitator_cartpole_step
+
+#ifdef USE_EXTERNAL_INTERFACE
+#include "Zynq/external_interface.h"
+#endif
+
 
 
 // Prototypes of all functions. Just comment all above to check that everything goes indeed through hardware bridge

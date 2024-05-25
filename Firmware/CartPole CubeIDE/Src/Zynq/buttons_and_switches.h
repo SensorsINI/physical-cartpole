@@ -15,9 +15,6 @@ extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driv
 #define PS_BTN_4            50 // Button GPIO
 #define PS_BTN_5            51 // Button GPIO
 
-#define GPIO_DEVICE_ID      XPAR_XGPIOPS_0_DEVICE_ID
-#define GPIO_INTERRUPT_ID   XPAR_XGPIOPS_0_INTR
-
 typedef void (*ActionHandler)(void);
 
 void Buttons_And_Switches_Init(void);

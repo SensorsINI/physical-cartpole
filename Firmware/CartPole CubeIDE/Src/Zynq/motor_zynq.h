@@ -4,7 +4,7 @@
 #include "xmotor_hls.h"
 #include "param_pkg.h"
 
-#define MOTOR_DEVICE_ID XPAR_MOTOR_HLS_0_DEVICE_ID
+#define MOTOR_DEVICE_ID XPAR_CARTPOLEINTERFACE_MOTOR_HLS_0_DEVICE_ID
 
 void Motor_INIT(int pwm_period_in_clock_cycles);
 void Motor_SetPwmPeriod(int pwm_period_in_clock_cycles);

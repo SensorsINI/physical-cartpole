@@ -18,7 +18,7 @@ void Led_Init(void)
 
 	// Set GPIO for RGB LEDs
 #ifdef ZYBO_Z720
-    XGpio_Initialize(&GpioRGB, XPAR_AXI_GPIO_1_DEVICE_ID);
+    XGpio_Initialize(&GpioRGB, XPAR_RGB_LED_GPIO_DEVICE_ID);
     XGpio_SetDataDirection(&GpioRGB, 1, 0);
 #endif
 

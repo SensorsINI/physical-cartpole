@@ -7,13 +7,21 @@
 
 #include "fixed_point.hpp"
 
-//#define EdgeDRNN
-
-#ifdef EdgeDRNN
-#include "EdgeDRNNEdgeDRNN_Network.h"
+#ifdef XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_DEVICE_ID
+#define EdgeDRNN
 #endif
 
+#ifdef EdgeDRNN
+#include "EdgeDRNN/EdgeDRNN_Network.h"
+#endif
+
+#ifdef XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
+#define HLS4ML
+#endif
+
+#ifdef HLS4ML
 #include "HLS4ML/HLS4ML_Network.h"
+#endif
 
 
 #define NETWORKS_SWITCH_NUMBER	3
@@ -64,7 +72,11 @@ short* edgedrnn_stim; //[] = {131,256,8,36,2,256,14,0};
 
 void Neural_Imitator_Init()
 {
+
+#ifdef HLS4ML
 	HLS4ML_Network_Init();
+#endif
+
 #ifdef EdgeDRNN
 	EdgeDRNN_Network_Init();
 #endif
@@ -112,6 +124,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 	}
 	else
 	{
+#ifdef HLS4ML
 		// Use MLP accelerator
 
 		for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS;	neuron_idx++)
@@ -137,6 +150,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 		}
 
 	}
+#endif
 }
 
 

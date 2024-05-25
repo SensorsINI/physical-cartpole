@@ -9,15 +9,16 @@ edgedrnn_t* p_edgedrnn_obj = NULL;;
 short* p_snd_buf = NULL;
 short* p_rcv_buf = NULL;
 
+#ifdef XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_DEVICE_ID
 void EdgeDRNN_Network_Init()
 {
 	//----------------------------------------------
 	// Create EdgeDRNN DMA Object
 	//----------------------------------------------
-	p_dma_obj = dma_create(XPAR_AXI_DMA_1_DEVICE_ID,
+	p_dma_obj = dma_create(XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_DEVICE_ID,
 							AQI,
 							AQF,
-							XPAR_AXI_DMA_1_M_AXI_MM2S_DATA_WIDTH / 8,
+							XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_M_AXI_MM2S_DATA_WIDTH / 8,
 							INP_SIZE,
 							RNN_SIZE);
 
@@ -27,7 +28,7 @@ void EdgeDRNN_Network_Init()
 	//----------------------------------------------
 	// Create Edgedrnn Object
 	//----------------------------------------------
-	p_edgedrnn_obj = edgedrnn_create(XPAR_EDGEDRNN_WRAPPER_0_BASEADDR, (u32) rnn_param,
+	p_edgedrnn_obj = edgedrnn_create(XPAR_HARDWARE_ACCEL_EDGEDRNN_EDGEDRNN_WRAPPER_0_BASEADDR, (u32) rnn_param,
 									NUM_PE,
 									THX,		  // num_pe
 									THH,		  // a_qi
@@ -35,7 +36,7 @@ void EdgeDRNN_Network_Init()
 									AQF,		  // w_qi
 									WQI,		  // w_qf
 									WQF,
-									XPAR_AXI_DMA_1_M_AXI_MM2S_DATA_WIDTH / 8,	// hp_size
+									XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_M_AXI_MM2S_DATA_WIDTH / 8,	// hp_size
 									RNN_LAYERS,                // rnn_num_layers
 									INP_SIZE,	                // rnn_inp_size
 									RNN_SIZE,	                // rnn_hid_size
@@ -60,3 +61,5 @@ void EdgeDRNN_Network_ReleaseResources()
 	free(p_dma_obj);
 	free(p_edgedrnn_obj);
 }
+
+#endif

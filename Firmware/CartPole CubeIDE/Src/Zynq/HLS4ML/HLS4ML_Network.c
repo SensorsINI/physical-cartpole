@@ -4,7 +4,9 @@
 
 #include "HLS4ML_Network.h"
 
-#define DMA_DEV_ID		XPAR_AXIDMA_0_DEVICE_ID
+#ifdef XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
+
+#define DMA_DEV_ID		XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
 
 u32 HLS4ML_Network_ListenToOutput(UINTPTR BuffAddr, u32 Length);
 u32 HLS4ML_Network_WriteToInput(UINTPTR BuffAddr, u32 Length);
@@ -91,3 +93,5 @@ void HLS4ML_Network_WaitToReturn()
 		/* Wait */
 	}
 }
+
+#endif

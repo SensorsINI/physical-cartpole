@@ -83,6 +83,10 @@ void CONTROL_Init(void)
         exit(1); // or another appropriate error handling
     }
 
+#ifdef USE_EXTERNAL_INTERFACE
+    USE_TARGET_SWITCHES = false;
+#endif
+
     correct_motor_dynamics = (current_controller == OnChipController_PID) ? false : true;
 }
 
@@ -183,6 +187,7 @@ void CONTROL_BackgroundTask(void)
 		if (ControlOnChip_Enabled)	{
 
 #ifdef ZYNQ
+#ifndef USE_EXTERNAL_INTERFACE
 			if(USE_TARGET_SWITCHES && position_jumps_enabled){
 
 				if (position_jumps_interval_counter >= position_period)
@@ -196,6 +201,7 @@ void CONTROL_BackgroundTask(void)
 
 
 			}
+#endif
 #endif
 			switch (current_controller){
 			case OnChipController_PID:
@@ -336,6 +342,7 @@ void CONTROL_BackgroundTask(void)
 		current_controller = OnChipController_NeuralImitator;
 	}
 
+#ifndef USE_EXTERNAL_INTERFACE
 	if (USE_TARGET_SWITCHES)
 	{
 		if(Switch_GetState(POSITION_JUMPS_SWITCH_NUMBER)){
@@ -352,10 +359,17 @@ void CONTROL_BackgroundTask(void)
 			target_equilibrium = -1.0;
 		}
 	}
-	
+#else
+
+	target_position = get_normed_slider_state()*2*position_jumps_target;
+
+	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
+	if (target_equilibrium_from_external_button != 0){
+		target_equilibrium = target_equilibrium_from_external_button;
+	}
+#endif
 	Leds_over_switches_Update(Switches_GetState());
 	indicate_target_position_with_leds(&target_position);
-
 #endif
 
 	///////////////////////////////////////////////////
