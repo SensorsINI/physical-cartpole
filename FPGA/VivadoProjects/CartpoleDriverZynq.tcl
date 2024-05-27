@@ -170,20 +170,20 @@ if { $obj != {} } {
 set obj [get_filesets sources_1]
 # Import local files from the original project
 set files [list \
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/s_axi_lite_v1_0.v"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/hdr_macros.v"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/axis_fifo.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/bram_sdp.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/edgedrnn.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/hpc.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/hpe.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/ieu.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/mem_acc.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/mem_state.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/sigmoid_lut.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/tanh_lut.sv"]\
- [file normalize "${origin_dir}/../NeuralNetworks/EdgeDRNN/hdl/edgedrnn_wrapper.v"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0.v"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hdr_macros.v"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/bram_sdp.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpc.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpe.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/ieu.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_acc.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_state.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv"]\
+ [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v"]\
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_short_pole/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"]\
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_short_pole/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"]\
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_short_pole/dense_latency_ap_fixed_14_2_5_3_0_ap_fixed_22_8_5_3_0_config8_0_0.vhd"]\
@@ -659,46 +659,46 @@ set_property -name "name" -value "utils_1" -objects $obj
 
 # Adding sources referenced in BDs, if not already added
 if { [get_files s_axi_lite_v1_0.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/s_axi_lite_v1_0.v
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0.v
 }
 if { [get_files s_axi_lite_v1_0_S_AXI.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v
 }
 if { [get_files hdr_macros.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/hdr_macros.v
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hdr_macros.v
 }
 if { [get_files axis_fifo.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/axis_fifo.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv
 }
 if { [get_files bram_sdp.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/bram_sdp.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/bram_sdp.sv
 }
 if { [get_files edgedrnn.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/edgedrnn.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn.sv
 }
 if { [get_files hpc.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/hpc.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpc.sv
 }
 if { [get_files hpe.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/hpe.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpe.sv
 }
 if { [get_files ieu.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/ieu.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/ieu.sv
 }
 if { [get_files mem_acc.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/mem_acc.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_acc.sv
 }
 if { [get_files mem_state.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/mem_state.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_state.sv
 }
 if { [get_files sigmoid_lut.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/sigmoid_lut.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv
 }
 if { [get_files tanh_lut.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/tanh_lut.sv
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv
 }
 if { [get_files edgedrnn_wrapper.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/EdgeDRNN/hdl/edgedrnn_wrapper.v
+  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v
 }
 if { [get_files dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd] == "" } {
   import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_short_pole/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd
