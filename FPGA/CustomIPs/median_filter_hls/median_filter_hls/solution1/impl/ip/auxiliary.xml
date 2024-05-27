@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="median_filter" xd:componentRef="median_filter" xd:initiationInterval="219" xd:clockPeriod="10.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="xadc_stream.data" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="16"/>
+  <xd:arg xd:name="xadc_stream.keep" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="2"/>
+  <xd:arg xd:name="xadc_stream.strb" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="2"/>
+  <xd:arg xd:name="xadc_stream.user" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="xadc_stream.last" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="xadc_stream.id" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="xadc_stream.dest" xd:originalName="xadc_stream" xd:direction="in" xd:interfaceRef="xadc_stream" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="*(median)" xd:originalName="median" xd:direction="in" xd:interfaceRef="s_axi_MEDIAN" xd:busTypeRef="axilite" xd:offset="0x10" xd:handshakeRef="ap_none" xd:dataWidth="32"/>
+  <xd:arg xd:name="*(median)" xd:originalName="median" xd:direction="out" xd:interfaceRef="s_axi_MEDIAN" xd:busTypeRef="axilite" xd:offset="0x18" xd:handshakeRef="ap_vld" xd:statusOffset="0x1C" xd:dataWidth="32"/>
+  <xd:arg xd:name="window_size" xd:originalName="window_size" xd:direction="in" xd:interfaceRef="s_axi_MEDIAN" xd:busTypeRef="axilite" xd:offset="0x20" xd:handshakeRef="ap_none" xd:dataWidth="32"/>
+  <xd:latencyEstimates xd:best-case="1" xd:worst-case="218" xd:average-case="77"/>
+  <xd:resourceEstimates xd:LUT="1078" xd:FF="542" xd:BRAM="2" xd:DSP="0"/>
+</xd:acceleratorMap>

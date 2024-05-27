@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="quadrature_encoder" xd:componentRef="quadrature_encoder" xd:initiationInterval="2" xd:clockPeriod="20.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="A" xd:originalName="A" xd:direction="in" xd:interfaceRef="A" xd:busTypeRef="register" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="B" xd:originalName="B" xd:direction="in" xd:interfaceRef="B" xd:busTypeRef="register" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="reset" xd:originalName="reset" xd:direction="in" xd:interfaceRef="s_axi_ENCODER_AXI" xd:busTypeRef="axilite" xd:dataWidth="1" xd:offset="0x10" xd:handshakeRef="ap_none"/>
+  <xd:arg xd:name="*(count)" xd:originalName="count" xd:direction="out" xd:interfaceRef="s_axi_ENCODER_AXI" xd:busTypeRef="axilite" xd:dataWidth="32" xd:offset="0x18" xd:handshakeRef="ap_vld" xd:statusOffset="0x1C"/>
+  <xd:latencyEstimates xd:best-case="1" xd:worst-case="1" xd:average-case="1"/>
+  <xd:resourceEstimates xd:LUT="193" xd:FF="113" xd:BRAM="0" xd:DSP="0"/>
+</xd:acceleratorMap>
