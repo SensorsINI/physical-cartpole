@@ -2,12 +2,12 @@
 .DS_Store
 /Driver/ExperimentRecordings/
 
-/Firmware/CartPole CubeIDE/.settings/language.settings.xml
-/Firmware/CartPole CubeIDE/Debug/
-/Firmware/CartPole CubeIDE/*.launch
-/Firmware/FactoryFirmware CubeIDE/.settings/language.settings.xml
-/Firmware/FactoryFirmware CubeIDE/Debug/
-/Firmware/FactoryFirmware CubeIDE/*.launch
+/Firmware/CubeIDE/CartPole CubeIDE/.settings/language.settings.xml
+/Firmware/CubeIDE/CartPole CubeIDE/Debug/
+/Firmware/CubeIDE/CartPole CubeIDE/*.launch
+/Firmware/CubeIDE/FactoryFirmware CubeIDE/.settings/language.settings.xml
+/Firmware/CubeIDE/FactoryFirmware CubeIDE/Debug/
+/Firmware/CubeIDE/FactoryFirmware CubeIDE/*.launch
 
 *env
 .DS_Store
