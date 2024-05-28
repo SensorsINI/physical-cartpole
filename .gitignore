@@ -36,4 +36,4 @@ Driver/SI_Toolkit_ASF/Experiments/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
 
 /Firmware/VitisProjects/*
-/Firmware/CubeIDE/Debug/*
+/Firmware/CubeIDE/CartPoleFirmware/Debug/*
