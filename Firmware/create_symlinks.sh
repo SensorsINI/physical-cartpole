@@ -1,35 +1,21 @@
 #!/bin/bash
-# This script create symbolic links in DEST_DIR from all files in SOURCE_DIR.
-# To make the links work on other machines the links use relative paths.
-# If there is a direcotry encountered inside SOURCE_DIR,
-# the script will create such directory in DEST_DIR and populate it with symlinks
-# to the respective files, applied recursively.
-# In other words no symlinks to directories are created
-# but the folders structure is recreated at destination directory
-# and symlinks are created to all nested content 
-# Also if DEST_DIR does not exist, it will be created.
-
-
-# Define the source and destination directories
-SOURCE_DIR="./Src/CartPoleFirmware"
-DEST_DIR="./VitisProjects/CartPoleFirmware/src/"
-
-# Ensure the source directory exists
-if [ ! -d "$SOURCE_DIR" ]; then
-  echo "Source directory $SOURCE_DIR does not exist."
-  exit 1
-fi
-
-# Ensure the destination directory exists, create if not
-if [ ! -d "$DEST_DIR" ]; then
-  mkdir -p "$DEST_DIR"
-  echo "Created destination directory $DEST_DIR"
-fi
 
 # Function to create symlinks recursively
 create_symlinks() {
   local src_dir=$1
   local dest_dir=$2
+
+  # Ensure the source directory exists
+  if [ ! -d "$src_dir" ]; then
+    echo "Source directory $src_dir does not exist."
+    return
+  fi
+
+  # Ensure the destination directory exists, create if not
+  if [ ! -d "$dest_dir" ]; then
+    mkdir -p "$dest_dir"
+    echo "Created destination directory $dest_dir"
+  fi
 
   # Loop through all items in the source directory
   for item in "$src_dir"/*; 
@@ -51,7 +37,13 @@ create_symlinks() {
   done
 }
 
-# Start the recursive process from the source and destination root directories
-create_symlinks "$SOURCE_DIR" "$DEST_DIR"
+# Check for correct number of arguments
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <source_directory> <destination_directory>"
+  exit 1
+fi
+
+# Start the recursive process from the provided source and destination directories
+create_symlinks "$1" "$2"
 
 echo "All symlinks and directories created."
