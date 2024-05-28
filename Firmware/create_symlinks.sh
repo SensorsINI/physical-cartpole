@@ -14,8 +14,8 @@
 # For CartPoleFirmware on STM (First create CartPoleFirmware project in Cube IDE!)
 :'
 declare -a directories=(
-  "./Src/CartPoleFirmware ./xxx/CartPoleFirmware/src"
-  "./Src/STM ./xxx/CartPoleFirmware/src/STM"
+  "./Src/CartPoleFirmware ./CubeIDE/CartPoleFirmware/Src"
+  "./Src/STM ./CubeIDE/CartPoleFirmware/Src/STM"
 )
 '
 
