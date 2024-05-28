@@ -12,20 +12,20 @@
 # List of source and destination directory pairs, uncommet section of interest
 
 # For CartPoleFirmware on STM (First create CartPoleFirmware project in Cube IDE!)
-:'
+
 declare -a directories=(
-  "./Src/CartPoleFirmware ./xxx/CartPoleFirmware/src"
-  "./Src/STM ./xxx/CartPoleFirmware/src/STM"
+  "./Src/CartPoleFirmware ./CubeIDE/CartPoleFirmware/Src"
+  "./Src/STM ./CubeIDE/CartPoleFirmware/Src/STM"
 )
-'
+
 
 # For CartPoleFirmware on Zynq (First create CartPoleFirmware project in Vitis!)
-
+:'
 declare -a directories=(
   "./Src/CartPoleFirmware ./VitisProjects/CartPoleFirmware/src"
   "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
 )
-
+'
 
 # For NeuralImitator on Zynq (First create NeuralImitator project in Vitis!)
 :'
