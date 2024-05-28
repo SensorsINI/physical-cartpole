@@ -34,3 +34,5 @@ Driver/SI_Toolkit_ASF/Experiments/*
 
 /FPGA/VivadoProjects/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
+
+/Firmware/VitisProjects/*
