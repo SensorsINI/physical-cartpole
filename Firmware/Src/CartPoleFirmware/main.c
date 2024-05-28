@@ -8,7 +8,9 @@ int main(void)
 	PC_Connection_Init();
 	Buttons_And_Switches_Init();
 #ifdef USE_EXTERNAL_INTERFACE
+#ifdef ZYNQ
 	ExternalInterfaceInit();
+#endif
 #endif
 	Led_Init();
 	Button_SetAction(BUTTON_1, CONTROL_ToggleState);
