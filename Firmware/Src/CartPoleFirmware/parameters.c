@@ -18,6 +18,8 @@ unsigned short MAX_ADC_STEP							=		20;		// If jump between two consecutive ADC
 
 const float TrackHalfLength							=		0.198;
 
+int MOTOR = MOTOR_ORIGINAL;
+
 #ifdef STM
 
 float MOTOR_CORRECTION[3] 							=		{4898.18, 168.09, 123.46}; // Pololu
