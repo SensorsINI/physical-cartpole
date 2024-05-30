@@ -45,7 +45,7 @@ void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
 		unsigned short control_period,
 		bool controlSync,
-		float angle_setPoint,
+		float angle_hanging,
 		unsigned short angle_averageLen,
 		bool correct_motor_dynamics
 		);

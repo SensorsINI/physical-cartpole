@@ -24,8 +24,8 @@ int MOTOR = MOTOR_ORIGINAL;
 
 float MOTOR_CORRECTION[3] 							=		{4898.18, 168.09, 123.46}; // Pololu
 
-float CONTROL_ANGLE_SET_POINT_POLULU				=		-3065.17;
-float CONTROL_ANGLE_SET_POINT_ORIGINAL				=		-3065.17;
+float ANGLE_HANGING_POLOLU 							=		1055.5;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_ORIGINAL						=		1046.75;  // Value from sensor when pendulum is at stable equilibrium point
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4271.34;
 const float POSITION_ENCODER_RANGE					=		4164.0;
@@ -43,8 +43,8 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 float MOTOR_CORRECTION[3] 							=		{1488.070,  80.797,  96.254}; // Pololu
 
-float CONTROL_ANGLE_SET_POINT_POLULU				=		-3042.835;
-float CONTROL_ANGLE_SET_POINT_ORIGINAL				=		-3042.835;
+float ANGLE_HANGING_POLOLU 							=		875.0;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_ORIGINAL						=		1046.75;  // Value from sensor when pendulum is at stable equilibrium point
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4068.67;
 const float POSITION_ENCODER_RANGE					=		4705.0;

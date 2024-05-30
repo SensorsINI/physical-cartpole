@@ -25,8 +25,11 @@ typedef enum {
     MOTOR_POLOLU,
 } MOTOR_enum;
 
-extern float CONTROL_ANGLE_SET_POINT_POLULU;
-extern float CONTROL_ANGLE_SET_POINT_ORIGINAL;
+
+extern const float ANGLE_360_DEG_IN_ADC_UNITS;
+
+extern float ANGLE_HANGING_POLOLU;
+extern float ANGLE_HANGING_ORIGINAL;
 
 extern float ANGLE_NORMALIZATION_FACTOR;
 extern float POSITION_NORMALIZATION_FACTOR;

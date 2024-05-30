@@ -268,7 +268,7 @@ class PhysicalCartPoleDriver:
         time.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
         try:
             self.controller.printparams()
@@ -480,7 +480,7 @@ class PhysicalCartPoleDriver:
 
                 self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
                                                           controlSync=CONTROL_SYNC,
-                                                          angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+                                                          angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
 
             ##### Artificial Latency  #####
@@ -511,7 +511,7 @@ class PhysicalCartPoleDriver:
                 #     ANGLE_HANGING_DEFAULT = False
                 # self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
                 #                                           controlSync=CONTROL_SYNC, controlLatencyUs=0,
-                #                                           angle_deviation=ANGLE_DEVIATION, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+                #                                           angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
             # Fine tune angle deviation
             elif c == '=':

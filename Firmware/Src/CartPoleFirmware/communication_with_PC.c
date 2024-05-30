@@ -252,7 +252,7 @@ void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
 		unsigned short control_period,
 		bool controlSync,
-		float angle_setPoint,
+		float angle_hanging,
 		unsigned short angle_averageLen,
 		bool correct_motor_dynamics
 		){
@@ -262,7 +262,7 @@ void prepare_message_to_PC_control_config(
 	txBuffer[ 2] = 14;
 	*((unsigned short *)&txBuffer[ 3]) = control_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
-	*((float          *)&txBuffer[6]) = angle_setPoint;
+	*((float          *)&txBuffer[6]) = angle_hanging;
 	*((unsigned short *)&txBuffer[10]) = angle_averageLen;
 	*((bool           *)&txBuffer[ 12]) = controlSync;
 	txBuffer[13] = crc(txBuffer, 13);
