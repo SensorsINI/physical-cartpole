@@ -25,6 +25,8 @@ bool correct_motor_dynamics = true;
 
 bool            streamEnable        = false;
 bool 			interrupt_occurred	= false;
+
+float			ANGLE_HANGING;
 float  			ANGLE_DEVIATION;
 
 volatile bool	HardwareConfigSetFromPC;
@@ -64,6 +66,18 @@ void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
 void			cmd_RunHardwareExperiment(void);
 void 			cmd_transfer_buffers(void);
 
+float angle_deviation_update(float new_angle_hanging);
+float angle_deviation_update(float new_angle_hanging){
+	float angle_deviation;
+    // update angle deviation according to ANGLE_HANGING update
+    if (new_angle_hanging < ANGLE_360_DEG_IN_ADC_UNITS / 2){
+        angle_deviation = - new_angle_hanging - ANGLE_360_DEG_IN_ADC_UNITS / 2.0;  // moves upright to 0 and hanging to -pi
+    } else {
+        angle_deviation = - new_angle_hanging + ANGLE_360_DEG_IN_ADC_UNITS / 2.0;  // moves upright to 0 and hanging to pi
+    }
+    return angle_deviation;
+}
+
 void CONTROL_Init(void)
 {
 	ControlOnChip_Enabled		= false;
@@ -75,7 +89,13 @@ void CONTROL_Init(void)
     positionLimitLeft   = positionCentre - 2400;
     positionLimitRight  = positionCentre + 2400; // guess defaults based on 7000-8000 counts at limits
 
-    ANGLE_DEVIATION		= CONTROL_ANGLE_SET_POINT_ORIGINAL;
+    if (MOTOR == MOTOR_ORIGINAL){
+    	ANGLE_HANGING = ANGLE_HANGING_ORIGINAL;
+    } else if (MOTOR == MOTOR_POLOLU){
+    	ANGLE_HANGING = ANGLE_HANGING_POLOLU;
+    }
+
+    ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 
     angleSamples = malloc(ANGLE_AVERAGE_LEN_MAX * sizeof(int));
     if (angleSamples == NULL) {
@@ -604,7 +624,9 @@ void cmd_Calibrate(void)
 	if(!HardwareConfigSetFromPC)
 	{
 		MOTOR = encoderDirection==1 ? MOTOR_POLOLU : MOTOR_ORIGINAL;
-		ANGLE_DEVIATION = MOTOR==MOTOR_POLOLU ? CONTROL_ANGLE_SET_POINT_POLULU : CONTROL_ANGLE_SET_POINT_ORIGINAL;
+		ANGLE_HANGING = MOTOR==MOTOR_POLOLU ? ANGLE_HANGING_POLOLU : ANGLE_HANGING_ORIGINAL;
+
+		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 	}
 
 	Sleep_ms(100);
@@ -642,11 +664,13 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 	CONTROL_LOOP_PERIOD_MS = *((unsigned short *)&config[0]);
     CONTROL_SYNC			= *((bool	        *)&config[2]);
-    ANGLE_DEVIATION      = *((float          *)&config[ 3]);
+    ANGLE_HANGING      = *((float          *)&config[ 3]);
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
 
     SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);
+    ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+
     HardwareConfigSetFromPC = true;
 
 	enable_irq();
@@ -655,7 +679,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, CONTROL_LOOP_PERIOD_MS, CONTROL_SYNC, ANGLE_DEVIATION, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
+	prepare_message_to_PC_control_config(txBuffer, CONTROL_LOOP_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 16);
