@@ -16,8 +16,14 @@ extern const unsigned short ANGLE_AVERAGE_LEN_MAX;
 extern unsigned short ANGLE_AVERAGE_LEN;				// Number of samples to average over to determine angular displacement (max is 32)
 extern unsigned short MAX_ADC_STEP;						// If jump between two consecutive ADC measurements is bigger than this, the measurement counts as invalid
 
+extern int MOTOR;
 
 extern float MOTOR_CORRECTION[3];
+
+typedef enum {
+    MOTOR_ORIGINAL,
+    MOTOR_POLOLU,
+} MOTOR_enum;
 
 extern float CONTROL_ANGLE_SET_POINT_POLULU;
 extern float CONTROL_ANGLE_SET_POINT_ORIGINAL;
