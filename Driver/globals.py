@@ -52,7 +52,8 @@ elif CHIP == 'ZYNQ':
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1008.5  # Value from sensor when pendulum is at stable equilibrium point # TODO: Would be better pointing downwards and recalculate later
+    ANGLE_HANGING_POLOLU = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_ORIGINAL = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4705  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
 
@@ -60,6 +61,12 @@ elif CHIP == 'ZYNQ':
 else:
     raise Exception("Unknown chip " + CHIP)
 
+if MOTOR == 'ORIGINAL':
+    ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
+elif MOTOR == 'POLOLU':
+    ANGLE_HANGING = ANGLE_HANGING_POLOLU
+else:
+    raise Exception("Unknown motor type " + MOTOR)
 
 DEMO_PROGRAM = False
 
@@ -128,7 +135,7 @@ ANGLE_DEVIATION = np.array(0.0)
 SEND_CHANGE_IN_TARGET_POSITION_ALWAYS = True  # If false it sends change in target position only if firmware control is active.
 
 
-def angle_constants_update(new_angle_hanging):
+def angle_deviation_update(new_angle_hanging):
     global ANGLE_360_DEG_IN_ADC_UNITS
 
     # update angle deviation according to ANGLE_HANGING update
@@ -139,11 +146,8 @@ def angle_constants_update(new_angle_hanging):
 
     return angle_deviation
 
+ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
 
-if MOTOR == 'ORIGINAL':
-    ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
-elif MOTOR == 'POLOLU':
-    ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
 
 
 def inc(param):

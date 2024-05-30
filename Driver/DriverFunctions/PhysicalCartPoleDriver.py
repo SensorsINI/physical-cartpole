@@ -456,7 +456,7 @@ class PhysicalCartPoleDriver:
 
             ##### Calibration #####
             elif c == 'K':
-                global MOTOR, ANGLE_DEVIATION
+                global MOTOR, ANGLE_DEVIATION, ANGLE_HANGING
                 self.controlEnabled = False
 
                 print("\nCalibrating motor position.... ")
@@ -465,14 +465,17 @@ class PhysicalCartPoleDriver:
 
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
-                    if ANGLE_HANGING_DEFAULT:
-                        ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_POLOLU)
+                    ANGLE_HANGING = ANGLE_HANGING_POLOLU
+
                 elif self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'ORIGINAL'
-                    if ANGLE_HANGING_DEFAULT:
-                        ANGLE_DEVIATION[...] = angle_constants_update(ANGLE_HANGING_ORIGINAL)
+                    ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
+
+                if ANGLE_HANGING_DEFAULT:
+                    ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
+
                 print('Detected motor: {}'.format(MOTOR))
 
                 self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
@@ -504,7 +507,7 @@ class PhysicalCartPoleDriver:
                                                                                               angle_std))
                 print('\nMeasurement took {} s'.format(time_measurement))
                 # if abs(angle_rad) > 1.0:
-                #     ANGLE_DEVIATION[...] = angle_constants_update(angle_average)
+                #     ANGLE_DEVIATION[...] = angle_deviation_update(angle_average)
                 #     ANGLE_HANGING_DEFAULT = False
                 # self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
                 #                                           controlSync=CONTROL_SYNC, controlLatencyUs=0,
