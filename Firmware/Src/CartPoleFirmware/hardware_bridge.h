@@ -14,8 +14,10 @@
 #define ZYNQ
 
 // The selection of FPGA board only matters if ZYNQ is defined
+#ifdef ZYNQ
 #define ZYBO_Z720
 //#define ZEDBOARD
+#endif
 
 
 //configuration for Zynq
