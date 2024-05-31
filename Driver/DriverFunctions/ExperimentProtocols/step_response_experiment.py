@@ -59,7 +59,7 @@ class step_response_experiment(template_experiment_protocol):
 
         self.second_round = False  # In case of bidirectional measurement, detect second "round", the opposite direction
 
-        self.speed = self.reset_Q
+        self.forward_speed = None
 
         self.time_state_changed = None
 
@@ -70,22 +70,20 @@ class step_response_experiment(template_experiment_protocol):
 
         self.assign_parameters()
 
-        if not first_iteration:
-            self.second_round = True  # In case of bidirectional measurement, detect second "round", the opposite direction
-        else:
-            self.second_round = False
+        self.second_round = False  # In case of bidirectional measurement, detect second "round", the opposite direction
 
         self.time_state_changed = None
-        self.speed = self.starting_speed
+        self.forward_speed = self.starting_speed
 
         if ACCOUNT_FOR_MOTOR_CORRECTION:
             minimal_starting_speed = np.max((abs(self.motor_correction[1]), abs(self.motor_correction[2])))
             if abs(STARTING_SPEED - minimal_starting_speed) < 0:
                 raise Exception(
-                    'To small starting speed ({}). When ACCOUNT_FOR_MOTOR_CORRECTION is True minimal starting speed is {}'.format(
+                    'To small starting forward_speed ({}). When ACCOUNT_FOR_MOTOR_CORRECTION is True minimal starting forward_speed is {}'.format(
                         STARTING_SPEED, minimal_starting_speed))
 
         self.current_experiment_phase = 'resetting'
+        self.Q = -self.reset_Q
         self.start_new_recording()
 
     def update_state(self, angle: int, position: int, time_now: float):
@@ -120,63 +118,55 @@ class step_response_experiment(template_experiment_protocol):
 
     def action_pausing_before_step(self, time_now):
         if time_now - self.time_state_changed > PAUSE_BEFORE_STEP_S:
-            self.current_experiment_phase = 'starting_step'
-            self.time_state_changed = time_now
 
-    def action_starting_step(self, time_now):
-        if abs(self.speed) < abs(self.ending_speed):
-            self.speed += self.speed_step
-            print(self.speed)
-            self.Q = self.speed
-            self.current_experiment_phase = 'moving'
-            self.time_state_changed = time_now
-        else:
-            if BIDIRECTIONAL and (self.second_round is False):
-                get_parameters_opposite_direction()
-                self.assign_parameters()
-                self.second_round = True
-                self.set_up_experiment(first_iteration=False)
+            if abs(self.forward_speed) < abs(self.ending_speed):
+                self.forward_speed += self.speed_step
+                self.forward_speed = np.clip(self.forward_speed, -abs(self.ending_speed), abs(self.ending_speed))
+                self.Q = self.forward_speed
+                self.current_experiment_phase = 'moving'
+                self.time_state_changed = time_now
             else:
-                if BIDIRECTIONAL:
+                if BIDIRECTIONAL and (self.second_round is False):
                     get_parameters_opposite_direction()
                     self.assign_parameters()
-                    self.second_round = False
-                self.current_experiment_phase = 'idle'
+                    self.second_round = True
+                    self.time_state_changed = None
+                    self.forward_speed = self.starting_speed
+                    self.current_experiment_phase = 'resetting'
+                    self.Q = -self.reset_Q
+                else:
+                    if BIDIRECTIONAL:
+                        get_parameters_opposite_direction()
+                        self.assign_parameters()
+                        self.second_round = False
+                    self.stop()
+                    return
 
-            self.speed = 0
-            self.Q = 0.0
             self.time_state_changed = time_now
 
     def action_moving(self, position, time_now):
-        if (0 < ENDING_POSITION < position) or (0 > ENDING_POSITION > position):
-            self.Q = 0.0
+        if ((0 < ENDING_POSITION < position) or (0 > ENDING_POSITION > position)
+                or self._check_timeout(time_now, raise_error=False)):
             if FRICTION_SLOWDOWN:
                 self.current_experiment_phase = 'friction_slowdown'
+                self.Q = 0.0
             else:
                 self.current_experiment_phase = 'resetting'
+                self.Q = -self.reset_Q
             self.time_state_changed = time_now
-        if self._check_timeout(time_now, raise_error=False):
-            self.Q = 0.0
-            if FRICTION_SLOWDOWN:
-                self.current_experiment_phase = 'friction_slowdown'
-            else:
-                self.current_experiment_phase = 'resetting'
 
     def action_friction_slowdown(self, time_now):
-        self.Q = 0.0
+
         if time_now - self.time_state_changed > FRICTION_SLOWDOWN_TIME_S:
             self.current_experiment_phase = 'resetting'
+            self.Q = -self.reset_Q
             self.time_state_changed = time_now
-
-
-
 
     def rescale_motor_command(self, Q):
         if Q > 0:
             return (Q - self.motor_correction[1]) / self.motor_correction[0]
         else:
             return (Q + self.motor_correction[2]) / self.motor_correction[0]
-
 
     def assign_parameters(self):
 
@@ -202,4 +192,4 @@ class step_response_experiment(template_experiment_protocol):
             return False
 
     def __str__(self):
-        return f' Step Response (State:{self.current_experiment_phase}, Speed:{self.speed}, Q:{self.Q})'
+        return f' Step Response (State:{self.current_experiment_phase}, Forward Speed:{self.forward_speed}, Q:{self.Q})'
