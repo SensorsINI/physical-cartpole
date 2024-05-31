@@ -10,8 +10,8 @@
 
 // Select between firmware for STM and firmware for Zynq
 // UNcomment "#define STM" to use STM or UNcomment "#define Zynq" to use Zynq
-//#define STM
-#define ZYNQ
+#define STM
+//#define ZYNQ
 
 // The selection of FPGA board only matters if ZYNQ is defined
 #ifdef ZYNQ
@@ -42,7 +42,7 @@
 // See parameters.c to set values
 extern const unsigned int UART_BAUD;
 extern unsigned short CONTROL_LOOP_PERIOD_MS;
-extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
+extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #ifdef STM
 
@@ -56,7 +56,7 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #include "STM/motor_stm.h"
 
-#define Motor_Init() 		Motor_INIT(PWM_PERIOD_IN_CLOCK_CYCLES)
+#define Motor_Init() 		Motor_INIT(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES)
 #define Motor_SetPwmPeriod  Motor_SetPwmPeriod
 #define Motor_Stop			Motor_Stop
 #define Motor_SetPower 		Motor_SetPower
@@ -129,7 +129,7 @@ extern const int PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #include "Zynq/motor_zynq.h"
 
-#define Motor_Init() 		Motor_INIT(PWM_PERIOD_IN_CLOCK_CYCLES)
+#define Motor_Init() 		Motor_INIT(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES)
 #define Motor_SetPwmPeriod  Motor_SetPwmPeriod
 #define Motor_Stop			Motor_Stop
 #define Motor_SetPower 		Motor_SetPower

@@ -31,9 +31,9 @@ const float ANGLE_360_DEG_IN_ADC_UNITS				=		4271.34;
 const float POSITION_ENCODER_RANGE					=		4164.0;
 
 const unsigned int CLOCK_FREQ						=		72000000;
-const int PWM_PERIOD_IN_CLOCK_CYCLES				=		7200;
+const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES				=		7200;
 
-const float MOTOR_FULL_SCALE						=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
+const float MOTOR_FULL_SCALE						=		(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES-1);
 const int MOTOR_FULL_SCALE_SAFE						=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
 
 bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
@@ -50,9 +50,9 @@ const float ANGLE_360_DEG_IN_ADC_UNITS				=		4068.67;
 const float POSITION_ENCODER_RANGE					=		4705.0;
 
 const unsigned int CLOCK_FREQ						=		333333343;
-const int PWM_PERIOD_IN_CLOCK_CYCLES				=		2500;
+const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES				=		2500;
 
-const float MOTOR_FULL_SCALE						=		(PWM_PERIOD_IN_CLOCK_CYCLES-1);
+const float MOTOR_FULL_SCALE						=		(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES-1);
 const int MOTOR_FULL_SCALE_SAFE						=		((int)(0.95 * MOTOR_FULL_SCALE + 0.5));
 
 bool USE_TARGET_SWITCHES							=		true;					// You can set it true or false
