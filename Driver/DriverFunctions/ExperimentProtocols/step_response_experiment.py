@@ -46,7 +46,7 @@ class step_response_experiment(template_experiment_protocol):
             experiment_protocol_name=self.__class__.__name__[:-len('_experiment')],)
 
         self.motor = MOTOR
-        self.motor_correction = MOTOR_CORRECTION * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+        self.motor_correction = MOTOR_CORRECTION
 
         if ACCELERATE_FIRST_TO_LEFT:
             get_parameters_opposite_direction()
@@ -59,22 +59,22 @@ class step_response_experiment(template_experiment_protocol):
 
         self.time_state_changed = time.time()
 
-        if abs(STARTING_SPEED * MOTOR_FULL_SCALE_SAFE) - self.motor_correction[1] < 0:
-            minimal_starting_speed = self.motor_correction[1]/MOTOR_FULL_SCALE_SAFE
+        if abs(STARTING_SPEED - self.motor_correction[1]) < 0:
+            minimal_starting_speed = self.motor_correction[1]
             raise Exception('To small starting speed ({}). When ACCOUNT_FOR_MOTOR_CORRECTION is True minimal starting speed is {}'.format(STARTING_SPEED, minimal_starting_speed))
 
     def rescale_motor_command(self, Q):
         if Q > 0:
-            return (Q * MOTOR_FULL_SCALE_SAFE - self.motor_correction[1]) / self.motor_correction[0]
+            return (Q - self.motor_correction[1]) / self.motor_correction[0]
         else:
-            return (Q * MOTOR_FULL_SCALE_SAFE + self.motor_correction[2]) / self.motor_correction[0]
+            return (Q + self.motor_correction[2]) / self.motor_correction[0]
 
 
     def assign_parameters(self):
 
         if ACCOUNT_FOR_MOTOR_CORRECTION:
             self.reset_Q = self.rescale_motor_command(RESET_Q)
-            self.speed_step = SPEED_STEP * MOTOR_FULL_SCALE_SAFE / self.motor_correction[0]
+            self.speed_step = SPEED_STEP / self.motor_correction[0]
             self.starting_speed = self.rescale_motor_command(STARTING_SPEED)
             self.ending_speed = self.rescale_motor_command(ENDING_SPEED)
         else:

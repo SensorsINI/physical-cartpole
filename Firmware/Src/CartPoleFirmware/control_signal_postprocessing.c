@@ -9,7 +9,7 @@
 #include "parameters.h"
 
 int control_signal_to_motor_command(float Q, float positionD, bool correct_motor_dynamics) {
-	float actualMotorCmd_float = 0.0;
+	float actualMotorCmd_float = Q;
     int actualMotorCmd = 0;
 
     if (correct_motor_dynamics) {
@@ -22,9 +22,9 @@ int control_signal_to_motor_command(float Q, float positionD, bool correct_motor
             	actualMotorCmd_float -= MOTOR_CORRECTION[2];
             }
         }
-    } else {
-    	actualMotorCmd_float = Q * (float)MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
     }
+
+    actualMotorCmd_float = Q * (float)MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
     actualMotorCmd = (int)actualMotorCmd_float;
 
