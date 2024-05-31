@@ -33,9 +33,8 @@ if CHIP == 'STM':
     # First number in the tuple is multiplicative factor by which control command Q (in the range[-1,1]) is multiplied.
     # The other two shift (additive) to account for friction indep. of speed (separate for pos and neg Q)
     # Only applied if CORRECT_MOTOR_DYNAMICS is True
-    # Otherwise Q is multiplied by MOTOR_FULL_SCALE_SAFE
-    MOTOR_CORRECTION_ORIGINAL = (4597.57, 839.026, 839.026)
-    MOTOR_CORRECTION_POLOLU = (4181.47, 505.0, 334.43)
+    MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
+    MOTOR_CORRECTION_POLOLU = (0.595228, 0.0323188, 0.0385016)
     # The 12-bit ADC has a range of 4096 units
     # However due to potentiometer dead angle these 4096 units are mapped on less than full circle
     # The full circle in adc units was determined
@@ -46,6 +45,8 @@ if CHIP == 'STM':
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
+    MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
+    MOTOR_CORRECTION_POLOLU = (0.595228, 0.0323188, 0.0385016)
     ANGLE_360_DEG_IN_ADC_UNITS = 4068.67  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
@@ -61,8 +62,10 @@ else:
     raise Exception("Unknown chip " + CHIP)
 
 if MOTOR == 'ORIGINAL':
+    MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
     ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
 elif MOTOR == 'POLOLU':
+    MOTOR_CORRECTION = MOTOR_CORRECTION_POLOLU
     ANGLE_HANGING = ANGLE_HANGING_POLOLU
 else:
     raise Exception("Unknown motor type " + MOTOR)
