@@ -75,6 +75,8 @@ DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence 
 
 EVALUATION_SINGLE_FILE = True
 
+MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # 10000 Zynq, 7200 STM
+
 # Define the variables
 # FILE_NAME = 'Pololu.csv'
 FILE_NAME = 'Original.csv'
@@ -171,6 +173,12 @@ def motor_calibration(FILE_NAME):
     print('S     = {}'.format(S))
     print('I_pos = {}'.format(I_pos))
     print('I_neg = {}'.format(I_neg))
+
+    print('Motor correction give MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = {}:'.format(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES))
+    S_normed = S / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+    I_pos_normed = I_pos / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+    I_neg_normed = I_neg / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+    print('MOTOR_CORRECTION = ({}, {}, {})'.format(S_normed, I_pos_normed, I_neg_normed))
 
     print('**************************')
 
