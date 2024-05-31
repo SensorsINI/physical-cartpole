@@ -77,7 +77,7 @@ class step_response_experiment(template_experiment_protocol):
         self.speed = self.starting_speed
 
         if ACCOUNT_FOR_MOTOR_CORRECTION:
-            minimal_starting_speed = np.max(abs(self.motor_correction[1]), abs(self.motor_correction[2]))
+            minimal_starting_speed = np.max((abs(self.motor_correction[1]), abs(self.motor_correction[2])))
             if abs(STARTING_SPEED - minimal_starting_speed) < 0:
                 raise Exception(
                     'To small starting speed ({}). When ACCOUNT_FOR_MOTOR_CORRECTION is True minimal starting speed is {}'.format(
