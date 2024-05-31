@@ -59,9 +59,10 @@ class step_response_experiment(template_experiment_protocol):
 
         self.time_state_changed = time.time()
 
-        if abs(STARTING_SPEED - self.motor_correction[1]) < 0:
-            minimal_starting_speed = self.motor_correction[1]
-            raise Exception('To small starting speed ({}). When ACCOUNT_FOR_MOTOR_CORRECTION is True minimal starting speed is {}'.format(STARTING_SPEED, minimal_starting_speed))
+        if ACCOUNT_FOR_MOTOR_CORRECTION:
+            minimal_starting_speed = np.max(abs(self.motor_correction[1]), abs(self.motor_correction[2]))
+            if abs(STARTING_SPEED - minimal_starting_speed) < 0:
+                raise Exception('To small starting speed ({}). When ACCOUNT_FOR_MOTOR_CORRECTION is True minimal starting speed is {}'.format(STARTING_SPEED, minimal_starting_speed))
 
     def rescale_motor_command(self, Q):
         if Q > 0:
