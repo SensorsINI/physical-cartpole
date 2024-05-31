@@ -70,8 +70,10 @@ class step_response_experiment(template_experiment_protocol):
 
         self.assign_parameters()
 
-        self.second_round = False  # In case of bidirectional measurement, detect second "round", the opposite direction
-
+        if not first_iteration:
+            self.second_round = True  # In case of bidirectional measurement, detect second "round", the opposite direction
+        else:
+            self.second_round = False
 
         self.time_state_changed = None
         self.speed = self.starting_speed
