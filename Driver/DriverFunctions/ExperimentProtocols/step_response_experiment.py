@@ -3,7 +3,7 @@
 import numpy as np
 from DriverFunctions.ExperimentProtocols import template_experiment_protocol
 import time
-from globals import MOTOR, MOTOR_CORRECTION
+from globals import MOTOR, MOTOR_CORRECTION, CORRECT_MOTOR_DYNAMICS
 from CartPoleSimulation.CartPole.state_utilities import (
     ANGLE_IDX,
     ANGLED_IDX,
@@ -11,7 +11,7 @@ from CartPoleSimulation.CartPole.state_utilities import (
     POSITIOND_IDX,
 )
 
-ACCOUNT_FOR_MOTOR_CORRECTION = True
+ACCOUNT_FOR_MOTOR_CORRECTION = CORRECT_MOTOR_DYNAMICS
 ACCELERATE_FIRST_TO_LEFT = True
 BIDIRECTIONAL = True
 FRICTION_SLOWDOWN = False
