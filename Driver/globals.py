@@ -97,8 +97,7 @@ JSON_PATH = 'CartPoleSimulation/Control_Toolkit_ASF/'
 ##### Motor Settings #####
 CORRECT_MOTOR_DYNAMICS = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
 
-MOTOR_FULL_SCALE = MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES-1  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
-MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety constraint
+MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES + 0.5)  # Including a safety constraint
 
 ##### Angle Conversion #####
 # Angle unit conversion adc to radians: (ANGLE_TARGET + ANGLE DEVIATION - ANGLE_360_DEG_IN_ADC_UNITS/2)/ANGLE_360_DEG_IN_ADC_UNITS*math.pi
