@@ -123,9 +123,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP = 4.0
 
 ##### Serial Port #####
-serial_port_number = 1
-SERIAL_PORT = get_serial_port(chip_type=CHIP, serial_port_number=serial_port_number)
-
+SERIAL_PORT_NUMBER = 1
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05
