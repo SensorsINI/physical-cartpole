@@ -335,7 +335,7 @@ class PhysicalCartPoleDriver:
             pass
             # Observing Firmware Control: set values from firmware for logging
             # self.actualMotorCmd = self.command
-            # self.Q = self.command / MOTOR_FULL_SCALE
+            # self.Q = self.command / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
 
         self.joystick_action()
 
@@ -895,7 +895,7 @@ class PhysicalCartPoleDriver:
                     self.actualMotorCmd -= motor_correction[2]
 
         else:
-            self.actualMotorCmd *= MOTOR_FULL_SCALE  # Scaling to motor units
+            self.actualMotorCmd *= MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES  # Scaling to motor units
             pass
 
         # Convert to motor encoder units

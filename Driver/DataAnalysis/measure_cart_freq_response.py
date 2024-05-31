@@ -15,7 +15,7 @@ sys.path.insert(1, os.path.abspath(os.path.join("..", "CartPoleSimulation")))
 sys.path.insert(1, os.path.abspath(os.path.join("..", "CartPoleSimulation","Control_Toolkit","others")))
 print('now sys.path is '+str(sys.path))
 
-from globals import MOTOR_FULL_SCALE
+from globals import MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
 
 from Driver.CartPoleSimulation.Control_Toolkit.others.globals_and_utils import get_logger
 from Driver.DriverFunctions.interface import *
@@ -69,8 +69,8 @@ def sinusoidal_sweep(t:float, f_start:float, f_end:float, t_total:float, mode:st
 f_start = .2       # Starting frequency in Hz
 f_end = 3.      # Ending frequency in Hz
 t_total = 20              # Total duration of sweep in seconds
-speed_amplitude=MOTOR_FULL_SCALE/((f_end/f_start)**2)
-print(f'computed speed_amplitude={speed_amplitude} to reach full scale {MOTOR_FULL_SCALE} at ending frequency {f_end}')
+speed_amplitude=MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES/((f_end/f_start)**2)
+print(f'computed speed_amplitude={speed_amplitude} to reach full scale {MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES} at ending frequency {f_end}')
 time.sleep(1)
 control_period=5e-3
 def turn_off_motor(interface:Interface):

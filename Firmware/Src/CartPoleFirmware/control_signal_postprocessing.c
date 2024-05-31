@@ -23,7 +23,7 @@ int control_signal_to_motor_command(float Q, float positionD, bool correct_motor
             }
         }
     } else {
-    	actualMotorCmd_float = Q * (float)MOTOR_FULL_SCALE;
+    	actualMotorCmd_float = Q * (float)MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
     }
 
     actualMotorCmd = (int)actualMotorCmd_float;

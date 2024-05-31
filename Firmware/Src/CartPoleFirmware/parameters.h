@@ -37,7 +37,6 @@ extern float POSITION_NORMALIZATION_FACTOR;
 extern const unsigned int CLOCK_FREQ;
 extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
-extern const float MOTOR_FULL_SCALE;
 extern const int MOTOR_FULL_SCALE_SAFE;
 
 extern bool USE_TARGET_SWITCHES;

@@ -537,7 +537,7 @@ void cmd_transfer_buffers(void)
 
 void cmd_Calibrate(void)
 {
-	unsigned short SPEED_CALIBRATION = (float)(MOTOR_FULL_SCALE) * 0.3;
+	unsigned short SPEED_CALIBRATION = (float)(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES) * 0.3;
 	int pos;
 	int diff;
 	float fDiff;
