@@ -2,10 +2,11 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import scipy
 from scipy.signal.windows import blackman
+import numpy as np
 import seaborn as sns
 
 from DriverFunctions.interface import Interface
-from globals import *
+from globals import CHIP, SERIAL_PORT_NUMBER, SERIAL_BAUD, get_serial_port
 
 sns.set()
 sns.color_palette()
@@ -63,6 +64,7 @@ def plot_fft(series, timestep, caption='FFT'):
 
 if __name__ == "__main__":
     InterfaceInstance = Interface()
+    SERIAL_PORT = get_serial_port(chip_type=CHIP, serial_port_number=SERIAL_PORT_NUMBER)
     InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
     InterfaceInstance.control_mode(False)
     InterfaceInstance.stream_output(False)
