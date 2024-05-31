@@ -29,7 +29,7 @@ else:
     CONTROL_PERIOD_MS = 16  # e.g. 5 for PID or 20 for mppi
 
 if CHIP == 'STM':
-    PWM_PERIOD_IN_CLOCK_CYCLES = 7200
+    MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 7200
     # First number in the tuple is multiplicative factor by which control command Q (in the range[-1,1]) is multiplied.
     # The other two shift (additive) to account for friction indep. of speed (separate for pos and neg Q)
     # Only applied if CORRECT_MOTOR_DYNAMICS is True
@@ -45,7 +45,7 @@ if CHIP == 'STM':
     ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
-    PWM_PERIOD_IN_CLOCK_CYCLES = 2500
+    MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 2500
     MOTOR_CORRECTION_POLOLU = (1488.070,  80.797,  96.254)  # Explanation - see above, same as for STM case
     ANGLE_360_DEG_IN_ADC_UNITS = 4068.67  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
@@ -97,7 +97,7 @@ JSON_PATH = 'CartPoleSimulation/Control_Toolkit_ASF/'
 ##### Motor Settings #####
 CORRECT_MOTOR_DYNAMICS = False if CONTROLLER_NAME == 'pid' else True  # Linearize and Threshold Motor Commands
 
-MOTOR_FULL_SCALE = PWM_PERIOD_IN_CLOCK_CYCLES-1  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
+MOTOR_FULL_SCALE = MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES-1  # 7199 # with pololu motor and scaling in firmware #7199 # with original motor
 MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_FULL_SCALE + 0.5)  # Including a safety constraint
 
 ##### Angle Conversion #####
