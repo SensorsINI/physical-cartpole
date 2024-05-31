@@ -456,7 +456,7 @@ class PhysicalCartPoleDriver:
 
             ##### Calibration #####
             elif c == 'K':
-                global MOTOR, ANGLE_DEVIATION, ANGLE_HANGING
+                global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
                 self.controlEnabled = False
 
                 print("\nCalibrating motor position.... ")
@@ -465,10 +465,12 @@ class PhysicalCartPoleDriver:
 
                 if self.InterfaceInstance.encoderDirection == 1:
                     MOTOR = 'POLOLU'
+                    MOTOR_CORRECTION = MOTOR_CORRECTION_POLOLU
                     ANGLE_HANGING = ANGLE_HANGING_POLOLU
 
                 elif self.InterfaceInstance.encoderDirection == -1:
                     MOTOR = 'ORIGINAL'
+                    MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
                     ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
                 else:
                     raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
@@ -882,21 +884,14 @@ class PhysicalCartPoleDriver:
             # self.actualMotorCmd = -1.0 if self.actualMotorCmd < -1.0 else self.actualMotorCmd
 
             # The change dependent on velocity sign is motivated theory of classical friction
-            if MOTOR == 'POLOLU':
-                motor_correction = MOTOR_CORRECTION_POLOLU
-            else:
-                motor_correction = MOTOR_CORRECTION_ORIGINAL
-
-            self.actualMotorCmd *= motor_correction[0]
+            self.actualMotorCmd *= MOTOR_CORRECTION[0]
             if self.actualMotorCmd != 0:
                 if np.sign(self.s[POSITIOND_IDX]) > 0:
-                    self.actualMotorCmd += motor_correction[1]
+                    self.actualMotorCmd += MOTOR_CORRECTION[1]
                 elif np.sign(self.s[POSITIOND_IDX]) < 0:
-                    self.actualMotorCmd -= motor_correction[2]
+                    self.actualMotorCmd -= MOTOR_CORRECTION[2]
 
-        else:
-            self.actualMotorCmd *= MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES  # Scaling to motor units
-            pass
+        self.actualMotorCmd *= MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES  # Scaling to motor units
 
         # Convert to motor encoder units
         self.actualMotorCmd = int(self.actualMotorCmd)

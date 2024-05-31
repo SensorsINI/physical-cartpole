@@ -46,13 +46,7 @@ class step_response_experiment(template_experiment_protocol):
             experiment_protocol_name=self.__class__.__name__[:-len('_experiment')],)
 
         self.motor = MOTOR
-
-        if self.motor == 'POLOLU':
-            self.motor_correction = MOTOR_CORRECTION_POLOLU
-        elif self.motor == 'ORIGINAL':
-            self.motor_correction = MOTOR_CORRECTION_ORIGINAL
-        else:
-            raise Exception('Unknown motor')
+        self.motor_correction = MOTOR_CORRECTION * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
 
         if ACCELERATE_FIRST_TO_LEFT:
             get_parameters_opposite_direction()
