@@ -76,6 +76,6 @@ void set_direction(int pwm_duty_cycle_in_clock_cycles){
 
 void set_power_magnitude(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles){
 	pwm_duty_cycle_in_clock_cycles = abs(pwm_duty_cycle_in_clock_cycles);
-	pwm_duty_cycle_in_clock_cycles = (pwm_duty_cycle_in_clock_cycles > pwm_period_in_clock_cycles-1) ? pwm_period_in_clock_cycles-1 : pwm_duty_cycle_in_clock_cycles;
+	pwm_duty_cycle_in_clock_cycles = (pwm_duty_cycle_in_clock_cycles > pwm_period_in_clock_cycles) ? pwm_period_in_clock_cycles : pwm_duty_cycle_in_clock_cycles;
 	TIM3->CCR4 = (uint16_t)pwm_duty_cycle_in_clock_cycles;
 }
