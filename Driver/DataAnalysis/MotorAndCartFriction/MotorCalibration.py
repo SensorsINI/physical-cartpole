@@ -178,7 +178,7 @@ def motor_calibration(FILE_NAME):
     S_normed = S / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
     I_pos_normed = I_pos / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
     I_neg_normed = I_neg / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
-    print('MOTOR_CORRECTION = ({:.7f}, {:.7f}, {:.7f})'.format(S_normed, I_pos_normed, -I_neg_normed))
+    print('MOTOR_CORRECTION = ({}, {}, {})'.format(S_normed, I_pos_normed, I_neg_normed))
 
     print('**************************')
 
