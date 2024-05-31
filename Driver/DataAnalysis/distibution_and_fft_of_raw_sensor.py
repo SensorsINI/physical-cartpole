@@ -6,7 +6,8 @@ import numpy as np
 import seaborn as sns
 
 from DriverFunctions.interface import Interface
-from globals import CHIP, SERIAL_PORT_NUMBER, SERIAL_BAUD, get_serial_port
+from DriverFunctions.interface import get_serial_port
+from globals import CHIP, SERIAL_PORT_NUMBER, SERIAL_BAUD
 
 sns.set()
 sns.color_palette()

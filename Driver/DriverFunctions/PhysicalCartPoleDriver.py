@@ -27,6 +27,7 @@ from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
 from CartPole.data_manager import DataManager
 from SI_Toolkit.Functions.FunctionalDict import FunctionalDict
 
+from Driver.DriverFunctions.interface import get_serial_port
 from globals import *
 
 import subprocess

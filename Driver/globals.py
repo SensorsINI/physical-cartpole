@@ -2,7 +2,6 @@ import math
 import logging
 import numpy as np
 
-from Driver.DriverFunctions.interface import get_serial_port
 from CartPole.cartpole_parameters import TrackHalfLength
 
 
