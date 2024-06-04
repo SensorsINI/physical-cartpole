@@ -30,7 +30,7 @@ declare -a directories=(
 # For NeuralImitator on Zynq (First create NeuralImitator project in Vitis!)
 :'
 declare -a directories=(
-  "./Src/NeuralImitator ./VitisProjects/NeuralImitator/src"
+  "./Src/NeuralImitatorZynq ./VitisProjects/NeuralImitator/src"
   "./Src/Zynq ./VitisProjects/NeuralImitator/src/Zynq"
 )
 '
