@@ -19,10 +19,6 @@ float POSITION_KP   =          22.0f;
 float POSITION_KI   =          1.0f;
 float POSITION_KD   =          12.0f;
 
-float POSITION_ONLY_KP   =     22.0f;
-float POSITION_ONLY_KI   =     1.0f;
-float POSITION_ONLY_KD   =     12.0f;
-
 float sensitivity_pP_gain = 1.0;
 float sensitivity_pI_gain = 1.0;
 float sensitivity_pD_gain = 0.01;
@@ -39,7 +35,6 @@ float time_last = -1.0;
 
 PIDState pid_state_angle = {0.0, 0.0};
 PIDState pid_state_position = {0.0, 0.0};
-PIDState pid_position_state_position = {0.0, 0.0};
 
 // PID step function
 float pid_step(float angle, float angleD, float position, float positionD, float target_position, float time) {
@@ -68,32 +63,6 @@ float pid_step(float angle, float angleD, float position, float positionD, float
     Q_angle = pid_core(&pid_state_angle, angle, time_difference, -ANGLE_KP, -ANGLE_KI, -ANGLE_KD, sensitivity_aP_gain, sensitivity_aI_gain, sensitivity_aD_gain);
 
     Q = Q_angle + Q_position;
-
-    return Q;
-}
-
-
-float pid_position_step(float angle, float angleD, float position, float positionD, float target_position, float time) {
-
-	float time_difference;
-    float Q;
-    // Time difference calculation
-    if (time_last < 0.0) {
-        time_difference = 0.0;
-    } else {
-        time_difference = time - time_last;
-    }
-
-    if (time_difference > 0.1) {
-        time_difference = 0.0;
-    }
-
-    time_last = time;
-
-    // Position PID
-    position_error = position - target_position;
-
-    Q = pid_core(&pid_position_state_position, position_error, time_difference, -POSITION_ONLY_KP, -POSITION_ONLY_KI, -POSITION_ONLY_KD, sensitivity_pP_gain, sensitivity_pI_gain, sensitivity_pD_gain);
 
     return Q;
 }
