@@ -28,13 +28,13 @@ float sensitivity_aI_gain = 1.0;
 float sensitivity_aD_gain = 0.01;
 
 // Error and previous error variables
-float position_error, position_error_previous, position_error_diff = 0.0;
-float position_error_integral = 0.0;
-float angle_error, angle_error_previous, angle_error_diff = 0.0;
-float angle_error_integral = 0.0;
+float position_error = 0.0;
 
 // Last time variable
 float time_last = -1.0;
+
+PIDState pid_state_angle = {0.0, 0.0};
+PIDState pid_state_position = {0.0, 0.0};
 
 // PID step function
 float pid_step(float angle, float angleD, float position, float positionD, float target_position, float time) {
@@ -57,54 +57,46 @@ float pid_step(float angle, float angleD, float position, float positionD, float
     // Position PID
     position_error = position - target_position;
 
-    if (time_difference > 0.0001) {
-        position_error_diff = (position_error - position_error_previous) / time_difference;
-    } else {
-        position_error_diff = 0.0;
-    }
-
-    position_error_previous = position_error;
-
-    if (POSITION_KI > 0.0) {
-        position_error_integral += position_error * time_difference;
-        position_error_integral = fmax(fmin(position_error_integral, 1.0/POSITION_KI), -1.0/POSITION_KI);
-    } else {
-        position_error_integral = 0.0;
-    }
-
-    float pP = POSITION_KP * position_error * sensitivity_pP_gain;
-    float pI = POSITION_KI * position_error_integral * sensitivity_pI_gain;
-    float pD = POSITION_KD * position_error_diff * sensitivity_pD_gain;
-
-    Q_position = pP + pI + pD;
+    Q_position = pid_core(&pid_state_position, position_error, time_difference, POSITION_KP, POSITION_KI, POSITION_KD, sensitivity_pP_gain, sensitivity_pI_gain, sensitivity_pD_gain);
 
     // Angle PID
-    angle_error = angle;
-
-    if (time_difference > 0.0001) {
-        angle_error_diff = (angle_error - angle_error_previous) / time_difference;
-    } else {
-        angle_error_diff = 0.0;
-    }
-
-    angle_error_previous = angle_error;
-
-    if (ANGLE_KI > 0.0) {
-        angle_error_integral += angle_error * time_difference;
-        angle_error_integral = fmax(fmin(angle_error_integral, 1.0/ANGLE_KI), -1.0/ANGLE_KI);
-    } else {
-        angle_error_integral = 0.0;
-    }
-
-    float aP = ANGLE_KP * angle_error * sensitivity_aP_gain;
-    float aI = ANGLE_KI * angle_error_integral * sensitivity_aI_gain;
-    float aD = ANGLE_KD * angle_error_diff * sensitivity_aD_gain;
-
-    Q_angle = -aP - aI - aD;
+    Q_angle = pid_core(&pid_state_angle, angle, time_difference, -ANGLE_KP, -ANGLE_KI, -ANGLE_KD, sensitivity_aP_gain, sensitivity_aI_gain, sensitivity_aD_gain);
 
     Q = Q_angle + Q_position;
 
     return Q;
+}
+
+
+float pid_core(PIDState *pid_state, float error, float time_difference,
+		float KP, float KI, float KD,
+		float sensitivity_P_gain, float sensitivity_I_gain, float sensitivity_D_gain)
+{
+    float error_diff = 0.0;
+
+    if (time_difference > 0.0001) {
+        error_diff = (error - pid_state->error_previous) / time_difference;
+    } else {
+        error_diff = 0.0;
+    }
+
+    pid_state->error_previous = error;
+
+    if (KI > 0.0) {
+        pid_state->error_integral += error * time_difference;
+        // Clipping; dividing with KI gain prevents error_integral becoming big and destabilizing the system
+        pid_state->error_integral = fmax(fmin(pid_state->error_integral, 1.0/KI), -1.0/KI);
+    } else {
+        pid_state->error_integral = 0.0;
+    }
+
+    float aP = KP * error * sensitivity_P_gain;
+    float aI = KI * pid_state->error_integral * sensitivity_I_gain;
+    float aD = KD * error_diff * sensitivity_D_gain;
+
+    float control_signal = aP + aI + aD;
+
+    return control_signal;
 }
 
 
