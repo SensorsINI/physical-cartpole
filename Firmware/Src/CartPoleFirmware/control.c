@@ -12,6 +12,7 @@
 
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
+#define OnChipController_PID_position 2
 
 // The 3 variables below only matter on Zynq
 #define	CONTROLLERS_SWITCH_NUMBER		0
@@ -234,6 +235,11 @@ void CONTROL_BackgroundTask(void)
 				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time);
 				break;
 			}
+			case OnChipController_PID_position:
+			{
+				Q = pid_position_step(angle, angleD, position, positionD, target_position, time);
+				break;
+			}
 			default:
 			{
 				Q = 0.0;
@@ -380,6 +386,10 @@ void CONTROL_BackgroundTask(void)
 		}
 	}
 #else
+
+	if(Switch_GetState(EQUILIBRIUM_SWITCH_NUMBER)){ // Reuse the switch to enable position PID
+			current_controller = OnChipController_PID_position;
+		}
 
 	target_position = get_normed_slider_state()*2*position_jumps_target;
 
