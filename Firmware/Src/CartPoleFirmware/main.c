@@ -14,7 +14,7 @@ int main(void)
 #endif
 	Led_Init();
 	Button_SetAction(BUTTON_1, CONTROL_ToggleState);
-	Button_SetAction(BUTTON_2, cmd_Calibrate);  // Not implemented yet for STM
+	Button_SetAction(BUTTON_2, CONTROL_ToggleCalibration);  // Not implemented yet for STM
 	Goniometer_Init();
 	Encoder_Init();
 	Motor_Init();

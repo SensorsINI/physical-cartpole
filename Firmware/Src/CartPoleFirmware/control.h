@@ -4,6 +4,7 @@
 void CONTROL_Init(void);
 void cmd_Calibrate(void);
 void CONTROL_ToggleState(void);
+void CONTROL_ToggleCalibration(void);
 void CONTROL_Loop(void);
 void CONTROL_BackgroundTask(void);
 

@@ -95,6 +95,14 @@ void CONTROL_ToggleState(void)
 	cmd_ControlMode(!ControlOnChip_Enabled);
 }
 
+bool calibrate = false;
+void CONTROL_ToggleCalibration(void)
+{
+    disable_irq();
+    calibrate = true;
+	enable_irq();
+}
+
 
 int clip(int value, int min, int max) {
 	if (value > max)
@@ -401,7 +409,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_CALIBRATE:
 		{
-			cmd_Calibrate();
+			calibrate=true;
 			break;
 		}
 
@@ -486,6 +494,10 @@ void CONTROL_BackgroundTask(void)
 		{
 			break;
 		}
+	}
+
+	if (calibrate){
+		cmd_Calibrate();
 	}
 
 }
@@ -599,6 +611,7 @@ void cmd_Calibrate(void)
     Message_SendToPC(buffer, 5);
 
 	isCalibrated = true;
+	calibrate = false;
 	Led_Switch(false);
 	enable_irq();
 }
