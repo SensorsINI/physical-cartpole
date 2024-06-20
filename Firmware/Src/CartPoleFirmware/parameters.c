@@ -49,7 +49,7 @@ const float ANGLE_360_DEG_IN_ADC_UNITS				=		4068.67;
 const float POSITION_ENCODER_RANGE					=		4705.0;
 
 const unsigned int CLOCK_FREQ						=		333333343;
-const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		2500;
+const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		10000;
 
 const int MOTOR_FULL_SCALE_SAFE						=		((int)(0.95 * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES + 0.5));
 
