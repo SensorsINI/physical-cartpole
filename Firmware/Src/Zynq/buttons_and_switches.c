@@ -1,4 +1,5 @@
 #include "buttons_and_switches.h"
+#include "timer_interrupt.h"
 
 XGpioPs GpioPS; // The Instance of the GPIO Driver
 XGpio Gpio;
@@ -6,6 +7,10 @@ XGpio Gpio;
 ActionHandler btn4_action_handler = NULL;
 ActionHandler btn5_action_handler = NULL;
 
+#define DEBOUNCE_TIME_MS 100  // Debounce time in milliseconds
+
+static uint32_t last_interrupt_time_btn4 = 0;
+static uint32_t last_interrupt_time_btn5 = 0;
 
 static void Btn_Intr_Handler(void *CallBackRef);
 
@@ -39,18 +44,29 @@ void Buttons_And_Switches_Init(){
 static void Btn_Intr_Handler(void *CallBackRef)
 {
     XGpioPs *GpioInstancePtr = (XGpioPs *)CallBackRef;
+    uint32_t current_time = TIMER1_getSystemTime_Us()/1000;
 
     // Check which button caused the interrupt and call the corresponding function via the function pointer
     if(XGpioPs_IntrGetStatusPin(GpioInstancePtr, PS_BTN_4)){
-        XGpioPs_IntrClearPin(GpioInstancePtr, PS_BTN_4); // Clear the interrupt for BTN 4
-        if (btn4_action_handler != NULL) {
-            btn4_action_handler(); // Call the function pointed to by btn4_action_handler
+        if ((current_time - last_interrupt_time_btn4) > DEBOUNCE_TIME_MS) {
+            last_interrupt_time_btn4 = current_time;
+            XGpioPs_IntrClearPin(GpioInstancePtr, PS_BTN_4); // Clear the interrupt for BTN 4
+            if (btn4_action_handler != NULL) {
+                btn4_action_handler(); // Call the function pointed to by btn4_action_handler
+            }
+        } else {
+            XGpioPs_IntrClearPin(GpioInstancePtr, PS_BTN_4); // Clear the interrupt to prevent re-triggering
         }
     }
     if(XGpioPs_IntrGetStatusPin(GpioInstancePtr, PS_BTN_5)){
-        XGpioPs_IntrClearPin(GpioInstancePtr, PS_BTN_5); // Clear the interrupt for BTN 5
-        if (btn5_action_handler != NULL) {
-            btn5_action_handler(); // Call the function pointed to by btn5_action_handler
+        if ((current_time - last_interrupt_time_btn5) > DEBOUNCE_TIME_MS) {
+            last_interrupt_time_btn5 = current_time;
+            XGpioPs_IntrClearPin(GpioInstancePtr, PS_BTN_5); // Clear the interrupt for BTN 5
+            if (btn5_action_handler != NULL) {
+                btn5_action_handler(); // Call the function pointed to by btn5_action_handler
+            }
+        } else {
+            XGpioPs_IntrClearPin(GpioInstancePtr, PS_BTN_5); // Clear the interrupt to prevent re-triggering
         }
     }
 }
