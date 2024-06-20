@@ -10,6 +10,7 @@
 
 
 float pid_step(float angle, float angleD, float position, float positionD, float target_position, float time);
+float pid_position_step(float angle, float angleD, float position, float positionD, float target_position, float time);
 
 typedef struct {
     float error_previous;
@@ -18,7 +19,9 @@ typedef struct {
 
 float pid_core(PIDState *pid_state, float error, float time_difference,
 		float KP, float KI, float KD,
-		float sensitivity_P_gain, float sensitivity_I_gain, float sensitivity_D_gain);
+		float sensitivity_P_gain, float sensitivity_I_gain, float sensitivity_D_gain,
+		float I_clip
+);
 
 void cmd_SetPIDConfig(const unsigned char * config);
 void cmd_GetPIDConfig(unsigned char * txBuffer);
