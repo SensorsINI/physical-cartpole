@@ -14,7 +14,7 @@ int control_signal_to_motor_command(float Q, float positionD, bool correct_motor
 
     if (correct_motor_dynamics) {
 
-    	actualMotorCmd_float = Q * MOTOR_CORRECTION[0];
+    	actualMotorCmd_float = actualMotorCmd_float * MOTOR_CORRECTION[0];
         if (actualMotorCmd_float != 0) {
             if (positionD > 0) {
             	actualMotorCmd_float += MOTOR_CORRECTION[1];
@@ -24,7 +24,7 @@ int control_signal_to_motor_command(float Q, float positionD, bool correct_motor
         }
     }
 
-    actualMotorCmd_float = Q * (float)MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
+    actualMotorCmd_float = actualMotorCmd_float * (float)MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
     actualMotorCmd = (int)actualMotorCmd_float;
 
