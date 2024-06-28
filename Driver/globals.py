@@ -39,8 +39,8 @@ if CHIP == 'STM':
     # The full circle in adc units was determined
     # by readout difference between up and down position on the side not including dead angle
     ANGLE_360_DEG_IN_ADC_UNITS = 4271.34
-    ANGLE_HANGING_POLOLU = 875.0  # Value from sensor when pendulum is at stable equilibrium point
-    ANGLE_HANGING_ORIGINAL = 1046.75  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1028.579  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_ORIGINAL = 910.0  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
