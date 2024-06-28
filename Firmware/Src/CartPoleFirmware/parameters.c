@@ -40,13 +40,13 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 #elif defined(ZYNQ)
 
-float MOTOR_CORRECTION[3] 							=		{0.595228, 0.0323188, 0.0385016}; // Pololu
+float MOTOR_CORRECTION[3] 							=		{0.5701800, 0.0361973, 0.0272124}; // Pololu
 
 float ANGLE_HANGING_POLOLU 							=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4068.67;
-const float POSITION_ENCODER_RANGE					=		4705.0;
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4081.9;
+const float POSITION_ENCODER_RANGE					=		4695.0;
 
 const unsigned int CLOCK_FREQ						=		333333343;
 const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		10000;

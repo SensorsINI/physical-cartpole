@@ -62,8 +62,8 @@ T = 2*np.pi/6.17277 = 1.017
 # Change backend for matplotlib to plot interactively in pycharm
 # This import must go before pyplot
 from matplotlib import use
-# use('TkAgg')
-use('macOSX')
+use('TkAgg')
+# use('macOSX')
 
 # Filter to smooth data
 from scipy.signal import savgol_filter
@@ -79,7 +79,7 @@ import matplotlib.pyplot as plt
 
 from globals import ANGLE_360_DEG_IN_ADC_UNITS
 
-file_path = './DataAnalysis/physical_pendulum_natural_response/CP_right_pololu_free_swinging_with_blocked_cart_2023-02-05_10-48-36.csv'
+file_path = 'CP_free_swinging_long_pole_28_06_2024.csv'
 
 # Load data
 data: pd.DataFrame = pd.read_csv(file_path, comment='#')
@@ -87,7 +87,7 @@ data: pd.DataFrame = pd.read_csv(file_path, comment='#')
 # Cut first corrupted cycles and last, where the pole is not swinging anymore
 # Take care! - Check also that the position is constant
 
-data = data.iloc[3500:-1000, :]
+data = data.iloc[:, :]
 
 # Take just data for angle
 angle_original = data['angle'].to_numpy()

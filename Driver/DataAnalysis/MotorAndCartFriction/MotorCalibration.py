@@ -79,12 +79,12 @@ MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # 10000 Zynq, 7200 STM
 
 # Define the variables
 # FILE_NAME = 'Pololu.csv'
-FILE_NAME = 'Original.csv'
+FILE_NAME = 'CPP_step_response-28-06-2024-POLOLU.csv'
 
 PLOT_CORRECTED = True
 
 v_sat_max = 0.55
-v_sat_max_lin = 0.55
+v_sat_max_lin = 0.85
 
 
 def motor_calibration(FILE_NAME):
