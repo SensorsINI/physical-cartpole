@@ -422,11 +422,15 @@ class PhysicalCartPoleDriver:
             # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
             elif (c == 'l' or c == 'L') and self.starting_recording is False:
                 if not self.recording_running:
-                    if self.controller.has_optimizer:
+                    if hasattr(self.controller, "controller_name"):
+                        controller_name = self.controller.controller_name
+                    else:
+                        controller_name = ''
+                    if hasattr(self.controller, "optimizer_name") and self.controller.has_optimizer:
                         optimizer_name = self.controller.optimizer_name
                     else:
                         optimizer_name = ''
-                    self.csv_name = create_csv_file_name(controller_name=self.controller.controller_name,
+                    self.csv_name = create_csv_file_name(controller_name=controller_name,
                                                     controller=self.controller,
                                                     optimizer_name=optimizer_name, prefix='CPP')
                     if c == 'L':
