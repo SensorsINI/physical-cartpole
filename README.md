@@ -269,8 +269,7 @@ The scripts for this calibration are in [MotorAndCartFriction](Driver%2FDataAnal
 * Calibrate (`Shift+K`)
 * Press `m` untill you see in terminal:
 `Loading step-response experiment protocol!`
-* Press `l` to start the recording of cartpole states to csv file (TODO: make it automatic!)
-* Press `m` to start the step response experiment.
+* Press `n` to start the step response experiment.
     
     The cartpole will accelerate a few time to the left and to the right.
     
@@ -278,8 +277,8 @@ The scripts for this calibration are in [MotorAndCartFriction](Driver%2FDataAnal
   * If the minimal speed it too low the cart might get stuck due to friction.
       You can either very, very gently push it (not to skew the measurement) or increase the minimal speed in experiment script.
 
-* As soon as the cartpole stops, press `l` to stop the recording.
-The data will be saved in the [Driver/ExperimentRecordings](Driver%2FExperimentRecordings) folder
+* As soon as the cartpole stops, 
+the data will be saved in the [Driver/ExperimentRecordings](Driver%2FExperimentRecordings) folder
 (does not exist until you record first data).
 * Copy the data to the [Driver/DataAnalysis/MotorAndCartFriction](Driver%2FDataAnalysis%2FMotorAndCartFriction) folder.
 * Open [Driver/DataAnalysis/MotorCalibration.py](Driver%2FDataAnalysis%2FMotorAndCartFriction%2FMotorCalibration.py)
