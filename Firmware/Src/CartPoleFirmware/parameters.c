@@ -18,7 +18,7 @@ unsigned short MAX_ADC_STEP							=		20;		// If jump between two consecutive ADC
 
 const float TrackHalfLength							=		0.198;
 
-int MOTOR = MOTOR_ORIGINAL;
+int MOTOR = MOTOR_POLOLU;
 
 #ifdef STM
 
