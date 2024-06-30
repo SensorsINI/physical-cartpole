@@ -1029,11 +1029,15 @@ class PhysicalCartPoleDriver:
         if True or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
             self.printCount = 0
 
+            ESC = '\033['
+            BACK_TO_BEGINNING = '\r'
+            CLEAR_LINE = ESC + 'K'  # Clear the entire line
+
             if True and not self.new_console_output:
-                print('\033[5A\033[K', end='')
+                print(ESC + '5A' + CLEAR_LINE, end='')
             self.new_console_output = False
 
-            print('\r\033[K')
+            print(BACK_TO_BEGINNING + CLEAR_LINE)
 
             ############  Mode  ############
             if self.controlEnabled:
@@ -1043,13 +1047,13 @@ class PhysicalCartPoleDriver:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
                 mode = 'CONTROLLER:   Firmware'
-            print("\r" + mode +  '\033[K')
+            print(BACK_TO_BEGINNING + mode +  CLEAR_LINE)
 
             ############  Mode  ############
-            print("\r" + f'MEASUREMENT: {self.current_experiment_protocol}' +  '\033[K')
+            print(BACK_TO_BEGINNING + f'MEASUREMENT: {self.current_experiment_protocol}' +  CLEAR_LINE)
 
             ############  State  ############
-            print("\rSTATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}\033[K"
+            print(BACK_TO_BEGINNING + "STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
@@ -1060,12 +1064,12 @@ class PhysicalCartPoleDriver:
                     self.actualMotorCmd,
                     self.invalid_steps,
                     self.frozen
-                )
+                ) + CLEAR_LINE
             )
 
             ############  Timing  ############
             if self.total_iterations > 10 and self.controlled_iterations > 10:
-                print("\rTIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%\033[K"
+                print(BACK_TO_BEGINNING + "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%"
                     .format(
                         self.delta_time_buffer.mean() * 1000,
                         self.delta_time_buffer.std() * 1000,
@@ -1082,10 +1086,13 @@ class PhysicalCartPoleDriver:
                         self.latency_violations,
                         self.total_iterations,
                         100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
-                    )
+                    ) + CLEAR_LINE
                 )
             else:
-                print('\033[K')
+                print(CLEAR_LINE)
+                # self.tcm.print_temporary('\n')
+
+            self.tcm.print_to_terminal()
 
             ############  Performance  ############
             #if self.total_iterations > 10:
