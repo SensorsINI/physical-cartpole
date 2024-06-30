@@ -233,6 +233,8 @@ class PhysicalCartPoleDriver:
         self.recording_length = np.inf
         self.start_recording_flag = False  # Gives signal to start recording during the current control iteration, starting recording may take more than one control iteration
 
+        self.tcm = None  # Terminal Content Manager
+
     @property
     def recording_running(self):
         return self.data_manager.recording_running
@@ -242,7 +244,8 @@ class PhysicalCartPoleDriver:
         return self.data_manager.starting_recording
 
     def run(self):
-        with TerminalContentManager('./terminal_content_last_session.txt'):
+        with TerminalContentManager('./terminal_content_last_session.txt') as tcm:
+            self.tcm = tcm
             self.setup()
             self.run_experiment()
             self.quit_experiment()
