@@ -26,6 +26,7 @@ from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
 from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
 from CartPole.data_manager import DataManager
 from SI_Toolkit.Functions.FunctionalDict import FunctionalDict
+from SI_Toolkit.Functions.General.TerminalContentManager import TerminalContentManager
 
 from Driver.DriverFunctions.interface import get_serial_port
 from globals import *
@@ -241,9 +242,10 @@ class PhysicalCartPoleDriver:
         return self.data_manager.starting_recording
 
     def run(self):
-        self.setup()
-        self.run_experiment()
-        self.quit_experiment()
+        with TerminalContentManager('./terminal_content_last_session.txt'):
+            self.setup()
+            self.run_experiment()
+            self.quit_experiment()
 
     def setup(self):
         # Check that we are running from terminal, otherwise we cannot control it
