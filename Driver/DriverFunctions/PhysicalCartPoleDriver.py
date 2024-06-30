@@ -63,7 +63,6 @@ class PhysicalCartPoleDriver:
 
         # Console Printing
         self.printCount = 0
-        self.new_console_output = True
 
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
@@ -244,7 +243,7 @@ class PhysicalCartPoleDriver:
         return self.data_manager.starting_recording
 
     def run(self):
-        with TerminalContentManager('./terminal_content_last_session.txt') as tcm:
+        with TerminalContentManager(special_print_function=True) as tcm:
             self.tcm = tcm
             self.setup()
             self.run_experiment()
@@ -387,7 +386,6 @@ class PhysicalCartPoleDriver:
         global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
-            self.new_console_output = True
 
             c = self.kb.getch()
             try:
@@ -921,7 +919,6 @@ class PhysicalCartPoleDriver:
                 print('\nSafety Switch.')
                 self.controlEnabled = False
                 self.InterfaceInstance.set_motor(0)
-                self.new_console_output = 1
 
                 if hasattr(self.controller, 'controller_report') and self.controlled_iterations > 1:
                     self.controller.controller_report()
@@ -1036,11 +1033,7 @@ class PhysicalCartPoleDriver:
             BACK_TO_BEGINNING = '\r'
             CLEAR_LINE = ESC + 'K'  # Clear the entire line
 
-            if True and not self.new_console_output:
-                print(ESC + '5A' + CLEAR_LINE, end='')
-            self.new_console_output = False
-
-            print(BACK_TO_BEGINNING + CLEAR_LINE)
+            self.tcm.print_temporary(BACK_TO_BEGINNING + CLEAR_LINE)
 
             ############  Mode  ############
             if self.controlEnabled:
@@ -1050,13 +1043,13 @@ class PhysicalCartPoleDriver:
                     mode='CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
             else:
                 mode = 'CONTROLLER:   Firmware'
-            print(BACK_TO_BEGINNING + mode +  CLEAR_LINE)
+            self.tcm.print_temporary(BACK_TO_BEGINNING + mode +  CLEAR_LINE)
 
             ############  Mode  ############
-            print(BACK_TO_BEGINNING + f'MEASUREMENT: {self.current_experiment_protocol}' +  CLEAR_LINE)
+            self.tcm.print_temporary(BACK_TO_BEGINNING + f'MEASUREMENT: {self.current_experiment_protocol}' +  CLEAR_LINE)
 
             ############  State  ############
-            print(BACK_TO_BEGINNING + "STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}"
+            self.tcm.print_temporary(BACK_TO_BEGINNING + "STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
@@ -1072,7 +1065,7 @@ class PhysicalCartPoleDriver:
 
             ############  Timing  ############
             if self.total_iterations > 10 and self.controlled_iterations > 10:
-                print(BACK_TO_BEGINNING + "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%"
+                self.tcm.print_temporary(BACK_TO_BEGINNING + "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%"
                     .format(
                         self.delta_time_buffer.mean() * 1000,
                         self.delta_time_buffer.std() * 1000,
@@ -1092,7 +1085,7 @@ class PhysicalCartPoleDriver:
                     ) + CLEAR_LINE
                 )
             else:
-                print(CLEAR_LINE)
+                self.tcm.print_temporary(CLEAR_LINE)
                 # self.tcm.print_temporary('\n')
 
             self.tcm.print_to_terminal()
