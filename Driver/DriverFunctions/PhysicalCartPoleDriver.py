@@ -1084,10 +1084,10 @@ class PhysicalCartPoleDriver:
                     )
 
 
-            ###########  Latency Violations  ############
-            percentage_latency_violations = 100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
-            timing_latency = f"         latency violations: {self.latency_violations}/{self.total_iterations} = {percentage_latency_violations:.1f}%"
-            self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency + CLEAR_LINE)
+                ###########  Latency Violations  ############
+                percentage_latency_violations = 100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
+                timing_latency = f"         latency violations: {self.latency_violations}/{self.total_iterations} = {percentage_latency_violations:.1f}%"
+                self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency + CLEAR_LINE)
 
 
             self.tcm.print_to_terminal()
