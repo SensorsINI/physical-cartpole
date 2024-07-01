@@ -1063,28 +1063,32 @@ class PhysicalCartPoleDriver:
 
             ############  Timing  ############
             if self.total_iterations > 10 and self.controlled_iterations > 10:
-                self.tcm.print_temporary(BACK_TO_BEGINNING + "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms], latency violations: {:}/{:} = {:.1f}%"
-                    .format(
-                        self.delta_time_buffer.mean() * 1000,
-                        self.delta_time_buffer.std() * 1000,
 
-                        self.firmware_latency_buffer.mean() * 1000,
-                        self.firmware_latency_buffer.std() * 1000,
+                timing_string = "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], \n         python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms]".format(
+                                float(self.delta_time_buffer.mean() * 1000),
+                                float(self.delta_time_buffer.std() * 1000),
 
-                        self.python_latency_buffer.mean() * 1000,
-                        self.python_latency_buffer.std() * 1000,
+                                float(self.firmware_latency_buffer.mean() * 1000),
+                                float(self.firmware_latency_buffer.std() * 1000),
 
-                        self.controller_steptime_buffer.mean() * 1000,
-                        self.controller_steptime_buffer.std() * 1000,
+                                float(self.python_latency_buffer.mean() * 1000),
+                                float(self.python_latency_buffer.std() * 1000),
 
-                        self.latency_violations,
-                        self.total_iterations,
-                        100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
-                    ) + CLEAR_LINE
-                )
-            else:
-                self.tcm.print_temporary(CLEAR_LINE)
-                # self.tcm.print_temporary('\n')
+                                float(self.controller_steptime_buffer.mean() * 1000),
+                                float(self.controller_steptime_buffer.std() * 1000)
+                    )
+
+
+                self.tcm.print_temporary(
+                    BACK_TO_BEGINNING + timing_string + CLEAR_LINE
+                    )
+
+
+            ###########  Latency Violations  ############
+            percentage_latency_violations = 100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
+            timing_latency = f"         latency violations: {self.latency_violations}/{self.total_iterations} = {percentage_latency_violations:.1f}%"
+            self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency + CLEAR_LINE)
+
 
             self.tcm.print_to_terminal()
 
