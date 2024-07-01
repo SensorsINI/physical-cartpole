@@ -80,9 +80,10 @@ class PhysicalCartPoleDriver:
 
         # Dance Mode
         ## Parameters
-        self.danceAmpl = 0.14  # m
-        self.dancePeriodS = 6.0
-        self.dance_start_time = 0.0
+        self.dance_path = DANCE_PATH
+        self.danceAmpl = DANCE_AMPL  # m
+        self.dancePeriodS = DANCE_PERIOD_S
+        self.dance_start_time = DANCE_START_TIME
         
         ## Variables
         self.danceEnabled = False
@@ -819,8 +820,15 @@ class PhysicalCartPoleDriver:
         if self.current_experiment_protocol.is_idle():
             if self.danceEnabled:
                 if not self.dance_finishing:
-                    self.dance_current_relative_position = self.danceAmpl * np.sin(
+                    dance_phase = np.sin(
                         2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
+                    if self.dance_path == 'sin':
+                        self.dance_current_relative_position = self.danceAmpl * dance_phase
+                    elif self.dance_path == 'square':
+                        self.dance_current_relative_position = self.danceAmpl * np.sign(dance_phase)
+                    else:
+                        raise ValueError(f'Unknown dance path: {self.dance_path}')
+
                     self.target_position = self.base_target_position + self.dance_current_relative_position
                 else:
                     if abs(self.base_target_position-self.target_position) < 0.03:

@@ -71,6 +71,11 @@ else:
 
 DEMO_PROGRAM = False
 
+DANCE_PATH = 'square'  # 'square', 'sin'
+DANCE_AMPL = 0.14  # m
+DANCE_PERIOD_S = 5.0
+DANCE_START_TIME = 0.0
+
 TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = CONTROL_PERIOD_MS)
 
 ##### Logging and Recordings #####
