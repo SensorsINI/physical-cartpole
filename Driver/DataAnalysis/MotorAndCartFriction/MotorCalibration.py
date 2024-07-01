@@ -79,7 +79,7 @@ MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # 10000 Zynq, 7200 STM
 
 # Define the variables
 # FILE_NAME = 'Pololu.csv'
-FILE_NAME = 'CPP_step_response-28-06-2024-POLOLU.csv'
+FILE_NAME = 'CPP_step_response-2-07-2024-check.csv'
 
 PLOT_CORRECTED = True
 
