@@ -42,7 +42,7 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 float MOTOR_CORRECTION[3] 							=		{0.5701800, 0.0361973, 0.0272124}; // Pololu
 
-float ANGLE_HANGING_POLOLU 							=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_POLOLU 							=		1003.0;  // Value from sensor when pendulum is at stable equilibrium point
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4081.9;
