@@ -627,7 +627,6 @@ class PhysicalCartPoleDriver:
                 self.terminate_experiment = True
 
     def switch_off_control(self):
-        print('off')
         self.controlEnabled = False
         self.Q = 0
         self.InterfaceInstance.set_motor(0)
@@ -639,7 +638,6 @@ class PhysicalCartPoleDriver:
         self.latency_violations = 0
 
     def switch_on_control(self):
-        print('on')
         self.controlEnabled = True
         self.delta_time_buffer = np.zeros((0))
         self.firmware_latency_buffer = np.zeros((0))
