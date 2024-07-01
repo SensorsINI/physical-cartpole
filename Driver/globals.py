@@ -6,7 +6,7 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 # Motor type selection
@@ -51,7 +51,7 @@ elif CHIP == 'ZYNQ':
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1003.0  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
