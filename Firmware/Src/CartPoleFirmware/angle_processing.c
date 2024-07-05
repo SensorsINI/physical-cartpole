@@ -102,6 +102,13 @@ void init_angle_history() {
 
 void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
+	// The potentiometer of the cartpole has deadangle,
+	// where the measurement of the angle seems inpredictable before jumping to the other side
+	// This function seeks to detect the measurement in the deadangle zone and
+	// return last valid measurement instead of the current one (angle measurement is "frozen")
+	// This function also calculates derivative (or more accurately difference - not divided by time yet)
+
+
 	if (angle_history_initialised == 0)
 	{
 		init_angle_history();
