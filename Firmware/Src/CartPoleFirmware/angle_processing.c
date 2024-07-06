@@ -7,12 +7,11 @@
 
 
 
-// Averaging derivatives with median filter
+// Averaging derivatives with median filter on Firmware
 #define ANGLE_D_BUFFER_SIZE 1 // Median filter for pole's angular velocity
 #define POSITION_D_BUFFER_SIZE 1 // Median filter for cart's velocity
-#define timesteps_for_derivatives 5 // Based on how many timesteps should the derivative be calculated, This is also used to determine invalid steps so you need it even if you don't use derivative from chip!
 
-
+#define MAX_TIMESTEPS_FOR_DERIVATIVE 20
 
 const int ADC_RANGE = 4096;
 
@@ -84,17 +83,15 @@ int anomaly_detection(int* angleSamples, unsigned short angleSampIndex, unsigned
 	return invalid_step;
 }
 
-
-
-#define ANGLE_HISTORY_BUFFER_SIZE (timesteps_for_derivatives+1)
-int angle_history[ANGLE_HISTORY_BUFFER_SIZE]; // Buffer to store past angles
-int frozen_history[ANGLE_HISTORY_BUFFER_SIZE]; // Buffer to store past angles
+int angle_history[MAX_TIMESTEPS_FOR_DERIVATIVE+1]; // Buffer to store past angles
+int frozen_history[MAX_TIMESTEPS_FOR_DERIVATIVE+1]; // Buffer to store past angles
 int idx_for_derivative_calculation_angle = 0; // Current index in the buffer
 int angle_history_initialised = 0;
 
 // Initialize the angle history buffer to -1
 void init_angle_history() {
-    for (int i = 0; i < ANGLE_HISTORY_BUFFER_SIZE; ++i) {
+
+    for (int i = 0; i < MAX_TIMESTEPS_FOR_DERIVATIVE+1; ++i) {
         angle_history[i] = -1;
         frozen_history[i] = 0;
     }
@@ -111,7 +108,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
 
     // Calculate the index for the k-th past angle
-    int kth_past_index = (idx_for_derivative_calculation_angle - timesteps_for_derivatives + ANGLE_HISTORY_BUFFER_SIZE) % ANGLE_HISTORY_BUFFER_SIZE;
+    int kth_past_index = (idx_for_derivative_calculation_angle + 1) % (TIMESTEPS_FOR_DERIVATIVE+1);;
     int kth_past_angle = angle_history[kth_past_index];
     int kth_past_frozen = frozen_history[kth_past_index];
 
@@ -125,7 +122,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         angleD_raw = angleD_raw_stable != -1 ? angleD_raw_stable : 0;
     } else {
         int not_normed_angleD_raw = angle_raw_stable != -1 ? wrapLocal(*anglePtr - kth_past_angle) :0;
-        angleD_raw =  (float)(not_normed_angleD_raw)/ ((timesteps_for_derivatives-1) + kth_past_frozen + 1);
+        angleD_raw =  (float)(not_normed_angleD_raw)/ (TIMESTEPS_FOR_DERIVATIVE + kth_past_frozen);
         angle_raw_stable = *anglePtr;
         angleD_raw_stable = angleD_raw;
         frozen = 0;
@@ -140,20 +137,18 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     // Save current angle in the history buffer and update index
     angle_history[idx_for_derivative_calculation_angle] = *anglePtr;
     frozen_history[idx_for_derivative_calculation_angle] = frozen;
-    idx_for_derivative_calculation_angle = (idx_for_derivative_calculation_angle + 1) % ANGLE_HISTORY_BUFFER_SIZE; // Move to next index, wrap around if necessary
+    idx_for_derivative_calculation_angle = (idx_for_derivative_calculation_angle + 1) % (TIMESTEPS_FOR_DERIVATIVE+1); // Move to next index, wrap around if necessary
 }
 
-
-#define POSITION_HISTORY_BUFFER_SIZE (timesteps_for_derivatives+1)
-
-short position_history[POSITION_HISTORY_BUFFER_SIZE]; // Buffer to store past positions
+short position_history[MAX_TIMESTEPS_FOR_DERIVATIVE+1]; // Buffer to store past positions
 
 int idx_for_derivative_calculation_position = 0; // Current index in the buffer
 int position_history_initialised = 0;
 
 // Initialize the angle history buffer to -1
 void init_position_history() {
-    for (int i = 0; i < POSITION_HISTORY_BUFFER_SIZE; ++i) {
+
+    for (int i = 0; i < MAX_TIMESTEPS_FOR_DERIVATIVE+1; ++i) {
         position_history[i] = SHRT_MAX;
         frozen_history[i] = 0;
     }
@@ -169,14 +164,14 @@ void calculate_position_difference_per_timestep(short* positionPtr, float* posit
 	}
 
     // Calculate the index for the k-th past angle
-    int kth_past_index = (idx_for_derivative_calculation_position - timesteps_for_derivatives + POSITION_HISTORY_BUFFER_SIZE) % POSITION_HISTORY_BUFFER_SIZE;
+    int kth_past_index = (idx_for_derivative_calculation_position +1) % (TIMESTEPS_FOR_DERIVATIVE+1);
     int kth_past_position = position_history[kth_past_index];
 
     short not_normed_positionD_raw = kth_past_position != SHRT_MAX ? (*positionPtr - kth_past_position) :0;
-    *positionDPtr =  (float)(not_normed_positionD_raw)/ timesteps_for_derivatives;
+    *positionDPtr =  (float)(not_normed_positionD_raw)/ TIMESTEPS_FOR_DERIVATIVE;
     position_history[idx_for_derivative_calculation_position] = *positionPtr;
 
-    idx_for_derivative_calculation_position = (idx_for_derivative_calculation_position + 1) % POSITION_HISTORY_BUFFER_SIZE; // Move to next index, wrap around if necessary
+    idx_for_derivative_calculation_position = (idx_for_derivative_calculation_position + 1) % (TIMESTEPS_FOR_DERIVATIVE+1); // Move to next index, wrap around if necessary
 }
 
 

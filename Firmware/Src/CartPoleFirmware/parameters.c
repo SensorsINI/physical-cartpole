@@ -10,11 +10,20 @@ const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 46080
 unsigned short CONTROL_LOOP_PERIOD_MS				=		1;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
-unsigned short ANGLE_MEASUREMENT_INTERVAL_US		= 		200;
 
+// Calculating derivatives and dead angle detection
+unsigned short TIMESTEPS_FOR_DERIVATIVE				=		5;  // 20 at most
+// TIMESTEPS_FOR_DERIVATIVE: How many timesteps are taken for derivative (position and angle) calculation
+// and dead angle detection.
+// Too small value makes the effect of sensor quantization severe.
+// Too big causes derivatives to represent old and strongly averaged information
+unsigned short MAX_ADC_STEP							=		20;		// If jump between two consecutive ADC measurements is bigger than this, the measurement counts as invalid
+
+// Firmware filter - in general not active on Zynq, it has a hardware filter
+unsigned short ANGLE_MEASUREMENT_INTERVAL_US		= 		200;
 const unsigned short ANGLE_AVERAGE_LEN_MAX			=		32;
 unsigned short ANGLE_AVERAGE_LEN					=		1;		// Number of samples to average over to determine angular displacement (max is 32)
-unsigned short MAX_ADC_STEP							=		20;		// If jump between two consecutive ADC measurements is bigger than this, the measurement counts as invalid
+
 
 const float TrackHalfLength							=		0.198;
 
