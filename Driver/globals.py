@@ -115,7 +115,7 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 
 ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_360_DEG_IN_ADC_UNITS
 
-ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES = 1  # TODO: Python only, hardware sets it separately.
+TIMESTEPS_FOR_DERIVATIVE = 1  # TODO: Python only, hardware sets it separately. In number of control cycles
 
 ANGLE_D_MEDIAN_LEN = 1
 POSITION_D_MEDIAN_LEN = 1

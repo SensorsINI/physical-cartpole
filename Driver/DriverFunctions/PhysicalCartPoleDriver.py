@@ -170,11 +170,11 @@ class PhysicalCartPoleDriver:
 
         self.angle_deviation_finetune = 0.0
 
-        self.derivative_timestep_in_samples = ANGLE_DERIVATIVE_TIMESTEP_IN_SAMPLES
-        self.buffer_size_for_derivative_calculation = self.derivative_timestep_in_samples + 1
-        self.angle_history = [-1] * self.buffer_size_for_derivative_calculation  # Buffer to store past angles
-        self.position_history = [-1] * self.buffer_size_for_derivative_calculation  # Buffer to store past positions
-        self.frozen_history = [0] * self.buffer_size_for_derivative_calculation  # Buffer to store frozen states
+        self.derivative_timestep_in_samples = TIMESTEPS_FOR_DERIVATIVE
+
+        self.angle_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past angles
+        self.position_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past positions
+        self.frozen_history = [0] * (self.derivative_timestep_in_samples + 1)  # Buffer to store frozen states
         self.idx_for_derivative_calculation = 0
 
         self.angleD_buffer = np.zeros(ANGLE_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for angle derivatives
@@ -699,7 +699,7 @@ class PhysicalCartPoleDriver:
         ADC_RANGE = 4096
 
         # Calculate the index for the k-th past angle
-        kth_past_index = (self.idx_for_derivative_calculation - self.derivative_timestep_in_samples + self.buffer_size_for_derivative_calculation) % self.buffer_size_for_derivative_calculation
+        kth_past_index = (self.idx_for_derivative_calculation  + 1) % (self.derivative_timestep_in_samples + 1)
         kth_past_angle = self.angle_history[kth_past_index]
         kth_past_position = self.position_history[kth_past_index]
         kth_past_frozen = self.frozen_history[kth_past_index]
@@ -726,7 +726,7 @@ class PhysicalCartPoleDriver:
         self.angle_history[self.idx_for_derivative_calculation] = self.angle_raw
         self.position_history[self.idx_for_derivative_calculation] = self.position_raw
         self.frozen_history[self.idx_for_derivative_calculation] = self.frozen
-        self.idx_for_derivative_calculation = (self.idx_for_derivative_calculation + 1) % self.buffer_size_for_derivative_calculation  # Move to next index, wrap around if necessary
+        self.idx_for_derivative_calculation = (self.idx_for_derivative_calculation + 1) % (self.derivative_timestep_in_samples + 1)  # Move to next index, wrap around if necessary
 
 
     def filter_differences(self):
