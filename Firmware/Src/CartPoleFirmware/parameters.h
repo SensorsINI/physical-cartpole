@@ -12,9 +12,12 @@ extern unsigned short CONTROL_SLOWDOWN;
 extern bool CONTROL_SYNC;
 extern unsigned short ANGLE_MEASUREMENT_INTERVAL_US;
 
+extern unsigned short TIMESTEPS_FOR_DERIVATIVE;
+extern unsigned short MAX_ADC_STEP;						// If jump between two consecutive ADC measurements is bigger than this, the measurement counts as invalid
+
+
 extern const unsigned short ANGLE_AVERAGE_LEN_MAX;
 extern unsigned short ANGLE_AVERAGE_LEN;				// Number of samples to average over to determine angular displacement (max is 32)
-extern unsigned short MAX_ADC_STEP;						// If jump between two consecutive ADC measurements is bigger than this, the measurement counts as invalid
 
 extern int MOTOR;
 
