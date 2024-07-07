@@ -176,6 +176,7 @@ class PhysicalCartPoleDriver:
         self.position_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past positions
         self.frozen_history = [0] * (self.derivative_timestep_in_samples + 1)  # Buffer to store frozen states
         self.idx_for_derivative_calculation = 0
+        self.idx_for_derivative_calculation_position = 0
 
         self.angleD_buffer = np.zeros(ANGLE_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for angle derivatives
         self.positionD_buffer = np.zeros(POSITION_D_MEDIAN_LEN, dtype=np.float32)  # Buffer for position derivatives
@@ -677,7 +678,12 @@ class PhysicalCartPoleDriver:
         # This function will block at the rate of the control loop
         (self.angle_raw, self.position_raw, self.target_position_from_chip, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
 
-        self.treat_deadangle_with_derivative()  # Moved to hardware
+        self.treat_deadangle_with_derivative()
+
+        self.position_difference()
+
+        self.angle_raw_sensor = self.angle_raw
+        self.angleD_raw_sensor = self.angleD_raw
 
         self.filter_differences()
 
@@ -699,9 +705,8 @@ class PhysicalCartPoleDriver:
         ADC_RANGE = 4096
 
         # Calculate the index for the k-th past angle
-        kth_past_index = (self.idx_for_derivative_calculation  + 1) % (self.derivative_timestep_in_samples + 1)
+        kth_past_index = (self.idx_for_derivative_calculation + 1) % (self.derivative_timestep_in_samples + 1)
         kth_past_angle = self.angle_history[kth_past_index]
-        kth_past_position = self.position_history[kth_past_index]
         kth_past_frozen = self.frozen_history[kth_past_index]
 
         if kth_past_angle != -1 and (
@@ -717,16 +722,22 @@ class PhysicalCartPoleDriver:
             self.angleD_raw_stable = self.angleD_raw
             self.frozen = 0
 
-        self.positionD_raw = (self.position_raw - kth_past_position) / self.derivative_timestep_in_samples if kth_past_position != -1 else 0
-
-        self.angle_raw_sensor = self.angle_raw
-        self.angleD_raw_sensor = self.angleD_raw
-
         # Save current angle in the history buffer and update index
         self.angle_history[self.idx_for_derivative_calculation] = self.angle_raw
-        self.position_history[self.idx_for_derivative_calculation] = self.position_raw
         self.frozen_history[self.idx_for_derivative_calculation] = self.frozen
         self.idx_for_derivative_calculation = (self.idx_for_derivative_calculation + 1) % (self.derivative_timestep_in_samples + 1)  # Move to next index, wrap around if necessary
+
+    def position_difference(self):
+
+        # Calculate the index for the k-th past angle
+        kth_past_index = (self.idx_for_derivative_calculation_position + 1) % (self.derivative_timestep_in_samples + 1)
+        kth_past_position = self.position_history[kth_past_index]
+
+        self.positionD_raw = (self.position_raw - kth_past_position) / self.derivative_timestep_in_samples if kth_past_position != -1 else 0
+
+        # Save current angle in the history buffer and update index
+        self.position_history[self.idx_for_derivative_calculation_position] = self.position_raw
+        self.idx_for_derivative_calculation_position = (self.idx_for_derivative_calculation_position + 1) % (self.derivative_timestep_in_samples + 1)  # Move to next index, wrap around if necessary
 
 
     def filter_differences(self):
