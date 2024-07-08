@@ -54,9 +54,10 @@ void average_derivatives(float* angleDPtr, float* positionDPtr){
     *positionDPtr = positionDMedian; // Convert int back to short
 }
 
-void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, float* angleDPtr, int* invalid_stepPtr){
+void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angle_raw_Ptr, float* angleDPtr, int* invalid_stepPtr){
 		int angle = ClassicMedianFilter(angleSamples, angle_averageLen);
 		*anglePtr = angle;
+		*angle_raw_Ptr = angle;
 
 		int invalid_step = anomaly_detection(angleSamples, angleSampIndex, angle_averageLen);
 		*invalid_stepPtr = invalid_step;
