@@ -719,7 +719,7 @@ class PhysicalCartPoleDriver:
             self.last_difference = current_difference
 
         if kth_past_angle != -1 and (self.angle_raw_stable > 3500 or self.angle_raw_stable < 500) and (
-            (abs(current_difference) > 150 or abs(current_difference-self.last_difference) > 40) and self.freezme==0
+                (abs(current_difference-self.last_difference) > 40) and self.freezme==0
         ):
             self.freezme = 8 + self.derivative_timestep_in_samples
 
