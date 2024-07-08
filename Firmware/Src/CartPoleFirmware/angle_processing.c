@@ -112,17 +112,19 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     int kth_past_angle = angle_history[kth_past_index];
     int kth_past_frozen = frozen_history[kth_past_index];
 
+    int not_normed_angleD_raw = kth_past_angle == -1 ? 0 : wrapLocal(*anglePtr - kth_past_angle);
+    float current_difference = (float)(not_normed_angleD_raw)/ (TIMESTEPS_FOR_DERIVATIVE + kth_past_frozen);
+
     // Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
     if (kth_past_angle != -1 &&
        ((invalid_step > 5 && abs(wrapLocal(kth_past_angle)) < ADC_RANGE/20) ||
-       (abs(wrapLocal(*anglePtr - kth_past_angle)) > ADC_RANGE/8 && kth_past_frozen < 3))) {
+       (abs(current_difference) > TIMESTEPS_FOR_DERIVATIVE * ADC_RANGE/8 && kth_past_frozen < 3))) {
 
         frozen++;
         *anglePtr = angle_raw_stable != -1 ? angle_raw_stable : 0;
         angleD_raw = angleD_raw_stable != -1 ? angleD_raw_stable : 0;
     } else {
-        int not_normed_angleD_raw = angle_raw_stable != -1 ? wrapLocal(*anglePtr - kth_past_angle) :0;
-        angleD_raw =  (float)(not_normed_angleD_raw)/ (TIMESTEPS_FOR_DERIVATIVE + kth_past_frozen);
+        angleD_raw = current_difference;
         angle_raw_stable = *anglePtr;
         angleD_raw_stable = angleD_raw;
         frozen = 0;

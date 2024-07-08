@@ -709,15 +709,17 @@ class PhysicalCartPoleDriver:
         kth_past_angle = self.angle_history[kth_past_index]
         kth_past_frozen = self.frozen_history[kth_past_index]
 
+        current_difference = self.wrap_local(self.angle_raw - kth_past_angle) / (self.derivative_timestep_in_samples + kth_past_frozen) if kth_past_angle != -1 else 0
+
         if kth_past_angle != -1 and (
             (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
-            (abs(self.wrap_local(self.angle_raw - kth_past_angle)) > ADC_RANGE / 8 and kth_past_frozen < 3)
+            (abs(current_difference) > ADC_RANGE / 8 and kth_past_frozen < 3)
         ):
             self.frozen += 1
-            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
-            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
+            self.angle_raw = self.angle_raw_stable
+            self.angleD_raw = self.angleD_raw_stable
         else:
-            self.angleD_raw = self.wrap_local(self.angle_raw - kth_past_angle) / ((self.derivative_timestep_in_samples - 1) + kth_past_frozen + 1) if kth_past_angle != -1 else 0
+            self.angleD_raw = current_difference
             self.angle_raw_stable = self.angle_raw
             self.angleD_raw_stable = self.angleD_raw
             self.frozen = 0
