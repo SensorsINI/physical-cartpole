@@ -105,8 +105,9 @@ class PhysicalCartPoleDriver:
         self.s = create_cartpole_state()
         self.angle_raw = 0
         self.angleD_raw = 0
-        self.angle_raw_stable = None
-        self.angleD_raw_stable = None
+        self.angle_raw_stable = 0.0
+        self.angleD_raw_stable = 0.0
+        self.last_difference = None
         self.angleD_raw_buffer = np.zeros((0))
         self.angle_raw_sensor = None
         self.angleD_raw_sensor = None
@@ -171,6 +172,7 @@ class PhysicalCartPoleDriver:
         self.angle_deviation_finetune = 0.0
 
         self.derivative_timestep_in_samples = TIMESTEPS_FOR_DERIVATIVE
+        self.freezme = 0
 
         self.angle_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past angles
         self.position_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past positions
@@ -666,7 +668,7 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.target_position = self.target_position
 
     def wrap_local(self, angle):
-        ADC_RANGE = 4096
+        ADC_RANGE = ANGLE_360_DEG_IN_ADC_UNITS
         if angle >= ADC_RANGE / 2:
             return angle - ADC_RANGE
         elif angle <= -ADC_RANGE / 2:
@@ -709,20 +711,35 @@ class PhysicalCartPoleDriver:
         kth_past_angle = self.angle_history[kth_past_index]
         kth_past_frozen = self.frozen_history[kth_past_index]
 
-        current_difference = self.wrap_local(self.angle_raw - kth_past_angle) / (self.derivative_timestep_in_samples + kth_past_frozen) if kth_past_angle != -1 else 0
 
-        if kth_past_angle != -1 and (
-            (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
-            (abs(current_difference) > ADC_RANGE / 8 and kth_past_frozen < 3)
+
+        current_difference = self.wrap_local(self.angle_raw - kth_past_angle) / (self.derivative_timestep_in_samples) if kth_past_angle != -1 else 0
+
+        if self.last_difference is None:
+            self.last_difference = current_difference
+
+        if kth_past_angle != -1 and (self.angle_raw_stable > 3500 or self.angle_raw_stable < 500) and (
+            (abs(current_difference) > 150 or abs(current_difference-self.last_difference) > 40) and self.freezme==0
         ):
-            self.frozen += 1
-            self.angle_raw = self.angle_raw_stable
+            self.freezme = 8 + self.derivative_timestep_in_samples
+
+
+        if self.freezme>0:
+            self.freezme -= 1
             self.angleD_raw = self.angleD_raw_stable
+            if self.freezme > self.derivative_timestep_in_samples + 1:
+                self.angle_raw_stable += self.angleD_raw_stable
+                self.angle_raw = self.wrap_local(self.angle_raw_stable)
+            else:
+                self.angle_raw_stable = self.angle_raw
         else:
-            self.angleD_raw = current_difference
             self.angle_raw_stable = self.angle_raw
+            self.angleD_raw = current_difference
             self.angleD_raw_stable = self.angleD_raw
-            self.frozen = 0
+
+        self.frozen = self.freezme
+
+        self.last_difference = current_difference
 
         # Save current angle in the history buffer and update index
         self.angle_history[self.idx_for_derivative_calculation] = self.angle_raw

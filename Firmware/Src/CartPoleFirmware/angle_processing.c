@@ -13,7 +13,6 @@
 
 #define MAX_TIMESTEPS_FOR_DERIVATIVE 20
 
-const int ADC_RANGE = 4096;
 
 int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1, angle_raw_sensor;
 float angleD_raw = 0, angleD_raw_stable = -1, angleD_raw_sensor;
@@ -178,20 +177,20 @@ void calculate_position_difference_per_timestep(short* positionPtr, float* posit
 
 
 int wrapLocal(int angle) {
-    if (angle > ADC_RANGE/2)
-		return angle - ADC_RANGE;
-	if (angle <= -ADC_RANGE/2)
-		return angle + ADC_RANGE;
+    if (angle > ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle - ANGLE_360_DEG_IN_ADC_UNITS;
+	if (angle <= -ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle + ANGLE_360_DEG_IN_ADC_UNITS;
 	else
 		return angle;
 }
 
 
 float wrapLocal_float(float angle) {
-    if (angle > ADC_RANGE/2)
-		return angle - ADC_RANGE;
-	if (angle <= -ADC_RANGE/2)
-		return angle + ADC_RANGE;
+    if (angle > ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle - ANGLE_360_DEG_IN_ADC_UNITS;
+	if (angle <= -ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle + ANGLE_360_DEG_IN_ADC_UNITS;
 	else
 		return angle;
 }
@@ -210,25 +209,25 @@ float wrapLocal_rad(float angle) {
 int unwrapLocal(int previous, int current) {
 	int diff = current-previous;
 
-	if (diff > ADC_RANGE/2)
-		return current - ADC_RANGE;
-	if (diff < -ADC_RANGE/2)
-		return current + ADC_RANGE;
+	if (diff > ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return current - ANGLE_360_DEG_IN_ADC_UNITS;
+	if (diff < -ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return current + ANGLE_360_DEG_IN_ADC_UNITS;
 	else
 		return current;
 }
 
 int wrap(int current) {
 	if(current > 0)
-		return current - ADC_RANGE * (current / ADC_RANGE);
+		return current - ANGLE_360_DEG_IN_ADC_UNITS * (current / ANGLE_360_DEG_IN_ADC_UNITS);
 	else
-		return current + ADC_RANGE * (current / ADC_RANGE + 1);
+		return current + ANGLE_360_DEG_IN_ADC_UNITS * (current / ANGLE_360_DEG_IN_ADC_UNITS + 1);
 }
 
 int unwrap(int previous, int current) {
     int diff = previous-current;
 	if (diff>0)
-    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE + 1) / 2);
+    	return current + ANGLE_360_DEG_IN_ADC_UNITS * (((2 * diff) / ANGLE_360_DEG_IN_ADC_UNITS + 1) / 2);
 	else
-    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE - 1) / 2);
+    	return current + ANGLE_360_DEG_IN_ADC_UNITS * (((2 * diff) / ANGLE_360_DEG_IN_ADC_UNITS - 1) / 2);
 }
