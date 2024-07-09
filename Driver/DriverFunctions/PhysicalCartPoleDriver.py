@@ -502,7 +502,7 @@ class PhysicalCartPoleDriver:
                 time_measurement_start = time.time()
                 print('Started angle measurement.')
                 for _ in trange(number_of_measurements):
-                    (angle, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
                     measured_angles.append(float(angle))
                 time_measurement = time.time()-time_measurement_start
 
@@ -675,9 +675,9 @@ class PhysicalCartPoleDriver:
 
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, self.position_raw, self.target_position_from_chip, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.target_position_from_chip, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
 
-        self.treat_deadangle_with_derivative()
+        # self.treat_deadangle_with_derivative()
 
         self.position_difference()
 
@@ -716,6 +716,8 @@ class PhysicalCartPoleDriver:
         see "anomaly_detection" function in firmware
         This is useful in STM where averaging is done in firmware after oversampling the angle measurement.
         TODO: In Zynq, the averaging is done in hardware, and counting invalid steps should be implemented there
+
+        Now treating deadangle is done only on firmware.
         """
 
         # Calculate the index for the k-th past angle

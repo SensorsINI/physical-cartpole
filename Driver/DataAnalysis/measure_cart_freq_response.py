@@ -108,11 +108,11 @@ if __name__ == '__main__':
             sp=int(norm_amp*speed_amplitude)
             interface.set_motor(sp)
             state=interface.read_state()
-            pos=state[1]
+            pos=state[2]
             times.append(t)
             speeds.append(sp)
             positions.append(pos)
-            # print(f'\rt: {t:10.3f} sp: {sp:10d} pos: {state[2]} angle: {state[0]}                            ',end='')
+            # print(f'\rt: {t:10.3f} sp: {sp:10d} pos: {state[3]} angle: {state[0]}                            ',end='')
             time.sleep(control_period)
         print('done')
         interface.close()

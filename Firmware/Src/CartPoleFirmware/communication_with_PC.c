@@ -205,6 +205,7 @@ void prepare_message_to_PC_state(
 		unsigned char * buffer,
 		unsigned short message_len,
 		int angle,
+		float angleD_unprocessed,
 		short position,
 		float target_position,
 		int motor_command,
@@ -219,14 +220,15 @@ void prepare_message_to_PC_state(
 	buffer[ 1] = CMD_STATE;
 	buffer[ 2] = message_len;
 	*((short *)&buffer[3]) = angle;
-	*((short *)&buffer[5]) = position;
-	*((float *)&buffer[7]) = target_position;
-	*((short *)&buffer[11]) = motor_command;
-	*((unsigned char *)&buffer[13]) = invalid_step;
-	*((unsigned int *)&buffer[14]) = (unsigned int)time_difference_between_measurement;
-	*((unsigned int *)&buffer[18]) = (unsigned int)time_current_measurement;
-	*((unsigned short *)&buffer[22]) = (unsigned short)(latency / 10);
-	*((unsigned short *)&buffer[24]) = (unsigned short)(latency_violation);
+	*((float *)&buffer[5]) = angleD_unprocessed;
+	*((short *)&buffer[9]) = position;
+	*((float *)&buffer[11]) = target_position;
+	*((short *)&buffer[15]) = motor_command;
+	*((unsigned char *)&buffer[17]) = invalid_step;
+	*((unsigned int *)&buffer[19]) = (unsigned int)time_difference_between_measurement;
+	*((unsigned int *)&buffer[22]) = (unsigned int)time_current_measurement;
+	*((unsigned short *)&buffer[26]) = (unsigned short)(latency / 10);
+	*((unsigned short *)&buffer[28]) = (unsigned short)(latency_violation);
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
 }
