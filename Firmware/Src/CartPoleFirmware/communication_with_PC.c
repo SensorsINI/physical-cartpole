@@ -225,7 +225,7 @@ void prepare_message_to_PC_state(
 	*((float *)&buffer[11]) = target_position;
 	*((short *)&buffer[15]) = motor_command;
 	*((unsigned char *)&buffer[17]) = invalid_step;
-	*((unsigned int *)&buffer[19]) = (unsigned int)time_difference_between_measurement;
+	*((unsigned int *)&buffer[18]) = (unsigned int)time_difference_between_measurement;
 	*((unsigned int *)&buffer[22]) = (unsigned int)time_current_measurement;
 	*((unsigned short *)&buffer[26]) = (unsigned short)(latency / 10);
 	*((unsigned short *)&buffer[28]) = (unsigned short)(latency_violation);
