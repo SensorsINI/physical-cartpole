@@ -14,7 +14,8 @@
 #define MAX_TIMESTEPS_FOR_DERIVATIVE 20
 
 
-int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1;
+int angle_raw = 0, angle_raw_prev = -1;
+float angle_raw_stable = -1;
 float angleD_raw = 0, angleD_raw_stable = -1;
 int freezme = 0;
 
@@ -54,6 +55,8 @@ void average_derivatives(float* angleDPtr, float* positionDPtr){
 
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angle_raw_Ptr, float* angleDPtr, int* invalid_stepPtr){
 		int angle = ClassicMedianFilter(angleSamples, angle_averageLen);
+
+		angle = wrapLocal(angle);
 		*anglePtr = angle;
 		*angle_raw_Ptr = angle;
 
@@ -119,10 +122,10 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
     // Check conditions to handle the dead angle scenario
     if (kth_past_angle != -1 &&
-        (*anglePtr > 3500 || *anglePtr < 500) &&
+        (angle_raw_stable > -500 && angle_raw_stable < 500) &&
         freezme == 0 &&
         (
-		(TIMESTEPS_FOR_DERIVATIVE * fabs(current_difference - last_difference) > CONTROL_LOOP_PERIOD_MS * 2.4)
+		(TIMESTEPS_FOR_DERIVATIVE * abs(current_difference - last_difference) > CONTROL_LOOP_PERIOD_MS * 2.4)
 		||
 		(invalid_step > 5)
 		)
@@ -138,16 +141,16 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
     // Handle the frozen state
     if (freezme > 0) {
-        freezme -= 1;
+        --freezme;
         angleD_raw = angleD_raw_stable;
         if (freezme > TIMESTEPS_FOR_DERIVATIVE + 1) {
             angle_raw_stable += angleD_raw_stable;
-            *anglePtr = wrapLocal(angle_raw_stable);
+            *anglePtr = (int)(angle_raw_stable);
         } else {
-            angle_raw_stable = *anglePtr;
+            angle_raw_stable = (float)(*anglePtr);
         }
     } else {
-        angle_raw_stable = *anglePtr;
+        angle_raw_stable = (float)(*anglePtr);
         angleD_raw = current_difference;
         angleD_raw_stable = angleD_raw;
     }
