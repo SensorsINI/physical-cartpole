@@ -16,7 +16,7 @@
 
 int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1;
 float angleD_raw = 0, angleD_raw_stable = -1;
-int frozen = 0;
+int freezme = 0;
 
 float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
 float positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
@@ -96,6 +96,7 @@ void init_angle_history() {
     }
 }
 
+float last_difference = 100000.0; //Just initialization value
 
 void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
@@ -109,32 +110,53 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     // Calculate the index for the k-th past angle
     int kth_past_index = (idx_for_derivative_calculation_angle + 1) % (TIMESTEPS_FOR_DERIVATIVE+1);;
     int kth_past_angle = angle_history[kth_past_index];
-    int kth_past_frozen = frozen_history[kth_past_index];
 
-    int not_normed_angleD_raw = kth_past_angle == -1 ? 0 : wrapLocal(*anglePtr - kth_past_angle);
-    float current_difference = (float)(not_normed_angleD_raw)/ (TIMESTEPS_FOR_DERIVATIVE + kth_past_frozen);
+    float current_difference = (kth_past_angle != -1) ? (float)(wrapLocal(*anglePtr - kth_past_angle)) / TIMESTEPS_FOR_DERIVATIVE : 0;
 
-    // Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
-    if (kth_past_angle != -1 &&
-       ((invalid_step > 5 && abs(wrapLocal(kth_past_angle)) < ANGLE_360_DEG_IN_ADC_UNITS/20) ||
-       (abs(current_difference) > TIMESTEPS_FOR_DERIVATIVE * ANGLE_360_DEG_IN_ADC_UNITS/8 && kth_past_frozen < 3))) {
-
-        frozen++;
-        *anglePtr = angle_raw_stable != -1 ? angle_raw_stable : 0;
-        angleD_raw = angleD_raw_stable != -1 ? angleD_raw_stable : 0;
-    } else {
-        angleD_raw = current_difference;
-        angle_raw_stable = *anglePtr;
-        angleD_raw_stable = angleD_raw;
-        frozen = 0;
+    if (last_difference > 10000) {
+        last_difference = current_difference;
     }
 
-    // Save previous values
-    angle_raw_prev = *anglePtr;
+    // Check conditions to handle the dead angle scenario
+    if (kth_past_angle != -1 &&
+        (*anglePtr > 3500 || *anglePtr < 500) &&
+        freezme == 0 &&
+        (
+		(TIMESTEPS_FOR_DERIVATIVE * fabs(current_difference - last_difference) > CONTROL_LOOP_PERIOD_MS * 2.4)
+		||
+		(invalid_step > 5)
+		)
+		)
+    {
+        // Determine the freeze period based on the angle derivative stability
+        if (angleD_raw_stable > 0) {
+            freezme = (int)(45 / CONTROL_LOOP_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Accelerate through the dead angle
+        } else {
+            freezme = (int)(90 / CONTROL_LOOP_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Decelerate through the dead angle
+        }
+    }
+
+    // Handle the frozen state
+    if (freezme > 0) {
+        freezme -= 1;
+        angleD_raw = angleD_raw_stable;
+        if (freezme > TIMESTEPS_FOR_DERIVATIVE + 1) {
+            angle_raw_stable += angleD_raw_stable;
+            *anglePtr = wrapLocal(angle_raw_stable);
+        } else {
+            angle_raw_stable = *anglePtr;
+        }
+    } else {
+        angle_raw_stable = *anglePtr;
+        angleD_raw = current_difference;
+        angleD_raw_stable = angleD_raw;
+    }
+
+    last_difference = current_difference;
 
     // Save current angle in the history buffer and update index
     angle_history[idx_for_derivative_calculation_angle] = *anglePtr;
-    frozen_history[idx_for_derivative_calculation_angle] = frozen;
+    frozen_history[idx_for_derivative_calculation_angle] = freezme;
     idx_for_derivative_calculation_angle = (idx_for_derivative_calculation_angle + 1) % (TIMESTEPS_FOR_DERIVATIVE+1); // Move to next index, wrap around if necessary
 }
 
