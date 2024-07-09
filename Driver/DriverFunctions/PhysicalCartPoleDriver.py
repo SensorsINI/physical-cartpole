@@ -709,9 +709,6 @@ class PhysicalCartPoleDriver:
         # Calculate the index for the k-th past angle
         kth_past_index = (self.idx_for_derivative_calculation + 1) % (self.derivative_timestep_in_samples + 1)
         kth_past_angle = self.angle_history[kth_past_index]
-        kth_past_frozen = self.frozen_history[kth_past_index]
-
-
 
         current_difference = self.wrap_local(self.angle_raw - kth_past_angle) / (self.derivative_timestep_in_samples) if kth_past_angle != -1 else 0
 
@@ -719,10 +716,12 @@ class PhysicalCartPoleDriver:
             self.last_difference = current_difference
 
         if kth_past_angle != -1 and (self.angle_raw_stable > 3500 or self.angle_raw_stable < 500) and (
-                (abs(current_difference-self.last_difference) > 40) and self.freezme==0
+                (self.derivative_timestep_in_samples * abs(current_difference-self.last_difference) > CONTROL_PERIOD_MS * 2.4) and self.freezme==0
         ):
-            self.freezme = 8 + self.derivative_timestep_in_samples
-
+            if self.angleD_raw_stable>0:
+                self.freezme = int(45/CONTROL_PERIOD_MS) + self.derivative_timestep_in_samples  # Accelerates through the dead angle
+            else:
+                self.freezme = int(90/CONTROL_PERIOD_MS) + self.derivative_timestep_in_samples  # Deccelerates through the dead angle
 
         if self.freezme>0:
             self.freezme -= 1

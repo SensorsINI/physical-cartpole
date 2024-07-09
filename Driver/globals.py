@@ -27,6 +27,8 @@ elif CONTROLLER_NAME == 'fpga':
 else:
     CONTROL_PERIOD_MS = 15  # e.g. 5 for PID or 20 for mppi
 
+TIMESTEPS_FOR_DERIVATIVE = 1  # TODO: Python only, hardware sets it separately. In number of control cycles
+
 if CHIP == 'STM':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 7200
     # First number in the tuple is multiplicative factor by which control command Q (in the range[-1,1]) is multiplied.
@@ -115,7 +117,6 @@ ANGLE_HANGING_DEFAULT = True  # If True default ANGLE_HANGING is loaded for a re
 
 ANGLE_NORMALIZATION_FACTOR = (2 * math.pi) / ANGLE_360_DEG_IN_ADC_UNITS
 
-TIMESTEPS_FOR_DERIVATIVE = 1  # TODO: Python only, hardware sets it separately. In number of control cycles
 
 ANGLE_D_MEDIAN_LEN = 1
 POSITION_D_MEDIAN_LEN = 1
