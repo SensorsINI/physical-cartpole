@@ -7,12 +7,12 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short CONTROL_LOOP_PERIOD_MS				=		1;
+unsigned short CONTROL_LOOP_PERIOD_MS				=		15;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
 // Calculating derivatives and dead angle detection
-unsigned short TIMESTEPS_FOR_DERIVATIVE				=		5;  // 20 at most
+unsigned short TIMESTEPS_FOR_DERIVATIVE				=		1;  // 20 at most
 // TIMESTEPS_FOR_DERIVATIVE: How many timesteps are taken for derivative (position and angle) calculation
 // and dead angle detection.
 // Too small value makes the effect of sensor quantization severe.
@@ -54,7 +54,7 @@ float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429}; // Pololu
 float ANGLE_HANGING_POLOLU 							=		1003.0;  // Value from sensor when pendulum is at stable equilibrium point
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4081.9;
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4069.05;
 const float POSITION_ENCODER_RANGE					=		4695.0;
 
 const unsigned int CLOCK_FREQ						=		333333343;

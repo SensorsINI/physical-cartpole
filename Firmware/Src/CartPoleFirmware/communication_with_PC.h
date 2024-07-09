@@ -28,6 +28,7 @@ void prepare_message_to_PC_state(
 		unsigned char * buffer,
 		unsigned short message_len,
 		int angle,
+		float angleD_unprocessed,
 		short position,
 		float target_position,
 		int motor_command,

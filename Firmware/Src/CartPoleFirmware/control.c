@@ -160,6 +160,7 @@ float time = 0.0;
 float angle = 0.0;
 float position = 0.0;
 float angleD = 0.0;
+float angleD_unprocessed = 0.0;
 float positionD = 0.0;
 
 void CONTROL_BackgroundTask(void)
@@ -181,6 +182,7 @@ void CONTROL_BackgroundTask(void)
 		int   					motor_command_from_chip;
 
 		int angle_int = 0;
+		int angle_raw_int = 0;
 		int invalid_step = 0;
 
 
@@ -190,8 +192,8 @@ void CONTROL_BackgroundTask(void)
 
 		position_short = Encoder_Read();
 		position_short = position_short - positionCentre;
-		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angleD, &invalid_step);
-
+		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angle_raw_int, &angleD, &invalid_step);
+        angleD_unprocessed = angleD;
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 
@@ -314,8 +316,9 @@ void CONTROL_BackgroundTask(void)
 
 	    	prepare_message_to_PC_state(
 	    			buffer,
-					27,
-	    			angle_int,
+					31,
+					angle_int,
+					angleD_unprocessed,
 					position_short,
 					target_position,
 					motor_command,
@@ -326,7 +329,7 @@ void CONTROL_BackgroundTask(void)
 					latency_violation
 					);
 
-	    	Message_SendToPC(buffer, 27);
+	    	Message_SendToPC(buffer, 31);
 
 	        if(new_motor_command_obtained) {
 	        	time_measurement_done = time_current_measurement;

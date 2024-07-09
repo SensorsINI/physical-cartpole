@@ -105,13 +105,14 @@ class PhysicalCartPoleDriver:
         self.s = create_cartpole_state()
         self.angle_raw = 0
         self.angleD_raw = 0
-        self.angle_raw_stable = None
-        self.angleD_raw_stable = None
+        self.angle_raw_stable = 0.0
+        self.angleD_raw_stable = 0.0
+        self.last_difference = None
         self.angleD_raw_buffer = np.zeros((0))
         self.angle_raw_sensor = None
         self.angleD_raw_sensor = None
         self.invalid_steps = 0
-        self.frozen = 0
+        self.freezme = 0
         self.position_raw = 0
         self.positionD_raw = 0
         self.angleDPrev = 0.0
@@ -170,11 +171,9 @@ class PhysicalCartPoleDriver:
 
         self.angle_deviation_finetune = 0.0
 
-        self.derivative_timestep_in_samples = TIMESTEPS_FOR_DERIVATIVE
-
-        self.angle_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past angles
-        self.position_history = [-1] * (self.derivative_timestep_in_samples + 1)  # Buffer to store past positions
-        self.frozen_history = [0] * (self.derivative_timestep_in_samples + 1)  # Buffer to store frozen states
+        self.angle_history = [-1] * (TIMESTEPS_FOR_DERIVATIVE + 1)  # Buffer to store past angles
+        self.position_history = [-1] * (TIMESTEPS_FOR_DERIVATIVE + 1)  # Buffer to store past positions
+        self.frozen_history = [0] * (TIMESTEPS_FOR_DERIVATIVE + 1)  # Buffer to store frozen states
         self.idx_for_derivative_calculation = 0
         self.idx_for_derivative_calculation_position = 0
 
@@ -219,7 +218,7 @@ class PhysicalCartPoleDriver:
             'controller_steptime': lambda: self.controller_steptime_previous,
             'additionalLatency': lambda: self.additional_latency,
             'invalid_steps': lambda: self.invalid_steps,
-            'frozen': lambda: self.frozen,
+            'freezme': lambda: self.freezme,
 
             'angle_raw_sensor': lambda: self.angle_raw_sensor,
             'angleD_raw_sensor': lambda: self.angleD_raw_sensor,
@@ -503,7 +502,7 @@ class PhysicalCartPoleDriver:
                 time_measurement_start = time.time()
                 print('Started angle measurement.')
                 for _ in trange(number_of_measurements):
-                    (angle, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
+                    (angle, _, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
                     measured_angles.append(float(angle))
                 time_measurement = time.time()-time_measurement_start
 
@@ -666,7 +665,7 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.target_position = self.target_position
 
     def wrap_local(self, angle):
-        ADC_RANGE = 4096
+        ADC_RANGE = ANGLE_360_DEG_IN_ADC_UNITS
         if angle >= ADC_RANGE / 2:
             return angle - ADC_RANGE
         elif angle <= -ADC_RANGE / 2:
@@ -676,9 +675,9 @@ class PhysicalCartPoleDriver:
 
     def get_state_and_time_measurement(self):
         # This function will block at the rate of the control loop
-        (self.angle_raw, self.position_raw, self.target_position_from_chip, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
+        (self.angle_raw, self.angleD_raw, self.position_raw, self.target_position_from_chip, self.command, self.invalid_steps, self.time_difference, self.time_of_measurement, self.firmware_latency, self.latency_violation) = self.InterfaceInstance.read_state()
 
-        self.treat_deadangle_with_derivative()
+        # self.treat_deadangle_with_derivative()
 
         self.position_difference()
 
@@ -702,42 +701,87 @@ class PhysicalCartPoleDriver:
 
     def treat_deadangle_with_derivative(self):
 
-        ADC_RANGE = 4096
+        """
+        This function tries to treat the dead angle of the potentiometer.
+        It tries to detect an invalid measurement in dead angle region by unusually high angular acceleration.
+        The threshold and its dependence on CONTROL_PERIOD_MS and CONTROL_PERIOD_MS is heuristically guessed.
+        After detecting an invalid measurement
+        the function freezes the derivative and dead reckon the angle for a fixed number of measurement cycles.
+        It freezes for longer when the pole goes through the dead angle upwards (decelerates).
+        TODO: Making the duration of the freeze dependent on the angular velocity
+            could be helpful to increase performance.
+        More principled approach is welcomed.
+
+        The invalid steps are number of corrupted measurements in the buffer for angle averaging in firmware
+        see "anomaly_detection" function in firmware
+        This is useful in STM where averaging is done in firmware after oversampling the angle measurement.
+        TODO: In Zynq, the averaging is done in hardware, and counting invalid steps should be implemented there
+
+        Now treating deadangle is done only on firmware.
+        """
 
         # Calculate the index for the k-th past angle
-        kth_past_index = (self.idx_for_derivative_calculation + 1) % (self.derivative_timestep_in_samples + 1)
+        kth_past_index = (self.idx_for_derivative_calculation + 1) % (TIMESTEPS_FOR_DERIVATIVE + 1)
         kth_past_angle = self.angle_history[kth_past_index]
-        kth_past_frozen = self.frozen_history[kth_past_index]
 
-        if kth_past_angle != -1 and (
-            (self.invalid_steps > 5 and abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20) or
-            (abs(self.wrap_local(self.angle_raw - kth_past_angle)) > ADC_RANGE / 8 and kth_past_frozen < 3)
+        current_difference = self.wrap_local(self.angle_raw - kth_past_angle) / TIMESTEPS_FOR_DERIVATIVE if kth_past_angle != -1 else 0
+
+        if self.last_difference is None:
+            self.last_difference = current_difference
+
+        if (
+                kth_past_angle != -1
+                and
+                (self.angle_raw_stable > 3500 or self.angle_raw_stable < 500)
+                and
+                self.freezme == 0
+                and
+                (
+                TIMESTEPS_FOR_DERIVATIVE * abs(current_difference-self.last_difference) > CONTROL_PERIOD_MS * 2.4
+                or
+                # This last line is for STM32, not tested nor reworked at last revision of this function
+                # Just removed the abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20
+                # as this seems to me to be covered by self.angle_raw_stable > 3500 or self.angle_raw_stable < 500
+                self.invalid_steps > 5
+                )
         ):
-            self.frozen += 1
-            self.angle_raw = self.angle_raw_stable if self.angle_raw_stable is not None else 0
-            self.angleD_raw = self.angleD_raw_stable if self.angleD_raw_stable is not None else 0
+
+            if self.angleD_raw_stable > 0:
+                self.freezme = int(45/CONTROL_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE  # Accelerates through the dead angle
+            else:
+                self.freezme = int(90/CONTROL_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE  # Deccelerates through the dead angle
+
+        if self.freezme > 0:
+            self.freezme -= 1
+            self.angleD_raw = self.angleD_raw_stable
+            if self.freezme > TIMESTEPS_FOR_DERIVATIVE + 1:
+                self.angle_raw_stable += self.angleD_raw_stable
+                self.angle_raw = self.wrap_local(self.angle_raw_stable)
+            else:
+                self.angle_raw_stable = self.angle_raw
         else:
-            self.angleD_raw = self.wrap_local(self.angle_raw - kth_past_angle) / ((self.derivative_timestep_in_samples - 1) + kth_past_frozen + 1) if kth_past_angle != -1 else 0
             self.angle_raw_stable = self.angle_raw
+            self.angleD_raw = current_difference
             self.angleD_raw_stable = self.angleD_raw
-            self.frozen = 0
+
+        self.last_difference = current_difference
 
         # Save current angle in the history buffer and update index
         self.angle_history[self.idx_for_derivative_calculation] = self.angle_raw
-        self.frozen_history[self.idx_for_derivative_calculation] = self.frozen
-        self.idx_for_derivative_calculation = (self.idx_for_derivative_calculation + 1) % (self.derivative_timestep_in_samples + 1)  # Move to next index, wrap around if necessary
+        self.frozen_history[self.idx_for_derivative_calculation] = self.freezme
+        self.idx_for_derivative_calculation = (self.idx_for_derivative_calculation + 1) % (TIMESTEPS_FOR_DERIVATIVE + 1)  # Move to next index, wrap around if necessary
 
     def position_difference(self):
 
         # Calculate the index for the k-th past angle
-        kth_past_index = (self.idx_for_derivative_calculation_position + 1) % (self.derivative_timestep_in_samples + 1)
+        kth_past_index = (self.idx_for_derivative_calculation_position + 1) % (TIMESTEPS_FOR_DERIVATIVE + 1)
         kth_past_position = self.position_history[kth_past_index]
 
-        self.positionD_raw = (self.position_raw - kth_past_position) / self.derivative_timestep_in_samples if kth_past_position != -1 else 0
+        self.positionD_raw = (self.position_raw - kth_past_position) / TIMESTEPS_FOR_DERIVATIVE if kth_past_position != -1 else 0
 
         # Save current angle in the history buffer and update index
         self.position_history[self.idx_for_derivative_calculation_position] = self.position_raw
-        self.idx_for_derivative_calculation_position = (self.idx_for_derivative_calculation_position + 1) % (self.derivative_timestep_in_samples + 1)  # Move to next index, wrap around if necessary
+        self.idx_for_derivative_calculation_position = (self.idx_for_derivative_calculation_position + 1) % (TIMESTEPS_FOR_DERIVATIVE + 1)  # Move to next index, wrap around if necessary
 
 
     def filter_differences(self):
@@ -975,7 +1019,7 @@ class PhysicalCartPoleDriver:
                         self.position_raw,
                         self.s[POSITIOND_IDX] * 100,
                         self.actualMotorCmd,
-                        self.frozen,
+                        self.freezme,
                     ])
                 else:
                     self.live_buffer[self.live_buffer_index, :] = np.array([
@@ -985,7 +1029,7 @@ class PhysicalCartPoleDriver:
                         self.s[POSITION_IDX] * 100,
                         self.s[POSITIOND_IDX] * 100,
                         self.Q,
-                        self.frozen,
+                        self.freezme,
                     ])
                 self.live_buffer_index += 1
             else:
@@ -1066,7 +1110,7 @@ class PhysicalCartPoleDriver:
             self.tcm.print_temporary(BACK_TO_BEGINNING + f'MEASUREMENT: {self.current_experiment_protocol}' +  CLEAR_LINE)
 
             ############  State  ############
-            self.tcm.print_temporary(BACK_TO_BEGINNING + "STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, frozen:{}"
+            self.tcm.print_temporary(BACK_TO_BEGINNING + "STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, freezme:{}"
                 .format(
                     self.s[ANGLE_IDX],
                     self.angle_raw,
@@ -1076,7 +1120,7 @@ class PhysicalCartPoleDriver:
                     self.Q,
                     self.actualMotorCmd,
                     self.invalid_steps,
-                    self.frozen
+                    self.freezme
                 ) + CLEAR_LINE
             )
 

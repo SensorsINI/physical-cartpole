@@ -13,11 +13,11 @@
 
 #define MAX_TIMESTEPS_FOR_DERIVATIVE 20
 
-const int ADC_RANGE = 4096;
 
-int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1, angle_raw_sensor;
-float angleD_raw = 0, angleD_raw_stable = -1, angleD_raw_sensor;
-int frozen = 0;
+int angle_raw = 0, angle_raw_prev = -1;
+float angle_raw_stable = -1;
+float angleD_raw = 0, angleD_raw_stable = -1;
+int freezme = 0;
 
 float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
 float positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
@@ -53,9 +53,12 @@ void average_derivatives(float* angleDPtr, float* positionDPtr){
     *positionDPtr = positionDMedian; // Convert int back to short
 }
 
-void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, float* angleDPtr, int* invalid_stepPtr){
+void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angle_raw_Ptr, float* angleDPtr, int* invalid_stepPtr){
 		int angle = ClassicMedianFilter(angleSamples, angle_averageLen);
+
+		angle = wrapLocal(angle);
 		*anglePtr = angle;
+		*angle_raw_Ptr = angle;
 
 		int invalid_step = anomaly_detection(angleSamples, angleSampIndex, angle_averageLen);
 		*invalid_stepPtr = invalid_step;
@@ -96,15 +99,9 @@ void init_angle_history() {
     }
 }
 
+float last_difference = 100000.0; //Just initialization value
 
 void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
-
-	// The potentiometer of the cartpole has deadangle,
-	// where the measurement of the angle seems inpredictable before jumping to the other side
-	// This function seeks to detect the measurement in the deadangle zone and
-	// return last valid measurement instead of the current one (angle measurement is "frozen")
-	// This function also calculates derivative (or more accurately difference - not divided by time yet)
-
 
 	if (angle_history_initialised == 0)
 	{
@@ -116,33 +113,53 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     // Calculate the index for the k-th past angle
     int kth_past_index = (idx_for_derivative_calculation_angle + 1) % (TIMESTEPS_FOR_DERIVATIVE+1);;
     int kth_past_angle = angle_history[kth_past_index];
-    int kth_past_frozen = frozen_history[kth_past_index];
 
-    // Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
-    if (kth_past_angle != -1 &&
-       ((invalid_step > 5 && abs(wrapLocal(kth_past_angle)) < ADC_RANGE/20) ||
-       (abs(wrapLocal(*anglePtr - kth_past_angle)) > ADC_RANGE/8 && kth_past_frozen < 3))) {
+    float current_difference = (kth_past_angle != -1) ? (float)(wrapLocal(*anglePtr - kth_past_angle)) / TIMESTEPS_FOR_DERIVATIVE : 0;
 
-        frozen++;
-        *anglePtr = angle_raw_stable != -1 ? angle_raw_stable : 0;
-        angleD_raw = angleD_raw_stable != -1 ? angleD_raw_stable : 0;
-    } else {
-        int not_normed_angleD_raw = angle_raw_stable != -1 ? wrapLocal(*anglePtr - kth_past_angle) :0;
-        angleD_raw =  (float)(not_normed_angleD_raw)/ (TIMESTEPS_FOR_DERIVATIVE + kth_past_frozen);
-        angle_raw_stable = *anglePtr;
-        angleD_raw_stable = angleD_raw;
-        frozen = 0;
+    if (last_difference > 10000) {
+        last_difference = current_difference;
     }
 
-    angle_raw_sensor = *anglePtr;
-    angleD_raw_sensor = angleD_raw;
+    // Check conditions to handle the dead angle scenario
+    if (kth_past_angle != -1 &&
+        (angle_raw_stable > -500 && angle_raw_stable < 500) &&
+        freezme == 0 &&
+        (
+		(TIMESTEPS_FOR_DERIVATIVE * abs(current_difference - last_difference) > CONTROL_LOOP_PERIOD_MS * 2.4)
+		||
+		(invalid_step > 5)
+		)
+		)
+    {
+        // Determine the freeze period based on the angle derivative stability
+        if (angleD_raw_stable > 0) {
+            freezme = (int)(45 / CONTROL_LOOP_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Accelerate through the dead angle
+        } else {
+            freezme = (int)(90 / CONTROL_LOOP_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Decelerate through the dead angle
+        }
+    }
 
-    // Save previous values
-    angle_raw_prev = *anglePtr;
+    // Handle the frozen state
+    if (freezme > 0) {
+        --freezme;
+        angleD_raw = angleD_raw_stable;
+        if (freezme > TIMESTEPS_FOR_DERIVATIVE + 1) {
+            angle_raw_stable += angleD_raw_stable;
+            *anglePtr = (int)(angle_raw_stable);
+        } else {
+            angle_raw_stable = (float)(*anglePtr);
+        }
+    } else {
+        angle_raw_stable = (float)(*anglePtr);
+        angleD_raw = current_difference;
+        angleD_raw_stable = angleD_raw;
+    }
+
+    last_difference = current_difference;
 
     // Save current angle in the history buffer and update index
     angle_history[idx_for_derivative_calculation_angle] = *anglePtr;
-    frozen_history[idx_for_derivative_calculation_angle] = frozen;
+    frozen_history[idx_for_derivative_calculation_angle] = freezme;
     idx_for_derivative_calculation_angle = (idx_for_derivative_calculation_angle + 1) % (TIMESTEPS_FOR_DERIVATIVE+1); // Move to next index, wrap around if necessary
 }
 
@@ -182,20 +199,20 @@ void calculate_position_difference_per_timestep(short* positionPtr, float* posit
 
 
 int wrapLocal(int angle) {
-    if (angle > ADC_RANGE/2)
-		return angle - ADC_RANGE;
-	if (angle <= -ADC_RANGE/2)
-		return angle + ADC_RANGE;
+    if (angle > ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle - ANGLE_360_DEG_IN_ADC_UNITS;
+	if (angle <= -ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle + ANGLE_360_DEG_IN_ADC_UNITS;
 	else
 		return angle;
 }
 
 
 float wrapLocal_float(float angle) {
-    if (angle > ADC_RANGE/2)
-		return angle - ADC_RANGE;
-	if (angle <= -ADC_RANGE/2)
-		return angle + ADC_RANGE;
+    if (angle > ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle - ANGLE_360_DEG_IN_ADC_UNITS;
+	if (angle <= -ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return angle + ANGLE_360_DEG_IN_ADC_UNITS;
 	else
 		return angle;
 }
@@ -214,25 +231,25 @@ float wrapLocal_rad(float angle) {
 int unwrapLocal(int previous, int current) {
 	int diff = current-previous;
 
-	if (diff > ADC_RANGE/2)
-		return current - ADC_RANGE;
-	if (diff < -ADC_RANGE/2)
-		return current + ADC_RANGE;
+	if (diff > ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return current - ANGLE_360_DEG_IN_ADC_UNITS;
+	if (diff < -ANGLE_360_DEG_IN_ADC_UNITS/2)
+		return current + ANGLE_360_DEG_IN_ADC_UNITS;
 	else
 		return current;
 }
 
 int wrap(int current) {
 	if(current > 0)
-		return current - ADC_RANGE * (current / ADC_RANGE);
+		return current - ANGLE_360_DEG_IN_ADC_UNITS * (current / ANGLE_360_DEG_IN_ADC_UNITS);
 	else
-		return current + ADC_RANGE * (current / ADC_RANGE + 1);
+		return current + ANGLE_360_DEG_IN_ADC_UNITS * (current / ANGLE_360_DEG_IN_ADC_UNITS + 1);
 }
 
 int unwrap(int previous, int current) {
     int diff = previous-current;
 	if (diff>0)
-    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE + 1) / 2);
+    	return current + ANGLE_360_DEG_IN_ADC_UNITS * (((2 * diff) / ANGLE_360_DEG_IN_ADC_UNITS + 1) / 2);
 	else
-    	return current + ADC_RANGE * (((2 * diff) / ADC_RANGE - 1) / 2);
+    	return current + ANGLE_360_DEG_IN_ADC_UNITS * (((2 * diff) / ANGLE_360_DEG_IN_ADC_UNITS - 1) / 2);
 }
