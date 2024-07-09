@@ -48,7 +48,7 @@ elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
     MOTOR_CORRECTION_POLOLU = (0.5733488, 0.0257380, 0.0258429)
-    ANGLE_360_DEG_IN_ADC_UNITS = 4081.9  # Explanation - see above for STM case.
+    ANGLE_360_DEG_IN_ADC_UNITS = 4069.05  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
