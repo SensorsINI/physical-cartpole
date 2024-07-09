@@ -14,8 +14,8 @@
 #define MAX_TIMESTEPS_FOR_DERIVATIVE 20
 
 
-int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1, angle_raw_sensor;
-float angleD_raw = 0, angleD_raw_stable = -1, angleD_raw_sensor;
+int angle_raw = 0, angle_raw_prev = -1, angle_raw_stable = -1;
+float angleD_raw = 0, angleD_raw_stable = -1;
 int frozen = 0;
 
 float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
@@ -116,8 +116,8 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
 
     // Anomaly Detection: unstable buffer (invalid steps) or unstable angle_raw (jump in angle_raw), only inside region close to 0
     if (kth_past_angle != -1 &&
-       ((invalid_step > 5 && abs(wrapLocal(kth_past_angle)) < ADC_RANGE/20) ||
-       (abs(current_difference) > TIMESTEPS_FOR_DERIVATIVE * ADC_RANGE/8 && kth_past_frozen < 3))) {
+       ((invalid_step > 5 && abs(wrapLocal(kth_past_angle)) < ANGLE_360_DEG_IN_ADC_UNITS/20) ||
+       (abs(current_difference) > TIMESTEPS_FOR_DERIVATIVE * ANGLE_360_DEG_IN_ADC_UNITS/8 && kth_past_frozen < 3))) {
 
         frozen++;
         *anglePtr = angle_raw_stable != -1 ? angle_raw_stable : 0;
@@ -128,9 +128,6 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         angleD_raw_stable = angleD_raw;
         frozen = 0;
     }
-
-    angle_raw_sensor = *anglePtr;
-    angleD_raw_sensor = angleD_raw;
 
     // Save previous values
     angle_raw_prev = *anglePtr;
