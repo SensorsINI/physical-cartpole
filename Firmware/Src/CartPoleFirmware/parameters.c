@@ -7,7 +7,7 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short CONTROL_LOOP_PERIOD_MS				=		15;
+unsigned short CONTROL_LOOP_PERIOD_MS				=		20;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
@@ -51,7 +51,7 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429}; // Pololu
 
-float ANGLE_HANGING_POLOLU 							=		1003.0;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_POLOLU 							=		1250.0;  // Value from sensor when pendulum is at stable equilibrium point
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4069.05;

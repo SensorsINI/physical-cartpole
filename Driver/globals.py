@@ -25,7 +25,7 @@ elif CONTROLLER_NAME == 'neural-imitator':
 elif CONTROLLER_NAME == 'fpga':
     CONTROL_PERIOD_MS = 15
 else:
-    CONTROL_PERIOD_MS = 15  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 
 TIMESTEPS_FOR_DERIVATIVE = 1  # TODO: Python only, hardware sets it separately. In number of control cycles
 
@@ -53,7 +53,7 @@ elif CHIP == 'ZYNQ':
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1240.0  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1250.0  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
