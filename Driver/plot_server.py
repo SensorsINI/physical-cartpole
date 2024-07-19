@@ -11,7 +11,7 @@ import seaborn as sns
 sns.set()
 
 class LivePlotter:
-    def __init__(self, fig=None, axs=None, address=('0.0.0.0', 6000), keep_samples=100):
+    def __init__(self, fig=None, axs=None, address=('0.0.0.0', 6000), keep_samples=100, header_callback=None):
         # Set up listener for incoming data
         self.listener = Listener(address)
         self.connection = self.listener.accept()
@@ -21,6 +21,9 @@ class LivePlotter:
         self.header = None
         self.received = 0
         self.keep_samples = keep_samples
+        self.selected_features = ['None'] * 5  # Default to 'None' for all subplots
+        self.header_callback = header_callback  # Callback function for headers
+
         if fig is None or axs is None:
             self.fig, self.axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
             self.fig.subplots_adjust(hspace=0.8)
@@ -43,6 +46,8 @@ class LivePlotter:
         if isinstance(buffer, list) and isinstance(buffer[0], str):
             self.header = buffer
             print(f'Header received: {self.header}')
+            if self.header_callback:
+                self.header_callback(self.header)  # Call the callback with the new headers
         elif isinstance(buffer, np.ndarray):
             self.data.append(buffer)
             self.received += 1
@@ -73,13 +78,18 @@ class LivePlotter:
             time = df.index
             colors = plt.rcParams["axes.prop_cycle"]()
 
-            for i in range(len(self.header)):
-                data_row = df.iloc[:, i]
-                color = next(colors)["color"]
-
-                if i < 5:
+            for i, feature in enumerate(self.selected_features):
+                if feature != 'None' and feature in self.header:
+                    data_row = df[feature]
+                    color = next(colors)["color"]
                     self.update_timeline(i, time, data_row, color)
                     self.update_histogram(i, data_row, color)
+                else:
+                    self.clear_subplot(i)
+
+    def clear_subplot(self, i):
+        self.axs[i, 0].clear()
+        self.axs[i, 1].clear()
 
     def update_timeline(self, i, time, data_row, color):
         # Update timeline plot
@@ -87,20 +97,23 @@ class LivePlotter:
         self.axs[i, 0].set_title(
             f"Min={data_row.min():.3f}, Max={data_row.max():.3f}, Mean={data_row.mean():.3f}, Std={data_row.std():.5f}, N={data_row.size}",
             size=8)
-        self.axs[i, 0].plot(time, data_row, label=self.header[i], marker='.', color=color, markersize=3, linewidth=0.2)
+        self.axs[i, 0].plot(time, data_row, label=self.selected_features[i], marker='.', color=color, markersize=3, linewidth=0.2)
         self.axs[i, 0].legend(loc='upper right')
         self.axs[i, 0].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
 
     def update_histogram(self, i, data_row, color):
         # Update histogram plot
         self.axs[i, 1].clear()
-        self.axs[i, 1].hist(data_row, bins=50, label=self.header[i], color=color)
+        self.axs[i, 1].hist(data_row, bins=50, label=self.selected_features[i], color=color)
         self.axs[i, 1].set_ylabel('Occurrences')
-        self.axs[i, 1].set_title(self.header[i])
+        self.axs[i, 1].set_title(self.selected_features[i])
         self.axs[i, 1].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
 
     def set_keep_samples(self, keep_samples):
         self.keep_samples = keep_samples
+
+    def update_selected_features(self, features):
+        self.selected_features = features
 
     def run_standalone(self):
         ani = animation.FuncAnimation(self.fig, self.animate, interval=200)

@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QSlider
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QSlider, QComboBox
 from PyQt6.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -11,6 +11,7 @@ class LivePlotterGUI(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.headers = []
         self.initUI()
 
     def initUI(self):
@@ -43,9 +44,18 @@ class LivePlotterGUI(QWidget):
         self.slider.valueChanged.connect(self.update_samples)
         layout.addWidget(self.slider)
 
+        # Dropdowns to select features
+        self.feature_selectors = []
+        for i in range(5):
+            selector = QComboBox(self)
+            selector.addItem("None")
+            selector.currentIndexChanged.connect(self.update_feature_selection)
+            layout.addWidget(selector)
+            self.feature_selectors.append(selector)
+
         self.setLayout(layout)
 
-        self.plotter = LivePlotter(self.fig, self.axs, keep_samples=self.slider.value())
+        self.plotter = LivePlotter(self.fig, self.axs, keep_samples=self.slider.value(), header_callback=self.update_headers)
         self.ani = None
 
         self.start_animation()
@@ -54,9 +64,23 @@ class LivePlotterGUI(QWidget):
         if self.plotter:
             self.plotter.set_keep_samples(value)
 
+    def update_feature_selection(self):
+        selected_features = [selector.currentText() for selector in self.feature_selectors]
+        self.plotter.update_selected_features(selected_features)
+
     def start_animation(self):
         self.ani = animation.FuncAnimation(self.fig, self.plotter.animate, interval=200)
         self.canvas.draw()
+
+    def update_headers(self, headers):
+        self.headers = headers
+        for selector in self.feature_selectors:
+            current = selector.currentText()
+            selector.clear()
+            selector.addItem("None")
+            selector.addItems(headers)
+            if current in headers:
+                selector.setCurrentText(current)
 
     def resizeEvent(self, event):
         # Adjust the layout and elements on window resize
