@@ -10,6 +10,8 @@ import seaborn as sns
 
 sns.set()
 
+DEFAULT_FEATURES_TO_PLOT = 'default'  # None, 'default', list of features
+
 class LivePlotter:
     def __init__(self, fig=None, axs=None, address=('0.0.0.0', 6000), keep_samples=100, header_callback=None):
         # Set up listener for incoming data
@@ -46,21 +48,33 @@ class LivePlotter:
         if isinstance(buffer, list) and isinstance(buffer[0], str):
             self.header = buffer
             print(f'Header received: {self.header}')
+            self.reset_liveplotter()
+            if DEFAULT_FEATURES_TO_PLOT == 'default':
+                self.selected_features = self.header[:5] + ['None'] * (5 - len(self.header))  # Default first 5 headers
+            elif DEFAULT_FEATURES_TO_PLOT is not None:
+                self.selected_features = [feature for feature in DEFAULT_FEATURES_TO_PLOT if feature in self.header]
+                self.selected_features = self.selected_features + ['None'] * (5 - len(self.selected_features))
+            else:
+                self.selected_features = ['None'] * 5
+
             if self.header_callback:
-                self.header_callback(self.header)  # Call the callback with the new headers
+                self.header_callback(self.header, self.selected_features)  # Call the callback with the new headers
         elif isinstance(buffer, np.ndarray):
             self.data.append(buffer)
             self.received += 1
             self.data = self.data[-self.keep_samples:]
         elif buffer == 'reset':
-            self.data = []
-            print('\nLive Plot Reset\n\n\n\n')
+            self.reset_liveplotter()
         elif buffer == 'save' and self.header is not None:
             self.save_data()
         elif isinstance(buffer, str) and buffer == 'complete':
             print('All data received.')
             df = pd.DataFrame(self.data, columns=self.header)
             print(df)
+
+    def reset_liveplotter(self):
+        self.data = []
+        print('\nLive Plot Reset\n\n\n\n')
 
     def save_data(self):
         # Save the current data to CSV and PDF

@@ -72,15 +72,13 @@ class LivePlotterGUI(QWidget):
         self.ani = animation.FuncAnimation(self.fig, self.plotter.animate, interval=200)
         self.canvas.draw()
 
-    def update_headers(self, headers):
+    def update_headers(self, headers, selected_features):
         self.headers = headers
-        for selector in self.feature_selectors:
-            current = selector.currentText()
+        for i, selector in enumerate(self.feature_selectors):
             selector.clear()
             selector.addItem("None")
             selector.addItems(headers)
-            if current in headers:
-                selector.setCurrentText(current)
+            selector.setCurrentText(selected_features[i])
 
     def resizeEvent(self, event):
         # Adjust the layout and elements on window resize
