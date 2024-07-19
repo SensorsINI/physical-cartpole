@@ -13,7 +13,7 @@ class ConnectionHandler:
 
     def accept_connection(self):
         while True:
-            print('Waiting for connection...')
+            # print('Waiting for connection...')
             self.connection = self.listener.accept()
             print(f'Connected to: {self.listener.last_accepted}')
 
