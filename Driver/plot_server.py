@@ -11,11 +11,8 @@ import seaborn as sns
 
 sns.set()
 
-LIVE_PLOT_KEEPSAMPLES = 100
-
-
 class LivePlotter:
-    def __init__(self, address=('0.0.0.0', 6000)):
+    def __init__(self, address=('0.0.0.0', 6000), keep_samples=100):
         # Set up listener for incoming data
         self.listener = Listener(address)
         self.connection = self.listener.accept()
@@ -25,6 +22,7 @@ class LivePlotter:
         self.data = []
         self.header = None
         self.received = 0
+        self.keep_samples = keep_samples
         self.fig, self.axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
         self.fig.subplots_adjust(hspace=0.8)
         self.fig.canvas.manager.set_window_title('Live Plot')
@@ -46,7 +44,7 @@ class LivePlotter:
         elif isinstance(buffer, np.ndarray):
             self.data.append(buffer)
             self.received += 1
-            self.data = self.data[-LIVE_PLOT_KEEPSAMPLES:]
+            self.data = self.data[-self.keep_samples:]
         elif buffer == 'reset':
             self.data = []
             print('\nLive Plot Reset\n\n\n\n')
@@ -98,6 +96,9 @@ class LivePlotter:
         self.axs[i, 1].set_ylabel('Occurrences')
         self.axs[i, 1].set_title(self.header[i])
         self.axs[i, 1].grid(True, which='both', linestyle='-.', color='grey', linewidth=0.5)
+
+    def set_keep_samples(self, keep_samples):
+        self.keep_samples = keep_samples
 
     def run(self):
         ani = animation.FuncAnimation(self.fig, self.animate, interval=200)
