@@ -1,9 +1,6 @@
-import numpy as np
 from multiprocessing.connection import Client
-from datetime import datetime
 import time
 import pandas as pd
-from SI_Toolkit.load_and_normalize import load_data
 
 
 def main():
