@@ -1,9 +1,32 @@
+import subprocess
 from multiprocessing.connection import Client
 import time
 import pandas as pd
 
+USE_REMOTE = False
+REMOTE_USERNAME = 'marcinpaluch'
+REMOTE_IP = '192.168.194.233'
+
+
+def establish_ssh_tunnel():
+    # Define the SSH command to establish the tunnel
+    ssh_command = [
+        'ssh',
+        '-L', '6000:localhost:6000',  # Local port 6000 to remote port 6000
+        f"{REMOTE_USERNAME}@{REMOTE_IP}"  # Replace with your username and remote host
+    ]
+
+    # Start the SSH tunnel as a subprocess
+    process = subprocess.Popen(ssh_command)
+    return process
+
 
 def main():
+    if USE_REMOTE
+        # Establish SSH tunnel
+        ssh_process = establish_ssh_tunnel()
+        time.sleep(5)  # Wait for the tunnel to be established
+
     # Create a sample DataFrame
     time.sleep(3)
     path = './ExperimentRecordings/CPP_mpc__2024-07-01_00-52-52.csv'
@@ -32,6 +55,11 @@ def main():
 
     finally:
         conn.close()  # Close the connection
+
+        if USE_REMOTE:
+            # Terminate the SSH tunnel
+            ssh_process.terminate()
+            ssh_process.wait()  # Wait for the SSH process to terminate
 
 
 if __name__ == '__main__':
