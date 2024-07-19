@@ -12,9 +12,10 @@ sns.set()
 DEFAULT_FEATURES_TO_PLOT = 'default'  # None, 'default', list of features
 
 KEEP_SAMPLES_DEFAULT = 100  # at least 10
+DEFAULT_ADDRESS = ('0.0.0.0', 6000)
 
 class LivePlotter:
-    def __init__(self, address=('0.0.0.0', 6000), keep_samples=KEEP_SAMPLES_DEFAULT, header_callback=None):
+    def __init__(self, address=DEFAULT_ADDRESS, keep_samples=KEEP_SAMPLES_DEFAULT, header_callback=None):
         # Set up connection handler for incoming data
         self.connection_handler = ConnectionHandler(address)
         self.data = []
