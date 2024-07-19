@@ -15,7 +15,6 @@ class LivePlotterGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Live Plotter Control Panel')
-        self.setGeometry(100, 100, 800, 600)
 
         layout = QVBoxLayout()
 
@@ -61,12 +60,14 @@ class LivePlotterGUI(QWidget):
 
     def resizeEvent(self, event):
         # Adjust the layout and elements on window resize
-        self.fig.set_size_inches(self.width() / self.logicalDpiX(), self.height() / self.logicalDpiY(), forward=True)
         self.canvas.draw()
         super().resizeEvent(event)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     gui = LivePlotterGUI()
-    gui.showFullScreen()  # Show the GUI in full screen mode
+    gui.show()  # Show the GUI in windowed mode
     sys.exit(app.exec())
+
+
+# TODO: Here removing self.setGeometry(100, 100, 800, 600) helped. Maybe in Cartpole it would help to for shifted x axis
