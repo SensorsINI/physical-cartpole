@@ -2,9 +2,8 @@ from multiprocessing.connection import Listener
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import matplotlib
-
-matplotlib.use('TkAgg')
+# import matplotlib
+# matplotlib.use('TkAgg')
 from datetime import datetime
 import pandas as pd
 import seaborn as sns
@@ -12,20 +11,23 @@ import seaborn as sns
 sns.set()
 
 class LivePlotter:
-    def __init__(self, address=('0.0.0.0', 6000), keep_samples=100):
+    def __init__(self, fig=None, axs=None, address=('0.0.0.0', 6000), keep_samples=100):
         # Set up listener for incoming data
         self.listener = Listener(address)
         self.connection = self.listener.accept()
         print(f'Connected to: {self.listener.last_accepted}')
 
-        # Initialize variables
         self.data = []
         self.header = None
         self.received = 0
         self.keep_samples = keep_samples
-        self.fig, self.axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
-        self.fig.subplots_adjust(hspace=0.8)
-        self.fig.canvas.manager.set_window_title('Live Plot')
+        if fig is None or axs is None:
+            self.fig, self.axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
+            self.fig.subplots_adjust(hspace=0.8)
+            self.fig.canvas.manager.set_window_title('Live Plot')
+        else:
+            self.fig = fig
+            self.axs = axs
 
     def animate(self, i):
         while self.connection.poll(0.01):
@@ -100,7 +102,7 @@ class LivePlotter:
     def set_keep_samples(self, keep_samples):
         self.keep_samples = keep_samples
 
-    def run(self):
+    def run_standalone(self):
         ani = animation.FuncAnimation(self.fig, self.animate, interval=200)
         plt.show()
         print('Finished')
@@ -108,4 +110,4 @@ class LivePlotter:
 
 if __name__ == '__main__':
     plotter = LivePlotter()
-    plotter.run()
+    plotter.run_standalone()
