@@ -1,11 +1,11 @@
-from multiprocessing.connection import Listener
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from datetime import datetime
 import pandas as pd
 import seaborn as sns
-import threading
+
+from live_plotter_connection_handler import ConnectionHandler
 
 sns.set()
 
@@ -13,9 +13,8 @@ DEFAULT_FEATURES_TO_PLOT = 'default'  # None, 'default', list of features
 
 class LivePlotter:
     def __init__(self, address=('0.0.0.0', 6000), keep_samples=100, header_callback=None):
-        # Set up listener for incoming data
-        self.listener = Listener(address)
-        self.connection = None
+        # Set up connection handler for incoming data
+        self.connection_handler = ConnectionHandler(address)
         self.data = []
         self.header = None
         self.received = 0
@@ -34,30 +33,9 @@ class LivePlotter:
 
         self.animation = None
 
-    def open_connection(self):
-        self.connection_thread = threading.Thread(target=self.accept_connection)
-        self.connection_thread.daemon = True  # Allow thread to exit when main program exits
-        self.connection_thread.start()
-
-    def accept_connection(self):
-        while True:
-            print('Waiting for connection...')
-            self.connection = self.listener.accept()
-            print(f'Connected to: {self.listener.last_accepted}')
-
     def animate(self, i):
-        if self.connection is not None:
-            try:
-                while self.connection.poll(0.01):
-                    buffer = self.connection.recv()
-                    self.process_buffer(buffer)
-            except EOFError:
-                print('Connection closed')
-                self.connection = None
-                self.received = 0
-        else:
-            # Restart the connection thread to accept a new connection
-            self.open_connection()
+        for buffer in self.connection_handler.poll_connection():
+            self.process_buffer(buffer)
 
         if self.received >= 10:
             self.received = 0
