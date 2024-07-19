@@ -5,8 +5,12 @@ import numpy as np
 
 class DynamicSubplotsAnimation:
     def __init__(self):
-        self.fig, self.axs = plt.subplots(1, 1)
-        self.axs = [self.axs]  # Ensure axs is always a list
+        self.fig, axs = plt.subplots(2, 1)
+        if isinstance(axs, np.ndarray):
+            self.axs = axs.tolist()
+        else:
+            self.axs = [axs]
+
         self.n_subplots = 1
 
         # Initialize data
