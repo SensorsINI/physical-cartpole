@@ -4,7 +4,6 @@ from PyQt6.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 from plot_server import LivePlotter
 
 class LivePlotterGUI(QWidget):
@@ -19,12 +18,9 @@ class LivePlotterGUI(QWidget):
 
         layout = QVBoxLayout()
 
-        # Create matplotlib figure and axes
-        self.fig, self.axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
-        self.fig.subplots_adjust(hspace=0.8)
-
+        self.plotter = LivePlotter(header_callback=self.update_headers)
         # Embed the matplotlib figure in the PyQt6 window
-        self.canvas = FigureCanvas(self.fig)
+        self.canvas = FigureCanvas(self.plotter.fig)
         layout.addWidget(self.canvas)
 
         # Add navigation toolbar
@@ -42,6 +38,7 @@ class LivePlotterGUI(QWidget):
         self.slider.setTickInterval(10)
         self.slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.slider.valueChanged.connect(self.update_samples)
+        self.update_samples(self.slider.value())
         layout.addWidget(self.slider)
 
         # Dropdowns to select features
@@ -55,7 +52,6 @@ class LivePlotterGUI(QWidget):
 
         self.setLayout(layout)
 
-        self.plotter = LivePlotter(self.fig, self.axs, keep_samples=self.slider.value(), header_callback=self.update_headers)
         self.ani = None
 
         self.start_animation()
@@ -69,7 +65,7 @@ class LivePlotterGUI(QWidget):
         self.plotter.update_selected_features(selected_features)
 
     def start_animation(self):
-        self.ani = animation.FuncAnimation(self.fig, self.plotter.animate, interval=200)
+        self.ani = animation.FuncAnimation(self.plotter.fig, self.plotter.animate, interval=200)
         self.canvas.draw()
 
     def update_headers(self, headers, selected_features):

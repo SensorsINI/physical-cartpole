@@ -12,7 +12,7 @@ sns.set()
 DEFAULT_FEATURES_TO_PLOT = 'default'  # None, 'default', list of features
 
 class LivePlotter:
-    def __init__(self, fig=None, axs=None, address=('0.0.0.0', 6000), keep_samples=100, header_callback=None):
+    def __init__(self, address=('0.0.0.0', 6000), keep_samples=100, header_callback=None):
         # Set up listener for incoming data
         self.listener = Listener(address)
         self.connection = None
@@ -23,24 +23,21 @@ class LivePlotter:
         self.selected_features = ['None'] * 5  # Default to 'None' for all subplots
         self.header_callback = header_callback  # Callback function for headers
 
-        if fig is None or axs is None:
-            self.fig, axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
+        self.fig, axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
 
-            self.fig.subplots_adjust(hspace=0.8)
-            self.fig.canvas.manager.set_window_title('Live Plot')
-        else:
-            self.fig = fig
-            self.axs = axs
+        self.fig.subplots_adjust(hspace=0.8)
+        self.fig.canvas.manager.set_window_title('Live Plot')
 
         if not isinstance(axs, np.ndarray):
             axs = np.atleast_1d(axs)
         self.axs = axs
 
+        self.animation = None
+
+    def open_connection(self):
         self.connection_thread = threading.Thread(target=self.accept_connection)
         self.connection_thread.daemon = True  # Allow thread to exit when main program exits
         self.connection_thread.start()
-
-        self.animation = None
 
     def accept_connection(self):
         while True:
@@ -57,10 +54,10 @@ class LivePlotter:
             except EOFError:
                 print('Connection closed')
                 self.connection = None
-                # Restart the connection thread to accept a new connection
-                self.connection_thread = threading.Thread(target=self.accept_connection)
-                self.connection_thread.daemon = True
-                self.connection_thread.start()
+                self.received = 0
+        else:
+            # Restart the connection thread to accept a new connection
+            self.open_connection()
 
         if self.received >= 10:
             self.received = 0
@@ -79,6 +76,9 @@ class LivePlotter:
                 self.selected_features = self.selected_features + ['None'] * (5 - len(self.selected_features))
             else:
                 self.selected_features = ['None'] * 5
+
+            # Update the subplot layout based on selected features
+            self.update_subplot_layout()
 
             if self.header_callback:
                 self.header_callback(self.header, self.selected_features)  # Call the callback with the new headers
@@ -114,13 +114,11 @@ class LivePlotter:
             colors = plt.rcParams["axes.prop_cycle"]()
 
             for i, feature in enumerate(self.selected_features):
-                if feature != 'None' and feature in self.header:
+                if feature in self.header:
                     data_row = df[feature]
                     color = next(colors)["color"]
                     self.update_timeline(i, time, data_row, color)
                     self.update_histogram(i, data_row, color)
-                else:
-                    self.clear_subplot(i)
 
     def clear_subplot(self, i):
         self.axs[i, 0].clear()
@@ -149,6 +147,15 @@ class LivePlotter:
 
     def update_selected_features(self, features):
         self.selected_features = features
+        self.update_subplot_layout()  # Update the subplot layout based on new selected features
+
+    def update_subplot_layout(self):
+        self.fig.clf()  # Clear the current figure
+        subplots_count = max(1, len([feature for feature in self.selected_features if (feature is not None and feature!='None')]))
+        axs = self.fig.subplots(subplots_count, 2, gridspec_kw={'width_ratios': [3, 1]})  # Create new subplots
+        if not isinstance(axs, np.ndarray):
+            axs = np.atleast_1d(axs)
+        self.axs = axs
 
     def run_standalone(self):
         self.animation = animation.FuncAnimation(self.fig, self.animate, interval=200)
