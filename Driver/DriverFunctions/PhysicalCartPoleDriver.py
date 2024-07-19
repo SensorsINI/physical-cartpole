@@ -42,6 +42,8 @@ warnings.simplefilter('ignore', np.RankWarning)
 
 import threading
 
+from live_plotter_sender import LivePlotter_Sender
+
 @jit(nopython=False, cache=True, fastmath=True)
 def polyfit(buffer):
     p = fit_poly(np.arange(len(buffer)), buffer, 2)
@@ -70,7 +72,7 @@ class PhysicalCartPoleDriver:
         self.terminate_experiment = False
 
         # Live Plot
-        self.livePlotEnabled = LIVE_PLOT
+        self.livePlotEnabled = False
 
         try:
             self.kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
@@ -235,6 +237,13 @@ class PhysicalCartPoleDriver:
 
         self.tcm = None  # Terminal Content Manager
 
+        self.live_plotter_sender = LivePlotter_Sender(
+            DEFAULT_ADDRESS,
+            LIVE_PLOTTER_USE_REMOTE_SERVER,
+            LIVE_PLOTTER_REMOTE_USERNAME,
+            LIVE_PLOTTER_REMOTE_IP
+        )
+
     @property
     def recording_running(self):
         return self.data_manager.recording_running
@@ -380,7 +389,7 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_motor(0)  # turn off motor
         self.InterfaceInstance.close()
         joystick.quit()
-
+        self.live_plotter_sender.close()
         self.finish_csv_recording()
 
     def keyboard_input(self):
@@ -600,24 +609,19 @@ class PhysicalCartPoleDriver:
             elif c == '5':
                 subprocess.call(["python", "DataAnalysis/state_analysis.py"])
 
-
             ##### Live Plot #####
             elif c == '6':
                 self.livePlotEnabled = not self.livePlotEnabled
-                self.livePlotReset = True
-                print(f'\nLive Plot Enabled: {self.livePlotEnabled}')
+                if self.livePlotEnabled:
+                    self.live_plotter_sender.connect()
+                else:
+                    self.live_plotter_sender.close()
             elif c == '7':
-                if hasattr(self, 'live_connection'):
-                    self.live_connection.send('save')
+                if self.livePlotEnabled and self.live_plotter_sender.connection_ready:
+                    self.live_plotter_sender.send_save()
             elif c == '8':
-                if hasattr(self, 'live_connection'):
-                    self.live_connection.send('reset')
-            elif c == '9':
-                global LIVE_PLOT_UNITS
-                LIVE_PLOT_UNITS = 'raw' if LIVE_PLOT_UNITS=='metric' else 'metric'
-                if hasattr(self, 'live_connection'):
-                    self.live_connection.send(LIVE_PLOT_UNITS)
-                    self.live_connection.send('reset')
+                if self.livePlotEnabled and self.live_plotter_sender.connection_ready:
+                    self.live_plotter_sender.send_reset()
 
             elif c == 'h' or c == '?':
                 self.controller.print_help()
@@ -994,49 +998,22 @@ class PhysicalCartPoleDriver:
 
 
     def plot_live(self):
-        BUFFER_LENGTH = 5
-        BUFFER_WIDTH = 7
+        if self.live_plotter_sender.connection_ready:
 
-        if not hasattr(self, 'livePlotReset') or self.livePlotReset:
-            self.livePlotReset = False
-            self.live_buffer_index = 0
-            self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+            if not self.live_plotter_sender.headers_sent:
+                headers = ['ΔTime', 'Angle', 'AngleD', 'Position', 'PositionD', 'Q']
+                self.live_plotter_sender.send_headers(headers)
 
-            if not hasattr(self, 'live_connection'):
-                address = ('localhost', 6000)
-                self.live_connection = Client(address)
-                self.live_connection.send(LIVE_PLOT_UNITS)
-            else:
-                self.live_connection.send(LIVE_PLOT_UNITS)
+            buffer = np.array([
+                            self.time_difference,
+                            self.s[ANGLE_IDX],
+                            self.s[ANGLED_IDX],
+                            self.s[POSITION_IDX] * 100,
+                            self.s[POSITIOND_IDX] * 100,
+                            self.Q,
+                        ])
 
-        if hasattr(self, 'live_connection'):
-            if self.live_buffer_index < BUFFER_LENGTH:
-                if LIVE_PLOT_UNITS == 'raw':
-                    self.live_buffer[self.live_buffer_index, :] = np.array([
-                        self.time_difference,
-                        self.angle_raw,
-                        self.angleD_raw,
-                        self.position_raw,
-                        self.s[POSITIOND_IDX] * 100,
-                        self.actualMotorCmd,
-                        self.freezme,
-                    ])
-                else:
-                    self.live_buffer[self.live_buffer_index, :] = np.array([
-                        self.time_difference,
-                        self.s[ANGLE_IDX],
-                        self.s[ANGLED_IDX],
-                        self.s[POSITION_IDX] * 100,
-                        self.s[POSITIOND_IDX] * 100,
-                        self.Q,
-                        self.freezme,
-                    ])
-                self.live_buffer_index += 1
-            else:
-                #print(self.live_buffer)
-                self.live_connection.send(self.live_buffer)
-                self.live_buffer_index = 0
-                self.live_buffer = np.zeros((BUFFER_LENGTH, BUFFER_WIDTH))
+            self.live_plotter_sender.send_data(buffer)
 
     def start_csv_recording(self):
 
