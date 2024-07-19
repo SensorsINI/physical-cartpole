@@ -24,16 +24,23 @@ class LivePlotter:
         self.header_callback = header_callback  # Callback function for headers
 
         if fig is None or axs is None:
-            self.fig, self.axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
+            self.fig, axs = plt.subplots(5, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [3, 1]})
+
             self.fig.subplots_adjust(hspace=0.8)
             self.fig.canvas.manager.set_window_title('Live Plot')
         else:
             self.fig = fig
             self.axs = axs
 
+        if not isinstance(axs, np.ndarray):
+            axs = np.atleast_1d(axs)
+        self.axs = axs
+
         self.connection_thread = threading.Thread(target=self.accept_connection)
         self.connection_thread.daemon = True  # Allow thread to exit when main program exits
         self.connection_thread.start()
+
+        self.animation = None
 
     def accept_connection(self):
         while True:
@@ -144,7 +151,7 @@ class LivePlotter:
         self.selected_features = features
 
     def run_standalone(self):
-        ani = animation.FuncAnimation(self.fig, self.animate, interval=200)
+        self.animation = animation.FuncAnimation(self.fig, self.animate, interval=200)
         plt.show()
         print('Finished')
 
