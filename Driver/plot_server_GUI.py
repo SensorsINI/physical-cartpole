@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QSlider, QComboBox
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.animation as animation
@@ -56,6 +56,8 @@ class LivePlotterGUI(QWidget):
 
         self.start_animation()
 
+        self.rescale_window(1.0)
+
     def update_samples(self, value):
         if self.plotter:
             self.plotter.set_keep_samples(value)
@@ -80,6 +82,11 @@ class LivePlotterGUI(QWidget):
         # Adjust the layout and elements on window resize
         self.canvas.draw()
         super().resizeEvent(event)
+
+    def rescale_window(self, scale_factor):
+        default_size = self.sizeHint()  # Get the recommended size for the widget
+        new_size = QSize(int(default_size.width() * scale_factor), int(default_size.height() * scale_factor))
+        self.resize(new_size)  # Resize the window to the new size
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
