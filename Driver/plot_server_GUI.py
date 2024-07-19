@@ -33,8 +33,8 @@ class LivePlotterGUI(QWidget):
 
         self.slider = QSlider(Qt.Orientation.Horizontal, self)
         self.slider.setMinimum(10)
-        self.slider.setMaximum(1000)
-        self.slider.setValue(100)
+        self.slider.setMaximum(max(1000, self.plotter.keep_samples * 2))
+        self.slider.setValue(self.plotter.keep_samples)
         self.slider.setTickInterval(10)
         self.slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.slider.valueChanged.connect(self.update_samples)
