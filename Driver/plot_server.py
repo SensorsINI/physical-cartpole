@@ -69,8 +69,6 @@ class LivePlotter:
             self.save_data()
         elif isinstance(buffer, str) and buffer == 'complete':
             print('All data received.')
-            df = pd.DataFrame(self.data, columns=self.header)
-            print(df)
 
     def reset_liveplotter(self):
         self.data = []
