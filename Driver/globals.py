@@ -91,7 +91,7 @@ performance_measurement = np.zeros((15))
 performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
 
 ##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
-LIVE_PLOTTER_USE_REMOTE_SERVER = True
+LIVE_PLOTTER_USE_REMOTE_SERVER = False
 LIVE_PLOTTER_REMOTE_USERNAME = 'marcinpaluch'
 LIVE_PLOTTER_REMOTE_IP = '192.168.194.233'
 DEFAULT_ADDRESS = ('localhost', 6000)
