@@ -2,11 +2,10 @@ from multiprocessing.connection import Listener
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-# import matplotlib
-# matplotlib.use('TkAgg')
 from datetime import datetime
 import pandas as pd
 import seaborn as sns
+import threading
 
 sns.set()
 
@@ -16,9 +15,7 @@ class LivePlotter:
     def __init__(self, fig=None, axs=None, address=('0.0.0.0', 6000), keep_samples=100, header_callback=None):
         # Set up listener for incoming data
         self.listener = Listener(address)
-        self.connection = self.listener.accept()
-        print(f'Connected to: {self.listener.last_accepted}')
-
+        self.connection = None
         self.data = []
         self.header = None
         self.received = 0
@@ -34,10 +31,29 @@ class LivePlotter:
             self.fig = fig
             self.axs = axs
 
+        self.connection_thread = threading.Thread(target=self.accept_connection)
+        self.connection_thread.daemon = True  # Allow thread to exit when main program exits
+        self.connection_thread.start()
+
+    def accept_connection(self):
+        while True:
+            print('Waiting for connection...')
+            self.connection = self.listener.accept()
+            print(f'Connected to: {self.listener.last_accepted}')
+
     def animate(self, i):
-        while self.connection.poll(0.01):
-            buffer = self.connection.recv()
-            self.process_buffer(buffer)
+        if self.connection is not None:
+            try:
+                while self.connection.poll(0.01):
+                    buffer = self.connection.recv()
+                    self.process_buffer(buffer)
+            except EOFError:
+                print('Connection closed')
+                self.connection = None
+                # Restart the connection thread to accept a new connection
+                self.connection_thread = threading.Thread(target=self.accept_connection)
+                self.connection_thread.daemon = True
+                self.connection_thread.start()
 
         if self.received >= 10:
             self.received = 0
