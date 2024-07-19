@@ -22,7 +22,7 @@ def establish_ssh_tunnel():
 
 
 def main():
-    if USE_REMOTE
+    if USE_REMOTE:
         # Establish SSH tunnel
         ssh_process = establish_ssh_tunnel()
         time.sleep(5)  # Wait for the tunnel to be established
