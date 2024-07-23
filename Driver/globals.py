@@ -91,12 +91,10 @@ performance_measurement = np.zeros((15))
 performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
 
 ##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
-LIVE_PLOT = False
-LIVE_PLOT_UNITS = 'metric'  # choose 'raw' or 'metric'
-LIVE_PLOT_ZERO_ANGLE_DOWN = False
-LIVE_PLOT_KEEPSAMPLES = 5000
-LIVE_PLOT_TIMELINES = list(range(5))  # deactivate plots for performance, for all use list(range(5))
-LIVE_PLOT_HISTOGRAMMS = list(range(5))  # deactivate plots for performance, for all use list(range(5))
+LIVE_PLOTTER_USE_REMOTE_SERVER = False
+LIVE_PLOTTER_REMOTE_USERNAME = 'marcinpaluch'
+LIVE_PLOTTER_REMOTE_IP = '192.168.194.233'
+DEFAULT_ADDRESS = ('localhost', 6000)
 
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
 AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
