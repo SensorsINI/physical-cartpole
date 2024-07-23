@@ -32,7 +32,7 @@ from Driver.DriverFunctions.interface import get_serial_port
 from globals import *
 
 import subprocess
-from multiprocessing.connection import Client
+
 import sys
 from numba import jit
 from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
@@ -40,9 +40,7 @@ from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
-import threading
-
-from live_plotter_sender import LivePlotter_Sender
+from SI_Toolkit.LivePlotter.live_plotter_sender import LivePlotter_Sender
 
 @jit(nopython=False, cache=True, fastmath=True)
 def polyfit(buffer):
@@ -1001,16 +999,17 @@ class PhysicalCartPoleDriver:
         if self.live_plotter_sender.connection_ready:
 
             if not self.live_plotter_sender.headers_sent:
-                headers = ['ΔTime', 'Angle', 'AngleD', 'Position', 'PositionD', 'Q']
+                headers = ['time', 'Angle', 'Position', 'Q', "|ΔQ|",  'AngleD', 'PositionD',]
                 self.live_plotter_sender.send_headers(headers)
             else:
                 buffer = np.array([
-                                self.time_difference,
+                                self.timeNow,
                                 self.s[ANGLE_IDX],
-                                self.s[ANGLED_IDX],
                                 self.s[POSITION_IDX] * 100,
-                                self.s[POSITIOND_IDX] * 100,
                                 self.Q,
+                                (self.Q-self.Q_prev),
+                                self.s[ANGLED_IDX],
+                                self.s[POSITIOND_IDX] * 100,
                             ])
                 self.live_plotter_sender.send_data(buffer)
 
