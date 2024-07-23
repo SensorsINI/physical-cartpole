@@ -3,7 +3,7 @@ import time
 import pandas as pd
 
 
-USE_REMOTE = True
+USE_REMOTE = False
 
 REMOTE_USERNAME = 'marcinpaluch'
 REMOTE_IP = '192.168.194.233'

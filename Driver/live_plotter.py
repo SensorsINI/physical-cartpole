@@ -1,3 +1,9 @@
+"""
+The main file containing the code for plotting the charts of live plotter (real time data visualization).
+You can either run this file to start the live plotter or live_plotter_GUI.py to start the GUI version.
+The GUI version embeds this live plotter in a PyQt6 window, adding additional controls for the user.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -5,7 +11,7 @@ from datetime import datetime
 import pandas as pd
 import seaborn as sns
 
-from live_plotter_connection_handler import ConnectionHandler
+from live_plotter_x_connection_handler_receiver import LivePlotter_ConnectionHandlerReceiver
 
 sns.set()
 
@@ -14,10 +20,11 @@ DEFAULT_FEATURES_TO_PLOT = 'default'  # None, 'default', list of features
 KEEP_SAMPLES_DEFAULT = 100  # at least 10
 DEFAULT_ADDRESS = ('0.0.0.0', 6000)
 
+
 class LivePlotter:
     def __init__(self, address=DEFAULT_ADDRESS, keep_samples=KEEP_SAMPLES_DEFAULT, header_callback=None):
         # Set up connection handler for incoming data
-        self.connection_handler = ConnectionHandler(address)
+        self.connection_handler = LivePlotter_ConnectionHandlerReceiver(address)
         self.data = []
         self.header = None
         self.received = 0

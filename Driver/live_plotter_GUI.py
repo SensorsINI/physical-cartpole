@@ -1,10 +1,20 @@
+"""
+This script creates a PyQt6 GUI to control the LivePlotter class.
+You can also run just live_plotter.py to start the live plotter without the GUI.
+You will get the plots but no control over the number of samples to keep or the features to plot.
+"""
+
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QSlider, QComboBox
+
 from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QSlider, QComboBox
+
+import matplotlib.animation as animation
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.animation as animation
-from plot_server import LivePlotter
+
+from live_plotter import LivePlotter
+
 
 class LivePlotterGUI(QWidget):
     def __init__(self):
