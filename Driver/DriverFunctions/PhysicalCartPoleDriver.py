@@ -1000,7 +1000,8 @@ class PhysicalCartPoleDriver:
 
             if not self.live_plotter_sender.headers_sent:
                 headers = ['time', 'Angle', 'Position', 'Q', "|ΔQ|",  'AngleD', 'PositionD',]
-                self.live_plotter_sender.send_headers(headers)
+                controller_headers = self.controller.controller_data_for_csv.keys()
+                self.live_plotter_sender.send_headers(headers+controller_headers)
             else:
                 buffer = np.array([
                                 self.timeNow,
@@ -1011,6 +1012,10 @@ class PhysicalCartPoleDriver:
                                 self.s[ANGLED_IDX],
                                 self.s[POSITIOND_IDX] * 100,
                             ])
+                buffer_controller = np.array([self.controller.controller_data_for_csv[key] for key in self.controller.controller_data_for_csv.keys()])
+
+                buffer = np.append(buffer, buffer_controller)
+
                 self.live_plotter_sender.send_data(buffer)
 
     def start_csv_recording(self):
