@@ -53,7 +53,7 @@ elif CHIP == 'ZYNQ':
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1250.0  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1005.5  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
@@ -74,8 +74,8 @@ else:
 DEMO_PROGRAM = False
 
 DANCE_PATH = 'square'  # 'square', 'sin'
-DANCE_AMPL = 0.14  # m
-DANCE_PERIOD_S = 5.0
+DANCE_AMPL = 0.1 # m
+DANCE_PERIOD_S = 10.0
 DANCE_START_TIME = 0.0
 
 TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = CONTROL_PERIOD_MS)
