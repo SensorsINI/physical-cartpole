@@ -999,7 +999,7 @@ class PhysicalCartPoleDriver:
         if self.live_plotter_sender.connection_ready:
 
             if not self.live_plotter_sender.headers_sent:
-                headers = ['time', 'Angle', 'Position', 'Q', "|ΔQ|",  'AngleD', 'PositionD',]
+                headers = ['time', 'Angle', 'Position', 'Q', "ΔQ",  'Target Position', 'AngleD', 'PositionD',]
                 controller_headers = list(self.controller.controller_data_for_csv.keys())
                 self.live_plotter_sender.send_headers(headers+controller_headers)
             else:
@@ -1009,6 +1009,7 @@ class PhysicalCartPoleDriver:
                                 self.s[POSITION_IDX] * 100,
                                 self.Q,
                                 (self.Q-self.Q_prev),
+                                self.target_position*100,
                                 self.s[ANGLED_IDX],
                                 self.s[POSITIOND_IDX] * 100,
                             ])
