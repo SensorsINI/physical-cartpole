@@ -69,9 +69,6 @@ class PhysicalCartPoleDriver:
         self.manualMotorSetting = False
         self.terminate_experiment = False
 
-        # Live Plot
-        self.livePlotEnabled = False
-
         try:
             self.kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
             self.kbAvailable = True
@@ -370,8 +367,8 @@ class PhysicalCartPoleDriver:
 
         self.csv_recording_step()
 
-        if self.livePlotEnabled:
-            self.plot_live()
+        self.plot_live()
+
         self.write_current_data_to_terminal()
 
         self.actualMotorCmd_prev = self.actualMotorCmd
@@ -609,17 +606,11 @@ class PhysicalCartPoleDriver:
 
             ##### Live Plot #####
             elif c == '6':
-                self.livePlotEnabled = not self.livePlotEnabled
-                if self.livePlotEnabled:
-                    self.live_plotter_sender.connect()
-                else:
-                    self.live_plotter_sender.close()
+                self.live_plotter_sender.on_off()
             elif c == '7':
-                if self.livePlotEnabled and self.live_plotter_sender.connection_ready:
-                    self.live_plotter_sender.send_save()
+                self.live_plotter_sender.save_data_and_figure_if_connected()
             elif c == '8':
-                if self.livePlotEnabled and self.live_plotter_sender.connection_ready:
-                    self.live_plotter_sender.send_reset()
+                self.live_plotter_sender.reset_if_connected()
 
             elif c == 'h' or c == '?':
                 self.controller.print_help()
@@ -993,7 +984,6 @@ class PhysicalCartPoleDriver:
         else:
             self.safety_switch_counter = 0
             pass
-
 
     def plot_live(self):
         if self.live_plotter_sender.connection_ready:
