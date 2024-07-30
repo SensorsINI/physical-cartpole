@@ -995,7 +995,7 @@ class PhysicalCartPoleDriver:
                 self.live_plotter_sender.send_headers(headers+controller_headers)
             else:
                 buffer = np.array([
-                                self.timeNow,
+                                self.elapsedTime,
                                 self.s[ANGLE_IDX],
                                 self.s[POSITION_IDX] * 100,
                                 self.Q,
