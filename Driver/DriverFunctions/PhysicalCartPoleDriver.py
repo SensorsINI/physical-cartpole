@@ -1084,16 +1084,3 @@ class PhysicalCartPoleDriver:
 
             self.tcm.print_to_terminal()
 
-            ############  Performance  ############
-            #if self.total_iterations > 10:
-            #    np.set_printoptions(edgeitems=30, linewidth=200, formatter=dict(float=lambda x: "%.2f" % x))
-            #    print("\rPERFORMANCE: μ="+str((performance_measurement_buffer.mean(axis=1)*1000) if performance_measurement_buffer.shape[1] > 1 else '')+"\033[K")
-            #else:
-            #    print('')
-
-            ############  Cost  ############
-            #global gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
-            #print("\rCOST: dd:{}, ep:{}, ekp:{}, ekc:{}, cc:{}, ccrc:{}\033[K".format(
-            #    gui_dd, gui_ep, gui_ekp, gui_ekc, gui_cc, gui_ccrc
-            #))
-
