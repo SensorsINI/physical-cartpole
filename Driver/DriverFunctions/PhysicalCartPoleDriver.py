@@ -7,16 +7,13 @@ import os
 
 from tqdm import trange
 
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import pygame.joystick as joystick  # https://www.pygame.org/docs/ref/joystick.html
-
 from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.interface import Interface, set_ftdi_latency_timer
 from DriverFunctions.kbhit import KBHit
 
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
 
-from DriverFunctions.joystick import setup_joystick, get_stick_position, motorCmd_from_joystick
+from DriverFunctions.joystick import Joystick
 
 from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
 from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
@@ -66,7 +63,6 @@ class PhysicalCartPoleDriver:
 
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
-        self.manualMotorSetting = False
         self.terminate_experiment = False
 
         try:
@@ -125,10 +121,7 @@ class PhysicalCartPoleDriver:
         self.base_target_position = 0.0
 
         # Joystick variable
-        self.stick = None
-        self.joystickMode = None
-        self.stickPos = None
-        self.stickControl = None
+        self.joystick = Joystick()
 
         # Timing
         self.startTime = None
@@ -269,7 +262,7 @@ class PhysicalCartPoleDriver:
 
         self.log.info('\n Opened ' + str(SERIAL_PORT) + ' successfully')
 
-        self.stick, self.joystickMode = setup_joystick()
+        self.joystick.setup()
 
         try:
             self.controller.loadparams()
@@ -348,7 +341,7 @@ class PhysicalCartPoleDriver:
             # self.actualMotorCmd = self.command
             # self.Q = self.command / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
 
-        self.joystick_action()
+        self.Q = self.joystick.action(self.s[POSITION_IDX], self.Q, self.controlEnabled)
 
         if self.controlEnabled or self.current_experiment_protocol.is_running():
             self.control_signal_to_motor_command()
@@ -383,7 +376,7 @@ class PhysicalCartPoleDriver:
         # when x hit during loop or other loop exit
         self.InterfaceInstance.set_motor(0)  # turn off motor
         self.InterfaceInstance.close()
-        joystick.quit()
+        self.joystick.quit()
         self.live_plotter_sender.close()
         self.finish_csv_recording()
 
@@ -401,20 +394,11 @@ class PhysicalCartPoleDriver:
 
             ##### Manual Motor Movement #####
             if c == '.':  # zero motor
-                self.controlEnabled = False
-                self.Q = 0
-                self.manualMotorSetting = False
-                print('\nNormed motor command after .', self.Q)
+                pass
             elif c == ',':  # left
-                self.controlEnabled = False
-                self.Q -= 0.01
-                self.manualMotorSetting = True
-                print('\nNormed motor command after ,', self.Q)
+                pass
             elif c == '/':  # right
-                self.controlEnabled = False
-                self.Q += 0.01
-                self.manualMotorSetting = True
-                print('\nNormed motor command after /', self.Q)
+                pass
 
 
             elif c == 'D':
@@ -576,18 +560,7 @@ class PhysicalCartPoleDriver:
 
             ##### Joystick  #####
             elif c == 'j':
-                if self.joystickMode is None:
-                    self.stick, self.joystickMode = setup_joystick()
-                    self.log.warning('no joystick')
-                elif self.joystickMode == 'not active':
-                    self.joystickMode = 'speed'
-                    self.log.info(f'set joystick to cart {self.joystickMode} control mode')
-                elif self.joystickMode == 'speed':
-                    self.joystickMode = 'position'
-                    self.log.info(f'set joystick to cart {self.joystickMode} control mode')
-                elif self.joystickMode == 'position':
-                    self.joystickMode = 'not active'
-                    self.log.info(f'set joystick to {self.joystickMode} mode')
+                self.joystick.toggle_mode(self.log)
 
             ##### Artificial Latency  #####
             elif c == '90':
@@ -897,22 +870,6 @@ class PhysicalCartPoleDriver:
                 self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
         
         self.CartPoleInstance.target_position = self.target_position
-
-    def joystick_action(self):
-
-        if self.joystickMode is None or self.joystickMode == 'not active':
-            self.stickPos = 0.0
-            if self.stickControl and not self.manualMotorSetting:
-                if self.controlEnabled:
-                    ...
-                else:
-                    self.Q = 0.0
-            self.stickControl = False
-
-        else:
-            self.stickPos = get_stick_position(self.stick)
-            self.stickControl = True
-            self.Q = motorCmd_from_joystick(self.joystickMode, self.stickPos, self.s[POSITION_IDX])
 
     def experiment_protocol_step(self):
         if self.current_experiment_protocol.is_running():
