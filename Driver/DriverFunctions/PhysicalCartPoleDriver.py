@@ -26,6 +26,7 @@ from SI_Toolkit.Functions.FunctionalDict import FunctionalDict
 from SI_Toolkit.Functions.General.TerminalContentManager import TerminalContentManager
 
 from Driver.DriverFunctions.interface import get_serial_port
+from Driver.DriverFunctions.dancer import Dancer
 from globals import *
 
 import subprocess
@@ -72,16 +73,7 @@ class PhysicalCartPoleDriver:
             self.kbAvailable = False
 
         # Dance Mode
-        ## Parameters
-        self.dance_path = DANCE_PATH
-        self.danceAmpl = DANCE_AMPL  # m
-        self.dancePeriodS = DANCE_PERIOD_S
-        self.dance_start_time = DANCE_START_TIME
-        
-        ## Variables
-        self.danceEnabled = False
-        self.dance_finishing = False
-        self.dance_current_relative_position = 0.0
+        self.dancer = Dancer()
 
         # Experiment Protocols
         self.experiment_protocols_manager = experiment_protocols_manager_class(self)
@@ -304,7 +296,7 @@ class PhysicalCartPoleDriver:
         self.get_state_and_time_measurement()
 
         if self.demo_program and self.controlEnabled:
-            self.danceEnabled = True
+            self.dancer.danceEnabled = True
             if self.timeNow - self.time_last_switch > 8:
                 self.time_last_switch = self.timeNow
                 if self.CartPoleInstance.target_equilibrium == 1:
@@ -402,13 +394,7 @@ class PhysicalCartPoleDriver:
 
 
             elif c == 'D':
-                # We want the sinusoid to start at predictable (0) position
-                if self.danceEnabled is True:
-                    self.dance_finishing = True
-                else:
-                    self.dance_start_time = time.time()
-                    self.danceEnabled = True
-                    print(f"\nself.danceEnabled= {self.danceEnabled}")
+                self.dancer.on_off()
 
             ##### Logging #####
             # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
@@ -839,26 +825,8 @@ class PhysicalCartPoleDriver:
     def set_target_position(self):
 
         if self.current_experiment_protocol.is_idle():
-            if self.danceEnabled:
-                if not self.dance_finishing:
-                    dance_phase = np.sin(
-                        2 * np.pi * ((self.timeNow - self.dance_start_time) / self.dancePeriodS))
-                    if self.dance_path == 'sin':
-                        self.dance_current_relative_position = self.danceAmpl * dance_phase
-                    elif self.dance_path == 'square':
-                        self.dance_current_relative_position = self.danceAmpl * np.sign(dance_phase)
-                    else:
-                        raise ValueError(f'Unknown dance path: {self.dance_path}')
-
-                    self.target_position = self.base_target_position + self.dance_current_relative_position
-                else:
-                    if abs(self.base_target_position-self.target_position) < 0.03:
-                        self.danceEnabled = False
-                        print(f"\nself.danceEnabled= {self.danceEnabled}")
-                        self.dance_finishing = False
-                        self.target_position = self.base_target_position
-                    else:
-                        self.target_position = 0.995 * self.target_position + 0.005 * self.base_target_position
+            if self.dancer.danceEnabled:
+                self.dancer.dance_step(self.timeNow, self.base_target_position, self.target_position)
 
         if SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl:
             if self.target_position != self.target_position_previous:
@@ -935,7 +903,7 @@ class PhysicalCartPoleDriver:
                     self.controller.controller_report()
                 if hasattr(self.controller, 'controller_reset'):
                     self.controller.controller_reset()
-                self.danceEnabled = False
+                self.dancer.danceEnabled = False
                 self.target_position = self.base_target_position
                 self.actualMotorCmd = 0
         else:
