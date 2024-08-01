@@ -3,8 +3,6 @@
 # todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
 import time
 
-import os
-
 from tqdm import trange
 
 from DriverFunctions.custom_logging import my_logger
@@ -29,23 +27,11 @@ from Driver.DriverFunctions.dancer import Dancer
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
 from globals import *
 
-import subprocess
-
-import sys
-from numba import jit
-from DriverFunctions.numba_polyfit import fit_poly, eval_polynomial
-
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
 
 from SI_Toolkit.LivePlotter.live_plotter_sender import LivePlotter_Sender
 
-@jit(nopython=False, cache=True, fastmath=True)
-def polyfit(buffer):
-    p = fit_poly(np.arange(len(buffer)), buffer, 2)
-    return eval_polynomial(p, len(buffer))
-    #p = np.polyfit(x=np.arange(len(buffer)), y=buffer, deg=2)
-    #return np.polyval(p=p, x=len(buffer))
 
 class PhysicalCartPoleDriver:
     def __init__(self, CartPoleInstance):
