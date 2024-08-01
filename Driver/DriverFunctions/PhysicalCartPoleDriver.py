@@ -5,32 +5,31 @@ import time
 
 from tqdm import trange
 
-from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.interface import Interface, set_ftdi_latency_timer
-
-from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
-
-from DriverFunctions.joystick import Joystick
-
-from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
-from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
-from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
-
-from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
-from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
-from CartPole.data_manager import DataManager
 from SI_Toolkit.Functions.FunctionalDict import FunctionalDict
+from SI_Toolkit.LivePlotter.live_plotter_sender import LivePlotter_Sender
 from SI_Toolkit.Functions.General.TerminalContentManager import TerminalContentManager
 
-from Driver.DriverFunctions.interface import get_serial_port
+from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
+from CartPoleSimulation.CartPole._CartPole_mathematical_helpers import wrap_angle_rad
+from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
+
+from CartPoleSimulation.CartPole.data_manager import DataManager
+from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
+from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
+
+from DriverFunctions.joystick import Joystick
+from DriverFunctions.custom_logging import my_logger
+from DriverFunctions.interface import Interface, set_ftdi_latency_timer
+from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
+
 from Driver.DriverFunctions.dancer import Dancer
+from Driver.DriverFunctions.interface import get_serial_port
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
+
 from globals import *
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
-
-from SI_Toolkit.LivePlotter.live_plotter_sender import LivePlotter_Sender
 
 
 class PhysicalCartPoleDriver:
