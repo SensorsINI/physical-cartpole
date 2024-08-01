@@ -9,7 +9,6 @@ from tqdm import trange
 
 from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.interface import Interface, set_ftdi_latency_timer
-from DriverFunctions.kbhit import KBHit
 
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
 
@@ -27,6 +26,7 @@ from SI_Toolkit.Functions.General.TerminalContentManager import TerminalContentM
 
 from Driver.DriverFunctions.interface import get_serial_port
 from Driver.DriverFunctions.dancer import Dancer
+from Driver.DriverFunctions.keyboard_controller import KeyboardController
 from globals import *
 
 import subprocess
@@ -65,12 +65,6 @@ class PhysicalCartPoleDriver:
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
         self.terminate_experiment = False
-
-        try:
-            self.kb = KBHit()  # can only use in posix terminal; cannot use from spyder ipython console for example
-            self.kbAvailable = True
-        except:
-            self.kbAvailable = False
 
         # Dance Mode
         self.dancer = Dancer()
@@ -224,6 +218,8 @@ class PhysicalCartPoleDriver:
             LIVE_PLOTTER_REMOTE_IP
         )
 
+        self.keyboard_controller = KeyboardController(self)
+
     @property
     def recording_running(self):
         return self.data_manager.recording_running
@@ -240,10 +236,7 @@ class PhysicalCartPoleDriver:
             self.quit_experiment()
 
     def setup(self):
-        # Check that we are running from terminal, otherwise we cannot control it
-        if not sys.stdin.isatty():
-            print('Run from an interactive terminal to allow keyboard input.')
-            quit()
+        self.keyboard_controller.setup()
 
         SERIAL_PORT = get_serial_port(chip_type=CHIP, serial_port_number=SERIAL_PORT_NUMBER)
         if CHIP == 'ZYNQ':
@@ -271,9 +264,6 @@ class PhysicalCartPoleDriver:
         except AttributeError:
             print('printparams not implemented for this self.controller.')
 
-        if hasattr(self.controller, 'print_help'):
-            self.controller.print_help()
-
         self.startTime = time.time()
         self.lastTime = self.startTime
         self.lastControlTime = self.startTime
@@ -288,7 +278,7 @@ class PhysicalCartPoleDriver:
 
     def experiment_sequence(self):
 
-        self.keyboard_input()
+        self.keyboard_controller.keyboard_input()
 
         if self.controlEnabled:
             self.controller_steptime_previous = self.controller_steptime
@@ -372,93 +362,6 @@ class PhysicalCartPoleDriver:
         self.live_plotter_sender.close()
         self.finish_csv_recording()
 
-    def keyboard_input(self):
-
-        if self.kbAvailable & self.kb.kbhit():
-
-            c = self.kb.getch()
-            try:
-                self.controller.keyboard_input(c)
-            except AttributeError:
-                pass
-
-            # Define a dictionary to map key presses to methods
-            self.key_actions = {
-    
-                    ##### Help #####
-                    'h': (self.print_help, "Print this help message"),
-                    '?': (self.print_help, "Print this help message"),
-    
-                    ##### Calibration #####
-                    'K': (self.calibrate, "Calibration: find track middle"),
-    
-                    ##### Control Mode #####
-                    'k': (self.software_controller_on_off, "PC Control On/Off"),
-                    'u': (self.hardware_controller_on_off, "Chip Control On/Off"),
-    
-                    ##### Dance #####
-                    'D': (self.dancer.on_off, "Dance Mode On/Off"),
-    
-                    ##### Experiment Protocols #####
-                    'm': (self.change_experiment_protocol,
-                          "Change Experiment Protocol: running and recording predefined sequence of movements"),
-                    'n': (self.experiment_protocol_on_off, "Start/Stop Experiment Protocol"),
-                    'N': (self.run_hardware_experiment, "Start Experiment Protocol from Chip"),
-    
-                    ##### Logging #####
-                    'l': (self.recording_on_off, "Start/Stop recording to a CSV file"),
-                    'L': (lambda: self.recording_on_off(time_limited_recording=True),
-                          "Start/Stop time limited recording to a CSV file"),
-    
-                    ##### Real Time Data Vizualization #####
-                    '6': (self.live_plotter_sender.on_off,
-                          "Start/Stop sending data to Live Plotter Server - real time visualization"),
-                    '7': (self.live_plotter_sender.save_data_and_figure_if_connected,
-                          "Save data and figure at Live Plotter Server"),
-                    '8': (self.live_plotter_sender.reset_if_connected, "Reset Live Plotter Server"),
-    
-                    ##### Target #####
-                    ';': (self.switch_target_equilibrium, "Switch target equilibrium"),
-                    ']': (lambda: self.change_target_position(change_direction="increase"), "Increase target position"),
-                    '[': (lambda: self.change_target_position(change_direction="decrease"), "Decrease target position"),
-    
-                    ##### Fine tune zero angle #####
-                    'b': (self.precise_angle_measurement, "Start precise angle measurement - multiple samples"),
-                    '=': (lambda: self.finetune_zero_angle(direction='increase'),
-                          "Finetune zero angle - increase angle deviation parameter"),
-                    '-': (lambda: self.finetune_zero_angle(direction='decrease'),
-                          "Finetune zero angle - decrease angle deviation parameter"),
-    
-                    ##### Artificial Latency  #####
-                    '9': (lambda: self.change_additional_latency(change_direction="increase"), "Increase additional latency"),
-                    '0': (lambda: self.change_additional_latency(change_direction="decrease"), "Decrease additional latency"),
-    
-                    ##### Joystick  #####
-                    'j': (lambda: self.joystick.toggle_mode(self.log), "Joystick On/Off"),
-    
-                    ##### Empty ######
-                    '.': (lambda: None, "Key not assigned"),
-                    ',': (lambda: None, "Key not assigned"),
-                    '/': (lambda: None, "Key not assigned"),
-                    '5': (lambda: None, "Key not assigned"),
-    
-                    ##### Exit ######
-                    chr(27): (self.start_experiment_termination, "ESC: Start experiment termination")# ESC
-            }
-
-            # Execute the action if the key is in the dictionary
-            if c in self.key_actions:
-                self.key_actions[c][0]()
-
-    def print_help(self):
-        # Generate the help text dynamically
-        help_text = "Key Bindings:\n"
-        for key, (func, description) in self.key_actions.items():
-            help_text += f" {key}: {description}\n"
-
-        print(help_text)
-        
-        self.controller.print_help()
 
     def recording_on_off(self, time_limited_recording=False):
         # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
@@ -1096,4 +999,3 @@ class PhysicalCartPoleDriver:
 
 
             self.tcm.print_to_terminal()
-
