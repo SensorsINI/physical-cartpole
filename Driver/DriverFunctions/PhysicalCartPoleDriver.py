@@ -373,7 +373,6 @@ class PhysicalCartPoleDriver:
         self.finish_csv_recording()
 
     def keyboard_input(self):
-        global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
 
         if self.kbAvailable & self.kb.kbhit():
 
@@ -383,86 +382,82 @@ class PhysicalCartPoleDriver:
             except AttributeError:
                 pass
 
-            if c == 'h' or c == '?':  # help
-                self.print_help()
+            # Define a dictionary to map key presses to methods
+            self.key_actions = {
+    
+                    ##### Help #####
+                    'h': (self.print_help, "Print this help message"),
+                    '?': (self.print_help, "Print this help message"),
+    
+                    ##### Calibration #####
+                    'K': (self.calibrate, "Calibration: find track middle"),
+    
+                    ##### Control Mode #####
+                    'k': (self.software_controller_on_off, "PC Control On/Off"),
+                    'u': (self.hardware_controller_on_off, "Chip Control On/Off"),
+    
+                    ##### Dance #####
+                    'D': (self.dancer.on_off, "Dance Mode On/Off"),
+    
+                    ##### Experiment Protocols #####
+                    'm': (self.change_experiment_protocol,
+                          "Change Experiment Protocol: running and recording predefined sequence of movements"),
+                    'n': (self.experiment_protocol_on_off, "Start/Stop Experiment Protocol"),
+                    'N': (self.run_hardware_experiment, "Start Experiment Protocol from Chip"),
+    
+                    ##### Logging #####
+                    'l': (self.recording_on_off, "Start/Stop recording to a CSV file"),
+                    'L': (lambda: self.recording_on_off(time_limited_recording=True),
+                          "Start/Stop time limited recording to a CSV file"),
+    
+                    ##### Real Time Data Vizualization #####
+                    '6': (self.live_plotter_sender.on_off,
+                          "Start/Stop sending data to Live Plotter Server - real time visualization"),
+                    '7': (self.live_plotter_sender.save_data_and_figure_if_connected,
+                          "Save data and figure at Live Plotter Server"),
+                    '8': (self.live_plotter_sender.reset_if_connected, "Reset Live Plotter Server"),
+    
+                    ##### Target #####
+                    ';': (self.switch_target_equilibrium, "Switch target equilibrium"),
+                    ']': (lambda: self.change_target_position(change_direction="increase"), "Increase target position"),
+                    '[': (lambda: self.change_target_position(change_direction="decrease"), "Decrease target position"),
+    
+                    ##### Fine tune zero angle #####
+                    'b': (self.precise_angle_measurement, "Start precise angle measurement - multiple samples"),
+                    '=': (lambda: self.finetune_zero_angle(direction='increase'),
+                          "Finetune zero angle - increase angle deviation parameter"),
+                    '-': (lambda: self.finetune_zero_angle(direction='decrease'),
+                          "Finetune zero angle - decrease angle deviation parameter"),
+    
+                    ##### Artificial Latency  #####
+                    '9': (lambda: self.change_additional_latency(change_direction="increase"), "Increase additional latency"),
+                    '0': (lambda: self.change_additional_latency(change_direction="decrease"), "Decrease additional latency"),
+    
+                    ##### Joystick  #####
+                    'j': (lambda: self.joystick.toggle_mode(self.log), "Joystick On/Off"),
+    
+                    ##### Empty ######
+                    '.': (lambda: None, "Key not assigned"),
+                    ',': (lambda: None, "Key not assigned"),
+                    '/': (lambda: None, "Key not assigned"),
+                    '5': (lambda: None, "Key not assigned"),
+    
+                    ##### Exit ######
+                    chr(27): (self.start_experiment_termination, "ESC: Start experiment termination")# ESC
+            }
 
-            ##### Calibration #####
-            elif c == 'K':
-                self.calibrate()
-
-            ##### Control Mode #####
-            elif c == 'k':
-                self.software_controller_on_off()
-            elif c == 'u':
-                self.hardware_controller_on_off()
-
-            ##### Dance #####
-            elif c == 'D':
-                self.dancer.on_off()
-
-            ##### Experiment Protocols #####
-            elif c == 'm':
-                self.switch_experiment_protocol()
-            elif c == 'n':
-                self.experiment_protocol_on_off()
-
-            elif c == 'N':
-                self.run_hardware_experiment()
-
-            ##### Logging #####
-            elif c == 'l':
-                self.recording_on_off()
-            elif c == 'L':
-                self.recording_on_off(time_limited_recording=True)
-
-            ##### Real Time Data Vizualization #####
-            elif c == '6':
-                self.live_plotter_sender.on_off()
-            elif c == '7':
-                self.live_plotter_sender.save_data_and_figure_if_connected()
-            elif c == '8':
-                self.live_plotter_sender.reset_if_connected()
-
-            ##### Target #####
-            elif c == ';':
-                self.switch_target_equilibrium()
-            elif c == ']':
-                self.change_target_position(change_direction="increase")
-            elif c == '[':
-                self.change_target_position(change_direction="decrease")
-
-            ##### Fine tune zero angle #####
-            elif c == 'b':
-                self.precise_angle_measurement()
-            elif c == '=':
-                self.finetune_zero_angle(direction='increase')
-            elif c == '-':
-                self.finetune_zero_angle(direction='decrease')
-
-            ##### Artificial Latency  #####
-            elif c == '9':
-                self.change_additional_latency(change_direction="increase")
-            elif c == '0':
-                self.change_additional_latency(change_direction="decrease")
-
-            ##### Joystick  #####
-            elif c == 'j':
-                self.joystick.toggle_mode(self.log)
-
-            elif c == '.':  # zero motor
-                pass
-            elif c == ',':  # left
-                pass
-            elif c == '/':  # right
-                pass
-            elif c == '5':
-                pass
-
-            ##### Exit ######
-            elif ord(c) == 27:  # ESC
-                self.start_experiment_termination()
+            # Execute the action if the key is in the dictionary
+            if c in self.key_actions:
+                self.key_actions[c][0]()
 
     def print_help(self):
+        # Generate the help text dynamically
+        help_text = "Key Bindings:\n"
+        for key, (func, description) in self.key_actions.items():
+            help_text += f" {key}: {description}\n"
+
+        print(help_text)
+        
         self.controller.print_help()
 
     def recording_on_off(self, time_limited_recording=False):
@@ -498,7 +493,7 @@ class PhysicalCartPoleDriver:
             self.Q = 0.0
             self.InterfaceInstance.set_motor(0)
 
-    def switch_experiment_protocol(self):
+    def change_experiment_protocol(self):
         if self.current_experiment_protocol.is_running():
             self.current_experiment_protocol.stop()
         self.current_experiment_protocol = self.experiment_protocols_manager.get_next_experiment_protocol()
@@ -549,6 +544,7 @@ class PhysicalCartPoleDriver:
         print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
     def precise_angle_measurement(self):
+        global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
         measured_angles = []
         number_of_measurements = 1000
         time_measurement_start = time.time()
