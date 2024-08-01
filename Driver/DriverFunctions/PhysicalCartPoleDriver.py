@@ -379,191 +379,43 @@ class PhysicalCartPoleDriver:
 
             c = self.kb.getch()
             try:
-                # Keys used in self.controller: 1,2,3,4,p, =, -, w, q, s, a, x, z, r, e, f, d, v, c, S, L, b, j
                 self.controller.keyboard_input(c)
             except AttributeError:
                 pass
 
-            ##### Manual Motor Movement #####
-            if c == '.':  # zero motor
-                pass
-            elif c == ',':  # left
-                pass
-            elif c == '/':  # right
-                pass
-
-
-            elif c == 'D':
-                self.dancer.on_off()
-
-            ##### Logging #####
-            # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
-            elif (c == 'l' or c == 'L') and self.starting_recording is False:
-                if not self.recording_running:
-                    if hasattr(self.controller, "controller_name"):
-                        controller_name = self.controller.controller_name
-                    else:
-                        controller_name = ''
-                    if hasattr(self.controller, "optimizer_name") and self.controller.has_optimizer:
-                        optimizer_name = self.controller.optimizer_name
-                    else:
-                        optimizer_name = ''
-                    self.csv_name = create_csv_file_name(controller_name=controller_name,
-                                                    controller=self.controller,
-                                                    optimizer_name=optimizer_name, prefix='CPP')
-                    if c == 'L':
-                        self.recording_length = TIME_LIMITED_RECORDING_LENGTH
-                    else:
-                        self.recording_length = np.inf
-
-                    self.start_recording_flag = True
-
-                else:
-                    self.finish_csv_recording(wait_till_complete=False)
-
-            ##### Control Mode #####
-            elif c == 'u':  # toggle firmware control
-                self.firmwareControl = not self.firmwareControl
-                print("\nFirmware Control", self.firmwareControl)
-                self.InterfaceInstance.control_mode(self.firmwareControl)
-            elif c == 'k':
-                # Reset Performance Buffers
-                if self.controlEnabled is False:
-                    self.switch_on_control()
-
-                elif self.controlEnabled is True:
-                    self.switch_off_control()
-                print("\nself.controlEnabled= {0}".format(self.controlEnabled))
-
-            elif c == ';':
-                self.CartPoleInstance.target_equilibrium *= -1.0
+            if c == 'h' or c == '?':  # help
+                self.print_help()
 
             ##### Calibration #####
             elif c == 'K':
-                global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
-                self.controlEnabled = False
+                self.calibrate()
 
-                print("\nCalibrating motor position.... ")
-                self.InterfaceInstance.calibrate()
-                print("Done calibrating")
+            ##### Control Mode #####
+            elif c == 'k':
+                self.software_controller_on_off()
+            elif c == 'u':
+                self.hardware_controller_on_off()
 
-                if self.InterfaceInstance.encoderDirection == 1:
-                    MOTOR = 'POLOLU'
-                    MOTOR_CORRECTION = MOTOR_CORRECTION_POLOLU
-                    ANGLE_HANGING = ANGLE_HANGING_POLOLU
+            ##### Dance #####
+            elif c == 'D':
+                self.dancer.on_off()
 
-                elif self.InterfaceInstance.encoderDirection == -1:
-                    MOTOR = 'ORIGINAL'
-                    MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
-                    ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
-                else:
-                    raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(self.InterfaceInstance.encoderDirection))
-
-                if ANGLE_HANGING_DEFAULT:
-                    ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
-
-                print('Detected motor: {}'.format(MOTOR))
-
-                self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
-                                                          controlSync=CONTROL_SYNC,
-                                                          angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
-
-
-            ##### Artificial Latency  #####
-            elif c == 'b':
-                measured_angles = []
-                number_of_measurements = 1000
-                time_measurement_start = time.time()
-                print('Started angle measurement.')
-                for _ in trange(number_of_measurements):
-                    (angle, _, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
-                    measured_angles.append(float(angle))
-                time_measurement = time.time()-time_measurement_start
-
-                angle_average = np.mean(measured_angles)
-                angle_std = np.std(measured_angles)
-
-                angle_rad = wrap_angle_rad((self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
-                angle_std_rad = angle_std*ANGLE_NORMALIZATION_FACTOR
-                print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
-                                                                                              angle_rad,
-                                                                                              angle_average))
-                print('\nAngle std of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
-                                                                                              angle_std_rad,
-                                                                                              angle_std))
-                print('\nMeasurement took {} s'.format(time_measurement))
-                # if abs(angle_rad) > 1.0:
-                #     ANGLE_DEVIATION[...] = angle_deviation_update(angle_average)
-                #     ANGLE_HANGING_DEFAULT = False
-                # self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
-                #                                           controlSync=CONTROL_SYNC, controlLatencyUs=0,
-                #                                           angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
-
-            # Fine tune angle deviation
-            elif c == '=':
-                self.angle_deviation_finetune += 0.002
-                print("\nIncreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
-            # Decrease Target Angle
-            elif c == '-':
-                self.angle_deviation_finetune -= 0.002
-                print("\nDecreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
-
-            ##### Target Position #####
-            # Increase Target Position
-            elif c == ']':
-                self.base_target_position += 10 * POSITION_NORMALIZATION_FACTOR
-                if self.base_target_position > 0.8 * (POSITION_ENCODER_RANGE // 2):
-                    self.base_target_position = 0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nIncreased target position to {0} cm".format(self.base_target_position * 100))
-            # Decrease Target Position
-            elif c == '[':
-                self.base_target_position -= 10 * POSITION_NORMALIZATION_FACTOR
-                if self.base_target_position < -0.8 * (POSITION_ENCODER_RANGE // 2):
-                    self.base_target_position = -0.8 * (POSITION_ENCODER_RANGE // 2)
-                print("\nDecreased target position to {0} cm".format(self.base_target_position * 100))
-
-            ##### Measurement Mode #####
+            ##### Experiment Protocols #####
             elif c == 'm':
-                if self.current_experiment_protocol.is_running():
-                    self.current_experiment_protocol.stop()
-                self.current_experiment_protocol = self.experiment_protocols_manager.get_next_experiment_protocol()
-
+                self.switch_experiment_protocol()
             elif c == 'n':
-                if self.current_experiment_protocol.is_idle():
-                    self.current_experiment_protocol.start()
-                else:
-                    self.current_experiment_protocol.stop()
-                    self.Q = 0.0
-                    self.InterfaceInstance.set_motor(0)
+                self.experiment_protocol_on_off()
 
             elif c == 'N':
-                self.controlEnabled = False
-                if self.current_experiment_protocol.is_running():
-                    self.current_experiment_protocol.stop()
-                self.InterfaceInstance.run_hardware_experiment()
+                self.run_hardware_experiment()
 
+            ##### Logging #####
+            elif c == 'l':
+                self.recording_on_off()
+            elif c == 'L':
+                self.recording_on_off(time_limited_recording=True)
 
-
-            ##### Joystick  #####
-            elif c == 'j':
-                self.joystick.toggle_mode(self.log)
-
-            ##### Artificial Latency  #####
-            elif c == '90':
-                self.additional_latency += 0.002
-                print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency*1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency)
-            elif c == '0':
-                self.additional_latency -= 0.002
-                if self.additional_latency < 0.0:
-                    self.additional_latency = 0.0
-                print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
-                self.LatencyAdderInstance.set_latency(self.additional_latency)
-
-            elif c == '5':
-                subprocess.call(["python", "DataAnalysis/state_analysis.py"])
-
-            ##### Live Plot #####
+            ##### Real Time Data Vizualization #####
             elif c == '6':
                 self.live_plotter_sender.on_off()
             elif c == '7':
@@ -571,13 +423,210 @@ class PhysicalCartPoleDriver:
             elif c == '8':
                 self.live_plotter_sender.reset_if_connected()
 
-            elif c == 'h' or c == '?':
-                self.controller.print_help()
+            ##### Target #####
+            elif c == ';':
+                self.switch_target_equilibrium()
+            elif c == ']':
+                self.change_target_position(change_direction="increase")
+            elif c == '[':
+                self.change_target_position(change_direction="decrease")
+
+            ##### Fine tune zero angle #####
+            elif c == 'b':
+                self.precise_angle_measurement()
+            elif c == '=':
+                self.finetune_zero_angle(direction='increase')
+            elif c == '-':
+                self.finetune_zero_angle(direction='decrease')
+
+            ##### Artificial Latency  #####
+            elif c == '9':
+                self.change_additional_latency(change_direction="increase")
+            elif c == '0':
+                self.change_additional_latency(change_direction="decrease")
+
+            ##### Joystick  #####
+            elif c == 'j':
+                self.joystick.toggle_mode(self.log)
+
+            elif c == '.':  # zero motor
+                pass
+            elif c == ',':  # left
+                pass
+            elif c == '/':  # right
+                pass
+            elif c == '5':
+                pass
 
             ##### Exit ######
             elif ord(c) == 27:  # ESC
-                self.log.info("\nquitting....")
-                self.terminate_experiment = True
+                self.start_experiment_termination()
+
+    def print_help(self):
+        self.controller.print_help()
+
+    def recording_on_off(self, time_limited_recording=False):
+        # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
+        if not self.starting_recording:
+            if not self.recording_running:
+                if hasattr(self.controller, "controller_name"):
+                    controller_name = self.controller.controller_name
+                else:
+                    controller_name = ''
+                if hasattr(self.controller, "optimizer_name") and self.controller.has_optimizer:
+                    optimizer_name = self.controller.optimizer_name
+                else:
+                    optimizer_name = ''
+                self.csv_name = create_csv_file_name(controller_name=controller_name,
+                                                     controller=self.controller,
+                                                     optimizer_name=optimizer_name, prefix='CPP')
+                if time_limited_recording:
+                    self.recording_length = TIME_LIMITED_RECORDING_LENGTH
+                else:
+                    self.recording_length = np.inf
+
+                self.start_recording_flag = True
+
+            else:
+                self.finish_csv_recording(wait_till_complete=False)
+
+    def experiment_protocol_on_off(self):
+        if self.current_experiment_protocol.is_idle():
+            self.current_experiment_protocol.start()
+        else:
+            self.current_experiment_protocol.stop()
+            self.Q = 0.0
+            self.InterfaceInstance.set_motor(0)
+
+    def switch_experiment_protocol(self):
+        if self.current_experiment_protocol.is_running():
+            self.current_experiment_protocol.stop()
+        self.current_experiment_protocol = self.experiment_protocols_manager.get_next_experiment_protocol()
+
+    def finetune_zero_angle(self, direction='increase'):
+        step_change = 0.002
+        if direction == 'increase':
+            self.angle_deviation_finetune += step_change
+            print("\nIncreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
+        elif direction == 'decrease':
+            self.angle_deviation_finetune -= step_change
+            print("\nDecreased angle deviation fine tune value to {0}".format(self.angle_deviation_finetune))
+
+    def change_target_position(self, change_direction="increase"):
+
+        change_step = 10 * POSITION_NORMALIZATION_FACTOR
+        if change_direction == "increase":
+            self.base_target_position += change_step
+        elif change_direction == "decrease":
+            self.base_target_position -= change_step
+        else:
+            raise ValueError('Unexpected command for change_direction = '.format(change_direction))
+
+        np.clip(
+            self.base_target_position, -0.8 * (POSITION_ENCODER_RANGE // 2), 0.8 * (POSITION_ENCODER_RANGE // 2)
+        )
+
+        if change_direction == "increase":
+            print("\nIncreased target position to {0} cm".format(self.base_target_position * 100))
+        else:
+            print("\nDecreased target position to {0} cm".format(self.base_target_position * 100))
+
+    def switch_target_equilibrium(self):
+        self.CartPoleInstance.target_equilibrium *= -1.0
+
+    def hardware_controller_on_off(self):
+        self.firmwareControl = not self.firmwareControl
+        print("\nFirmware Control", self.firmwareControl)
+        self.InterfaceInstance.control_mode(self.firmwareControl)
+
+    def software_controller_on_off(self):
+        # Reset Performance Buffers
+        if self.controlEnabled is False:
+            self.switch_on_control()
+
+        elif self.controlEnabled is True:
+            self.switch_off_control()
+        print("\nself.controlEnabled= {0}".format(self.controlEnabled))
+
+    def precise_angle_measurement(self):
+        measured_angles = []
+        number_of_measurements = 1000
+        time_measurement_start = time.time()
+        print('Started angle measurement.')
+        for _ in trange(number_of_measurements):
+            (angle, _, _, _, _, _, _, _, _, _,) = self.InterfaceInstance.read_state()
+            measured_angles.append(float(angle))
+        time_measurement = time.time() - time_measurement_start
+
+        angle_average = np.mean(measured_angles)
+        angle_std = np.std(measured_angles)
+
+        angle_rad = wrap_angle_rad(
+            (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
+        angle_std_rad = angle_std * ANGLE_NORMALIZATION_FACTOR
+        print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
+                                                                                  angle_rad,
+                                                                                  angle_average))
+        print('\nAngle std of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
+                                                                              angle_std_rad,
+                                                                              angle_std))
+        print('\nMeasurement took {} s'.format(time_measurement))
+
+    def run_hardware_experiment(self):
+        self.controlEnabled = False
+        if self.current_experiment_protocol.is_running():
+            self.current_experiment_protocol.stop()
+        self.InterfaceInstance.run_hardware_experiment()
+
+    def change_additional_latency(self, change_direction="increase"):
+
+        latency_change_step = 0.001
+
+        if change_direction == "increase":
+            self.additional_latency += latency_change_step
+        elif change_direction == "decrease":
+            self.additional_latency -= latency_change_step
+        else:
+            raise ValueError('Unexpected command for change_direction = '.format(change_direction))
+
+        print('\nAdditional latency set now to {:.1f} ms'.format(self.additional_latency * 1000))
+        self.LatencyAdderInstance.set_latency(self.additional_latency)
+
+
+    def start_experiment_termination(self):
+        self.log.info("\nquitting....")
+        self.terminate_experiment = True
+
+    def calibrate(self):
+        global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
+        self.controlEnabled = False
+
+        print("\nCalibrating motor position.... ")
+        self.InterfaceInstance.calibrate()
+        print("Done calibrating")
+
+        if self.InterfaceInstance.encoderDirection == 1:
+            MOTOR = 'POLOLU'
+            MOTOR_CORRECTION = MOTOR_CORRECTION_POLOLU
+            ANGLE_HANGING = ANGLE_HANGING_POLOLU
+
+        elif self.InterfaceInstance.encoderDirection == -1:
+            MOTOR = 'ORIGINAL'
+            MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
+            ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
+        else:
+            raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(
+                self.InterfaceInstance.encoderDirection))
+
+        if ANGLE_HANGING_DEFAULT:
+            ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
+
+        print('Detected motor: {}'.format(MOTOR))
+
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+                                                  controlSync=CONTROL_SYNC,
+                                                  angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
+                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
     def switch_off_control(self):
         self.controlEnabled = False
