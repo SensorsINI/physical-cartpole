@@ -1,3 +1,7 @@
+# TODO After joystick is unplugged and plugged again it interferes with the calibration,
+#  it causes the motor to get stuck at some speed after calibration.
+#  Add this to the readme file to warn the user.
+#  The above note is very old, I am refactoring the code so put it here, but I am not testing joystick (2.08.2024)
 import os
 # pygame needs python 3.6, not available for 3.7
 import pygame  # pip install -U pygame

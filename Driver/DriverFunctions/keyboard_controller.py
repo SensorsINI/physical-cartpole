@@ -42,8 +42,8 @@ class KeyboardController:
             'N': (self.driver.run_hardware_experiment, "Start Experiment Protocol from Chip"),
 
             ##### Logging #####
-            'l': (self.driver.recording_on_off, "Start/Stop recording to a CSV file"),
-            'L': (lambda: self.driver.recording_on_off(time_limited_recording=True),
+            'l': (self.driver.mlm.recording_on_off, "Start/Stop recording to a CSV file"),
+            'L': (lambda: self.driver.mlm.recording_on_off(time_limited_recording=True),
                   "Start/Stop time limited recording to a CSV file"),
 
             ##### Real Time Data Vizualization #####

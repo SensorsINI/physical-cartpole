@@ -155,6 +155,14 @@ class TimingHelper:
 
         self.latency_violations = 0
 
+    @staticmethod
+    def time_since(starting_time):
+        return time.time() - starting_time
+
+    @staticmethod
+    def sleep(time_to_sleep):
+        time.sleep(time_to_sleep)
+
 
 # The Named Timer class allows to time code snippets with "with" statement.
 # After exiting the "with" statement, the elapsed time is stored in the attr_name attribute of helper instrance.

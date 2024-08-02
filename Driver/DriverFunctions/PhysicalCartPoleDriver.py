@@ -1,30 +1,37 @@
-# TODO Aftrer joystick is unplugged and plugged again it interferes with the calibration, it causes the motor to get stuck at some speed after calibration. Add this to the readme file to warn the user.
-# TODO: You can easily switch between controllers in runtime using this and get_available_controller_names function
-# todo check if position unit conversion works for the following features: dance mode (can be checked for a nice self.controller only)
-import time
+# TODO: You can easily switch between controllers in runtime using get_available_controller_names function
+import numpy as np
 
-from SI_Toolkit.Functions.FunctionalDict import FunctionalDict
-from SI_Toolkit.LivePlotter.live_plotter_sender import LivePlotter_Sender
-from SI_Toolkit.Functions.General.TerminalContentManager import TerminalContentManager
-
-from CartPoleSimulation.CartPole.state_utilities import create_cartpole_state, ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, POSITION_IDX, POSITIOND_IDX
-
-from CartPoleSimulation.CartPole.data_manager import DataManager
-from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
-from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
+from CartPoleSimulation.CartPole.state_utilities import (create_cartpole_state,
+                                                         ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX,
+                                                         POSITION_IDX, POSITIOND_IDX)
 
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.interface import Interface, set_ftdi_latency_timer
-from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import experiment_protocols_manager_class
 from DriverFunctions.incoming_data_processor import IncomingDataProcessor
+from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import ExperimentProtocolsManager
 
-from DriverFunctions.timing_helper import TimingHelper
 from Driver.DriverFunctions.dancer import Dancer
+from DriverFunctions.timing_helper import TimingHelper
 from Driver.DriverFunctions.interface import get_serial_port
+from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
 
-from globals import *
+from globals import (
+    CHIP,
+    OPTIMIZER_NAME, CONTROLLER_NAME,
+    CONTROL_PERIOD_MS, CONTROL_SYNC,
+    ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
+    ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL,
+    angle_deviation_update,
+    POSITION_ENCODER_RANGE, POSITION_NORMALIZATION_FACTOR,
+    MOTOR, MOTOR_CORRECTION, CORRECT_MOTOR_DYNAMICS,
+    MOTOR_CORRECTION_POLOLU, MOTOR_CORRECTION_ORIGINAL,
+    MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_FULL_SCALE_SAFE,
+    SERIAL_PORT_NUMBER, SERIAL_BAUD,
+    SEND_CHANGE_IN_TARGET_POSITION_ALWAYS,
+    AUTOSTART,
+)
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
@@ -42,9 +49,6 @@ class PhysicalCartPoleDriver:
 
         self.log = my_logger(__name__)
 
-        # Console Printing
-        self.printCount = 0
-
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
         self.terminate_experiment = False
@@ -53,11 +57,10 @@ class PhysicalCartPoleDriver:
         self.dancer = Dancer()
 
         # Experiment Protocols
-        self.experiment_protocols_manager = experiment_protocols_manager_class(self)
-        self.current_experiment_protocol = self.experiment_protocols_manager.get_experiment_protocol()
+        self.epm = ExperimentProtocolsManager(self)
 
         # Motor Commands
-        self.Q = 0.0 # Motor command normed to be in a range -1 to 1
+        self.Q = 0.0  # Motor command normed to be in a range -1 to 1
         self.Q_prev = None
         self.actualMotorCmd = 0
         self.actualMotorCmd_prev = None
@@ -72,7 +75,7 @@ class PhysicalCartPoleDriver:
         self.position_offset = 0
         self.target_position = 0.0
         self.target_position_previous = 0.0
-        self.target_equilibrium_previous = 0 # -1 or 1, 0 is not a valid value, but this ensures that at the begining the target equilibrium is always updated
+        self.target_equilibrium_previous = 0  # -1 or 1, 0 is not a valid value, but this ensures that at the begining the target equilibrium is always updated
         self.base_target_position = 0.0
 
         # Joystick variable
@@ -80,78 +83,12 @@ class PhysicalCartPoleDriver:
 
         self.safety_switch_counter = 0
 
-        # The below dict lists variables to be logged with csv file when recording is on
-        # Just add new variable here and it will be logged
-        self.dict_data_to_save_basic = FunctionalDict({
-
-            'time': lambda: self.th.elapsedTime,
-            'deltaTimeMs': lambda: self.th.time_between_measurements_chip * 1000,
-
-            'angle_raw': lambda: self.idp.angle_raw,
-            'angleD_raw': lambda: self.idp.angleD_raw,
-            'angle': lambda: self.s[ANGLE_IDX],
-            'angleD': lambda: self.s[ANGLED_IDX],
-            'angle_cos': lambda: self.s[ANGLE_COS_IDX],
-            'angle_sin': lambda: self.s[ANGLE_SIN_IDX],
-            'position_raw': lambda: self.idp.position_raw,
-            'position': lambda: self.s[POSITION_IDX],
-            'positionD': lambda: self.s[POSITIOND_IDX],
-
-            'target_position': lambda: self.target_position,
-            'target_equilibrium': lambda: self.CartPoleInstance.target_equilibrium,
-
-            'actualMotorSave': lambda: self.actualMotorCmd_prev,
-            'Q': lambda: self.Q_prev,
-
-            'measurement': lambda: self.current_experiment_protocol,
-
-            'angle_squared': lambda: self.s[ANGLE_IDX] ** 2,
-            'position_squared': lambda: (self.s[POSITION_IDX] - self.target_position) ** 2,
-            'Q_squared': lambda: self.Q_prev ** 2,
-
-            'latency': lambda: self.th.firmware_latency,
-            'latency_violations': lambda: self.th.latency_violations,
-            'pythonLatency': lambda: self.python_latency,
-            'controller_steptime': lambda: self.th.controller_steptime_previous,
-            'additionalLatency': lambda: self.th.additional_latency,
-            'invalid_steps': lambda: self.idp.invalid_steps,
-            'freezme': lambda: self.idp.freezme,
-
-            'angle_raw_sensor': lambda: self.idp.angle_raw_sensor,
-            'angleD_raw_sensor': lambda: self.idp.angleD_raw_sensor,
-        })
-
-        self.data_to_save_measurement = {}
-        self.data_to_save_controller = {}
-
-        self.data_manager = DataManager()
-
-        self.csv_name = None
-        self.recording_length = np.inf
-        self.start_recording_flag = False  # Gives signal to start recording during the current control iteration, starting recording may take more than one control iteration
-
-        self.tcm = None  # Terminal Content Manager
-
-        self.live_plotter_sender = LivePlotter_Sender(
-            DEFAULT_ADDRESS,
-            LIVE_PLOTTER_USE_REMOTE_SERVER,
-            LIVE_PLOTTER_REMOTE_USERNAME,
-            LIVE_PLOTTER_REMOTE_IP
-        )
+        self.mlm = MainLoggingManager(self)
 
         self.keyboard_controller = KeyboardController(self)
 
-    @property
-    def recording_running(self):
-        return self.data_manager.recording_running
-
-    @property
-    def starting_recording(self):
-        return self.data_manager.starting_recording
-
     def run(self):
-        with TerminalContentManager(special_print_function=True) as tcm:
-            self.tcm = tcm
+        with self.mlm.terminal_manager():
             self.setup()
             self.run_experiment()
             self.quit_experiment()
@@ -175,7 +112,7 @@ class PhysicalCartPoleDriver:
         except AttributeError:
             print('loadparams not defined for this self.controller')
 
-        time.sleep(1)
+        self.th.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
@@ -194,6 +131,13 @@ class PhysicalCartPoleDriver:
         while not self.terminate_experiment:
             self.experiment_sequence()
 
+    def quit_experiment(self):
+        # when x hit during loop or other loop exit
+        self.InterfaceInstance.set_motor(0)  # turn off motor
+        self.InterfaceInstance.close()
+        self.joystick.quit()
+        self.mlm.live_plotter_sender.close()
+        self.mlm.finish_csv_recording()
 
     def experiment_sequence(self):
 
@@ -209,18 +153,16 @@ class PhysicalCartPoleDriver:
 
         self.s = self.th.add_latency(self.s)
 
-        self.experiment_protocol_step()
+        self.epm.experiment_protocol_step()
 
-        if self.start_recording_flag:
-            self.start_csv_recording()
-            self.start_recording_flag = False
+        self.mlm.start_csv_recording_if_requested()
 
         self.set_target_position()
 
         if self.controlEnabled or self.firmwareControl:
-            self.controlled_iterations += 1
+            self.th.controlled_iterations += 1
         else:
-            self.controlled_iterations = 0
+            self.th.controlled_iterations = 0
 
         if self.controlEnabled:
             # Active Python Control: set values from controller
@@ -243,42 +185,28 @@ class PhysicalCartPoleDriver:
 
         self.Q = self.joystick.action(self.s[POSITION_IDX], self.Q, self.controlEnabled)
 
-        if self.controlEnabled or self.current_experiment_protocol.is_running():
+        if self.controlEnabled or self.epm.current_experiment_protocol.is_running():
             self.control_signal_to_motor_command()
 
-        if self.controlEnabled or self.current_experiment_protocol.is_running():
+        if self.controlEnabled or self.epm.current_experiment_protocol.is_running():
             self.motor_command_safety_check()
             self.safety_switch_off()
 
-        if self.controlEnabled or (self.current_experiment_protocol.is_running() and self.current_experiment_protocol.Q is not None):
+        if self.controlEnabled or (self.epm.current_experiment_protocol.is_running() and self.epm.current_experiment_protocol.Q is not None):
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
         if self.firmwareControl:
             self.actualMotorCmd = self.command
 
         # Logging, Plotting, Terminal
-
-        self.csv_recording_step()
-
-        self.plot_live()
-
-        self.write_current_data_to_terminal()
+        self.mlm.step()
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q
 
         self.update_parameters_in_cartpole_instance()
 
-        self.end = time.time()
-        self.python_latency = self.end - self.InterfaceInstance.start
-
-    def quit_experiment(self):
-        # when x hit during loop or other loop exit
-        self.InterfaceInstance.set_motor(0)  # turn off motor
-        self.InterfaceInstance.close()
-        self.joystick.quit()
-        self.live_plotter_sender.close()
-        self.finish_csv_recording()
+        self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
 
     def load_data_from_chip(self):
         # This function will block at the rate of the control loop
@@ -291,45 +219,47 @@ class PhysicalCartPoleDriver:
         )
         self.idp.load_state_data_from_chip(angle_raw, angleD_raw, invalid_steps, position_raw)
 
-    def recording_on_off(self, time_limited_recording=False):
-        # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
-        if not self.starting_recording:
-            if not self.recording_running:
-                if hasattr(self.controller, "controller_name"):
-                    controller_name = self.controller.controller_name
-                else:
-                    controller_name = ''
-                if hasattr(self.controller, "optimizer_name") and self.controller.has_optimizer:
-                    optimizer_name = self.controller.optimizer_name
-                else:
-                    optimizer_name = ''
-                self.csv_name = create_csv_file_name(controller_name=controller_name,
-                                                     controller=self.controller,
-                                                     optimizer_name=optimizer_name, prefix='CPP')
-                if time_limited_recording:
-                    self.recording_length = TIME_LIMITED_RECORDING_LENGTH
-                else:
-                    self.recording_length = np.inf
+    def update_parameters_in_cartpole_instance(self):
+        """
+        Just to make changes visible in GUI
+        """
 
-                self.start_recording_flag = True
+        self.CartPoleInstance.s[POSITION_IDX] = self.s[POSITION_IDX]
+        self.CartPoleInstance.s[POSITIOND_IDX] = self.s[POSITIOND_IDX]
+        self.CartPoleInstance.s[ANGLE_IDX] = self.s[ANGLE_IDX]
+        self.CartPoleInstance.s[ANGLE_COS_IDX] = self.s[ANGLE_COS_IDX]
+        self.CartPoleInstance.s[ANGLE_SIN_IDX] = self.s[ANGLE_SIN_IDX]
+        self.CartPoleInstance.s[ANGLED_IDX] = self.s[ANGLED_IDX]
+        self.CartPoleInstance.Q = self.Q
+        self.CartPoleInstance.time = self.th.time_current_measurement
+        self.CartPoleInstance.dt = self.th.controller_steptime
+        self.CartPoleInstance.target_position = self.target_position
 
-            else:
-                self.finish_csv_recording(wait_till_complete=False)
+    def set_target_position(self):
 
-    def experiment_protocol_on_off(self):
-        if self.current_experiment_protocol.is_idle():
-            self.current_experiment_protocol.start()
-        else:
-            self.current_experiment_protocol.stop()
-            self.Q = 0.0
-            self.InterfaceInstance.set_motor(0)
+        if self.epm.current_experiment_protocol.is_idle():
+            self.target_position, self.CartPoleInstance.target_equilibrium = self.dancer.dance_step(
+                self.th.time_current_measurement,
+                self.base_target_position,
+                self.target_position,
+                self.CartPoleInstance.target_equilibrium,
+            )
 
-    def change_experiment_protocol(self):
-        if self.current_experiment_protocol.is_running():
-            self.current_experiment_protocol.stop()
-        self.current_experiment_protocol = self.experiment_protocols_manager.get_next_experiment_protocol()
+        if SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl:
+            if self.target_position != self.target_position_previous:
+                self.InterfaceInstance.set_target_position(self.target_position)
+                self.target_position_previous = self.target_position
+
+            if self.CartPoleInstance.target_equilibrium != self.target_equilibrium_previous:
+                self.InterfaceInstance.set_target_equilibrium(self.CartPoleInstance.target_equilibrium)
+                self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
+
+        self.CartPoleInstance.target_position = self.target_position
 
     def change_target_position(self, change_direction="increase"):
+        """
+        This is used just to manually increment, decrement target position with keyboard commands
+        """
 
         change_step = 10 * POSITION_NORMALIZATION_FACTOR
         if change_direction == "increase":
@@ -351,11 +281,6 @@ class PhysicalCartPoleDriver:
     def switch_target_equilibrium(self):
         self.CartPoleInstance.target_equilibrium *= -1.0
 
-    def hardware_controller_on_off(self):
-        self.firmwareControl = not self.firmwareControl
-        print("\nFirmware Control", self.firmwareControl)
-        self.InterfaceInstance.control_mode(self.firmwareControl)
-
     def software_controller_on_off(self):
         # Reset Performance Buffers
         if self.controlEnabled is False:
@@ -365,16 +290,32 @@ class PhysicalCartPoleDriver:
             self.switch_off_control()
         print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
+    def switch_off_control(self):
+        self.controlEnabled = False
+        self.Q = 0
+        self.InterfaceInstance.set_motor(0)
+        if self.controller.controller_name == 'mppi-tf':
+            self.controller.controller_report()
+        self.controller.controller_reset()
+        self.dancer.danceEnabled = False
+        self.target_position = self.base_target_position
+        self.th.latency_violations = 0
+
+    def switch_on_control(self):
+        self.controlEnabled = True
+        self.th.reset_timing_helper_memory()
+
+    def hardware_controller_on_off(self):
+        self.firmwareControl = not self.firmwareControl
+        print("\nFirmware Control", self.firmwareControl)
+        self.InterfaceInstance.control_mode(self.firmwareControl)
+
     def run_hardware_experiment(self):
         self.controlEnabled = False
-        if self.current_experiment_protocol.is_running():
-            self.current_experiment_protocol.stop()
+        if self.epm.current_experiment_protocol.is_running():
+            self.epm.current_experiment_protocol.stop()
         self.InterfaceInstance.run_hardware_experiment()
 
-
-    def start_experiment_termination(self):
-        self.log.info("\nquitting....")
-        self.terminate_experiment = True
 
     def calibrate(self):
         global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
@@ -406,75 +347,6 @@ class PhysicalCartPoleDriver:
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
                                                   correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
-
-    def switch_off_control(self):
-        self.controlEnabled = False
-        self.Q = 0
-        self.InterfaceInstance.set_motor(0)
-        if self.controller.controller_name == 'mppi-tf':
-            self.controller.controller_report()
-        self.controller.controller_reset()
-        self.dancer.danceEnabled = False
-        self.target_position = self.base_target_position
-        self.th.latency_violations = 0
-
-    def switch_on_control(self):
-        self.controlEnabled = True
-        self.th.reset_timing_helper_memory()
-
-    def update_parameters_in_cartpole_instance(self):
-        """
-        Just to make changes visible in GUI
-        """
-
-        self.CartPoleInstance.s[POSITION_IDX] = self.s[POSITION_IDX]
-        self.CartPoleInstance.s[POSITIOND_IDX] = self.s[POSITIOND_IDX]
-        self.CartPoleInstance.s[ANGLE_IDX] = self.s[ANGLE_IDX]
-        self.CartPoleInstance.s[ANGLE_COS_IDX] = self.s[ANGLE_COS_IDX]
-        self.CartPoleInstance.s[ANGLE_SIN_IDX] = self.s[ANGLE_SIN_IDX]
-        self.CartPoleInstance.s[ANGLED_IDX] = self.s[ANGLED_IDX]
-        self.CartPoleInstance.Q = self.Q
-        self.CartPoleInstance.time = self.th.time_current_measurement
-        self.CartPoleInstance.dt = self.th.controller_steptime
-        self.CartPoleInstance.target_position = self.target_position
-
-    def set_target_position(self):
-
-        if self.current_experiment_protocol.is_idle():
-            self.target_position, self.CartPoleInstance.target_equilibrium = self.dancer.dance_step(
-                self.th.time_current_measurement,
-                self.base_target_position,
-                self.target_position,
-                self.CartPoleInstance.target_equilibrium,
-            )
-
-        if SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl:
-            if self.target_position != self.target_position_previous:
-                self.InterfaceInstance.set_target_position(self.target_position)
-                self.target_position_previous = self.target_position
-
-            if self.CartPoleInstance.target_equilibrium != self.target_equilibrium_previous:
-                self.InterfaceInstance.set_target_equilibrium(self.CartPoleInstance.target_equilibrium)
-                self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
-        
-        self.CartPoleInstance.target_position = self.target_position
-
-    def experiment_protocol_step(self):
-        if self.current_experiment_protocol.is_running():
-            try:
-                self.current_experiment_protocol.update_state(self.s[ANGLE_IDX], self.s[POSITION_IDX], self.th.time_current_measurement)
-                if self.current_experiment_protocol.Q is not None:
-                    self.Q = self.current_experiment_protocol.Q
-            except TimeoutError as e:
-                if self.current_experiment_protocol.Q is not None:
-                    self.Q = 0.0
-                self.log.warning(f'timeout in self.measurement: {e}')
-
-            if self.current_experiment_protocol.target_position is not None:
-                self.target_position = self.current_experiment_protocol.target_position
-
-            if self.current_experiment_protocol.target_equilibrium is not None:
-                self.CartPoleInstance.target_equilibrium = self.current_experiment_protocol.target_equilibrium
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
     #       gets the motor full scale and calculates the correction factors relative to that
@@ -518,7 +390,7 @@ class PhysicalCartPoleDriver:
                 self.controlEnabled = False
                 self.InterfaceInstance.set_motor(0)
 
-                if hasattr(self.controller, 'controller_report') and self.controlled_iterations > 1:
+                if hasattr(self.controller, 'controller_report') and self.th.controlled_iterations > 1:
                     self.controller.controller_report()
                 if hasattr(self.controller, 'controller_reset'):
                     self.controller.controller_reset()
@@ -529,109 +401,6 @@ class PhysicalCartPoleDriver:
             self.safety_switch_counter = 0
             pass
 
-    def plot_live(self):
-        if self.live_plotter_sender.connection_ready:
-
-            if not self.live_plotter_sender.headers_sent:
-                headers = ['time', 'Angle', 'Position', 'Q', "ΔQ",  'Target Position', 'AngleD', 'PositionD',]
-                controller_headers = list(self.controller.controller_data_for_csv.keys())
-                controller_headers = [header[len('cost_component_'):] for header in controller_headers if 'cost_component_' in header]
-                self.live_plotter_sender.send_headers(headers+controller_headers)
-            else:
-                buffer = np.array([
-                                self.th.elapsedTime,
-                                self.s[ANGLE_IDX],
-                                self.s[POSITION_IDX] * 100,
-                                self.Q,
-                                (self.Q-self.Q_prev),
-                                self.target_position*100,
-                                self.s[ANGLED_IDX],
-                                self.s[POSITIOND_IDX] * 100,
-                            ])
-                buffer_controller = np.array([self.controller.controller_data_for_csv[key] for key in self.controller.controller_data_for_csv.keys()])
-
-                buffer = np.append(buffer, buffer_controller)
-
-                self.live_plotter_sender.send_data(buffer)
-
-    def start_csv_recording(self):
-
-        combined_keys = list(self.dict_data_to_save_basic.keys()) + list(
-            self.data_to_save_measurement.keys()) + list(self.data_to_save_controller.keys())
-
-        self.data_manager.start_csv_recording(
-            self.csv_name,
-            combined_keys,
-            create_csv_title(),
-            create_csv_header(),
-            PATH_TO_EXPERIMENT_RECORDINGS,
-            mode='online',
-            wait_till_complete=False,
-            recording_length=self.recording_length
-        )
-
-    def csv_recording_step(self):
-        if self.actualMotorCmd_prev is not None and self.Q_prev is not None:
-            if self.recording_running:
-                self.data_manager.step([
-                    self.dict_data_to_save_basic,
-                    self.data_to_save_measurement,
-                    self.data_to_save_controller
-                ])
-
-    def finish_csv_recording(self, wait_till_complete=True):
-        if self.recording_running:
-            self.data_manager.finish_experiment(wait_till_complete=wait_till_complete)
-        self.recording_length = np.inf
-
-    def write_current_data_to_terminal(self):
-        self.printCount += 1
-
-        self.th.latency_data_for_statistics_in_terminal()
-
-        if True or self.printCount >= PRINT_PERIOD_MS/CONTROL_PERIOD_MS:
-            self.printCount = 0
-
-            ESC = '\033['
-            BACK_TO_BEGINNING = '\r'
-            CLEAR_LINE = ESC + 'K'  # Clear the entire line
-
-            self.tcm.print_temporary(BACK_TO_BEGINNING + CLEAR_LINE)
-
-            ############  Mode  ############
-            if self.controlEnabled:
-                if 'mpc' in CONTROLLER_NAME:
-                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC, self.controller.optimizer.mpc_horizon, self.controller.optimizer.num_rollouts, self.controller.predictor.predictor_name)
-                else:
-                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS, CONTROL_SYNC)
-            else:
-                mode = 'CONTROLLER:   Firmware'
-            self.tcm.print_temporary(BACK_TO_BEGINNING + mode +  CLEAR_LINE)
-
-            ############  Mode  ############
-            self.tcm.print_temporary(BACK_TO_BEGINNING + f'MEASUREMENT: {self.current_experiment_protocol}' +  CLEAR_LINE)
-
-            ############  State  ############
-            self.tcm.print_temporary(BACK_TO_BEGINNING + "STATE:  angle:{:+.3f}rad, angle raw:{:04}, position:{:+.2f}cm, position raw:{:04}, target:{}, Q:{:+.2f}, command:{:+05d}, invalid_steps:{}, freezme:{}"
-                .format(
-                    self.s[ANGLE_IDX],
-                    self.idp.angle_raw,
-                    self.s[POSITION_IDX] * 100,
-                    self.idp.position_raw,
-                    f"{self.CartPoleInstance.target_position}, {self.CartPoleInstance.target_equilibrium}",
-                    self.Q,
-                    self.actualMotorCmd,
-                    self.idp.invalid_steps,
-                    self.idp.freezme
-                ) + CLEAR_LINE
-            )
-
-            ############  Timing  ############
-            timing_string, timing_latency_string = self.th.strings_for_statistics_in_terminal()
-            if timing_string:
-                self.tcm.print_temporary(BACK_TO_BEGINNING + timing_string + CLEAR_LINE)
-
-            if timing_latency_string:
-                self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency_string + CLEAR_LINE)
-
-            self.tcm.print_to_terminal()
+    def start_experiment_termination(self):
+        self.log.info("\nquitting....")
+        self.terminate_experiment = True

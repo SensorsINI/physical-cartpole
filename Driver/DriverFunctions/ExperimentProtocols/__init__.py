@@ -37,7 +37,7 @@ class template_experiment_protocol(ABC):
         pass
 
     def stop(self):
-        if self.driver.recording_running:
+        if self.driver.mlm.recording_running:
             self.finish_recording()
         self.current_experiment_phase = 'idle'
         self.driver.controlEnabled = False
@@ -49,17 +49,17 @@ class template_experiment_protocol(ABC):
 
     def start_new_recording(self, index=None, recording_length=np.inf):
 
-        if self.driver.starting_recording:
+        if self.driver.mlm.starting_recording:
             for _ in range(10):
-                if not self.driver.starting_recording:
+                if not self.driver.mlm.starting_recording:
                     break
                 sleep(0.1)
-            if self.driver.starting_recording:
+            if self.driver.mlm.starting_recording:
                 raise Exception('The new recording for this measurement could not be started,'
                                 'because the starting recording flag of data manager is high all the time!')
 
 
-        if self.driver.recording_running:
+        if self.driver.mlm.recording_running:
             print('Finishing currently running recording, before starting a new one for this measurement!')
             self.finish_recording()
 
