@@ -36,9 +36,9 @@ class KeyboardController:
             'D': (self.driver.dancer.on_off, "Dance Mode On/Off"),
 
             ##### Experiment Protocols #####
-            'm': (self.driver.change_experiment_protocol,
+            'm': (self.driver.epm.change_experiment_protocol,
                   "Change Experiment Protocol: running and recording predefined sequence of movements"),
-            'n': (self.driver.experiment_protocol_on_off, "Start/Stop Experiment Protocol"),
+            'n': (self.driver.epm.experiment_protocol_on_off, "Start/Stop Experiment Protocol"),
             'N': (self.driver.run_hardware_experiment, "Start Experiment Protocol from Chip"),
 
             ##### Logging #####
@@ -47,11 +47,11 @@ class KeyboardController:
                   "Start/Stop time limited recording to a CSV file"),
 
             ##### Real Time Data Vizualization #####
-            '6': (self.driver.live_plotter_sender.on_off,
+            '6': (self.driver.mlm.live_plotter_sender.on_off,
                   "Start/Stop sending data to Live Plotter Server - real time visualization"),
-            '7': (self.driver.live_plotter_sender.save_data_and_figure_if_connected,
+            '7': (self.driver.mlm.live_plotter_sender.save_data_and_figure_if_connected,
                   "Save data and figure at Live Plotter Server"),
-            '8': (self.driver.live_plotter_sender.reset_if_connected, "Reset Live Plotter Server"),
+            '8': (self.driver.mlm.live_plotter_sender.reset_if_connected, "Reset Live Plotter Server"),
 
             ##### Target #####
             ';': (self.driver.switch_target_equilibrium, "Switch target equilibrium"),

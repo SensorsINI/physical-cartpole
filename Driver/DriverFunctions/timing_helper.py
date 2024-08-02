@@ -65,11 +65,6 @@ class TimingHelper:
                              f'\nThis might indicate that timer on the microcontroller has overflown. '
                              f'\nTry to restart it.')
 
-        if self.time_last_measurement_chip is not None:  # TODO: Maybe can be removed
-            delta_time_test = self.time_current_measurement_chip - self.time_last_measurement_chip
-            if abs(delta_time_test - self.time_between_measurements_chip) > 2e-6 and delta_time_test != 0.0:
-                raise ValueError(f"dt={self.time_between_measurements_chip}; dtt={delta_time_test}")
-
         self.time_last_measurement_chip = self.time_current_measurement_chip
 
     # FIXME: Think if these cases are right

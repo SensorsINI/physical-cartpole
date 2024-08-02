@@ -217,7 +217,7 @@ class MainLoggingManager:
 
             # Experiment Protocol
             self.tcm.print_temporary(
-                BACK_TO_BEGINNING + f'MEASUREMENT: {self.driver.current_experiment_protocol}' + CLEAR_LINE)
+                BACK_TO_BEGINNING + f'MEASUREMENT: {self.driver.epm.current_experiment_protocol}' + CLEAR_LINE)
 
             # State
             self.tcm.print_temporary(
