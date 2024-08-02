@@ -59,17 +59,20 @@ class KeyboardController:
             '[': (lambda: self.driver.change_target_position(change_direction="decrease"), "Decrease target position"),
 
             ##### Fine tune zero angle #####
-            'b': (self.driver.precise_angle_measurement, "Start precise angle measurement - multiple samples"),
-            '=': (lambda: self.driver.finetune_zero_angle(direction='increase'),
+            'b': (lambda: self.driver.idp.precise_angle_measurement(self.driver.Interface),
+                  "Start precise angle measurement - multiple samples"),
+            '=': (lambda: self.driver.idp.finetune_zero_angle(direction='increase'),
                   "Finetune zero angle - increase angle deviation parameter"),
-            '-': (lambda: self.driver.finetune_zero_angle(direction='decrease'),
+            '-': (lambda: self.driver.idp.finetune_zero_angle(direction='decrease'),
                   "Finetune zero angle - decrease angle deviation parameter"),
 
             ##### Artificial Latency  #####
             '9': (
-                lambda: self.driver.change_additional_latency(change_direction="increase"), "Increase additional latency"),
+                lambda: self.driver.idp.change_additional_latency(change_direction="increase"),
+                "Increase additional latency"),
             '0': (
-                lambda: self.driver.change_additional_latency(change_direction="decrease"), "Decrease additional latency"),
+                lambda: self.driver.idp.change_additional_latency(change_direction="decrease"),
+                "Decrease additional latency"),
 
             ##### Joystick  #####
             'j': (lambda: self.driver.joystick.toggle_mode(self.driver.log), "Joystick On/Off"),

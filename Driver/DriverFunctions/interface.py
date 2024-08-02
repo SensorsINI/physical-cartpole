@@ -259,9 +259,9 @@ class Interface:
         message_length = 31
         reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
 
-        (angle, angleD, position, target_position, command, invalid_steps, time_difference, sent, latency, latency_violation) = struct.unpack('=hfhfhB2I2H', bytes(reply[3:message_length-1]))
+        (angle, angleD, position, target_position, command, invalid_steps, time_difference, time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhB2I2H', bytes(reply[3:message_length-1]))
 
-        return angle, angleD, position, target_position, command, invalid_steps, time_difference/1e6, sent/1e6, latency/1e5, latency_violation
+        return angle, angleD, position, target_position, command, invalid_steps, time_difference/1e6, time_current_measurement_chip/1e6, latency/1e5, latency_violation
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout

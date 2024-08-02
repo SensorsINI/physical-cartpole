@@ -71,12 +71,11 @@ elif MOTOR == 'POLOLU':
 else:
     raise Exception("Unknown motor type " + MOTOR)
 
-DEMO_PROGRAM = False
-
 DANCE_PATH = 'square'  # 'square', 'sin'
-DANCE_AMPL = 0.1 # m
+DANCE_AMPL = 0.1  # m
 DANCE_PERIOD_S = 10.0
 DANCE_START_TIME = 0.0
+DANCE_UP_AND_DOWN = False
 
 TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = CONTROL_PERIOD_MS)
 
@@ -84,11 +83,7 @@ TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = CONTROL_PERIOD_M
 LOGGING_LEVEL = logging.ERROR
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
 PRINT_PERIOD_MS = 10  # shows state in terminal every this many control updates
-PRINT_AVERAGING_LENGTH = 500
-
-##### Timing #####
-performance_measurement = np.zeros((15))
-performance_measurement_buffer = np.zeros((performance_measurement.size, 0))
+STATISTICS_IN_TERMINAL_AVERAGING_LENGTH = 500
 
 ##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
 LIVE_PLOTTER_USE_REMOTE_SERVER = False
