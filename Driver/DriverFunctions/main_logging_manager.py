@@ -44,6 +44,7 @@ class MainLoggingManager:
 
             'actualMotorSave': lambda: driver.actualMotorCmd_prev,
             'Q': lambda: driver.Q_prev,
+            'Q_ccrc': lambda: driver.Q_ccrc_prev,
 
             'measurement': lambda: driver.current_experiment_protocol,
 
