@@ -62,6 +62,7 @@ class PhysicalCartPoleDriver:
         # Motor Commands
         self.Q = 0.0  # Motor command normed to be in a range -1 to 1
         self.Q_prev = None
+        self.Q_ccrc_prev = None
         self.actualMotorCmd = 0
         self.actualMotorCmd_prev = None
         self.command = 0
@@ -164,6 +165,8 @@ class PhysicalCartPoleDriver:
         else:
             self.th.controlled_iterations = 0
 
+        self.CartPoleInstance.Q_ccrc = self.Q
+
         if self.controlEnabled:
             # Active Python Control: set values from controller
             with self.th.timer('controller_steptime', 'controller_steptime_previous'):
@@ -171,7 +174,8 @@ class PhysicalCartPoleDriver:
                     self.s,
                     self.th.time_current_measurement_chip,
                     {"target_position": self.target_position,
-                     "target_equilibrium": self.CartPoleInstance.target_equilibrium
+                     "target_equilibrium": self.CartPoleInstance.target_equilibrium,
+                     "Q_ccrc": self.CartPoleInstance.Q_ccrc,
                      }
                 ))
 
@@ -203,6 +207,7 @@ class PhysicalCartPoleDriver:
 
         self.actualMotorCmd_prev = self.actualMotorCmd
         self.Q_prev = self.Q
+        self.Q_ccrc_prev = self.CartPoleInstance.Q_ccrc
 
         self.update_parameters_in_cartpole_instance()
 
