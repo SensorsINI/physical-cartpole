@@ -46,7 +46,7 @@ class MainLoggingManager:
             'Q': lambda: driver.Q_prev,
             'Q_ccrc': lambda: driver.Q_ccrc_prev,
 
-            'measurement': lambda: driver.current_experiment_protocol,
+            'measurement': lambda: driver.epm.current_experiment_protocol,
 
             'angle_squared': lambda: driver.s[ANGLE_IDX] ** 2,
             'position_squared': lambda: (driver.s[POSITION_IDX] - driver.target_position) ** 2,
@@ -54,7 +54,7 @@ class MainLoggingManager:
 
             'latency': lambda: driver.th.firmware_latency,
             'latency_violations': lambda: driver.th.latency_violations,
-            'pythonLatency': lambda: driver.python_latency,
+            'pythonLatency': lambda: driver.th.python_latency,
             'controller_steptime': lambda: driver.th.controller_steptime_previous,
             'additionalLatency': lambda: driver.th.additional_latency,
             'invalid_steps': lambda: driver.idp.invalid_steps,
