@@ -69,12 +69,12 @@ class template_experiment_protocol(ABC):
             index_string = '-' + str(index)
 
         title = self.experiment_protocol_name.replace('-', '_') + index_string
-        self.driver.csv_name = create_csv_file_name(prefix='CPP', with_date=False, title=title)
-        self.driver.recording_length = recording_length
-        self.driver.start_recording_flag = True
+        self.driver.mlm.csv_name = create_csv_file_name(prefix='CPP', with_date=False, title=title)
+        self.driver.mlm.recording_length = recording_length
+        self.driver.mlm.start_recording_flag = True
 
     def finish_recording(self):
-        self.driver.finish_csv_recording()
+        self.driver.mlm.finish_csv_recording()
 
     def __str__(self):
         return 'Experiment Protocol: ' + self.experiment_protocol_name

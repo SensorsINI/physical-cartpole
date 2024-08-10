@@ -1,4 +1,5 @@
 from DriverFunctions.ExperimentProtocols.experiment_protocols_selector import experiment_protocols_selector_class
+from CartPole.state_utilities import ANGLE_IDX, POSITION_IDX
 
 
 class ExperimentProtocolsManager:
