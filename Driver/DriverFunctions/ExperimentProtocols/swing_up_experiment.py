@@ -19,7 +19,7 @@ STABLE_ANGLE_RAD = 0.2
 TIME_STABLE = 16
 RESET_Q = 0.5
 TIME_STABLE_DOWN = 8.0
-RECALIBRATE_EVERY_N_SWING_UPS = 8
+RECALIBRATE_EVERY_N_SWING_UPS = 2
 
 class swing_up_experiment(template_experiment_protocol):
     def __init__(self, driver):
@@ -48,7 +48,7 @@ class swing_up_experiment(template_experiment_protocol):
 
         self.start_angle = np.random.uniform(low=0.5, high=0.8) * np.pi
         self.start_angleD = np.random.uniform(low=0.5, high=0.8) * np.pi
-        self.target_position = np.random.uniform(low=-0.12, high=0.12)
+        self.target_position = np.random.uniform(low=-0.18, high=0.18)
         self.target_equilibrium = -1
 
         self.current_experiment_phase = 'reset'
