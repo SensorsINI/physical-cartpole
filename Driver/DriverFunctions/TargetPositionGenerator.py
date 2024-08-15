@@ -1,7 +1,7 @@
 import timeit
 
 from CartPoleSimulation.CartPole import CartPole
-from CartPoleSimulation.run_data_generator import random_experiment_setter
+from CartPoleSimulation.CartPole.data_generator import random_experiment_setter
 
 class TargetPositionGenerator:
     def __init__(self):

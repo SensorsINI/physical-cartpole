@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="motor_hls" xd:componentRef="motor_hls" xd:initiationInterval="2" xd:clockPeriod="10.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="pwm_period_in_clock_cycles" xd:originalName="pwm_period_in_clock_cycles" xd:direction="in" xd:interfaceRef="s_axi_MOTOR_AXI" xd:busTypeRef="axilite" xd:offset="0x10" xd:handshakeRef="ap_none" xd:dataWidth="32"/>
+  <xd:arg xd:name="pwm_duty_cycle_in_clock_cycles" xd:originalName="pwm_duty_cycle_in_clock_cycles" xd:direction="in" xd:interfaceRef="s_axi_MOTOR_AXI" xd:busTypeRef="axilite" xd:offset="0x18" xd:handshakeRef="ap_none" xd:dataWidth="32"/>
+  <xd:arg xd:name="*(pwm_out)" xd:originalName="pwm_out" xd:direction="out" xd:interfaceRef="pwm_out" xd:busTypeRef="register" xd:handshakeRef="ap_none" xd:dataWidth="1" xd:firstOut="1"/>
+  <xd:arg xd:name="*(direction_output_1)" xd:originalName="direction_output_1" xd:direction="out" xd:interfaceRef="direction_output_1" xd:busTypeRef="register" xd:handshakeRef="ap_none" xd:dataWidth="1" xd:firstOut="0"/>
+  <xd:arg xd:name="*(direction_output_2)" xd:originalName="direction_output_2" xd:direction="out" xd:interfaceRef="direction_output_2" xd:busTypeRef="register" xd:handshakeRef="ap_none" xd:dataWidth="1" xd:firstOut="0"/>
+  <xd:latencyEstimates xd:best-case="1" xd:worst-case="1" xd:average-case="1"/>
+  <xd:resourceEstimates xd:LUT="516" xd:FF="203" xd:BRAM="0" xd:DSP="0"/>
+</xd:acceleratorMap>

@@ -17,10 +17,22 @@ UpDown = [  # STM
 ]
 
 # Zybo
+# Each measurement with 1000 angle samples
 UpDown = [
-[2989.559,	940.132],
-[2991.048,	942.507],
-[2992.806,	941.31],
+# [3050.296, 1007.897],
+# [3047.168, 1009.128],
+# [3052.019, 1008.827],
+# [3048.309, 1008.412],
+# [3051.938, 1007.98],
+# [3050.3, 1009.017],
+# [3050.501, 1010.983],
+# [3048.645, 1009.269],
+# [3049.029, 1008.778],
+# [3053.313, 1011.908],
+
+[3276.326, 1241.051],
+[3274.736, 1240.825],
+[3276.551, 1242.15]
 ]
 UpDown = np.array(UpDown)
 
@@ -32,7 +44,7 @@ full_circle_in_adc_units = 2*diff
 full_circle_in_adc_units_avg = np.mean(full_circle_in_adc_units)
 full_circle_in_adc_units_std = np.std(full_circle_in_adc_units)
 
-print(f"Full circle in ADC units is {full_circle_in_adc_units_avg} +/- {full_circle_in_adc_units_std}")
+print(f"Full circle in ADC units is {full_circle_in_adc_units_avg} +/- {full_circle_in_adc_units_std} (1 std)")
 
 adc_range = 4096
 adc_units_2_deg = 360.0/adc_range
@@ -52,8 +64,9 @@ pass
 
 
 plt.figure()
-plt.plot(UpDown[:, 0]-average[0], label='Up')
-plt.plot(UpDown[:, 1]-average[1], label='Down')
-plt.plot(full_circle_in_adc_units-full_circle_in_adc_units_avg, label='Diff')
+plt.title('Deviation from mean')
+plt.plot(UpDown[:, 0]-average[0], label='Equilibrium 1')
+plt.plot(UpDown[:, 1]-average[1], label='Equilibrium 2')
+plt.plot(full_circle_in_adc_units-full_circle_in_adc_units_avg, label='Full circle')
 plt.legend()
 plt.show()

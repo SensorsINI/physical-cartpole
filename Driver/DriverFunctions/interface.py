@@ -211,11 +211,11 @@ class Interface:
         (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
-    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics):
+    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics):
         msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 14]
         msg += list(struct.pack('H', controlLoopPeriodMs))
         msg += list(struct.pack('?', controlSync))
-        msg += list(struct.pack('f', angle_deviation))
+        msg += list(struct.pack('f', angle_hanging))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('?', correct_motor_dynamics))
         msg.append(self._crc(msg))
@@ -226,8 +226,8 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
-        (controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(reply[3:12]))
-        return controlLoopPeriodMs, controlSync, angle_deviation, avgLen, correct_motor_dynamics
+        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(reply[3:12]))
+        return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics
 
     def set_motor(self, speed):
         msg  = [SERIAL_SOF, CMD_SET_MOTOR, 8]
@@ -256,12 +256,12 @@ class Interface:
 
     def read_state(self):
         self.clear_read_buffer()
-        message_length = 27
+        message_length = 31
         reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
 
-        (angle, position, target_position, command, invalid_steps, time_difference, sent, latency, latency_violation) = struct.unpack('=2hfhB2I2H', bytes(reply[3:message_length-1]))
+        (angle, angleD, position, target_position, command, invalid_steps, time_difference, time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhB2I2H', bytes(reply[3:message_length-1]))
 
-        return angle, position, target_position, command, invalid_steps, time_difference/1e6, sent/1e6, latency/1e5, latency_violation
+        return angle, angleD, position, target_position, command, invalid_steps, time_difference/1e6, time_current_measurement_chip/1e6, latency/1e5, latency_violation
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout

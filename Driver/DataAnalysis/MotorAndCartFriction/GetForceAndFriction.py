@@ -36,10 +36,10 @@ else:
 
 # Define the variables
 # FILE_NAME = 'Original.csv'
-FILE_NAME = 'Pololu.csv'
+FILE_NAME = 'CPP_step_response-28-06-2024-POLOLU-check.csv'
 
 v_max_sat = 0.55
-b = 15.0
+b = 14.0
 
 PATH_TO_DATA = 'DataAnalysis/MotorAndCartFriction/'
 file_path = PATH_TO_DATA + FILE_NAME
@@ -110,7 +110,7 @@ print()
 print('a: {}'.format(a))
 print('b: {}'.format(b))
 
-m_total = (230 + 87 + 1)/1000.0
+m_total = 230.0/1000.0
 u_max = m_total*a
 M_fric = m_total*b
 

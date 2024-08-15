@@ -2,21 +2,6 @@
 .DS_Store
 /Driver/ExperimentRecordings/
 
-/Driver/SI_Toolkit_ASF/Experiments/*
-!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1
-/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/*
-!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models
-/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/*
-!/Driver/SI_Toolkit_ASF/Experiments/PhysicalData-1/Models/GRU-6IN-32H1-32H2-5OUT-5
-
-
-/Firmware/CartPole CubeIDE/.settings/language.settings.xml
-/Firmware/CartPole CubeIDE/Debug/
-/Firmware/CartPole CubeIDE/*.launch
-/Firmware/FactoryFirmware CubeIDE/.settings/language.settings.xml
-/Firmware/FactoryFirmware CubeIDE/Debug/
-/Firmware/FactoryFirmware CubeIDE/*.launch
-
 *env
 .DS_Store
 *__pycache__
@@ -38,14 +23,15 @@ Driver/SI_Toolkit_ASF/Experiments/*
 *.pdf
 *.prof
 
-/zynq/minized_sbc_base_2021_1
-/zynq/zybo
-/zynq/zedboard
-/zynq/zybo_bkp
-/zynq/zedboard_bkp
-/zynq/vitis
-/zynq/vitis_test
-/zynq/.Xil
-zynq/minized_sbc_base_2021_1_original.bsp
-zynq/Zybo-Z7-Master.xdc
-zynq/apps/hello_world/hello_world
+/FPGA/VivadoProjects/*
+!/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
+
+/Firmware/VitisProjects/*
+
+/Firmware/CubeIDE/CartPoleFirmware/Debug/*
+/Firmware/CubeIDE/CartPoleFirmware/.settings/language.settings.xml
+/Firmware/CubeIDE/CartPoleFirmware/*.launch
+
+/Firmware/CubeIDE/FactoryFirmware CubeIDE/.settings/language.settings.xml
+/Firmware/CubeIDE/FactoryFirmware CubeIDE/Debug/
+/Firmware/CubeIDE/FactoryFirmware CubeIDE/*.launch

@@ -1,114 +1,39 @@
-import os
 from datetime import datetime
-import csv
 
-from globals import PATH_TO_EXPERIMENT_RECORDINGS, CONTROL_PERIOD_MS
+from globals import CONTROL_PERIOD_MS, PATH_TO_EXPERIMENT_RECORDINGS
 
-try:
-    # Use gitpython to get a current revision number and use it in description of experimental data
-    from git import Repo
-except ModuleNotFoundError:
-    print('GitPython not found')
 
-def csv_init(csv_name=None, controller_name=None):
+def create_csv_title():
 
-    # Make folder to save data (if not yet existing)
-    try:
-        os.makedirs(PATH_TO_EXPERIMENT_RECORDINGS[:-1])
-    except FileExistsError:
-        pass
+    title = (f"This is a recording from physical cartpole from {datetime.now().strftime('%d.%m.%Y')}" +
+             f" at time {datetime.now().strftime('%H:%M:%S')}")
 
-    # Set path where to save the data
-    if csv_name is None or csv_name == '':
-        if controller_name is not None:
-            csv_filepath = PATH_TO_EXPERIMENT_RECORDINGS + 'CP_' + controller_name + str(
-                datetime.now().strftime('_%Y-%m-%d_%H-%M-%S')) + '.csv'
-        else:
-            # This is the original version from Tobi
-            csv_filepath = PATH_TO_EXPERIMENT_RECORDINGS + datetime.now().strftime("cartpole-%Y-%m-%d-%H-%M-%S.csv")
-    else:
-        csv_filepath = PATH_TO_EXPERIMENT_RECORDINGS + csv_name
-        if csv_name[-4:] != '.csv':
-            csv_filepath += '.csv'
+    return title
 
-        # If such file exists, append index to the end (do not overwrite)
-        net_index = 1
-        logpath_new = csv_filepath
-        while True:
-            if os.path.isfile(logpath_new):
-                logpath_new = csv_filepath[:-4]
-            else:
-                csv_filepath = logpath_new
-                break
-            logpath_new = logpath_new + '-' + str(net_index) + '.csv'
-            net_index += 1
 
-    # Write the .csv file
-    with open(csv_filepath, "a") as outfile:
-        writer = csv.writer(outfile)
+def create_csv_header():
 
-        writer.writerow(['# ' + 'This is CartPole simulation from {} at time {}'
-                        .format(datetime.now().strftime('%d.%m.%Y'), datetime.now().strftime('%H:%M:%S'))])
-        try:
-            repo = Repo(search_parent_directories=True)
-            git_revision = repo.head.object.hexsha
-        except NameError:
-            git_revision = 'unknown'
-        writer.writerow(['# ' + 'Done with git-revision: {}'
-                        .format(git_revision)])
+    header = [
+        f"Time intervals dt:",
+        f"Simulation: not applying",
+        f"Controller update: {str(CONTROL_PERIOD_MS / 1000)} s",
+        f"Saving: {str(CONTROL_PERIOD_MS / 1000)} s",
+        f"",
 
-        writer.writerow(['#'])
+        f"Units:",
+        f"time: s",
+        f"deltaTimeMs: ms",
+        f"angle: rad",
+        f"angleD: rad/s",
+        f"position: m",
+        f"positionD: m/s",
+        f"angleTarget: rad",
+        f"angleErr: rad",
+        f"target_position: m",
+        f"positionErr: m",
+        f"Q: normed motor power",
+        f""
+        f"Data:"
+    ]
 
-        writer.writerow(['#'])
-        writer.writerow(['# Time intervals dt:'])
-        writer.writerow(['# Simulation: 0.002 s'])
-        writer.writerow(['# Controller update: '+str(CONTROL_PERIOD_MS/1000)+' s'])
-        writer.writerow(['# Saving: '+str(CONTROL_PERIOD_MS/1000)+' s'])
-        writer.writerow(['#'])
-
-        writer.writerow(['# Units:'])
-        writer.writerow(['# time: s'])
-        writer.writerow(['# deltaTimeMs: ms'])
-        writer.writerow(['# angle_raw'])
-        writer.writerow(['# angle: rad'])
-        writer.writerow(['# angleD: rad/s'])
-        writer.writerow(['# angle_cos:'])
-        writer.writerow(['# angle_sin:'])
-        writer.writerow(['# position_raw'])
-        writer.writerow(['# position: m'])
-        writer.writerow(['# positionD: m/s'])
-        writer.writerow(['# angleTarget: rad'])
-        writer.writerow(['# angleErr: rad'])
-        writer.writerow(['# target_position: m'])
-        writer.writerow(['# positionErr: m'])
-        writer.writerow(['# angleCmd:'])
-        writer.writerow(['# positionCmd:'])
-        writer.writerow(['# actualMotorSave:'])
-        writer.writerow(['# Q: normed motor power'])
-        writer.writerow(['# stickControl'])
-        writer.writerow(['# stickPos'])
-        writer.writerow(['# measurement'])
-        writer.writerow(['# angle_squared'])
-        writer.writerow(['# position_squared'])
-        writer.writerow(['# Q_squared'])
-        writer.writerow(['# sent'])
-        writer.writerow(['# latency'])
-        writer.writerow(['# pythonLatency'])
-        writer.writerow(['# additionalLatency'])
-        writer.writerow(['# invalid_steps'])
-        writer.writerow(['# frozen'])
-        writer.writerow(['# angleD fitted'])
-        writer.writerow(['#'])
-        writer.writerow(['#'])
-
-        writer.writerow(
-            ['time'] + ['deltaTimeMs'] + ['angle_raw'] + ['angleD_raw'] + ['angle'] + ['angleD'] + ['angle_cos'] + ['angle_sin'] + ['position_raw'] + ['position'] + [
-                'positionD'] + ['angleTarget'] + ['angleErr'] + ['target_position'] + ['target_equilibrium'] + ['positionErr'] + ['angleCmd'] + [
-                'positionCmd'] + ['actualMotorSave'] + ['Q'] + ['stickControl'] + ['stickPos'] + ['measurement'] + ['angle_squared'] + ['position_squared'] + ['Q_squared'] + ['sent'] + ['latency'] + ['latency_violations'] + ['pythonLatency']+ ['controller_steptime'] + ['additionalLatency']
-            + ['invalid_steps'] + ['frozen'] + ['fitted'] + ['angle_raw_sensor'] + ['angleD_raw_sensor'] + ['angleD_fitted'])
-
-    # TODO: Not sure if we really need to return these two things and if this is efficient implementation
-    csvfile = open(csv_filepath, 'a', newline='')
-    csvwriter = csv.writer(csvfile, delimiter=',')
-
-    return csv_filepath, csvfile, csvwriter
+    return header
