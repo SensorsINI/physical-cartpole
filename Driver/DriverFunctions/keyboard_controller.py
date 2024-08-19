@@ -59,7 +59,7 @@ class KeyboardController:
             '[': (lambda: self.driver.change_target_position(change_direction="decrease"), "Decrease target position"),
 
             ##### Fine tune zero angle #####
-            'b': (lambda: self.driver.idp.precise_angle_measurement(self.driver.Interface),
+            'b': (lambda: self.driver.idp.precise_angle_measurement(self.driver.InterfaceInstance),
                   "Start precise angle measurement - multiple samples"),
             '=': (lambda: self.driver.idp.finetune_zero_angle(direction='increase'),
                   "Finetune zero angle - increase angle deviation parameter"),
