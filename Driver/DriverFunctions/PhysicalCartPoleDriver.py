@@ -17,6 +17,8 @@ from Driver.DriverFunctions.interface import get_serial_port
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
 
+from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdater
+
 from globals import (
     CHIP,
     OPTIMIZER_NAME, CONTROLLER_NAME,
@@ -133,6 +135,7 @@ class PhysicalCartPoleDriver:
             self.experiment_sequence()
 
     def quit_experiment(self):
+        CostFunctionUpdater.stop_all_watchers()  # Stop all active watchers
         # when x hit during loop or other loop exit
         self.InterfaceInstance.set_motor(0)  # turn off motor
         self.InterfaceInstance.close()
@@ -301,7 +304,10 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_motor(0)
         if self.controller.controller_name == 'mppi-tf':
             self.controller.controller_report()
-        self.controller.controller_reset()
+        try:
+            self.controller.controller_reset()
+        except NotImplementedError:
+            pass
         self.dancer.danceEnabled = False
         self.target_position = self.base_target_position
         self.th.latency_violations = 0
