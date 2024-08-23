@@ -9,6 +9,11 @@ It provides integration with [Neural Control Tools](https://github.com/SensorsIN
 The cartpole robot producer and developers of this repository are independent parties
 hence we cannot guarantee the compatibility with future versions of the robot.
 
+## Publications
+* [Hardware Neural Control of CartPole and F1TENTH Race Car](https://arxiv.org/abs/2407.08681)
+* [RPGD: A Small-Batch Parallel Gradient Descent Optimizer with Explorative Resampling
+for Nonlinear Model Predictive Control](https://www.zora.uzh.ch/id/eprint/254218/1/RPGD_ICRA_2023.pdf)
+
 ## Features
 
 * USB interface to a PC
