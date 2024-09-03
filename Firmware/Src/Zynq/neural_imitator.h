@@ -1,6 +1,17 @@
 #ifndef __NEURAL_IMITATOR_H_
 #define __NEURAL_IMITATOR_H_
 
+
+typedef enum {
+    NETWORK_TFMICRO,
+    NETWORK_HLS4ML,
+    NETWORK_EDGEDRNN
+} NeuralNetworkType;
+
+NeuralNetworkType selected_network_up = NETWORK_HLS4ML;  // Assign to switch UP position
+NeuralNetworkType selected_network_down = NETWORK_TFMICRO;  // Assign to switch DOWN position
+
+
 #define MLP_TOTAL_BITS_PER_VARIABLE	12
 #define MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE	2
 
