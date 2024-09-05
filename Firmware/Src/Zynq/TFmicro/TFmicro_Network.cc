@@ -1,56 +1,58 @@
 #include "TFmicro_Network.h"
 
-#ifdef TF_MICRO
-
 #include "TFmicroZynqLib/tfmicrozynq.h"
+#include <stdint.h>
 
-// Define interpreter and tensor arena as static global variables
-static tflite::MicroInterpreter* interpreter = nullptr;
-static uint8_t tensor_arena[TF_MICRO_ARENA_SIZE]; // Tensor arena size from macro
+extern const unsigned char model_array[];
 
+// Anonymous namespace to restrict visibility to this file
+namespace {
+  // Local typedef for the operator resolver (keeping the 'tflite' usage here for internal logic)
+  using TFmicroOpResolver = tflite::MicroMutableOpResolver<2>;
+
+  // Internal state variables
+  tflite::MicroInterpreter* interpreter = nullptr;  // Keep 'interpreter' internal to this file
+  constexpr int kTensorArenaSize = TF_MICRO_ARENA_SIZE;
+  uint8_t tensor_arena[kTensorArenaSize];
+
+  // Function to register operations locally
+  TfLiteStatus RegisterOps(TFmicroOpResolver& op_resolver) {
+    TF_LITE_ENSURE_STATUS(op_resolver.AddFullyConnected());
+    TF_LITE_ENSURE_STATUS(op_resolver.AddTanh());  // Register TANH operation
+    return kTfLiteOk;
+  }
+}
+
+// Now define the global functions declared in the header file without namespaces
 void TFmicro_Network_Init() {
-    using TFmicroOpResolver = tflite::MicroMutableOpResolver<2>;
+  // Use the tflite internal methods and types, but no longer need the 'tflite::' prefix in global scope
+  const tflite::Model* model = ::tflite::GetModel(model_array);
 
-    // Function to register operations
-    TfLiteStatus RegisterOps(TFmicroOpResolver& op_resolver) {
-        TF_LITE_ENSURE_STATUS(op_resolver.AddFullyConnected());
-        TF_LITE_ENSURE_STATUS(op_resolver.AddTanh()); // Register TANH operation
-        return kTfLiteOk;
-    }
+  static TFmicroOpResolver op_resolver;  // Keep op_resolver local
+  RegisterOps(op_resolver);
 
-    // Get model from array (model_array should be defined elsewhere)
-    const tflite::Model* model = ::tflite::GetModel(model_array);
-
-    // Set up the operation resolver
-    TFmicroOpResolver op_resolver;
-    if (RegisterOps(op_resolver) != kTfLiteOk) {
-        // Handle error
-        return;
-    }
-
-    // Create interpreter instance and allocate tensors
-    interpreter = new tflite::MicroInterpreter(model, op_resolver, tensor_arena, TF_MICRO_ARENA_SIZE);
-    if (interpreter->AllocateTensors() != kTfLiteOk) {
-        // Handle error
-        delete interpreter;
-        interpreter = nullptr;
-        return;
-    }
+  // Create interpreter with local arena and variables
+  interpreter = new tflite::MicroInterpreter(model, op_resolver, tensor_arena, kTensorArenaSize);
+  interpreter->AllocateTensors();
 }
 
 void TFmicro_Network_Evaluate(float* inputs, float* outputs) {
+  const int num_inputs = TF_MICRO_NUMBER_OF_INPUTS;
+  const int num_outputs = TF_MICRO_NUMBER_OF_OUTPUTS;
 
-    // Copy inputs to the interpreter's input tensor
-    for (int k = 0; k < TF_MICRO_NUMBER_OF_INPUTS; k++) {
-        interpreter->input(0)->data.f[k] = inputs[k];
-    }
+  // Copy input data to the interpreter's input tensor
+  for (int i = 0; i < num_inputs; i++) {
+    interpreter->input(0)->data.f[i] = inputs[i];
+  }
 
-    interpreter->Invoke()
+  // Run inference
+  interpreter->Invoke();
 
-    // Copy the output tensor to the output array
-    for (int k = 0; k < TF_MICRO_NUMBER_OF_OUTPUTS; k++) {
-        outputs[k] = interpreter->output(0)->data.f[k];
-    }
+  // Copy the result from the interpreter's output tensor to the output buffer
+  for (int i = 0; i < num_outputs; i++) {
+    outputs[i] = interpreter->output(0)->data.f[i];
+  }
 }
 
-#endif
+
+
