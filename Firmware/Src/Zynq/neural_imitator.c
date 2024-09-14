@@ -91,7 +91,7 @@ void Neural_Imitator_Init()
 	EdgeDRNN_Network_Init();
 #endif
 
-#ifdef TFmicro
+#ifdef TF_MICRO
     TFmicro_Network_Init();
 #endif
 
@@ -116,80 +116,88 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 
     // Determine active network based on the switch state
     if (Switch_GetState(NETWORKS_SWITCH_NUMBER)) {
-        active_network = selected_network_up;
+        active_network = SELECTED_NETWORK_UP;
     } else {
-        active_network = selected_network_down;
+        active_network = SELECTED_NETWORK_DOWN;
     }
 
 
     switch (active_network) {
         case NETWORK_EDGEDRNN:
-#ifdef EdgeDRNN
-            // Use EdgeDRNN accelerator
-
-            for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS;	neuron_idx++)
+    #ifdef EdgeDRNN
             {
-                actv_floating_point = *((float *)&network_input_buffer[neuron_idx*DATA_WORD_BYTES]);
-                actv_fixed_point_16 = float_to_fixed_16(actv_floating_point, 8);
-                edgedrnn_stim[neuron_idx] = actv_fixed_point_16;
-            }
-            edgedrnn_stim[7] = 0; // FIXME: This is probably just setting the target equilibrium or position to 0
+                // Use EdgeDRNN accelerator
 
-            // FIXME: I want to change the interface here - it should be like for HLS4ML so that it can be used for car.
-            predic_floating_point = EdgeDRNN_Network_Evaluate((short*) (edgedrnn_stim));
+                for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++) {
+                    actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
+                    actv_fixed_point_16 = float_to_fixed_16(actv_floating_point, 8);
+                    edgedrnn_stim[neuron_idx] = actv_fixed_point_16;
+                }
+                edgedrnn_stim[7] = 0; // FIXME: This is probably just setting the target equilibrium or position to 0
 
-            for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS;	neuron_idx++)
-            {
-                *((float          *)&network_output_buffer[neuron_idx*DATA_WORD_BYTES]) = predic_floating_point;
+                predic_floating_point = EdgeDRNN_Network_Evaluate((short*)(edgedrnn_stim));
+
+                for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
+                    *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = predic_floating_point;
+                }
             }
-#endif
+    #endif
             break;
+
         case NETWORK_HLS4ML:
-#ifdef HLS4ML
-            // Use MLP accelerator
-
-            for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS;	neuron_idx++)
+    #ifdef HLS4ML
             {
-                actv_floating_point = *((float *)&network_input_buffer[neuron_idx*DATA_WORD_BYTES]);
-                actv_floating_point = hls_normalize_a[neuron_idx]*actv_floating_point + hls_normalize_b[neuron_idx];
-                actv_fixed_point_32 = float_to_fixed_32(actv_floating_point, MLP_TOTAL_BITS_PER_VARIABLE-MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE);
-                TxBufferPtr[neuron_idx] = actv_fixed_point_32;
+                // Use MLP accelerator
+
+                for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++) {
+                    actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
+                    actv_floating_point = hls_normalize_a[neuron_idx] * actv_floating_point + hls_normalize_b[neuron_idx];
+                    actv_fixed_point_32 = float_to_fixed_32(actv_floating_point, MLP_TOTAL_BITS_PER_VARIABLE - MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE);
+                    TxBufferPtr[neuron_idx] = actv_fixed_point_32;
+                }
+
+                HLS4ML_Network_Evaluate((UINTPTR)TxBufferPtr, NETWORK_INPUT_SIZE_IN_BYTES, (UINTPTR)RxBufferPtr, NETWORK_OUTPUT_SIZE_IN_BYTES);
+
+                for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
+                    predic_fixed_point_32 = extend_sign_32(RxBufferPtr[neuron_idx], MLP_TOTAL_BITS_PER_VARIABLE - 1);
+                    predic_floating_point = fixed_to_float_32(predic_fixed_point_32, MLP_TOTAL_BITS_PER_VARIABLE - MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE);
+                    predic_floating_point = hls_denormalize_A[neuron_idx] * predic_floating_point + hls_denormalize_B[neuron_idx];
+                    *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = predic_floating_point;
+                }
             }
-
-            HLS4ML_Network_Evaluate((UINTPTR) TxBufferPtr, NETWORK_INPUT_SIZE_IN_BYTES,
-                                    (UINTPTR) RxBufferPtr, NETWORK_OUTPUT_SIZE_IN_BYTES);
-
-
-            for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS;	neuron_idx++)
-            {
-//				predic_fixed_point_32 = extend_sign(RxBufferPtr[neuron_idx]);
-//				predic_floating_point = fixed_to_float(predic_fixed_point_32);
-                predic_fixed_point_32 = extend_sign_32(RxBufferPtr[neuron_idx], MLP_TOTAL_BITS_PER_VARIABLE-1);
-                predic_floating_point = fixed_to_float_32(predic_fixed_point_32, MLP_TOTAL_BITS_PER_VARIABLE-MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE);
-                predic_floating_point = hls_denormalize_A[neuron_idx]*predic_floating_point + hls_denormalize_B[neuron_idx];
-                *((float          *)&network_output_buffer[neuron_idx*DATA_WORD_BYTES]) = predic_floating_point;
-            }
-#endif
+    #endif
             break;
+
         case NETWORK_TFMICRO:
-#ifdef TF_MICRO
-            float inputs[TF_MICRO_NUMBER_OF_INPUTS];
-            float outputs[TF_MICRO_NUMBER_OF_OUTPUTS];
+    #ifdef TF_MICRO
+            {
+                float inputs[TF_MICRO_NUMBER_OF_INPUTS];
+                float outputs[TF_MICRO_NUMBER_OF_OUTPUTS];
 
-            for (int neuron_idx = 0; neuron_idx < TF_MICRO_NUMBER_OF_INPUTS; neuron_idx++) {
-                actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
-                inputs[neuron_idx] = tfmicro_normalize_a[neuron_idx] * actv_floating_point + tfmicro_normalize_b[neuron_idx];
+                for (int neuron_idx = 0; neuron_idx < TF_MICRO_NUMBER_OF_INPUTS; neuron_idx++) {
+                    actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
+                    inputs[neuron_idx] = tfmicro_normalize_a[neuron_idx] * actv_floating_point + tfmicro_normalize_b[neuron_idx];
+                }
+
+                TFmicro_Network_Evaluate(inputs, outputs);
+
+                for (int neuron_idx = 0; neuron_idx < TF_MICRO_NUMBER_OF_OUTPUTS; neuron_idx++) {
+                    predic_floating_point = outputs[neuron_idx];
+                    predic_floating_point = tfmicro_denormalize_A[neuron_idx] * predic_floating_point + tfmicro_denormalize_B[neuron_idx];
+                    *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = predic_floating_point;
+                }
             }
+    #endif
+            break;
 
-            TFmicro_Network_Evaluate(inputs, outputs);
-
-            for (int neuron_idx = 0; neuron_idx < TF_MICRO_NUMBER_OF_OUTPUTS; neuron_idx++) {
-                predic_floating_point = outputs[neuron_idx];
-                predic_floating_point = tfmicro_denormalize_A[neuron_idx] * predic_floating_point + tfmicro_denormalize_B[neuron_idx];
-                *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = predic_floating_point;
+        default:
+        {
+            for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
+                *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = 0.0;
             }
-
-#endif
+        }
+            break;
+    }
 }
 
 

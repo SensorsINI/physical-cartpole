@@ -3,13 +3,14 @@
 
 
 typedef enum {
+	NETWORK_NONE,
     NETWORK_TFMICRO,
     NETWORK_HLS4ML,
     NETWORK_EDGEDRNN
 } NeuralNetworkType;
 
-NeuralNetworkType selected_network_up = NETWORK_HLS4ML;  // Assign to switch UP position
-NeuralNetworkType selected_network_down = NETWORK_TFMICRO;  // Assign to switch DOWN position
+#define SELECTED_NETWORK_UP NETWORK_HLS4ML  // Assign to switch UP position
+#define SELECTED_NETWORK_DOWN NETWORK_HLS4ML;  // Assign to switch DOWN position
 
 
 #define MLP_TOTAL_BITS_PER_VARIABLE	12
