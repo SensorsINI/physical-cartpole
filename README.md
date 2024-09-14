@@ -156,7 +156,7 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 ### PC (Python project)
 
-0. Create python 3.11 environment, if you haven't done it yet. e.g.
+1. Create python 3.11 environment, if you haven't done it yet. e.g.
 
     `conda create -n CPP python=3.11`
 
@@ -166,15 +166,26 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
     Where CPP is the name of the environment (stands for CartPole Physical).
 
-1. Clone the repository
+2. Clone the repository
 
     `git clone https://github.com/SensorsINI/physical-cartpole`
 
-2. Install the dependencies
+3. Go to the project directory (e.g. ` cd physical-cartpole`)
+
+4. Install the dependencies
 
     `pip install -r requirements.txt`
 
     This installs all the dependencies - it is quite a lot of packages, so it may take a while.
+
+5. Add additional directories to the python path
+
+    `export PYTHONPATH="${PYTHONPATH}:$(pwd)/Driver:$(pwd)/Driver/CartPoleSimulation"`
+
+    Alternatively you can add this line to your `.bashrc` or `.bash_profile` file
+    or if you use Pycharm you can right click on the `Driver` and `CartPoleSimulation` directories
+    and select `Mark Directory as -> Sources Root`.
+    Adding the directories with `conda env config vars set` was not working for me.
 
 
 ### STM32
