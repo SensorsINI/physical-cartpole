@@ -14,6 +14,11 @@ hence we cannot guarantee the compatibility with future versions of the robot.
 * [RPGD: A Small-Batch Parallel Gradient Descent Optimizer with Explorative Resampling
 for Nonlinear Model Predictive Control](https://www.zora.uzh.ch/id/eprint/254218/1/RPGD_ICRA_2023.pdf)
 
+## Quik links
+* [Hardware](#hardware)
+* [Set up and installation](#set-up-and-installation)
+* [Basic tutorial](#basic-tutorial)
+
 ## Features
 
 * USB interface to a PC
@@ -173,10 +178,15 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 
 ### STM32
-* Connect the STLink or the J-link to the STM32 board and to the PC. For j-link we attach the picture, for st-link, you have to figure it out on your own.
+<details>
+  <summary><b> Click here to show the STM32 Setup Instructions</b></summary>
+  <br>
+
+* Connect the STLink or the J-link to the STM32 board and to the PC.
+We attach a picture for j-link, but st-link connector is exactly the same.
 ![jtag_programming.png](Docs%2Fjtag_programming.png)
 * Open STM32CubeIDE and go to `File -> Import... -> Existing Projects into Workspace`
-and import project from [Firmware/FactoryFirmware CubeIDE](Firmware%2FCartPole%20CubeIDE).
+and import project from [Firmware/CubeIDE/CartPoleFirmware](Firmware/CubeIDE/CartPoleFirmware).
 * Go to hardware_bridge.h and comment out `#define ZYNQ` and uncomment `#define STM`.
 * Build the project (hammer icon).
 * Right click on the project and select `Run As -> STM32 C/C++ Application`. Go to `Debugger` tab and set up your J-link or ST-link.
@@ -190,6 +200,8 @@ This also means that the original firmware will be overwritten,
 so if you intend to use it later, make sure to fetch it from the chip and save.
 
 * Open `Driver/globals.py` and set `CHIP` variable to `STM`
+
+</details>
 
 ## BELOW NOT FULLY UPDATED YET
 
