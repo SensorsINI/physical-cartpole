@@ -115,6 +115,24 @@ MLP_Lite_v1_0_S00_AXI_inst : MLP_Lite_v1_0_S00_AXI
 
 	-- Add user logic here
 
+	    -- Instantiate Network Control Module
+    mlp_control_inst : entity work.mlp_control
+        generic map(
+            AXI_DATA_WIDTH => AXI_DATA_WIDTH
+        )
+        port map(
+            clk            => AXIS_ACLK,
+            reset_n        => AXI_ARESETN,
+            data_in        => data_in,
+            data_in_valid  => data_in_valid,
+            data_in_last   => data_in_last,
+            data_in_ready  => data_in_ready,
+            data_out       => data_out,
+            data_out_valid => data_out_valid,
+            data_out_last  => data_out_last,
+            data_out_ready => data_out_ready
+        );
+
 	-- User logic ends
 
 end arch_imp;
