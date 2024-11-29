@@ -6,8 +6,8 @@ from SI_Toolkit.Functions.General.TerminalContentManager import TerminalContentM
 from CartPoleSimulation.CartPole.state_utilities import ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX, \
     POSITION_IDX, POSITIOND_IDX
 
-from CartPoleSimulation.CartPole.data_manager import DataManager
-from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name
+from SI_Toolkit.General.data_manager import DataManager
+from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_csv_file
 from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
 
 from globals import (
@@ -67,7 +67,7 @@ class MainLoggingManager:
         self.data_to_save_measurement = {}
         self.data_to_save_controller = {}
 
-        self.data_manager = DataManager()
+        self.data_manager = DataManager(create_csv_file)
 
         self.csv_name = None
         self.recording_length = np.inf
