@@ -24,7 +24,7 @@ class cartpole_simulator_batched(EnvironmentBatched, CartPoleEnv_LTC):
     num_states = 6
 
     def __init__(
-        self, batch_size=1, computation_lib=NumpyLibrary, render_mode="human", **kwargs
+        self, batch_size=1, computation_lib=NumpyLibrary(), render_mode="human", **kwargs
     ):
         self._batch_size = batch_size
         self._actuator_noise = np.array(kwargs["actuator_noise"], dtype=np.float32)
