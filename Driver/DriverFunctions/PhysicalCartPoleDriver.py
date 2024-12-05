@@ -54,6 +54,7 @@ class PhysicalCartPoleDriver:
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
         self.terminate_experiment = False
+        self.calibrating = False
 
         # Dance Mode
         self.dancer = Dancer()
@@ -89,6 +90,8 @@ class PhysicalCartPoleDriver:
         self.mlm = MainLoggingManager(self)
 
         self.keyboard_controller = KeyboardController(self)
+
+        self.recalibrate = False
 
     def run(self):
         with self.mlm.terminal_manager():
@@ -146,6 +149,10 @@ class PhysicalCartPoleDriver:
     def experiment_sequence(self):
 
         self.keyboard_controller.keyboard_input()
+
+        if self.recalibrate:
+            self.calibrate()
+            self.recalibrate = False
 
         self.load_data_from_chip()
 
