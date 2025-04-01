@@ -35,13 +35,13 @@ if CHIP == 'STM':
     # The other two shift (additive) to account for friction indep. of speed (separate for pos and neg Q)
     # Only applied if CORRECT_MOTOR_DYNAMICS is True
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
-    MOTOR_CORRECTION_POLOLU = (0.595228, 0.0323188, 0.0385016)
+    MOTOR_CORRECTION_POLOLU = (0.5733488, 0.0257380, 0.0258429)
     # The 12-bit ADC has a range of 4096 units
     # However due to potentiometer dead angle these 4096 units are mapped on less than full circle
     # The full circle in adc units was determined
     # by readout difference between up and down position on the side not including dead angle
     ANGLE_360_DEG_IN_ADC_UNITS = 4271.34
-    ANGLE_HANGING_POLOLU = 1028.579  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1000  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 910.0  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
