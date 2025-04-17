@@ -4,13 +4,14 @@ from CartPoleSimulation.CartPole import CartPole
 from CartPoleSimulation.CartPole.data_generator import random_experiment_setter
 
 class TargetPositionGenerator:
-    def __init__(self):
+    def __init__(self, cartpole_instance=None):
         self.RES = random_experiment_setter()
-        self.CartPoleInstance = None
+        self.CartPoleInstance = cartpole_instance
         self.time_start = 0.0
 
     def set_experiment(self):
-        self.CartPoleInstance = CartPole()
+        if self.CartPoleInstance is None:
+            self.CartPoleInstance = CartPole()
         self.CartPoleInstance = self.RES.set(self.CartPoleInstance)
         self.time_start = timeit.default_timer()
 
