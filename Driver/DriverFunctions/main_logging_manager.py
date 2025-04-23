@@ -7,8 +7,7 @@ from CartPoleSimulation.CartPole.state_utilities import ANGLE_IDX, ANGLE_COS_IDX
     POSITION_IDX, POSITIOND_IDX
 
 from SI_Toolkit.General.data_manager import DataManager
-from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_csv_file
-from DriverFunctions.csv_helpers import create_csv_header, create_csv_title
+from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_csv_file, create_csv_header, create_csv_title
 
 from globals import (
     CONTROLLER_NAME, CONTROL_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
@@ -160,11 +159,14 @@ class MainLoggingManager:
             combined_keys = list(self.dict_data_to_save_basic.keys()) + list(
                 self.data_to_save_measurement.keys()) + list(self.data_to_save_controller.keys())
 
+            self.driver.CartPoleInstance.dt_controller = CONTROL_PERIOD_MS / 1000
+            self.driver.CartPoleInstance.dt_save = CONTROL_PERIOD_MS / 1000
+
             self.data_manager.start_csv_recording(
                 self.csv_name,
                 combined_keys,
-                create_csv_title(),
-                create_csv_header(),
+                create_csv_title(mode='CPP'),
+                create_csv_header(self.driver.CartPoleInstance, mode='CPP'),
                 PATH_TO_EXPERIMENT_RECORDINGS,
                 mode='online',
                 wait_till_complete=False,
