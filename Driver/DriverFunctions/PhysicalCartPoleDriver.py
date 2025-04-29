@@ -63,7 +63,8 @@ class PhysicalCartPoleDriver:
 
         # Motor Commands
         self.Q = 0.0  # Motor command normed to be in a range -1 to 1
-        self.Q_prev = None
+        self.Q_prev = 0.0
+        self.Q_prev_prev = 0.0
         self.Q_ccrc_prev = None
         self.actualMotorCmd = 0
         self.actualMotorCmd_prev = None
@@ -178,7 +179,7 @@ class PhysicalCartPoleDriver:
                     self.th.time_current_measurement_chip,
                     {"target_position": self.target_position,
                      "target_equilibrium": self.CartPoleInstance.target_equilibrium,
-                     "Q_ccrc": self.CartPoleInstance.Q_ccrc,
+                     "Q_ccrc": self.Q_prev_prev,  # Take care! The Q_ccrc is Q_prev (MPC) but the control from before the current state is Q_prev_prev (NN)
                      }
                 ))
 
@@ -209,6 +210,7 @@ class PhysicalCartPoleDriver:
         self.mlm.step()
 
         self.actualMotorCmd_prev = self.actualMotorCmd
+        self.Q_prev_prev = self.Q_prev
         self.Q_prev = self.Q
         self.Q_ccrc_prev = self.CartPoleInstance.Q_ccrc
 
