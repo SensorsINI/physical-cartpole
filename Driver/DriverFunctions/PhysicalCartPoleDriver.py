@@ -43,7 +43,8 @@ class PhysicalCartPoleDriver:
     def __init__(self, CartPoleInstance):
 
         self.CartPoleInstance = CartPoleInstance
-        self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
+        if CONTROLLER_NAME == 'mpc':
+            self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
 
