@@ -34,7 +34,7 @@ class TimingHelper:
 
         # Artificial Latency
         self.additional_latency = 0.0
-        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=0.005)
+        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=CONTROL_PERIOD_MS/1000.0)
 
 
     def timer(self, attr_name, prev_attr_name=None):
