@@ -153,9 +153,9 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 0. Create python 3.11 environment, if you haven't done it yet. e.g.
 
-    `conda create -n CPP python=3.11`
+    `conda create -n cpp python=3.11`
 
-    `conda activate CPP`
+    `conda activate cpp`
 
     `conda install pip`
 
@@ -170,6 +170,16 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
     `pip install -r requirements.txt`
 
     This installs all the dependencies - it is quite a lot of packages, so it may take a while.
+
+3. Add alias for quick environment switch and modification of python path
+
+cpp() {
+  # initialize Conda’s shell functions (only runs once pe>
+  eval "$(/home/racecar/miniconda3/bin/conda shell.bash h>
+  conda activate cpp
+  export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
+}
+
 
 
 ### STM32
