@@ -173,12 +173,14 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 3. Add alias for quick environment switch and modification of python path
 
+```bash
 cpp() {
   # initialize Conda’s shell functions (only runs once pe>
   eval "$(/home/racecar/miniconda3/bin/conda shell.bash h>
   conda activate cpp
   export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
 }
+```
 
 
 
