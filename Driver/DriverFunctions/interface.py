@@ -49,17 +49,20 @@ def get_serial_port(chip_type="STM", serial_port_number=None):
     else:
         raise ValueError(f'Unknown chip type: {chip_type}')
 
-    SERIAL_PORT = None
+    possible_ports = []
     for port in ports:
         if port.description == expected_description:
-            SERIAL_PORT = port.device
-            break
-    if SERIAL_PORT is None:
+            possible_ports.append(port.device)
+
+    if not possible_ports:
         message = f"Searching serial port by its expected description - {expected_description} - not successful."
         if serial_port_number is not None:
             print(message)
+            SERIAL_PORT = None
         else:
             raise Exception(message)
+    else:
+        SERIAL_PORT = possible_ports[serial_port_number]
 
     if SERIAL_PORT is None and serial_port_number is not None:
         if len(serial_ports_names)==0:
@@ -331,7 +334,7 @@ class Interface:
         return crc8
 
 
-SUDO_PASSWORD = None
+SUDO_PASSWORD = 'Inivincible'
 import subprocess
 import getpass
 def set_ftdi_latency_timer(SERIAL_PORT):
