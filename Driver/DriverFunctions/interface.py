@@ -330,10 +330,19 @@ class Interface:
 
         return crc8
 
+
+SUDO_PASSWORD = None
 import subprocess
+import getpass
 def set_ftdi_latency_timer(SERIAL_PORT):
-    serial_port = SERIAL_PORT.split('/')[-1]
     print('\nSetting FTDI latency timer')
+    # check for hardcoded sudo password or prompt the user
+    if SUDO_PASSWORD:
+        password = SUDO_PASSWORD
+    else:
+        password = getpass.getpass('Enter sudo password: ')
+
+    serial_port = SERIAL_PORT.split('/')[-1]
     ftdi_timer_latency_requested_value = 1
     command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/{serial_port}/latency_timer'"
     command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/{serial_port}/latency_timer'
@@ -343,7 +352,7 @@ def set_ftdi_latency_timer(SERIAL_PORT):
         print(e.stderr)
         if "Permission denied" in e.stderr:
             print("Trying with sudo...")
-            command_ftdi_timer_latency_set = "sudo " + command_ftdi_timer_latency_set
+            command_ftdi_timer_latency_set = f"echo {password} | sudo -S {command_ftdi_timer_latency_set}"
             try:
                 subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
             except subprocess.CalledProcessError as e:
