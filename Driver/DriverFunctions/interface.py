@@ -43,26 +43,31 @@ def get_serial_port(chip_type="STM", serial_port_number=None):
     print()
 
     if chip_type == "STM":
-        expected_description = 'USB Serial'
+        expected_descriptions = ['USB Serial']
     elif chip_type == "ZYNQ":
-        expected_description = 'Digilent Adept USB Device - Digilent Adept USB Device'
+        expected_descriptions = ['Digilent Adept USB Device - Digilent Adept USB Device', 'Digilent Adept USB Device']
     else:
         raise ValueError(f'Unknown chip type: {chip_type}')
 
     possible_ports = []
     for port in ports:
-        if port.description == expected_description:
+        if port.description in expected_descriptions:
             possible_ports.append(port.device)
 
+    SERIAL_PORT = None
     if not possible_ports:
-        message = f"Searching serial port by its expected description - {expected_description} - not successful."
+        message = f"Searching serial port by its expected descriptions - {expected_descriptions} - not successful."
         if serial_port_number is not None:
             print(message)
-            SERIAL_PORT = None
         else:
             raise Exception(message)
     else:
-        SERIAL_PORT = possible_ports[serial_port_number]
+        if serial_port_number < len(possible_ports):
+            SERIAL_PORT = possible_ports[serial_port_number]
+        else:
+            print(f"Requested serial port number {serial_port_number} is out of range. Available ports: {len(possible_ports)}")
+            print(f"Using the first available port: {possible_ports[0]}")
+            SERIAL_PORT = possible_ports[0]
 
     if SERIAL_PORT is None and serial_port_number is not None:
         if len(serial_ports_names)==0:
@@ -334,32 +339,54 @@ class Interface:
         return crc8
 
 
-SUDO_PASSWORD = 'Inivincible'
+SUDO_PASSWORD = None
 import subprocess
 import getpass
+import platform
+# This is probably wrong port now.
 def set_ftdi_latency_timer(SERIAL_PORT):
     print('\nSetting FTDI latency timer')
-    # check for hardcoded sudo password or prompt the user
-    if SUDO_PASSWORD:
-        password = SUDO_PASSWORD
-    else:
-        password = getpass.getpass('Enter sudo password: ')
+    requested_value = 1  # in ms
 
-    serial_port = SERIAL_PORT.split('/')[-1]
-    ftdi_timer_latency_requested_value = 1
-    command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/{serial_port}/latency_timer'"
-    command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/{serial_port}/latency_timer'
-    try:
-        subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr)
-        if "Permission denied" in e.stderr:
-            print("Trying with sudo...")
-            command_ftdi_timer_latency_set = f"echo {password} | sudo -S {command_ftdi_timer_latency_set}"
-            try:
-                subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
-            except subprocess.CalledProcessError as e:
-                print(e.stderr)
+    if platform.system() == 'Linux':
+        # check for hardcoded sudo password or prompt the user
+        if SUDO_PASSWORD:
+            password = SUDO_PASSWORD
+        else:
+            password = getpass.getpass('Enter sudo password: ')
 
-    ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True, text=True).stdout.rstrip()
-    print(f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')
+        serial_port = SERIAL_PORT.split('/')[-1]
+        ftdi_timer_latency_requested_value = 1
+        command_ftdi_timer_latency_set = f"sh -c 'echo {ftdi_timer_latency_requested_value} > /sys/bus/usb-serial/devices/{serial_port}/latency_timer'"
+        command_ftdi_timer_latency_check = f'cat /sys/bus/usb-serial/devices/{serial_port}/latency_timer'
+        try:
+            subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr)
+            if "Permission denied" in e.stderr:
+                print("Trying with sudo...")
+                command_ftdi_timer_latency_set = f"echo {password} | sudo -S {command_ftdi_timer_latency_set}"
+                try:
+                    subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+                except subprocess.CalledProcessError as e:
+                    print(e.stderr)
+
+        ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True, text=True).stdout.rstrip()
+        print(f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')
+    # elif platform.system() == 'Darwin':
+    #     # on macOS you must use FTDI’s D2XX driver
+    #     try:
+    #         import ftd2xx
+    #     except ImportError:
+    #         raise ImportError("Please install the D2XX Python bindings: pip install ftd2xx")
+    #
+    #     # open by serial number (or index 0)
+    #     # if your serial_port is like 'FTDI1234', pass that; otherwise use index
+    #     dev = ftd2xx.open(dev=SERIAL_PORT)
+    #
+    #     # setLatencyTimer takes a value in ms (1–255)
+    #     dev.setLatencyTimer(requested_value)
+    #     # retrieve and print the new setting
+    #     actual = dev.getLatencyTimer()
+    #     print(f'macOS FTDI latency timer now: {actual} ms')
+    #     dev.close()
