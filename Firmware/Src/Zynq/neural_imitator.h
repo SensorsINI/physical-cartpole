@@ -4,7 +4,6 @@
 
 typedef enum {
 	NETWORK_NONE,
-    NETWORK_TFMICRO,
     NETWORK_HLS4ML,
     NETWORK_EDGEDRNN
 } NeuralNetworkType;
