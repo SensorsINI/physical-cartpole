@@ -23,6 +23,8 @@
 #include "HLS4ML/HLS4ML_Network.h"
 #endif
 
+#include "NC_C/network.h"
+
 
 #define NETWORKS_SWITCH_NUMBER	3
 
@@ -152,6 +154,27 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                 }
             }
     #endif
+            break;
+        case NETWORK_C:
+            {
+                // Prepare C-network I/O buffers
+                float c_input[MLP_ACTIVATION_NEURONS];
+                float c_output[MLP_PREDICTION_NEURONS];
+
+                // 1) Extract raw floats and apply normalization: a*x + b
+                for (int i = 0; i < MLP_ACTIVATION_NEURONS; i++) {
+                    float raw = *((float*)&network_input_buffer[i * DATA_WORD_BYTES]);
+                    c_input[i] = hls_normalize_a[i] * raw + hls_normalize_b[i];
+                }
+
+                // 2) Invoke your pure-C inference function
+                C_Network_Evaluate(c_input, c_output);
+
+                // 3) Pack the predicted floats back into the raw output buffer
+                for (int i = 0; i < MLP_PREDICTION_NEURONS; i++) {
+                    *((float*)&network_output_buffer[i * DATA_WORD_BYTES]) = c_output[i];
+                }
+            }
             break;
 
         default:
