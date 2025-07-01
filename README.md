@@ -163,7 +163,14 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 1. Clone the repository
 
-    `git clone https://github.com/SensorsINI/physical-cartpole`
+    `git clone --recurse-submodules https://github.com/SensorsINI/physical-cartpole`
+
+If  CartPoleSimulation, SI_Toolkit (System Identification Toolbox) or Control Toolkit folders are empty, use these lines to pull all submodules:
+
+```bash
+git submodule update --init --recursive
+git submodule update --recursive --remote
+```
 
 2. Install the dependencies
 
@@ -176,7 +183,7 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 ```bash
 cpp() {
   # initialize Conda’s shell functions (only runs once pe>
-  eval "$(/home/racecar/miniconda3/bin/conda shell.bash h>
+  eval "$(/(path to miniconda3))/bin/conda shell.bash h>
   conda activate cpp
   export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
 }
