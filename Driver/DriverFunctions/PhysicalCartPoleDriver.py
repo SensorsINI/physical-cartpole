@@ -93,8 +93,8 @@ class PhysicalCartPoleDriver:
         self.keyboard_controller = KeyboardController(self)
 
     def run(self):
+        self.setup()
         with self.mlm.terminal_manager():
-            self.setup()
             self.run_experiment()
             self.quit_experiment()
 
