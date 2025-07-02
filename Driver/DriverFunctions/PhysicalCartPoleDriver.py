@@ -149,6 +149,9 @@ class PhysicalCartPoleDriver:
 
         self.load_data_from_chip()
 
+        import time
+        python_latency_start = time.time()
+
         self.th.time_measurement()
 
         self.th.check_latency_violation(self.controlEnabled)
@@ -215,7 +218,7 @@ class PhysicalCartPoleDriver:
 
         self.update_parameters_in_cartpole_instance()
 
-        self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
+        self.th.python_latency = self.th.time_since(python_latency_start)
 
     def load_data_from_chip(self):
         # This function will block at the rate of the control loop
