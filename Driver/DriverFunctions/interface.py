@@ -151,12 +151,17 @@ class Interface:
             try:
                 self.device = serial_for_url(port, baudrate=baud, timeout=None)
                 self.device.ftdi.set_latency_timer(1)
+                self.device.ftdi.set_dynamic_latency(1, 1, 1)
                 print(f'FTDI latency set to {self.device.ftdi.get_latency_timer()} ms')
             except serial.SerialException as e:
                 # Hard to debug otherwise, so let us know what went wrong…
                 raise Exception(f"⚠️  PyFtdi open failed ({e})")
         else:
             self.device = serial.Serial(port, baudrate=baud, timeout=None)
+        print(f"Serial Driver Type: {type(self.device)}")
+        t0 = time.perf_counter_ns()
+        self.ping()
+        print("Ping the chip:", (time.perf_counter_ns() - t0) / 1e6, "ms")
 
         self.device.reset_input_buffer()
 
