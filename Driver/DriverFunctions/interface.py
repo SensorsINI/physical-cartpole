@@ -20,6 +20,37 @@ if platform.system() == 'Darwin':
     )
     usb.core.backend = backend
 
+elif platform.system() == 'Windows':
+    """
+    We switch the FTDI interface to WinUSB (installed with Zadig) and
+    force PyUSB to use the libusb-1.0 backend shipped with Zadig.
+    This lets PyFtdi talk to the chip and expose the latency-timer
+    controls that are unavailable through the stock FTDI “VCP” driver.
+    """
+
+    import os, sys, usb.backend.libusb1, usb.core
+    from pyftdi.serialext import serial_for_url
+
+    def _find_libusb(_):
+        candidates = [
+            os.path.join(sys.prefix, "Library", "bin", "libusb-1.0.dll"),      # conda
+            os.path.join(sys.prefix, "Lib", "site-packages", "libusb",
+                         "_platform", "windows", "libusb-1.0.dll"),            # pip wheel
+            r"C:\Windows\System32\libusb-1.0.dll"                              # manual copy
+        ]
+        for dll in candidates:
+            if os.path.exists(dll):
+                return dll
+        # let ctypes fall back to PATH/name search
+        return None
+
+    backend = usb.backend.libusb1.get_backend(find_library=_find_libusb)
+    if backend is None:
+        raise RuntimeError("libusb-1.0.dll still not found. "
+                           "Install libusb (conda/pip) or place the DLL in one of the probed paths.")
+    usb.core.backend = backend
+
+
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
 HARDWARE_EXPERIMENT_TIMEOUT = 30.0      # Seconds
@@ -127,6 +158,24 @@ def get_serial_port(chip_type="STM", serial_port_number=None):
 
         # Build and return the PyFtdi URL with the latency parameter
         return f"ftdi://ftdi:{chip_token}/{interface}?latency=1"
+
+    # ------- Windows: prefer PyFtdi over any lingering COMx ports -------
+    if platform.system() == 'Windows':
+        from pyftdi.ftdi import Ftdi
+        import usb.core
+        # PyFtdi sees devices that use the WinUSB driver you installed with Zadig
+        devices = list(Ftdi.list_devices())
+        if not devices:
+            # No WinUSB interfaces found → fall back to whatever COM port we located
+            return SERIAL_PORT
+
+        # Choose the first interface (or pick by VID/PID if you have many)
+        desc, iface = devices[0]
+        chip_token = '2232h' if desc.pid == 0x6010 else '232r'
+
+        # Build   ftdi://ftdi:<chip_token>/<iface>?latency=1
+        return f"ftdi://ftdi:{chip_token}/{iface}?latency=1"
+
 
 
     return SERIAL_PORT
