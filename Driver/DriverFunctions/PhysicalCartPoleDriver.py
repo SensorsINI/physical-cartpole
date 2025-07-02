@@ -7,7 +7,7 @@ from CartPoleSimulation.CartPole.state_utilities import (create_cartpole_state,
 
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.interface import Interface, set_ftdi_latency_timer
+from DriverFunctions.interface import Interface
 from DriverFunctions.incoming_data_processor import IncomingDataProcessor
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import ExperimentProtocolsManager
 
@@ -102,8 +102,6 @@ class PhysicalCartPoleDriver:
         self.keyboard_controller.setup()
 
         SERIAL_PORT = get_serial_port(chip_type=CHIP, serial_port_number=SERIAL_PORT_NUMBER)
-        if CHIP == 'ZYNQ':
-            set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
