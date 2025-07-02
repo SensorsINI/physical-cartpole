@@ -150,10 +150,11 @@ class Interface:
         if isinstance(port, str) and port.startswith("ftdi://"):
             try:
                 self.device = serial_for_url(port, baudrate=baud, timeout=None)
+                self.device.ftdi.set_latency_timer(1)
+                print(f'FTDI latency set to {self.device.ftdi.get_latency_timer()} ms')
             except serial.SerialException as e:
                 # Hard to debug otherwise, so let us know what went wrong…
-                print(f"⚠️  PyFtdi open failed ({e}); falling back to pyserial on {self.port}")
-                self.device = serial.Serial(self.port, baudrate=self.baud, timeout=None)
+                raise Exception(f"⚠️  PyFtdi open failed ({e})")
         else:
             self.device = serial.Serial(port, baudrate=baud, timeout=None)
 
