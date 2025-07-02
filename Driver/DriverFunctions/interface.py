@@ -3,6 +3,23 @@ import struct
 import time
 import pandas as pd
 
+# at the very top, after your other imports:
+import platform
+
+# On macOS we want to force PyUSB to use Homebrew’s libusb so that
+# we can control the FTDI latency timer. Then we pull in pyftdi’s
+# serial extension which honors the “latency” query parameter.
+if platform.system() == 'Darwin':
+    import usb.backend.libusb1
+    import usb.core
+    from pyftdi.serialext import serial_for_url
+
+    # Point PyUSB at the Homebrew‐installed libusb rather than Apple's
+    backend = usb.backend.libusb1.get_backend(
+        find_library=lambda x: "/opt/homebrew/lib/libusb-1.0.dylib"
+    )
+    usb.core.backend = backend
+
 PING_TIMEOUT            = 1.0       # Seconds
 CALIBRATE_TIMEOUT       = 10.0      # Seconds
 HARDWARE_EXPERIMENT_TIMEOUT = 30.0      # Seconds
@@ -76,6 +93,41 @@ def get_serial_port(chip_type="STM", serial_port_number=None):
             print(f"Setting serial port with requested number ({serial_port_number})\n")
             SERIAL_PORT = serial_ports_names[serial_port_number]
 
+    if platform.system() == 'Darwin' and SERIAL_PORT:
+        # On macOS, build a PyFtdi URL including the serial number so
+        # create_from_url() can locate the exact device and apply latency.
+        port_info = next((p for p in ports if p.device == SERIAL_PORT), None)
+        if port_info is None:
+            raise Exception(f"Couldn't retrieve port_info for {SERIAL_PORT}")
+        from pyftdi.ftdi import Ftdi
+
+        # —— DEBUG: list detected FTDI devices — useful if multiple VID/PID exist
+        print("Detected FTDI devices (PyFtdi.list_devices()):")
+        for desc, iface in Ftdi.list_devices():
+            print(f"  VID={desc.vid:04x}, PID={desc.pid:04x}, SN={desc.sn!r}, IFACE={iface}")
+
+        # —— find first device matching VID/PID ——
+        found = next(
+            ((desc, iface) for desc, iface in Ftdi.list_devices()
+             if desc.vid == port_info.vid and desc.pid == port_info.pid),
+            None
+        )
+
+        # Determine serial number to use: prefer pyserial-provided, else descriptor
+        port_serial = getattr(port_info, 'serial_number', None) or (found[0].sn if found else None)
+        if port_serial is None:
+            raise Exception(f"Could not determine serial number for {SERIAL_PORT}")
+
+        # Determine chip token: '2232h' for FT2232H (PID 0x6010), else '232r'
+        pid_value = found[0].pid if found else port_info.pid
+        chip_token = '2232h' if pid_value == 0x6010 else '232r'
+
+        # Interface index: from found tuple or default to 1
+        interface = found[1] if found else 1
+
+        # Build and return the PyFtdi URL with the latency parameter
+        return f"ftdi://ftdi:{chip_token}/{interface}?latency=1"
+
 
     return SERIAL_PORT
 
@@ -94,7 +146,17 @@ class Interface:
     def open(self, port, baud):
         self.port = port
         self.baud = baud
-        self.device = serial.Serial(port, baudrate=baud, timeout=None)
+
+        if isinstance(port, str) and port.startswith("ftdi://"):
+            try:
+                self.device = serial_for_url(port, baudrate=baud, timeout=None)
+            except serial.SerialException as e:
+                # Hard to debug otherwise, so let us know what went wrong…
+                print(f"⚠️  PyFtdi open failed ({e}); falling back to pyserial on {self.port}")
+                self.device = serial.Serial(self.port, baudrate=self.baud, timeout=None)
+        else:
+            self.device = serial.Serial(port, baudrate=baud, timeout=None)
+
         self.device.reset_input_buffer()
 
     def close(self):
@@ -141,7 +203,8 @@ class Interface:
 
         self.clear_read_buffer()
 
-        reply = self._receive_reply(CMD_RUN_HARDWARE_EXPERIMENT, 6, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+        reply = self._receive_reply(CMD_RUN_HARDWARE_EXPERIMENT, 6, HARDWARE_EXPERIMENT_TIMEOUT,
+                                    reconnect_at_timeout=False)
         self.hardware_experiment_length = struct.unpack('H', bytes(reply[3:5]))[0]
         print(f'Hardware experiment finished with length {self.hardware_experiment_length}')
 
