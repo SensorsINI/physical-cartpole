@@ -344,8 +344,8 @@ import subprocess
 import getpass
 import platform
 # This is probably wrong port now.
-def set_ftdi_latency_timer(SERIAL_PORT):
-    print('\nSetting FTDI latency timer')
+def set_ftdi_latency_timer_linux(SERIAL_PORT):
+    print('\nSetting FTDI latency timer for Linux...')
     requested_value = 1  # in ms
 
     if platform.system() == 'Linux':
@@ -373,20 +373,43 @@ def set_ftdi_latency_timer(SERIAL_PORT):
 
         ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True, text=True).stdout.rstrip()
         print(f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')
-    # elif platform.system() == 'Darwin':
-    #     # on macOS you must use FTDI’s D2XX driver
-    #     try:
-    #         import ftd2xx
-    #     except ImportError:
-    #         raise ImportError("Please install the D2XX Python bindings: pip install ftd2xx")
-    #
-    #     # open by serial number (or index 0)
-    #     # if your serial_port is like 'FTDI1234', pass that; otherwise use index
-    #     dev = ftd2xx.open(dev=SERIAL_PORT)
-    #
-    #     # setLatencyTimer takes a value in ms (1–255)
-    #     dev.setLatencyTimer(requested_value)
-    #     # retrieve and print the new setting
-    #     actual = dev.getLatencyTimer()
-    #     print(f'macOS FTDI latency timer now: {actual} ms')
-    #     dev.close()
+
+
+
+def set_ftdi_latency_all_mac(latency_ms=1):
+    print("\nSetting FTDI latency timer for all FTDI devices on macOS...")
+    import usb.backend.libusb1
+    import usb.core
+    from pyftdi.ftdi import Ftdi
+
+    # Force PyUSB to use Homebrew’s libusb rather than the Apple one
+    backend = usb.backend.libusb1.get_backend(
+        find_library=lambda x: "/opt/homebrew/lib/libusb-1.0.dylib"
+    )
+    usb.core.backend = backend
+
+    # list_devices() yields (UsbDeviceDescriptor, interface) tuples,
+    # not actual PyUSB Device objects
+    dev_list = Ftdi.list_devices()
+    if not dev_list:
+        print("No FTDI devices found.")
+        return
+
+    for usb_desc, iface in dev_list:
+        # usb_desc has vid, pid, sn, bus, address, etc.
+        # Locate the real PyUSB device by vendor/product/serial
+        pyusb_dev = usb.core.find(
+            idVendor=usb_desc.vid,
+            idProduct=usb_desc.pid,
+            serial_number=usb_desc.sn
+        )
+        if pyusb_dev is None:
+            print(f"Could not open {usb_desc}: no matching PyUSB device")
+            continue
+
+        # Now we can open it properly by passing the PyUSB Device + interface
+        ftdi_dev = Ftdi()
+        ftdi_dev.open_from_device(pyusb_dev, iface)
+        ftdi_dev.set_latency_timer(latency_ms)  # persists until next power-cycle
+        ftdi_dev.close()
+        print(f"→ Set latency to {latency_ms} ms on SN={usb_desc.sn}, iface={iface}")
