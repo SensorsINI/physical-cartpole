@@ -153,9 +153,9 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 0. Create python 3.11 environment, if you haven't done it yet. e.g.
 
-    `conda create -n CPP python=3.11`
+    `conda create -n cpp python=3.11`
 
-    `conda activate CPP`
+    `conda activate cpp`
 
     `conda install pip`
 
@@ -163,13 +163,32 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 1. Clone the repository
 
-    `git clone https://github.com/SensorsINI/physical-cartpole`
+    `git clone --recurse-submodules https://github.com/SensorsINI/physical-cartpole`
+
+If  CartPoleSimulation, SI_Toolkit (System Identification Toolbox) or Control Toolkit folders are empty, use these lines to pull all submodules:
+
+```bash
+git submodule update --init --recursive
+git submodule update --recursive --remote
+```
 
 2. Install the dependencies
 
     `pip install -r requirements.txt`
 
     This installs all the dependencies - it is quite a lot of packages, so it may take a while.
+
+3. Add alias for quick environment switch and modification of python path
+
+```bash
+cpp() {
+  # initialize Conda’s shell functions (only runs once pe>
+  eval "$(/(path to miniconda3))/bin/conda shell.bash h>
+  conda activate cpp
+  export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
+}
+```
+
 
 
 ### STM32

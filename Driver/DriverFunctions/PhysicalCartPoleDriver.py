@@ -7,7 +7,7 @@ from CartPoleSimulation.CartPole.state_utilities import (create_cartpole_state,
 
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.interface import Interface, set_ftdi_latency_timer
+from DriverFunctions.interface import Interface
 from DriverFunctions.incoming_data_processor import IncomingDataProcessor
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import ExperimentProtocolsManager
 
@@ -43,7 +43,8 @@ class PhysicalCartPoleDriver:
     def __init__(self, CartPoleInstance):
 
         self.CartPoleInstance = CartPoleInstance
-        self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
+        if CONTROLLER_NAME == 'mpc':
+            self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
 
@@ -64,7 +65,8 @@ class PhysicalCartPoleDriver:
 
         # Motor Commands
         self.Q = 0.0  # Motor command normed to be in a range -1 to 1
-        self.Q_prev = None
+        self.Q_prev = 0.0
+        self.Q_prev_prev = 0.0
         self.Q_ccrc_prev = None
         self.actualMotorCmd = 0
         self.actualMotorCmd_prev = None
@@ -94,8 +96,8 @@ class PhysicalCartPoleDriver:
         self.recalibrate = False
 
     def run(self):
+        self.setup()
         with self.mlm.terminal_manager():
-            self.setup()
             self.run_experiment()
             self.quit_experiment()
 
@@ -103,8 +105,6 @@ class PhysicalCartPoleDriver:
         self.keyboard_controller.setup()
 
         SERIAL_PORT = get_serial_port(chip_type=CHIP, serial_port_number=SERIAL_PORT_NUMBER)
-        if CHIP == 'ZYNQ':
-            set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
@@ -156,6 +156,9 @@ class PhysicalCartPoleDriver:
 
         self.load_data_from_chip()
 
+        import time
+        python_latency_start = time.time()
+
         self.th.time_measurement()
 
         self.th.check_latency_violation(self.controlEnabled)
@@ -185,7 +188,7 @@ class PhysicalCartPoleDriver:
                     self.th.time_current_measurement_chip,
                     {"target_position": self.target_position,
                      "target_equilibrium": self.CartPoleInstance.target_equilibrium,
-                     "Q_ccrc": self.CartPoleInstance.Q_ccrc,
+                     "Q_ccrc": self.Q_prev_prev,  # Take care! The Q_ccrc is Q_prev (MPC) but the control from before the current state is Q_prev_prev (NN)
                      }
                 ))
 
@@ -216,12 +219,13 @@ class PhysicalCartPoleDriver:
         self.mlm.step()
 
         self.actualMotorCmd_prev = self.actualMotorCmd
+        self.Q_prev_prev = self.Q_prev
         self.Q_prev = self.Q
         self.Q_ccrc_prev = self.CartPoleInstance.Q_ccrc
 
         self.update_parameters_in_cartpole_instance()
 
-        self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
+        self.th.python_latency = self.th.time_since(python_latency_start)
 
     def load_data_from_chip(self):
         # This function will block at the rate of the control loop

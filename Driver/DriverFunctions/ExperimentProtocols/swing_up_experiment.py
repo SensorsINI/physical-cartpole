@@ -14,12 +14,12 @@ import numpy as np
 from DriverFunctions.TargetPositionGenerator import TargetPositionGenerator
 from DriverFunctions.PID_Position import controller_PID_position
 
-NUMBER_OF_SWINGUPS = 100
+NUMBER_OF_SWINGUPS = 50
 STABLE_ANGLE_RAD = 0.2
-TIME_STABLE = 16
+TIME_STABLE = 20
 RESET_Q = 0.5
-TIME_STABLE_DOWN = 8.0
-RECALIBRATE_EVERY_N_SWING_UPS = 8
+TIME_STABLE_DOWN = 5.0
+RECALIBRATE_EVERY_N_SWING_UPS = 1
 
 class swing_up_experiment(template_experiment_protocol):
     def __init__(self, driver):
@@ -28,7 +28,7 @@ class swing_up_experiment(template_experiment_protocol):
             experiment_protocol_name=self.__class__.__name__[:-len('_experiment')],)
 
         self.counter_swingup = 0
-        self.TPG = TargetPositionGenerator()
+        self.TPG = TargetPositionGenerator(driver.CartPoleInstance)
 
         self.PID = controller_PID_position()
         
@@ -36,6 +36,10 @@ class swing_up_experiment(template_experiment_protocol):
     def set_up_experiment(self, first_iteration=True):
         if first_iteration:
             self.counter_swingup = 0
+
+        self.driver.controlEnabled = False
+        self.driver.Q = 0.0
+        self.driver.InterfaceInstance.set_motor(0)
 
         if RECALIBRATE_EVERY_N_SWING_UPS is not None and self.counter_swingup % RECALIBRATE_EVERY_N_SWING_UPS == 0:
             print("\nCalibrating motor position.... ")
@@ -66,10 +70,10 @@ class swing_up_experiment(template_experiment_protocol):
             pass
         elif self.current_experiment_phase == 'reset':
             self.action_reset()
-        elif self.current_experiment_phase == 'wait inbetween':
-            self.action_wait_inbetween()
         elif self.current_experiment_phase == 'swingup':
             self.action_swing_up()
+        elif self.current_experiment_phase == 'stabilize down':
+            self.action_stabilize_down()
         else:
             raise Exception(f'unknown experiment phase: {self.current_experiment_phase}')
 
@@ -83,34 +87,38 @@ class swing_up_experiment(template_experiment_protocol):
         ):
             pass
         else:
-            self.time_start_stable_down = self.time
-            self.current_experiment_phase = 'wait inbetween'
+            self.time_start = self.time
+            self.current_experiment_phase = 'swingup'
 
-    def action_wait_inbetween(self):
+    def action_swing_up(self):
+        self.target_equilibrium = 1
+        self.driver.controlEnabled = True
+
+        self.target_position = self.TPG.get_target_position()
+
+        if self.time - self.time_start > TIME_STABLE:
+            self.counter_swingup += 1
+            self.time_start_stable_down = self.time
+            self.current_experiment_phase = 'stabilize down'
+
+    def action_stabilize_down(self):
         self.target_equilibrium = -1
         self.driver.controlEnabled = True
         self.target_position = self.TPG.get_target_position()
 
         if self.time - self.time_start_stable_down > TIME_STABLE_DOWN:
             self.target_position = self.TPG.get_target_position()
-            self.time_start = self.time
-            self.current_experiment_phase = 'swingup'
-            self.driver.controlEnabled = True
 
-
-    def action_swing_up(self):
-        self.target_equilibrium = 1
-
-        self.target_position = self.TPG.get_target_position()
-
-        if self.time - self.time_start > TIME_STABLE:
-            self.counter_swingup += 1
             self.finish_recording()
+
+            self.driver.controlEnabled = False
+            self.driver.Q = 0.0
             if self.counter_swingup >= NUMBER_OF_SWINGUPS:
                 self.stop()
                 self.driver.controller.controller_report()
             else:
                 self.set_up_experiment(first_iteration=False)
+
 
 
     def __str__(self):

@@ -7,8 +7,6 @@
 
 #include "fixed_point.hpp"
 
-#include "TFmicro/TFmicro_Network.h"
-
 #ifdef XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_DEVICE_ID
 #define EdgeDRNN
 #endif
@@ -24,6 +22,8 @@
 #ifdef HLS4ML
 #include "HLS4ML/HLS4ML_Network.h"
 #endif
+
+#include "NC_C/network.h"
 
 
 #define NETWORKS_SWITCH_NUMBER	3
@@ -68,14 +68,6 @@ float hls_denormalize_B[] = {0.0};
 //float hls_denormalize_B[] = {-0.01349998,7.27099991
 //};
 
-
-float tfmicro_normalize_a[] = {0.05373850,1.00000000,1.00000000,5.44010401,0.86096680,1.00000000,6.31313133
-};
-float tfmicro_normalize_b[] = {-0.07883823,0.00000000,0.00000000,0.01648343,-0.01449436,0.00000000,0.00000000
-};
-float tfmicro_denormalize_A[] = {1.0};
-float tfmicro_denormalize_B[] = {0.0};
-
 // EdgeDRNN input buffer
 short* edgedrnn_stim; //[] = {131,256,8,36,2,256,14,0};
 
@@ -89,10 +81,6 @@ void Neural_Imitator_Init()
 
 #ifdef EdgeDRNN
 	EdgeDRNN_Network_Init();
-#endif
-
-#ifdef TF_MICRO
-    TFmicro_Network_Init();
 #endif
 
 }
@@ -167,27 +155,26 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             }
     #endif
             break;
-
-        case NETWORK_TFMICRO:
-    #ifdef TF_MICRO
+        case NETWORK_C:
             {
-                float inputs[TF_MICRO_NUMBER_OF_INPUTS];
-                float outputs[TF_MICRO_NUMBER_OF_OUTPUTS];
+                // Prepare C-network I/O buffers
+                float c_input[MLP_ACTIVATION_NEURONS];
+                float c_output[MLP_PREDICTION_NEURONS];
 
-                for (int neuron_idx = 0; neuron_idx < TF_MICRO_NUMBER_OF_INPUTS; neuron_idx++) {
-                    actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
-                    inputs[neuron_idx] = tfmicro_normalize_a[neuron_idx] * actv_floating_point + tfmicro_normalize_b[neuron_idx];
+                // 1) Extract raw floats and apply normalization: a*x + b
+                for (int i = 0; i < MLP_ACTIVATION_NEURONS; i++) {
+                    float raw = *((float*)&network_input_buffer[i * DATA_WORD_BYTES]);
+                    c_input[i] = hls_normalize_a[i] * raw + hls_normalize_b[i];
                 }
 
-                TFmicro_Network_Evaluate(inputs, outputs);
+                // 2) Invoke your pure-C inference function
+                C_Network_Evaluate(c_input, c_output);
 
-                for (int neuron_idx = 0; neuron_idx < TF_MICRO_NUMBER_OF_OUTPUTS; neuron_idx++) {
-                    predic_floating_point = outputs[neuron_idx];
-                    predic_floating_point = tfmicro_denormalize_A[neuron_idx] * predic_floating_point + tfmicro_denormalize_B[neuron_idx];
-                    *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = predic_floating_point;
+                // 3) Pack the predicted floats back into the raw output buffer
+                for (int i = 0; i < MLP_PREDICTION_NEURONS; i++) {
+                    *((float*)&network_output_buffer[i * DATA_WORD_BYTES]) = c_output[i];
                 }
             }
-    #endif
             break;
 
         default:

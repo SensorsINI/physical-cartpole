@@ -34,7 +34,7 @@ class TimingHelper:
 
         # Artificial Latency
         self.additional_latency = 0.0
-        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=0.005)
+        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=CONTROL_PERIOD_MS/1000.0)
 
 
     def timer(self, attr_name, prev_attr_name=None):
@@ -106,7 +106,7 @@ class TimingHelper:
     def latency_data_for_statistics_in_terminal(self):
         # Averaging
         self.total_iterations += 1
-        if self.total_iterations > 10 and self.controlled_iterations > 10:
+        if self.total_iterations > 10:
             self.delta_time_buffer = np.append(self.delta_time_buffer, self.time_between_measurements_chip)
             self.delta_time_buffer = self.delta_time_buffer[-STATISTICS_IN_TERMINAL_AVERAGING_LENGTH:]
             self.firmware_latency_buffer = np.append(self.firmware_latency_buffer, self.firmware_latency)
@@ -117,19 +117,20 @@ class TimingHelper:
             self.controller_steptime_buffer = self.controller_steptime_buffer[-STATISTICS_IN_TERMINAL_AVERAGING_LENGTH:]
 
     def strings_for_statistics_in_terminal(self):
-        if self.total_iterations > 10 and self.controlled_iterations > 10:
+        if self.total_iterations > 10:
+            buffer_current_length = np.min((self.total_iterations-10+1, STATISTICS_IN_TERMINAL_AVERAGING_LENGTH))
             timing_string = "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], \n         python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms]".format(
-                float(self.delta_time_buffer.mean() * 1000),
-                float(self.delta_time_buffer.std() * 1000),
+                float(self.delta_time_buffer[:buffer_current_length].mean() * 1000),
+                float(self.delta_time_buffer[:buffer_current_length].std() * 1000),
 
-                float(self.firmware_latency_buffer.mean() * 1000),
-                float(self.firmware_latency_buffer.std() * 1000),
+                float(self.firmware_latency_buffer[:buffer_current_length].mean() * 1000),
+                float(self.firmware_latency_buffer[:buffer_current_length].std() * 1000),
 
-                float(self.python_latency_buffer.mean() * 1000),
-                float(self.python_latency_buffer.std() * 1000),
+                float(self.python_latency_buffer[:buffer_current_length].mean() * 1000),
+                float(self.python_latency_buffer[:buffer_current_length].std() * 1000),
 
-                float(self.controller_steptime_buffer.mean() * 1000),
-                float(self.controller_steptime_buffer.std() * 1000)
+                float(self.controller_steptime_buffer[:buffer_current_length].mean() * 1000),
+                float(self.controller_steptime_buffer[:buffer_current_length].std() * 1000)
             )
 
 
@@ -149,6 +150,7 @@ class TimingHelper:
         self.controller_steptime_buffer = np.zeros((0,))
 
         self.latency_violations = 0
+        self.total_iterations = 0
 
     @staticmethod
     def time_since(starting_time):

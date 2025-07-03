@@ -25,4 +25,5 @@ print("TF Float Type:", tf.keras.backend.floatx())
 CartPoleInstance = CartPole()
 CartPoleInstance.dt_controller = float(CONTROL_PERIOD_MS)/1000.0
 PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver(CartPoleInstance)
+print("\nPhysical CartPole Driver created!\n")
 PhysicalCartPoleDriverInstance.run()

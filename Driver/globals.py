@@ -6,8 +6,8 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'rl-train'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete', 'rl', 'rl-train'
-OPTIMIZER_NAME = 'rpgd-tf'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
+CONTROLLER_NAME = 'rl-train'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
+OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 # Motor type selection
 # Choose 'POLOLU' or 'ORIGINAL'
@@ -21,7 +21,7 @@ MOTOR = 'POLOLU'
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'neural-imitator':
-    CONTROL_PERIOD_MS = 5
+    CONTROL_PERIOD_MS = 10
 elif CONTROLLER_NAME == 'rl':
     CONTROL_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'rl-train':
@@ -44,21 +44,21 @@ if CHIP == 'STM':
     # However due to potentiometer dead angle these 4096 units are mapped on less than full circle
     # The full circle in adc units was determined
     # by readout difference between up and down position on the side not including dead angle
-    ANGLE_360_DEG_IN_ADC_UNITS = 4271.34
     ANGLE_HANGING_POLOLU = 1000  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_360_DEG_IN_ADC_UNITS = 4293.4
     ANGLE_HANGING_ORIGINAL = 910.0  # Value from sensor when pendulum is at stable equilibrium point
-    POSITION_ENCODER_RANGE = 4164  # This is an empirical approximation
+    POSITION_ENCODER_RANGE = 4672  # This is an empirical approximation
 elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
-    MOTOR_CORRECTION_POLOLU = (0.5733488, 0.0257380, 0.0258429)
+    MOTOR_CORRECTION_POLOLU = (0.6216901, 0.0750750, 0.0549491)
     ANGLE_360_DEG_IN_ADC_UNITS = 4069.05  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1081.0  # Value from sensor when pendulum is at stable equilibrium point
-    ANGLE_HANGING_ORIGINAL = 1008.5  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 940.0  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_ORIGINAL = 1078.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
 

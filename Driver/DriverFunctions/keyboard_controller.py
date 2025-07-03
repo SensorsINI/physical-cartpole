@@ -91,13 +91,13 @@ class KeyboardController:
         # Check that we are running from terminal, otherwise we cannot control it
         if not sys.stdin.isatty():
             print('Run from an interactive terminal to allow keyboard input.')
-            quit()
+            # quit()  # TODO: do not quit if run from cartpole GUI. Quit otherwise
             
         self.print_help()
 
     def keyboard_input(self):
 
-        if self.kbAvailable & self.kb.kbhit():
+        if self.kbAvailable and hasattr(self, 'kb') and self.kb.kbhit():
 
             c = self.kb.getch()
             try:
