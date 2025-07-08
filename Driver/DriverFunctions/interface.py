@@ -3,77 +3,29 @@ import struct
 import time
 import pandas as pd
 
-# at the very top, after your other imports:
-import platform
-
-# On macOS we want to force PyUSB to use Homebrew’s libusb so that
-# we can control the FTDI latency timer. Then we pull in pyftdi’s
-# serial extension which honors the “latency” query parameter.
-if platform.system() == 'Darwin':
-    import usb.backend.libusb1
-    import usb.core
-    from pyftdi.serialext import serial_for_url
-
-    # Point PyUSB at the Homebrew‐installed libusb rather than Apple's
-    backend = usb.backend.libusb1.get_backend(
-        find_library=lambda x: "/opt/homebrew/lib/libusb-1.0.dylib"
-    )
-    usb.core.backend = backend
-
-elif platform.system() == 'Windows':
-    """
-    We switch the FTDI interface to WinUSB (installed with Zadig) and
-    force PyUSB to use the libusb-1.0 backend shipped with Zadig.
-    This lets PyFtdi talk to the chip and expose the latency-timer
-    controls that are unavailable through the stock FTDI “VCP” driver.
-    """
-
-    import os, sys, usb.backend.libusb1, usb.core
-    from pyftdi.serialext import serial_for_url
-
-    def _find_libusb(_):
-        candidates = [
-            os.path.join(sys.prefix, "Library", "bin", "libusb-1.0.dll"),      # conda
-            os.path.join(sys.prefix, "Lib", "site-packages", "libusb",
-                         "_platform", "windows", "libusb-1.0.dll"),            # pip wheel
-            r"C:\Windows\System32\libusb-1.0.dll"                              # manual copy
-        ]
-        for dll in candidates:
-            if os.path.exists(dll):
-                return dll
-        # let ctypes fall back to PATH/name search
-        return None
-
-    backend = usb.backend.libusb1.get_backend(find_library=_find_libusb)
-    if backend is None:
-        raise RuntimeError("libusb-1.0.dll still not found. "
-                           "Install libusb (conda/pip) or place the DLL in one of the probed paths.")
-    usb.core.backend = backend
-
-
-PING_TIMEOUT            = 1.0       # Seconds
-CALIBRATE_TIMEOUT       = 10.0      # Seconds
-HARDWARE_EXPERIMENT_TIMEOUT = 30.0      # Seconds
-READ_STATE_TIMEOUT      = 1.0      # Seconds
-SERIAL_SOF              = 0xAA
-CMD_PING                = 0xC0
-CMD_STREAM_ON           = 0xC1
-CMD_CALIBRATE           = 0xC2
-CMD_CONTROL_MODE        = 0xC3
-CMD_SET_PID_CONFIG      = 0xC4
-CMD_GET_PID_CONFIG      = 0xC5
-CMD_SET_CONTROL_CONFIG  = 0xC6
-CMD_GET_CONTROL_CONFIG  = 0xC7
-CMD_SET_MOTOR           = 0xC8
+PING_TIMEOUT = 1.0  # Seconds
+CALIBRATE_TIMEOUT = 10.0  # Seconds
+HARDWARE_EXPERIMENT_TIMEOUT = 30.0  # Seconds
+READ_STATE_TIMEOUT = 1.0  # Seconds
+SERIAL_SOF = 0xAA
+CMD_PING = 0xC0
+CMD_STREAM_ON = 0xC1
+CMD_CALIBRATE = 0xC2
+CMD_CONTROL_MODE = 0xC3
+CMD_SET_PID_CONFIG = 0xC4
+CMD_GET_PID_CONFIG = 0xC5
+CMD_SET_CONTROL_CONFIG = 0xC6
+CMD_GET_CONTROL_CONFIG = 0xC7
+CMD_SET_MOTOR = 0xC8
 CMD_SET_TARGET_POSITION = 0xC9
-CMD_COLLECT_RAW_ANGLE   = 0xCA
-CMD_STATE               = 0xCC
+CMD_COLLECT_RAW_ANGLE = 0xCA
+CMD_STATE = 0xCC
 CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
-CMD_TRANSFER_BUFFERS    = 0xD1
+CMD_TRANSFER_BUFFERS = 0xD1
+
 
 def get_serial_port(chip_type="STM", serial_port_number=None):
-
     """
     Finds the cartpole serial port, or throws exception if not present
     :param chip_type: "ZYNQ" or "STM" depending on which one you use
@@ -113,78 +65,26 @@ def get_serial_port(chip_type="STM", serial_port_number=None):
         if serial_port_number < len(possible_ports):
             SERIAL_PORT = possible_ports[serial_port_number]
         else:
-            print(f"Requested serial port number {serial_port_number} is out of range. Available ports: {len(possible_ports)}")
+            print(
+                f"Requested serial port number {serial_port_number} is out of range. Available ports: {len(possible_ports)}")
             print(f"Using the first available port: {possible_ports[0]}")
             SERIAL_PORT = possible_ports[0]
 
     if SERIAL_PORT is None and serial_port_number is not None:
-        if len(serial_ports_names)==0:
+        if len(serial_ports_names) == 0:
             print(f'No serial ports')
         else:
             print(f"Setting serial port with requested number ({serial_port_number})\n")
             SERIAL_PORT = serial_ports_names[serial_port_number]
 
-    if platform.system() == 'Darwin' and SERIAL_PORT:
-        # On macOS, build a PyFtdi URL including the serial number so
-        # create_from_url() can locate the exact device and apply latency.
-        port_info = next((p for p in ports if p.device == SERIAL_PORT), None)
-        if port_info is None:
-            raise Exception(f"Couldn't retrieve port_info for {SERIAL_PORT}")
-        from pyftdi.ftdi import Ftdi
-
-        # —— DEBUG: list detected FTDI devices — useful if multiple VID/PID exist
-        print("Detected FTDI devices (PyFtdi.list_devices()):")
-        for desc, iface in Ftdi.list_devices():
-            print(f"  VID={desc.vid:04x}, PID={desc.pid:04x}, SN={desc.sn!r}, IFACE={iface}")
-
-        # —— find first device matching VID/PID ——
-        found = next(
-            ((desc, iface) for desc, iface in Ftdi.list_devices()
-             if desc.vid == port_info.vid and desc.pid == port_info.pid),
-            None
-        )
-
-        # Determine serial number to use: prefer pyserial-provided, else descriptor
-        port_serial = getattr(port_info, 'serial_number', None) or (found[0].sn if found else None)
-        if port_serial is None:
-            raise Exception(f"Could not determine serial number for {SERIAL_PORT}")
-
-        # Determine chip token: '2232h' for FT2232H (PID 0x6010), else '232r'
-        pid_value = found[0].pid if found else port_info.pid
-        chip_token = '2232h' if pid_value == 0x6010 else '232r'
-
-        # Interface index: from found tuple or default to 1
-        interface = found[1] if found else 1
-
-        # Build and return the PyFtdi URL with the latency parameter
-        return f"ftdi://ftdi:{chip_token}/{interface}?latency=1"
-
-    # ------- Windows: prefer PyFtdi over any lingering COMx ports -------
-    if platform.system() == 'Windows':
-        from pyftdi.ftdi import Ftdi
-        import usb.core
-        # PyFtdi sees devices that use the WinUSB driver you installed with Zadig
-        devices = list(Ftdi.list_devices())
-        if not devices:
-            # No WinUSB interfaces found → fall back to whatever COM port we located
-            return SERIAL_PORT
-
-        # Choose the first interface (or pick by VID/PID if you have many)
-        desc, iface = devices[0]
-        chip_token = '2232h' if desc.pid == 0x6010 else '232r'
-
-        # Build   ftdi://ftdi:<chip_token>/<iface>?latency=1
-        return f"ftdi://ftdi:{chip_token}/{iface}?latency=1"
-
-
-
     return SERIAL_PORT
+
 
 class Interface:
     def __init__(self):
-        self.device         = None
-        self.msg            = []
-        self.prevPktNum     = 1000
+        self.device = None
+        self.msg = []
+        self.prevPktNum = 1000
         self.start = None
         self.end = None
 
@@ -195,23 +95,7 @@ class Interface:
     def open(self, port, baud):
         self.port = port
         self.baud = baud
-
-        if isinstance(port, str) and port.startswith("ftdi://"):
-            try:
-                self.device = serial_for_url(port, baudrate=baud, timeout=None)
-                self.device.ftdi.set_latency_timer(1)
-                self.device.ftdi.set_dynamic_latency(1, 1, 1)
-                print(f'FTDI latency set to {self.device.ftdi.get_latency_timer()} ms')
-            except serial.SerialException as e:
-                # Hard to debug otherwise, so let us know what went wrong…
-                raise Exception(f"⚠️  PyFtdi open failed ({e})")
-        else:
-            self.device = serial.Serial(port, baudrate=baud, timeout=None)
-        print(f"Serial Driver Type: {type(self.device)}")
-        t0 = time.perf_counter_ns()
-        self.ping()
-        print("Ping the chip:", (time.perf_counter_ns() - t0) / 1e6, "ms")
-
+        self.device = serial.Serial(port, baudrate=baud, timeout=None)
         self.device.reset_input_buffer()
 
     def close(self):
@@ -271,16 +155,18 @@ class Interface:
         variables_bytes = []
         message_length = 4 * self.hardware_experiment_length + 7
         for i in range(7):  # There are seven floats to receive
-            c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+            c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT,
+                                    reconnect_at_timeout=False)
             variables_bytes.append(c)
 
         message_length = self.hardware_experiment_length + 7  # target equilibrium,
-        c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT, reconnect_at_timeout=False)
+        c = self._receive_reply(CMD_TRANSFER_BUFFERS, message_length, HARDWARE_EXPERIMENT_TIMEOUT,
+                                reconnect_at_timeout=False)
         variables_bytes.append(c)
 
         variables = []
         unpack_string = f'<{self.hardware_experiment_length}f'
-        for i in range(len(variables_bytes)-1):
+        for i in range(len(variables_bytes) - 1):
             variable_byte = variables_bytes[i]
             variable = struct.unpack(unpack_string, bytes(variable_byte[6:-1]))
             variables.append(variable)
@@ -289,7 +175,6 @@ class Interface:
         variable_byte = variables_bytes[7]
         variable = struct.unpack(unpack_string, bytes(variable_byte[6:-1]))
         variables.append(variable)
-
 
         # Creating a DataFrame
         df = pd.DataFrame({
@@ -306,9 +191,7 @@ class Interface:
         # Saving to CSV without index
         df.to_csv('hardware_experiment_recording.csv', index=False)
 
-
         return True
-
 
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
@@ -321,7 +204,7 @@ class Interface:
         msg += list(struct.pack('f', position_KP))
         msg += list(struct.pack('f', position_KI))
         msg += list(struct.pack('f', position_KD))
-        
+
         msg += list(struct.pack('f', angle_KP))
         msg += list(struct.pack('f', angle_KI))
         msg += list(struct.pack('f', angle_KD))
@@ -334,7 +217,8 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         reply = self._receive_reply(CMD_GET_PID_CONFIG, 28)
-        (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack('h7f', bytes(reply[3:27]))
+        (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack(
+            'h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
     def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics):
@@ -352,17 +236,18 @@ class Interface:
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
         reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
-        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(reply[3:12]))
+        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(
+            reply[3:12]))
         return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics
 
     def set_motor(self, speed):
-        msg  = [SERIAL_SOF, CMD_SET_MOTOR, 8]
+        msg = [SERIAL_SOF, CMD_SET_MOTOR, 8]
         msg += list(struct.pack('i', speed))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
 
     def set_target_position(self, target_position):
-        msg  = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
+        msg = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
         msg += list(struct.pack('f', target_position))
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
@@ -374,20 +259,22 @@ class Interface:
         self.device.write(bytearray(msg))
 
     def collect_raw_angle(self, lenght=100, interval_us=100):
-        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,  lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
+        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8, lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
-        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2*lenght, crc=False, timeout=100)
-        return struct.unpack(str(lenght)+'H', bytes(reply[3:3+2*lenght]))
+        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2 * lenght, crc=False, timeout=100)
+        return struct.unpack(str(lenght) + 'H', bytes(reply[3:3 + 2 * lenght]))
 
     def read_state(self):
         self.clear_read_buffer()
         message_length = 31
         reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
 
-        (angle, angleD, position, target_position, command, invalid_steps, time_difference, time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhB2I2H', bytes(reply[3:message_length-1]))
+        (angle, angleD, position, target_position, command, invalid_steps, time_difference,
+         time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhB2I2H',
+                                                                                    bytes(reply[3:message_length - 1]))
 
-        return angle, angleD, position, target_position, command, invalid_steps, time_difference/1e6, time_current_measurement_chip/1e6, latency/1e5, latency_violation
+        return angle, angleD, position, target_position, command, invalid_steps, time_difference / 1e6, time_current_measurement_chip / 1e6, latency / 1e5, latency_violation
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout
@@ -415,7 +302,7 @@ class Interface:
                 # print('I am looping! Hurra!')
                 # Message must start with SOF character
                 if self.msg[0] != SERIAL_SOF:
-                    #print('\nMissed SERIAL_SOF')
+                    # print('\nMissed SERIAL_SOF')
                     del self.msg[0]
                     continue
 
@@ -432,7 +319,7 @@ class Interface:
                     continue
 
                 # Verify integrity of message
-                if crc and self.msg[cmdLen-1] != self._crc(self.msg[:cmdLen-1]):
+                if crc and self.msg[cmdLen - 1] != self._crc(self.msg[:cmdLen - 1]):
                     print('\nCRC Failed.')
                     del self.msg[0]
                     continue
@@ -461,9 +348,11 @@ SUDO_PASSWORD = None
 import subprocess
 import getpass
 import platform
+
+
 # This is probably wrong port now.
-def set_ftdi_latency_timer_linux(SERIAL_PORT):
-    print('\nSetting FTDI latency timer for Linux...')
+def set_ftdi_latency_timer(SERIAL_PORT):
+    print('\nSetting FTDI latency timer')
     requested_value = 1  # in ms
 
     if platform.system() == 'Linux':
@@ -485,9 +374,12 @@ def set_ftdi_latency_timer_linux(SERIAL_PORT):
                 print("Trying with sudo...")
                 command_ftdi_timer_latency_set = f"echo {password} | sudo -S {command_ftdi_timer_latency_set}"
                 try:
-                    subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True, text=True)
+                    subprocess.run(command_ftdi_timer_latency_set, shell=True, check=True, capture_output=True,
+                                   text=True)
                 except subprocess.CalledProcessError as e:
                     print(e.stderr)
 
-        ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True, text=True).stdout.rstrip()
-        print(f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')
+        ftdi_latency_timer_value = subprocess.run(command_ftdi_timer_latency_check, shell=True, capture_output=True,
+                                                  text=True).stdout.rstrip()
+        print(
+            f'FTDI latency timer value (tested only for FTDI with Zybo and with Linux on PC side): {ftdi_latency_timer_value} ms  \n')
