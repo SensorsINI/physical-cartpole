@@ -3,10 +3,10 @@ import time
 import threading
 import collections
 
-import zmq
-import json
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+from Driver.DriverFunctions.DVS.angle_pos_client import AnglePositionClient
 
 # ─── Configuration (hardcoded) ────────────────────────────────────────────────
 WINDOW = 5.0               # length of rolling window in seconds
@@ -15,44 +15,6 @@ TIMEOUT_MS = 5             # ZeroMQ recv timeout (ms)
 USE_LOCAL_TIME = True      # if True, ignore server timestamp and use local time.time()
 POLL_INTERVAL = 0.010      # seconds between successive get_estimate() calls
 PLOT_INTERVAL = 200        # milliseconds between plot redraws
-
-# ─── Your existing client, unchanged ────────────────────────────────────────────
-class AnglePositionClient:
-    """
-    REQ-side ZeroMQ client for fetching the freshest (angle, position) estimate
-    from the companion REP server.
-    """
-    def __init__(self, endpoint: str = ENDPOINT, timeout_ms: int = TIMEOUT_MS):
-        self._ctx = zmq.Context.instance()
-        self._sock = self._ctx.socket(zmq.REQ)
-        self._sock.connect(endpoint)
-        self._sock.setsockopt(zmq.RCVTIMEO, timeout_ms)
-        self._cached = None  # (angle, position, timestamp)
-
-    def get_estimate(self) -> tuple[float, float, float]:
-        """
-        Returns (angle_deg, position_px, timestamp_s). If server fails to reply
-        in time, returns last cached reading to avoid blocking. Raises if
-        no cache exists.
-        """
-        try:
-            self._sock.send(b"?")
-            raw = self._sock.recv()
-            data = json.loads(raw.decode())
-            angle = data.get("angle_deg")
-            pos   = data.get("position_px")
-            ts    = data.get("timestamp")
-            # cache fresh reading
-            self._cached = (angle, pos, ts)
-        except zmq.error.Again:
-            if self._cached is None:
-                # no cached value to fall back on
-                raise TimeoutError("No response and no cached estimate.")
-        return self._cached  # guaranteed non-None here
-
-    def close(self) -> None:
-        """Cleanly close socket (does not terminate the global Context)."""
-        self._sock.close(0)
 
 
 # ─── Data collector thread ─────────────────────────────────────────────────────
