@@ -44,9 +44,9 @@ def main():
     # --- Configuration ---
     # Time window for accumulating events into a single frame (in milliseconds).
     # This is also a list to allow modification from within the callback scope.
-    integration_ms = [60]
+    integration_ms = [10]
     min_integration = 5      # Minimum allowed integration time.
-    max_integration = 200    # Maximum allowed integration time.
+    max_integration = 20    # Maximum allowed integration time.
     region_margin = 15       # Margin above/below the user's line to ignore during line detection.
 
     # --- Initialization ---
