@@ -18,10 +18,14 @@ class AnglePositionClient:
         """
         # Use the global Context to avoid terminating it inadvertently.
         self._ctx = zmq.Context.instance()
+        self._endpoint = endpoint
+        self._timeout_ms = timeout_ms
+
+        # initial socket creation
         self._sock = self._ctx.socket(zmq.REQ)
-        self._sock.connect(endpoint)
-        # Enforce receive timeout so recv() will raise zmq.error.Again if overdue.
-        self._sock.setsockopt(zmq.RCVTIMEO, timeout_ms)
+        self._sock.connect(self._endpoint)
+        self._sock.setsockopt(zmq.RCVTIMEO, self._timeout_ms)
+
         self._cached = None  # (angle, position, timestamp)
 
     def get_estimate(self) -> tuple[float, float, float]:
@@ -44,6 +48,21 @@ class AnglePositionClient:
         except zmq.error.Again:
             if self._cached is None:
                 raise TimeoutError("No response from estimator and no cached value.")
+
+        except zmq.error.ZMQError:
+            # e.g. "Operation cannot be accomplished in current state"
+            # close & re-create socket so REQ→REP pairing is reset
+            try:
+                self._sock.close(0)
+            except Exception:
+                pass
+            self._sock = self._ctx.socket(zmq.REQ)
+            self._sock.connect(self._endpoint)
+            self._sock.setsockopt(zmq.RCVTIMEO, self._timeout_ms)
+
+            if self._cached is None:
+                raise TimeoutError("Socket error and no cached value.")
+
         return self._cached  # guaranteed non-None here
 
     def close(self) -> None:
