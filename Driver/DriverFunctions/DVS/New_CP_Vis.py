@@ -12,6 +12,8 @@ import time  # For timing operations
 from datetime import timedelta  # For specifying time intervals
 import numpy as np  # For numerical operations, especially with arrays
 
+from angle_pos_zmq import start_zmq_server, publish_estimate, stop_zmq_server  # NEW
+
 # --- Global Variables ---
 # Stores the y-coordinate of the user-defined horizontal line.
 # Using a list is a common Python technique to make a variable mutable
@@ -36,6 +38,9 @@ def main():
     """
     Main function to run the event camera processing and visualization.
     """
+
+    start_zmq_server()
+
     # --- Configuration ---
     # Time window for accumulating events into a single frame (in milliseconds).
     # This is also a list to allow modification from within the callback scope.
@@ -171,6 +176,8 @@ def main():
                 if user_line_y[0] is not None:
                     cv2.line(vis, (0, int(user_line_y[0])), (vis.shape[1] - 1, int(user_line_y[0])), (255, 255, 0), 1)
 
+            publish_estimate(angle_from_vertical, intersection_x)
+
             # Display the final image with all visualizations.
             cv2.imshow("Preview", vis)
 
@@ -200,7 +207,7 @@ def main():
             slicer.accept(events)
 
     # --- Cleanup ---
-    # Close all OpenCV windows upon exit.
+    stop_zmq_server()
     cv2.destroyAllWindows()
     capture.reset()
 

@@ -16,6 +16,7 @@ from DriverFunctions.timing_helper import TimingHelper
 from Driver.DriverFunctions.interface import get_serial_port
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
+from Driver.DriverFunctions.DVS.angle_pos_client import AnglePositionClient
 
 from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdater
 
@@ -92,6 +93,8 @@ class PhysicalCartPoleDriver:
 
         self.keyboard_controller = KeyboardController(self)
 
+        self.angle_position_client = None
+
     def run(self):
         self.setup()
         with self.mlm.terminal_manager():
@@ -131,6 +134,8 @@ class PhysicalCartPoleDriver:
 
         self.InterfaceInstance.stream_output(True)  # now start streaming state
 
+        self.angle_position_client = AnglePositionClient()
+
     def run_experiment(self):
 
         while not self.terminate_experiment:
@@ -139,6 +144,7 @@ class PhysicalCartPoleDriver:
     def quit_experiment(self):
         CostFunctionUpdater.stop_all_watchers()  # Stop all active watchers
         # when x hit during loop or other loop exit
+        self.angle_position_client.close()
         self.InterfaceInstance.set_motor(0)  # turn off motor
         self.InterfaceInstance.close()
         self.joystick.quit()
@@ -156,6 +162,8 @@ class PhysicalCartPoleDriver:
         self.th.check_latency_violation(self.controlEnabled)
 
         self.idp.process_state_information(self.s, self.th.time_between_measurements_chip)
+
+        self.overwrite_with_state_from_DVS(self.s)
 
         self.s = self.th.add_latency(self.s)
 
@@ -218,6 +226,13 @@ class PhysicalCartPoleDriver:
         self.update_parameters_in_cartpole_instance()
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
+
+
+    def overwrite_with_state_from_DVS(self, s):
+        angle, position, _ = self.angle_position_client.get_estimate()
+        s[ANGLE_IDX] = angle
+        s[POSITION_IDX] = position
+
 
     def load_data_from_chip(self):
         # This function will block at the rate of the control loop
