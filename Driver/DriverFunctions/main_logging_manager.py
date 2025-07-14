@@ -126,12 +126,27 @@ class MainLoggingManager:
     def plot_live(self):
         if self.live_plotter_sender.connection_ready:
 
+            # only include controller columns when cost_component_* entries exist
+            controller_keys = [
+                k for k in self.driver.controller.controller_data_for_csv
+                if k.startswith('cost_component_')
+            ]
+
             if not self.live_plotter_sender.headers_sent:
-                headers = ['time', 'Angle', 'Position', 'Q', "ΔQ", 'Target Position', 'AngleD', 'PositionD', ]
-                controller_headers = list(self.driver.controller.controller_data_for_csv.keys())
-                controller_headers = [header[len('cost_component_'):] for header in controller_headers if
-                                      'cost_component_' in header]
-                self.live_plotter_sender.send_headers(headers + controller_headers)
+                headers = [
+                    'time', 'Angle', 'Position', 'Q', 'ΔQ',
+                    'Target Position', 'AngleD', 'PositionD',
+                ]
+                # ► controller headers only in the special case
+                if controller_keys:
+                    # strip the 'cost_component_' prefix
+                    controller_headers = [
+                        k[len('cost_component_'):] for k in controller_keys
+                    ]
+                    headers += controller_headers
+
+                self.live_plotter_sender.send_headers(headers)
+
             else:
                 buffer = np.array([
                     self.driver.th.elapsedTime,
@@ -143,12 +158,13 @@ class MainLoggingManager:
                     self.driver.s[ANGLED_IDX],
                     self.driver.s[POSITIOND_IDX] * 100,
                 ])
-                buffer_controller = np.array(
-                    [self.driver.controller.controller_data_for_csv[key] for key in
-                     self.driver.controller.controller_data_for_csv.keys()]
-                )
-
-                buffer = np.append(buffer, buffer_controller)
+                # ► append controller data only when the same special case holds
+                if controller_keys:
+                    buffer_controller = np.array([
+                        self.driver.controller.controller_data_for_csv[k]
+                        for k in controller_keys
+                    ])
+                    buffer = np.append(buffer, buffer_controller)
 
                 self.live_plotter_sender.send_data(buffer)
 
