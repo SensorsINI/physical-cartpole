@@ -53,7 +53,7 @@ elif CHIP == 'ZYNQ':
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 940.0  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1025.0  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 1078.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
@@ -145,7 +145,7 @@ def angle_deviation_update(new_angle_hanging):
 
 ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
 
-
+CALIBRATE_EKF_WITH_GOOD_SENSOR = True
 
 def inc(param):
     if param < 0.2:

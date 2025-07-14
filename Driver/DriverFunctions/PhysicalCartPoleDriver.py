@@ -4,6 +4,7 @@ import numpy as np
 from CartPoleSimulation.CartPole.state_utilities import (create_cartpole_state,
                                                          ANGLE_IDX, ANGLE_COS_IDX, ANGLE_SIN_IDX, ANGLED_IDX,
                                                          POSITION_IDX, POSITIOND_IDX)
+from CartPoleSimulation.CartPole.cartpole_ekf import EKFCartPole, EKFAdaptiveTuner
 
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
@@ -34,6 +35,7 @@ from globals import (
     SERIAL_PORT_NUMBER, SERIAL_BAUD,
     SEND_CHANGE_IN_TARGET_POSITION_ALWAYS,
     AUTOSTART,
+    CALIBRATE_EKF_WITH_GOOD_SENSOR,
 )
 
 import warnings
@@ -77,6 +79,10 @@ class PhysicalCartPoleDriver:
         self.th = TimingHelper()
         self.idp = IncomingDataProcessor()  # Takes care of receiving data from the chip and serves as container for raw values
 
+        self.s_dvs = create_cartpole_state()
+        self.s_ekf_dvs = create_cartpole_state()
+        self.s_ekf = create_cartpole_state()
+
         # Target
         self.position_offset = 0
         self.target_position = 0.0
@@ -94,6 +100,14 @@ class PhysicalCartPoleDriver:
         self.keyboard_controller = KeyboardController(self)
 
         self.angle_position_client = None
+
+        self.ekf = EKFCartPole(
+            CONTROL_PERIOD_MS / 1000.0,
+            self.CartPoleInstance.cpe.params,
+        )
+        self.ekf_tuner = EKFAdaptiveTuner(self.ekf)
+        self._ekf_initialized = False
+        self._hi_grade_phase = CALIBRATE_EKF_WITH_GOOD_SENSOR
 
     def run(self):
         self.setup()
@@ -136,6 +150,16 @@ class PhysicalCartPoleDriver:
 
         self.angle_position_client = AnglePositionClient()
 
+        if not self._ekf_initialized:
+            x0 = np.array([self.s[POSITION_IDX],  # cart position
+                           0.0,  # start with v = 0
+                           self.s[ANGLE_IDX],  # pole angle
+                           0.0])  # start with ω = 0
+            self.ekf.reset(x0)
+            self._ekf_initialized = True
+
+        self.mlm.live_plotter_sender.on_off()
+
     def run_experiment(self):
 
         while not self.terminate_experiment:
@@ -163,7 +187,38 @@ class PhysicalCartPoleDriver:
 
         self.idp.process_state_information(self.s, self.th.time_between_measurements_chip)
 
-        self.overwrite_with_state_from_DVS(self.s)
+        if self._ekf_initialized:
+
+            # Feed the adaptive tuner *before* the EKF step
+            self.ekf_tuner.feed_measurement(
+                pos=self.s[POSITION_IDX],
+                ang=self.s[ANGLE_IDX],
+                u=self.Q_prev,  # motor effort of previous cycle
+                hi_grade=self._hi_grade_phase,
+                vel_gt=self.s[POSITIOND_IDX],  # only valid while hi‑grade == True
+                angvel_gt=self.s[ANGLED_IDX],
+            )
+
+
+            # Use the motor effort applied *during the previous interval*.
+            # self.Q_prev is your control signal in the range [-1,1]; scale if needed.
+            v_est, omega_est = self.ekf.step(
+                position_meas=self.s[POSITION_IDX],
+                angle_meas=self.s[ANGLE_IDX],
+                u=self.Q_prev,
+            )
+
+            x_hat = self.ekf.get_state()
+
+            # splice the estimates back into the pipeline
+            self.s_ekf[POSITIOND_IDX] = v_est
+            self.s_ekf[ANGLED_IDX] = omega_est
+            self.s_ekf[POSITION_IDX] = x_hat[0]
+            self.s_ekf[ANGLE_IDX] = x_hat[2]
+            self.s_ekf[ANGLE_COS_IDX] = np.cos(x_hat[2])
+            self.s_ekf[ANGLE_SIN_IDX] = np.sin(x_hat[2])
+
+        # self.overwrite_with_state_from_DVS(self.s)
 
         self.s = self.th.add_latency(self.s)
 
