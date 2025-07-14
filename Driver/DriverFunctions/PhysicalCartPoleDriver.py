@@ -158,7 +158,6 @@ class PhysicalCartPoleDriver:
             self.ekf.reset(x0)
             self._ekf_initialized = True
 
-        self.mlm.live_plotter_sender.on_off()
 
     def run_experiment(self):
 
