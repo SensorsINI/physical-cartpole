@@ -290,12 +290,12 @@ class PhysicalCartPoleDriver:
     def overwrite_with_state_from_DVS(self, s):
         angle, position, positionD, angleD, ts = self.angle_position_client.get_estimate()
 
-        self.s_dvs[ANGLE_IDX] = angle
-        self.s_dvs[POSITION_IDX] = position
-        self.s_dvs[POSITIOND_IDX] = positionD
-        self.s_dvs[ANGLED_IDX] = angleD
-        self.s_dvs[ANGLE_COS_IDX] = np.cos(angle)
-        self.s_dvs[ANGLE_SIN_IDX] = np.sin(angle)
+        self.s_dvs[ANGLE_IDX] = angle if angle is not None else self.s_dvs[ANGLE_IDX]
+        self.s_dvs[POSITION_IDX] = position if position is not None else self.s_dvs[POSITION_IDX]
+        self.s_dvs[POSITIOND_IDX] = positionD if positionD is not None else self.s_dvs[POSITIOND_IDX]
+        self.s_dvs[ANGLED_IDX] = angleD if angleD is not None else self.s_dvs[ANGLED_IDX]
+        self.s_dvs[ANGLE_COS_IDX] = np.cos(angle) if angle is not None else self.s_dvs[ANGLE_COS_IDX]
+        self.s_dvs[ANGLE_SIN_IDX] = np.sin(angle) if angle is not None else self.s_dvs[ANGLE_SIN_IDX]
 
         s[:] = self.s_dvs[:]
 
