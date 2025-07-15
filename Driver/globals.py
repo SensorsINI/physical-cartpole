@@ -131,6 +131,7 @@ ANGLE_DEVIATION = np.array(0.0)
 
 SEND_CHANGE_IN_TARGET_POSITION_ALWAYS = True  # If false it sends change in target position only if firmware control is active.
 
+USE_DVS_STATE_ESTIMATION = True
 
 def angle_deviation_update(new_angle_hanging):
     global ANGLE_360_DEG_IN_ADC_UNITS

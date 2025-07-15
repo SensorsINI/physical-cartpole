@@ -31,7 +31,9 @@ import zmq
 _latest = {
     "timestamp": None,   # float | None
     "angle_deg": None,   # float | None
-    "position_px": None, # int   | None (use pixels or any unit you like)
+    "cart_x":           None,   # float | None
+    "linear_velocity":  None,   # float | None
+    "angular_velocity": None,   # float | None
 }
 _lock = threading.Lock()
 
@@ -42,14 +44,22 @@ _thread: Optional[threading.Thread] = None
 #                               PUBLIC API
 # ──────────────────────────────────────────────────────────────────────────────
 
-def publish_estimate(angle_deg: float | None, position_px: int | None, timestamp: float | None = None) -> None:
-    """Update the shared dictionary. Call from the producer thread."""
+def publish_estimate(
+    angle_deg:         float | None,
+    cart_x:            int   | None,
+    linear_velocity:   float | None,
+    angular_velocity:  float | None,
+    timestamp:         float | None = None,
+) -> None:
     import time
 
     with _lock:
-        _latest["timestamp"]   = timestamp if timestamp is not None else time.time()
+        _latest["timestamp"]   = time.time() if timestamp is None else timestamp
         _latest["angle_deg"]   = angle_deg
-        _latest["position_px"] = position_px
+        _latest["cart_x"]           = cart_x
+        _latest["linear_velocity"]  = linear_velocity
+        _latest["angular_velocity"] = angular_velocity
+
 
 # -----------------------------------------------------------------------------
 

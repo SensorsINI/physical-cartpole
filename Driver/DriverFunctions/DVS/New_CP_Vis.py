@@ -20,7 +20,7 @@ import time
 from datetime import timedelta
 import numpy as np
 import threading
-import socket
+from angle_pos_zmq import start_zmq_server, publish_estimate, stop_zmq_server
 
 # Shared state between threads
 latest_detection = {
@@ -302,19 +302,6 @@ def output_thread():
 
     while not quit_flag['quit']:
         if fixed_pivot_y is not None and not calibrating:
-            if not connected or tcp_sock is None:
-                try:
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                    tcp_sock.connect((TCP_HOST, TCP_PORT))
-                    connected = True
-                    print(f"[TCP] Connected to {TCP_HOST}:{TCP_PORT}")
-                except Exception as e:
-                    connected = False
-                    tcp_sock = None
-                    print(f"[TCP] Could not connect to {TCP_HOST}:{TCP_PORT}, will retry. ({e})")
-                    time.sleep(1)
-                    continue
             with lock:
                 cart_x = output_values['cart_x']
                 v = output_values['linear_velocity']
@@ -322,15 +309,16 @@ def output_thread():
                 omega = output_values['angular_velocity']
                 ts = output_values['timestamp']
 
+
+            publish_estimate(
+                angle_deg=angle,
+                cart_x=cart_x,
+                linear_velocity=v,
+                angular_velocity=omega,
+                timestamp=ts,
+            )
             out_line = f"{safe(ts,3)},{safe(cart_x,0)},{safe(v)},{safe(angle,1)},{safe(omega)}\n"
             print(f"[DATA] t={safe(ts,3)} cart_x={safe(cart_x,0)} v={safe(v)} px/s, angle={safe(angle,1)} deg, omega={safe(omega)} deg/s")
-            try:
-                if connected and tcp_sock:
-                    tcp_sock.sendall(out_line.encode())
-            except Exception as e:
-                print(f"[TCP] Error sending data: {e}")
-                connected = False
-                tcp_sock = None
         time.sleep(0.01)
 
 def main():
@@ -356,6 +344,8 @@ def main():
     else:
         last_cart_x = 0
         last_cart_y = 0
+
+    start_zmq_server()
 
     slicer = dv.EventStreamSlicer()
     vis_thread = threading.Thread(
@@ -389,6 +379,7 @@ def main():
             time.sleep(0.01)
     vis_thread.join()
     out_thread.join()
+    stop_zmq_server()
 
 if __name__ == "__main__":
     main()

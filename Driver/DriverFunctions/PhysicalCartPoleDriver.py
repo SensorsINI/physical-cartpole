@@ -36,6 +36,7 @@ from globals import (
     SEND_CHANGE_IN_TARGET_POSITION_ALWAYS,
     AUTOSTART,
     CALIBRATE_EKF_WITH_GOOD_SENSOR,
+    USE_DVS_STATE_ESTIMATION,
 )
 
 import warnings
@@ -81,6 +82,7 @@ class PhysicalCartPoleDriver:
 
         self.s_dvs = create_cartpole_state()
         self.s_ekf_dvs = create_cartpole_state()
+        self.s_original = create_cartpole_state()
         self.s_ekf = create_cartpole_state()
 
         # Target
@@ -186,6 +188,8 @@ class PhysicalCartPoleDriver:
 
         self.idp.process_state_information(self.s, self.th.time_between_measurements_chip)
 
+        self.s_original[:] = self.s
+
         if self._ekf_initialized:
 
             # Feed the adaptive tuner *before* the EKF step
@@ -217,7 +221,8 @@ class PhysicalCartPoleDriver:
             self.s_ekf[ANGLE_COS_IDX] = np.cos(x_hat[2])
             self.s_ekf[ANGLE_SIN_IDX] = np.sin(x_hat[2])
 
-        # self.overwrite_with_state_from_DVS(self.s)
+        if USE_DVS_STATE_ESTIMATION:
+            self.overwrite_with_state_from_DVS(self.s)
 
         self.s = self.th.add_latency(self.s)
 
@@ -283,9 +288,16 @@ class PhysicalCartPoleDriver:
 
 
     def overwrite_with_state_from_DVS(self, s):
-        angle, position, _ = self.angle_position_client.get_estimate()
-        s[ANGLE_IDX] = angle
-        s[POSITION_IDX] = position
+        angle, position, positionD, angleD, ts = self.angle_position_client.get_estimate()
+
+        self.s_dvs[ANGLE_IDX] = angle
+        self.s_dvs[POSITION_IDX] = position
+        self.s_dvs[POSITIOND_IDX] = positionD
+        self.s_dvs[ANGLED_IDX] = angleD
+        self.s_dvs[ANGLE_COS_IDX] = np.cos(angle)
+        self.s_dvs[ANGLE_SIN_IDX] = np.sin(angle)
+
+        s[:] = self.s_dvs[:]
 
 
     def load_data_from_chip(self):

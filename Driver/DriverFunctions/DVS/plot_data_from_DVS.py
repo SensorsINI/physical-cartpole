@@ -28,7 +28,7 @@ def collector(client, buffer):
     """
     while True:
         try:
-            angle, pos, server_ts = client.get_estimate()
+            angle, pos, lin_vel, ang_vel, ts = client.get_estimate()
             # choose timestamp: server-supplied vs. local
             if USE_LOCAL_TIME or server_ts is None:
                 ts = time.time()
