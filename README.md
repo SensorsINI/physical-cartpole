@@ -181,10 +181,13 @@ git submodule update --recursive --remote
 3. Add alias for quick environment switch and modification of python path
 
 ```bash
+alias xilinx='source /tools/Xilinx/Vivado/2020.1/settings64.sh'
+
 cpp() {
   eval "$(/(path to miniconda3)/bin/conda shell.bash hook)"
   conda activate cpp
   export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
+  export PYTHONPATH=$HOME/physical-cartpole/Driver/CartPoleSimulation:$PYTHONPATH
 }
 ```
 
