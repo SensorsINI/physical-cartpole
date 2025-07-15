@@ -136,8 +136,8 @@ class MainLoggingManager:
                 headers = [
                     'time', 'Angle', 'Position', 'Q', 'ΔQ',
                     'Target Position', 'AngleD', 'PositionD',
-                    'Angle_EKF', 'Position_EKF',
-                    'AngleD_EKF', 'PositionD_EKF'
+                    'Angle_DVS', 'Position_DVS',
+                    'AngleD_DVS', 'PositionD_DVS'
                 ]
                 # ► controller headers only in the special case
                 if controller_keys:
@@ -152,18 +152,18 @@ class MainLoggingManager:
             else:
                 buffer = np.array([
                     self.driver.th.elapsedTime,
-                    self.driver.s[ANGLE_IDX],
-                    self.driver.s[POSITION_IDX] * 100,
+                    self.driver.s_original[ANGLE_IDX],
+                    self.driver.s_original[POSITION_IDX] * 100,
                     self.driver.Q,
                     (self.driver.Q - self.driver.Q_prev),
                     self.driver.target_position * 100,
-                    self.driver.s[ANGLED_IDX],
-                    self.driver.s[POSITIOND_IDX] * 100,
+                    self.driver.s_original[ANGLED_IDX],
+                    self.driver.s_original[POSITIOND_IDX] * 100,
 
-                    self.driver.s_ekf[ANGLE_IDX],
-                    self.driver.s_ekf[POSITION_IDX] * 100,
-                    self.driver.s_ekf[ANGLED_IDX],
-                    self.driver.s_ekf[POSITIOND_IDX] * 100
+                    self.driver.s_dvs[ANGLE_IDX],
+                    self.driver.s_dvs[POSITION_IDX] * 100,
+                    self.driver.s_dvs[ANGLED_IDX],
+                    self.driver.s_dvs[POSITIOND_IDX] * 100
                 ])
                 # ► append controller data only when the same special case holds
                 if controller_keys:
