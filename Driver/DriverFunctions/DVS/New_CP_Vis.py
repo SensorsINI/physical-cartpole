@@ -170,7 +170,6 @@ def visualisation_thread():
     global fixed_pivot_y, cart_min_x, cart_max_x
     global prev_cart_x, prev_cart_x_time, prev_angle, prev_angle_time
 
-    cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
     waiting_overlay = True
     while not quit_flag['quit']:
         with lock:
@@ -348,6 +347,8 @@ def main():
     start_zmq_server()
 
     slicer = dv.EventStreamSlicer()
+
+    cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
     vis_thread = threading.Thread(
         target=visualisation_thread, daemon=True
     )
