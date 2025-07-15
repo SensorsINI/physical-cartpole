@@ -117,11 +117,35 @@ def process_events(events, visualizer):
                 filtered_lines,
                 key=lambda l: np.linalg.norm((l[0][2] - l[0][0], l[0][3] - l[0][1]))
             )
+            # --- inside process_events(), after longest_line has been chosen ------------
             x1, y1, x2, y2 = map(float, longest_line[0])
-            line = (x1, y1, x2, y2)
-            angle_rad = np.arctan2(y2 - y1, x2 - x1)
-            angle_deg = np.degrees(angle_rad)
-            angle_from_vertical = ((angle_deg - 90 + 180) % 360) - 180
+
+            # Identify pivot (hinge point) and tip
+            if fixed_pivot_y is not None:  # calibration available
+                if abs(y1 - fixed_pivot_y) < abs(y2 - fixed_pivot_y):
+                    pivot_x, pivot_y, tip_x, tip_y = x1, y1, x2, y2
+                else:
+                    pivot_x, pivot_y, tip_x, tip_y = x2, y2, x1, y1
+            else:  # fallback: lower end is pivot
+                if y1 > y2:  # y grows downward on screen
+                    pivot_x, pivot_y, tip_x, tip_y = x1, y1, x2, y2
+                else:
+                    pivot_x, pivot_y, tip_x, tip_y = x2, y2, x1, y1
+
+            line = (pivot_x, pivot_y, tip_x, tip_y)  # keep for drawing
+
+            # 0 ° = upright, 90 ° = fallen to the *left*, 180 ° = upside‑down, 270 ° = right
+            # after you have pivot_x, pivot_y, tip_x, tip_y  (see previous step)
+            dx = tip_x - pivot_x  # screen‑space Δx
+            dy = tip_y - pivot_y  # screen‑space Δy  (y grows downward!)
+
+            # signed tilt:
+            #   0°   = vertical up
+            #   +90° = fallen to the *left*
+            #   -90° = fallen to the *right*
+            angle_from_vertical = np.degrees(np.arctan2(-dx, -dy))  # range [‑180, 180]
+
+            # ---------------------------------------------------------------------------
 
     # --- Cart (circle) detection (NO y-axis limiting!) ---
     circle_x = None
@@ -205,7 +229,9 @@ def visualisation_thread():
                 if prev_angle is not None and prev_angle_time is not None:
                     dt = now - prev_angle_time
                     if dt > 0:
-                        angular_velocity = (angle_from_vertical - prev_angle) / dt
+                        diff = angle_from_vertical - prev_angle
+                        diff = (diff + 180) % 360 - 180  # unwrap through the ±180 ° seam
+                        angular_velocity = diff / dt
                 prev_angle = angle_from_vertical
                 prev_angle_time = now
 
