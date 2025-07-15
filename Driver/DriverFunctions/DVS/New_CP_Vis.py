@@ -1,217 +1,394 @@
-# /*----------------------------------------------------*\
+# /*------------------------------------------------------*\
+# | Telluride Neuromorphic Workshop: Cartpole TCP Output  |
+# |          |
+# |   - Calibrate setpoint y and cart x-ends with 'c'     |
+# |   - Outputs cart_x, v, pole angle, pole omega, t      |
+# |     every 10ms to console and TCP socket              |
+# |   - No None values ever in output                     |
+# |   - Visualization with color overlays                 |
 # |                                                      |
-# |         Telluride Neuromorphic Workshop              |
-# |   Cartpole Control with Event-Based Vision Sensor    |
-# |                                                      |
-# \*----------------------------------------------------*/
+# | 1. Press 'c' to start calibration. Move cart (circle) |
+# |    to both ends.                                      |
+# | 2. Press 'c' again to finish calibration.             |
+# | 3. Data outputs every 10ms after calibration.         |
+# | 4. Press 'q' to quit.                                 |
+# \*------------------------------------------------------*/
 
-# Import necessary libraries
-import dv_processing as dv  # For event-based camera processing
-import cv2  # OpenCV for image processing and display
-import time  # For timing operations
-from datetime import timedelta  # For specifying time intervals
-import numpy as np  # For numerical operations, especially with arrays
+import dv_processing as dv
+import cv2
+import time
+from datetime import timedelta
+import numpy as np
+import threading
+import socket
 
-from angle_pos_zmq import start_zmq_server, publish_estimate, stop_zmq_server  # NEW
+# Shared state between threads
+latest_detection = {
+    "frame": None,
+    "line": None,
+    "circle_x": None,
+    "circle_y": None,
+    "angle": None,
+    "timestamp": None
+}
 
-# --- Global Variables ---
-# Stores the y-coordinate of the user-defined horizontal line.
-# Using a list is a common Python technique to make a variable mutable
-# across different function scopes, allowing the callback to modify it.
-user_line_y = [None]
+# Output values for TCP and console
+output_values = {
+    "cart_x": 0,  # <-- Start at 0 (will be replaced by center in main)
+    "linear_velocity": 0.0,
+    "angle": 0.0,
+    "angular_velocity": 0.0,
+    "timestamp": None
+}
 
+lock = threading.Lock()
+quit_flag = {'quit': False}
 
-# --- Mouse Callback Function ---
-def mouse_callback(event, x, y, flags, param):
+# Calibration state
+calibrating = False
+calib_circle_xs = []
+calib_circle_ys = []
+fixed_pivot_y = None
+cart_min_x = None
+cart_max_x = None
+BAND_HALF_HEIGHT = 50  # Visual only
+
+# For velocity/angle calculations
+prev_cart_x = None
+prev_cart_x_time = None
+prev_angle = None
+prev_angle_time = None
+
+# --- NEW: Robust cart position state ---
+last_cart_x = None
+last_cart_y = None
+
+# TCP output settings
+TCP_HOST = '127.0.0.1'
+TCP_PORT = 65432
+
+def process_events(events, visualizer):
     """
-    Handles mouse events in the OpenCV window. A left-click sets the
-    position of the horizontal reference line.
+    Processes incoming event batches:
+     - Detects lines for the pole (Hough, filtered)
+     - Detects the cart (circle), with NO y-band limiting
+     - Handles calibration accumulation (all detected circles)
+     - Returns state dict for visualization and output
     """
-    # If the left mouse button is clicked, record the y-coordinate.
-    if event == cv2.EVENT_LBUTTONDOWN:
-        user_line_y[0] = y
-        print(f"[INFO] User set horizontal line at y = {y}")
+    global calibrating, calib_circle_xs, calib_circle_ys, fixed_pivot_y
+    global last_cart_x, last_cart_y
 
+    frame = visualizer.generateImage(events)
+    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if frame.ndim == 3 else frame
+    _, binary = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)
 
-# --- Main Application Logic ---
+    # --- Pole (line) detection with robust filtering ---
+    edges = cv2.Canny(binary, 50, 150, apertureSize=3)
+    lines = cv2.HoughLinesP(
+        edges, 1, np.pi / 180,
+        threshold=40, minLineLength=20, maxLineGap=10
+    )
+    line = None
+    angle_from_vertical = None
+
+    # Filter: ignore lines close to pivot-y after calibration
+    filtered_lines = []
+    if lines is not None and len(lines) > 0:
+        if fixed_pivot_y is not None and not calibrating:
+            for l in lines:
+                x1, y1, x2, y2 = map(float, l[0])
+                if abs(y1 - fixed_pivot_y) < 40 and abs(y2 - fixed_pivot_y) < 40:
+                    continue
+                filtered_lines.append(l)
+        else:
+            filtered_lines = lines
+
+        # Pick the longest filtered line as pole
+        if len(filtered_lines) > 0:
+            longest_line = max(
+                filtered_lines,
+                key=lambda l: np.linalg.norm((l[0][2] - l[0][0], l[0][3] - l[0][1]))
+            )
+            x1, y1, x2, y2 = map(float, longest_line[0])
+            line = (x1, y1, x2, y2)
+            angle_rad = np.arctan2(y2 - y1, x2 - x1)
+            angle_deg = np.degrees(angle_rad)
+            angle_from_vertical = ((angle_deg - 90 + 180) % 360) - 180
+
+    # --- Cart (circle) detection (NO y-axis limiting!) ---
+    circle_x = None
+    circle_y = None
+
+    # Tuned parameters
+    blur_ksize = 2
+    if blur_ksize < 1: blur_ksize = 1
+    if blur_ksize % 2 == 0: blur_ksize += 1
+    blur = cv2.medianBlur(gray, blur_ksize)
+
+    circles = cv2.HoughCircles(
+        blur,
+        cv2.HOUGH_GRADIENT,
+        dp=1.5,
+        minDist=15,
+        param1=60,
+        param2=20,
+        minRadius=9,
+        maxRadius=19
+    )
+
+    if circles is not None:
+        circles_ = np.round(circles[0, :]).astype("int")
+        x, y, r = circles_[0]
+        circle_x, circle_y = x, y
+        # --- NEW: Always remember last valid detection ---
+        last_cart_x, last_cart_y = x, y
+        if calibrating:
+            calib_circle_xs.append(x)
+            calib_circle_ys.append(y)
+    else:
+        # --- NEW: Always use last value if detection missed ---
+        circle_x = last_cart_x if last_cart_x is not None else 0
+        circle_y = last_cart_y if last_cart_y is not None else 0
+
+    result = {
+        "frame": frame,
+        "line": line,
+        "circle_x": circle_x,
+        "circle_y": circle_y,
+        "angle": angle_from_vertical,
+        "timestamp": time.time()
+    }
+    return result
+
+def visualisation_thread():
+    """
+    Displays live visualization and handles calibration state.
+    Also calculates velocities and updates shared output_values.
+    """
+    global calibrating, calib_circle_xs, calib_circle_ys
+    global fixed_pivot_y, cart_min_x, cart_max_x
+    global prev_cart_x, prev_cart_x_time, prev_angle, prev_angle_time
+
+    cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
+    waiting_overlay = True
+    while not quit_flag['quit']:
+        with lock:
+            frame = latest_detection["frame"]
+            line = latest_detection["line"]
+            circle_x = latest_detection["circle_x"]
+            circle_y = latest_detection["circle_y"]
+            angle_from_vertical = latest_detection["angle"]
+            now = latest_detection["timestamp"]
+
+        # --- Velocity and angle calculations after calibration ---
+        linear_velocity = None
+        angular_velocity = None
+        if not calibrating and fixed_pivot_y is not None:
+            # Linear velocity (pixels/sec)
+            if circle_x is not None:
+                if prev_cart_x is not None and prev_cart_x_time is not None:
+                    dt = now - prev_cart_x_time
+                    if dt > 0:
+                        linear_velocity = (circle_x - prev_cart_x) / dt
+                prev_cart_x = circle_x
+                prev_cart_x_time = now
+            # Angular velocity (deg/sec)
+            if angle_from_vertical is not None:
+                if prev_angle is not None and prev_angle_time is not None:
+                    dt = now - prev_angle_time
+                    if dt > 0:
+                        angular_velocity = (angle_from_vertical - prev_angle) / dt
+                prev_angle = angle_from_vertical
+                prev_angle_time = now
+
+            # Update output values for output thread (ALWAYS a number)
+            with lock:
+                output_values['cart_x'] = circle_x if circle_x is not None else 0
+                output_values['linear_velocity'] = linear_velocity if linear_velocity is not None else 0.0
+                output_values['angle'] = angle_from_vertical if angle_from_vertical is not None else 0.0
+                output_values['angular_velocity'] = angular_velocity if angular_velocity is not None else 0.0
+                output_values['timestamp'] = now
+
+        # --- Draw overlays and calibration band ---
+        if frame is not None:
+            waiting_overlay = False
+            vis = frame.copy()
+            height, width = vis.shape[:2]
+            center_x = width // 2
+            cv2.line(vis, (center_x, 0), (center_x, height-1), (0, 140, 255), 2)
+            center_y = height // 2
+            # Green calibration band (visual only)
+            if fixed_pivot_y is not None:
+                y_min = max(0, fixed_pivot_y - BAND_HALF_HEIGHT)
+                y_max = min(height-1, fixed_pivot_y + BAND_HALF_HEIGHT)
+                cv2.rectangle(vis, (0, y_min), (width-1, y_max), (0, 255, 0), 1)
+            else:
+                y_min = max(0, center_y - BAND_HALF_HEIGHT)
+                y_max = min(height-1, center_y + BAND_HALF_HEIGHT)
+                cv2.rectangle(vis, (0, y_min), (width-1, y_max), (0, 255, 0), 1)
+            # Magenta setpoint line
+            if fixed_pivot_y is not None:
+                cv2.line(vis, (0, fixed_pivot_y), (width-1, fixed_pivot_y), (255, 0, 255), 2)
+            # Cyan endpoints for cart travel
+            if cart_min_x is not None:
+                cv2.line(vis, (cart_min_x, 0), (cart_min_x, height-1), (255, 255, 0), 2)
+            if cart_max_x is not None:
+                cv2.line(vis, (cart_max_x, 0), (cart_max_x, height-1), (255, 255, 0), 2)
+            # Red: pole (detected line)
+            if line is not None:
+                x1, y1, x2, y2 = line
+                cv2.line(vis, (int(round(x1)), int(round(y1))),
+                         (int(round(x2)), int(round(y2))), (0, 0, 255), 2)
+            # Green: cart (circle, at detected location)
+            if circle_x is not None and circle_y is not None:
+                cv2.circle(vis, (circle_x, circle_y), 10, (0, 255, 0), 2)
+                cv2.circle(vis, (circle_x, circle_y), 8, (0, 255, 255), -1)
+            # Calibration overlay text
+            if calibrating:
+                cv2.putText(vis, "CALIBRATING: move cart to both ends then press 'c' again",
+                            (30, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,255), 2)
+            cv2.imshow("Preview", vis)
+        else:
+            if waiting_overlay:
+                black = np.zeros((240, 346, 3), dtype=np.uint8)
+                cv2.putText(black, "Waiting for events...", (60, 240),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
+                cv2.imshow("Preview", black)
+        # --- Calibration toggle: 'c' key ---
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            quit_flag['quit'] = True
+        elif key == ord('c'):
+            if not calibrating:
+                print("[CALIBRATION] Starting calibration: move cart (circle) to both ends, press 'c' again.")
+                calibrating = True
+                calib_circle_xs = []
+                calib_circle_ys = []
+                prev_cart_x = None
+                prev_cart_x_time = None
+                prev_angle = None
+                prev_angle_time = None
+            else:
+                if calib_circle_xs and calib_circle_ys:
+                    fixed_pivot_y = int(np.mean(calib_circle_ys))
+                    cart_min_x = int(np.min(calib_circle_xs))
+                    cart_max_x = int(np.max(calib_circle_xs))
+                    print(f"[CALIBRATION] Setpoint y: {fixed_pivot_y}, Cart min_x: {cart_min_x}, max_x: {cart_max_x}")
+                else:
+                    fixed_pivot_y = None
+                    cart_min_x = None
+                    cart_max_x = None
+                    print("[CALIBRATION] No circles detected, calibration failed.")
+                calibrating = False
+        time.sleep(0.05)
+    cv2.destroyAllWindows()
+
+def output_thread():
+    """
+    Every 10ms after calibration, outputs values to console and a TCP server.
+    Handles auto-reconnect for robust real-time streaming.
+    All values are formatted with no None.
+    """
+    tcp_sock = None
+    connected = False
+
+    def safe(val, places=2, default=""):
+        if val is None:
+            return default
+        if isinstance(val, float):
+            return f"{val:.{places}f}"
+        return str(val)
+
+    while not quit_flag['quit']:
+        if fixed_pivot_y is not None and not calibrating:
+            if not connected or tcp_sock is None:
+                try:
+                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                    tcp_sock.connect((TCP_HOST, TCP_PORT))
+                    connected = True
+                    print(f"[TCP] Connected to {TCP_HOST}:{TCP_PORT}")
+                except Exception as e:
+                    connected = False
+                    tcp_sock = None
+                    print(f"[TCP] Could not connect to {TCP_HOST}:{TCP_PORT}, will retry. ({e})")
+                    time.sleep(1)
+                    continue
+            with lock:
+                cart_x = output_values['cart_x']
+                v = output_values['linear_velocity']
+                angle = output_values['angle']
+                omega = output_values['angular_velocity']
+                ts = output_values['timestamp']
+
+            out_line = f"{safe(ts,3)},{safe(cart_x,0)},{safe(v)},{safe(angle,1)},{safe(omega)}\n"
+            print(f"[DATA] t={safe(ts,3)} cart_x={safe(cart_x,0)} v={safe(v)} px/s, angle={safe(angle,1)} deg, omega={safe(omega)} deg/s")
+            try:
+                if connected and tcp_sock:
+                    tcp_sock.sendall(out_line.encode())
+            except Exception as e:
+                print(f"[TCP] Error sending data: {e}")
+                connected = False
+                tcp_sock = None
+        time.sleep(0.01)
+
 def main():
     """
-    Main function to run the event camera processing and visualization.
+    Initializes DV device, threads, and enters processing loop.
+    Also sets last_cart_x/y to image center for safe default.
     """
-
-    start_zmq_server()
-
-    # --- Configuration ---
-    # Time window for accumulating events into a single frame (in milliseconds).
-    # This is also a list to allow modification from within the callback scope.
-    integration_ms = [10]
-    min_integration = 5      # Minimum allowed integration time.
-    max_integration = 20    # Maximum allowed integration time.
-    region_margin = 15       # Margin above/below the user's line to ignore during line detection.
-
-    # --- Initialization ---
-    # Set up the connection to the DVS camera.
+    global last_cart_x, last_cart_y
     capture = dv.io.CameraCapture()
     if not capture.isEventStreamAvailable():
-        raise RuntimeError("Input camera does not provide an event stream.")
+        raise RuntimeError("The connected camera does not provide an event stream.")
 
-    # Visualizer for converting event data into a viewable image.
     visualizer = dv.visualization.EventVisualizer(capture.getEventResolution())
     visualizer.setBackgroundColor(dv.visualization.colors.white())
     visualizer.setPositiveColor(dv.visualization.colors.iniBlue())
     visualizer.setNegativeColor(dv.visualization.colors.darkGrey())
 
-    # Set up the display window and link the mouse callback function to it.
-    cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
-    cv2.setMouseCallback("Preview", mouse_callback)
+    # --- NEW: Set last_cart_x/y to image center as safe fallback
+    shape = capture.getEventResolution()
+    if shape is not None:
+        last_cart_x = shape[0] // 2
+        last_cart_y = shape[1] // 2
+    else:
+        last_cart_x = 0
+        last_cart_y = 0
 
-    # Slicer to process events in fixed time intervals.
     slicer = dv.EventStreamSlicer()
+    vis_thread = threading.Thread(
+        target=visualisation_thread, daemon=True
+    )
+    vis_thread.start()
+    out_thread = threading.Thread(
+        target=output_thread, daemon=True
+    )
+    out_thread.start()
 
-    # --- State Variables ---
-    # Flags and timers for controlling the main loop.
-    quit_flag = {'quit': False}
-    last_display = [time.time()]
-
-    # --- Event Processing Callback ---
     def slicing_callback(events: dv.EventStore):
-        """
-        This function is called periodically to process accumulated events.
-        It generates an image, detects lines, and updates the display.
-        """
-        # Allow modification of the outer scope's timer variable.
-        nonlocal last_display
-        now = time.time()
-        
-        # Calculate how long to wait between display updates, converting ms to seconds.
-        display_interval = integration_ms[0] / 1000.0
+        if events is not None:
+            result = process_events(events, visualizer)
+            if result is not None:
+                with lock:
+                    latest_detection.update(result)
 
-        # Only update the display if enough time has passed since the last update.
-        if now - last_display[0] >= display_interval:
-            # --- Frame Generation ---
-            # Generate an image from the accumulated events.
-            frame = visualizer.generateImage(events)
-            # Rotate the image for a vertical (portrait) orientation, typical for cart-pole.
-            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            # Create a copy of the frame to draw visualizations on, leaving the original intact.
-            vis = frame.copy()
+    slicer.doEveryTimeInterval(timedelta(milliseconds=5), slicing_callback)
 
-            # --- Image Pre-processing ---
-            # Convert to grayscale, then apply a binary threshold to create a clean black and white image.
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if frame.ndim == 3 else frame
-            _, binary = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)
-
-            # If a user line is set, "erase" a band around it to prevent it from interfering with line detection.
-            if user_line_y[0] is not None:
-                y_user = int(user_line_y[0])
-                y_start = max(0, y_user - region_margin)
-                y_end = min(binary.shape[0], y_user + region_margin)
-                # Set the region to white (255) so the Canny edge detector ignores it.
-                binary[y_start:y_end, :] = 255
-
-            # --- Line Detection ---
-            # Use Canny to detect edges, then HoughLinesP to find lines in the edge map.
-            edges = cv2.Canny(binary, 50, 150, apertureSize=3)
-            lines = cv2.HoughLinesP(
-                edges, 1, np.pi / 180,
-                threshold=60, minLineLength=80, maxLineGap=20
-            )
-
-            # --- Analysis and Visualization ---
-            intersection_x = None
-            angle_from_vertical = None
-
-            if lines is not None and len(lines) > 0:
-                # Find the longest line segment among all detected lines using Euclidean distance.
-                longest = max(
-                    lines,
-                    key=lambda l: (l[0][2] - l[0][0]) ** 2 + (l[0][3] - l[0][1]) ** 2
-                )
-                x1, y1, x2, y2 = map(float, longest[0])
-
-                # Draw the longest detected line in red on the visualization image.
-                cv2.line(vis, (int(round(x1)), int(round(y1))), (int(round(x2)), int(round(y2))), (0, 0, 255), 2)
-
-                # --- Angle Calculation ---
-                # Calculate the angle of the line relative to the vertical axis.
-                if abs(x2 - x1) < 1e-3:
-                    angle_from_vertical = 0.0
-                elif abs(y2 - y1) < 1e-3:
-                    angle_from_vertical = 90.0
-                else:
-                    angle_rad = np.arctan2(y2 - y1, x2 - x1)
-                    angle_deg = np.degrees(angle_rad)
-                    # Adjust angle to be relative to vertical (90 degrees) and normalize to [-180, 180].
-                    angle_from_vertical = (angle_deg - 90) % 360
-                    if angle_from_vertical > 180:
-                        angle_from_vertical -= 360
-
-                # --- Intersection Calculation ---
-                # If the user has defined a line, calculate where the detected line intersects it.
-                user_y = user_line_y[0]
-                if user_y is not None:
-                    # Check for vertical lines to avoid division by zero.
-                    if abs(x2 - x1) < 1e-3:
-                        intersection_x = int(round(x1))
-                        if 0 <= intersection_x < vis.shape[1]:
-                            cv2.circle(vis, (intersection_x, int(user_y)), 8, (0, 255, 255), -1)
-                    # Check for horizontal lines (which won't intersect the user's horizontal line).
-                    elif abs(y2 - y1) < 1e-3:
-                        intersection_x = None
-                    # If not vertical or horizontal, calculate intersection using line equation.
-                    else:
-                        m = (y2 - y1) / (x2 - x1)
-                        intersection_x = int(round((user_y - y1) / m + x1))
-                        # If the intersection is within the image bounds, draw a marker.
-                        if 0 <= intersection_x < vis.shape[1]:
-                            cv2.circle(vis, (intersection_x, int(user_y)), 8, (0, 255, 255), -1)
-                    # Always draw the user-defined horizontal line in cyan.
-                    cv2.line(vis, (0, int(user_y)), (vis.shape[1] - 1, int(user_y)), (255, 255, 0), 1)
-
-                # Print the calculated information to the console.
-                print(f"[INFO] Frame: Hough angle={angle_from_vertical:.1f} deg, x intersection={intersection_x}")
-            
-            else:
-                # If no lines were detected, still draw the user line if it has been set.
-                if user_line_y[0] is not None:
-                    cv2.line(vis, (0, int(user_line_y[0])), (vis.shape[1] - 1, int(user_line_y[0])), (255, 255, 0), 1)
-
-            publish_estimate(angle_from_vertical, intersection_x)
-
-            # Display the final image with all visualizations.
-            cv2.imshow("Preview", vis)
-
-            # --- User Input ---
-            # Handle keyboard commands for quitting or adjusting integration time.
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                quit_flag['quit'] = True
-            elif key in (ord('+'), ord('=')):
-                integration_ms[0] = min(max_integration, integration_ms[0] + 5)
-            elif key == ord('-'):
-                integration_ms[0] = max(min_integration, integration_ms[0] - 5)
-            
-            # Update the time of the last display.
-            last_display[0] = now
-
-    # Set up a callback to process event data in fixed time chunks.
-    # The 'slicing_callback' function will be called for every 10-millisecond
-    # interval of event data received from the camera.
-    slicer.doEveryTimeInterval(timedelta(milliseconds=10), slicing_callback)
-
-    # --- Main Loop ---
-    # Continuously capture event batches from the camera and pass them to the slicer.
-    while capture.isRunning() and not quit_flag['quit']:
+    print("Entering main loop...")
+    while not quit_flag['quit']:
+        if not capture.isRunning():
+            print("Camera not running or disconnected. Waiting for reconnect...")
+            time.sleep(0.1)
+            continue
         events = capture.getNextEventBatch()
         if events is not None:
             slicer.accept(events)
+        else:
+            time.sleep(0.01)
+    vis_thread.join()
+    out_thread.join()
 
-    # --- Cleanup ---
-    stop_zmq_server()
-    cv2.destroyAllWindows()
-    capture.reset()
-
-# --- Entry Point ---
-# This ensures the main() function is called only when the script is executed directly.
 if __name__ == "__main__":
     main()
