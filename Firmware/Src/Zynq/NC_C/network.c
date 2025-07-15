@@ -7,7 +7,10 @@
 
 // Include the weights and biases stored as arrays in separate .c file
 #include "network.h"
+
+#ifdef BUILD_PARAMS_INLINE
 #include "network_parameters.c"
+#endif
 
 #if IS_GRU
 
