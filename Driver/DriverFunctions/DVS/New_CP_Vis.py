@@ -352,7 +352,7 @@ def output_thread():
                 angle_deg=np.deg2rad(angle),
                 cart_x=cart_x_meters,
                 linear_velocity=linear_velocity_mps,
-                angular_velocity=omega,
+                angular_velocity=np.deg2rad(omega),
                 timestamp=ts,
             )
             # out_line = f"{safe(ts,3)},{safe(cart_x,0)},{safe(v)},{safe(angle,1)},{safe(omega)}\n"
