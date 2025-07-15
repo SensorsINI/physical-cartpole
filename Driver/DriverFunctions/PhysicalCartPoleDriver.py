@@ -35,7 +35,6 @@ from globals import (
     SERIAL_PORT_NUMBER, SERIAL_BAUD,
     SEND_CHANGE_IN_TARGET_POSITION_ALWAYS,
     AUTOSTART,
-    CALIBRATE_EKF_WITH_GOOD_SENSOR,
     USE_DVS_STATE_ESTIMATION,
 )
 
@@ -109,7 +108,6 @@ class PhysicalCartPoleDriver:
         )
         self.ekf_tuner = EKFAdaptiveTuner(self.ekf)
         self._ekf_initialized = False
-        self._hi_grade_phase = CALIBRATE_EKF_WITH_GOOD_SENSOR
 
     def run(self):
         self.setup()
@@ -158,7 +156,7 @@ class PhysicalCartPoleDriver:
                            self.s[ANGLE_IDX],  # pole angle
                            0.0])  # start with ω = 0
             self.ekf.reset(x0)
-            self._ekf_initialized = True
+            self._ekf_initialized = False
 
 
     def run_experiment(self):
@@ -197,7 +195,7 @@ class PhysicalCartPoleDriver:
                 pos=self.s[POSITION_IDX],
                 ang=self.s[ANGLE_IDX],
                 u=self.Q_prev,  # motor effort of previous cycle
-                hi_grade=self._hi_grade_phase,
+                hi_grade=False,
                 vel_gt=self.s[POSITIOND_IDX],  # only valid while hi‑grade == True
                 angvel_gt=self.s[ANGLED_IDX],
             )
