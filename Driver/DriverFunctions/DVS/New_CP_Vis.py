@@ -22,6 +22,8 @@ import numpy as np
 import threading
 from angle_pos_zmq import start_zmq_server, publish_estimate, stop_zmq_server
 
+TRACK_LENGTH_METERS = 0.44
+
 # Shared state between threads
 latest_detection = {
     "frame": None,
@@ -53,6 +55,9 @@ cart_min_x = None
 cart_max_x = None
 BAND_HALF_HEIGHT = 50  # Visual only
 
+PIXELS_PER_METER = None
+PIXEL_CENTER = None
+
 # For velocity/angle calculations
 prev_cart_x = None
 prev_cart_x_time = None
@@ -66,6 +71,8 @@ last_cart_y = None
 # TCP output settings
 TCP_HOST = '127.0.0.1'
 TCP_PORT = 65432
+
+time_start = time.time()
 
 def process_events(events, visualizer):
     """
@@ -157,7 +164,7 @@ def process_events(events, visualizer):
         "circle_x": circle_x,
         "circle_y": circle_y,
         "angle": angle_from_vertical,
-        "timestamp": time.time()
+        "timestamp": time.time()-time_start
     }
     return result
 
@@ -309,16 +316,22 @@ def output_thread():
                 omega = output_values['angular_velocity']
                 ts = output_values['timestamp']
 
+                PIXELS_PER_METER = (cart_max_x - cart_min_x) / TRACK_LENGTH_METERS
+                PIXEL_CENTER = 0.5 * (cart_max_x + cart_min_x)
+
+                cart_x_meters = (cart_x - PIXEL_CENTER) / PIXELS_PER_METER
+                linear_velocity_mps = v / PIXELS_PER_METER
+
 
             publish_estimate(
-                angle_deg=angle,
-                cart_x=cart_x,
-                linear_velocity=v,
+                angle_deg=np.deg2rad(angle),
+                cart_x=cart_x_meters,
+                linear_velocity=linear_velocity_mps,
                 angular_velocity=omega,
                 timestamp=ts,
             )
-            out_line = f"{safe(ts,3)},{safe(cart_x,0)},{safe(v)},{safe(angle,1)},{safe(omega)}\n"
-            print(f"[DATA] t={safe(ts,3)} cart_x={safe(cart_x,0)} v={safe(v)} px/s, angle={safe(angle,1)} deg, omega={safe(omega)} deg/s")
+            # out_line = f"{safe(ts,3)},{safe(cart_x,0)},{safe(v)},{safe(angle,1)},{safe(omega)}\n"
+            print(f"[DATA] t={safe(ts,3)} s; cart_x_meters={safe(cart_x_meters,3)} m; linear_velocity={safe(linear_velocity_mps)} m/s; angle={safe(angle,1)} deg; omega={safe(omega)} deg/s")
         time.sleep(0.01)
 
 def main():
