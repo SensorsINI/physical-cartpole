@@ -182,7 +182,7 @@ git submodule update --recursive --remote
 
 ```bash
 cpp() {
-  eval "$(/(path to miniconda3))/bin/conda shell.bash hook)"
+  eval "$(/(path to miniconda3)/bin/conda shell.bash hook)"
   conda activate cpp
   export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
 }
