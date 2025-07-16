@@ -265,7 +265,6 @@ def process_events(events, visualizer):
         # Fallback: trust pole geometry or last valid
         cx, cy = pivot_x_pred, pivot_y
 
-    last_cart_x, last_cart_y = cx, cy
 
     # ─── VELOCITIES & TIMESTAMP ───────────────────────────────────
     # 1) obtain a consistent timestamp for this batch:
@@ -311,6 +310,8 @@ def process_events(events, visualizer):
         if valid_ang:
             last_valid_angle = angle_rad
             last_valid_angle_time = ts
+
+    last_cart_x, last_cart_y = cx, cy
 
     # 2) LINEAR velocity (px/s → m/s):
     #    Δx is in pixels; Δt may vary, so we divide by ts_prev.
@@ -360,7 +361,11 @@ def process_events(events, visualizer):
         prev_angular_velocity = angular_velocity_rad_s
 
     # keep a pixel/s copy for the next prediction corridor
-    prev_linear_velocity_px_s = linear_velocity * PIXELS_PER_METER if PIXELS_PER_METER else linear_velocity_px_s
+    prev_linear_velocity_px_s = (
+        linear_velocity * PIXELS_PER_METER
+        if PIXELS_PER_METER
+        else linear_velocity_px_s
+    )
 
     # 4) now you can publish using your usual API:
     if PIXELS_PER_METER is not None and PIXEL_CENTER is not None:
