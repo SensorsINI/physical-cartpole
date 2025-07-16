@@ -96,6 +96,9 @@ def detect_cart_robust(gray, last_x, last_y, pivot_x_pred, H, W):
     if cart_min_x is None or cart_max_x is None:
         return None
 
+    if last_x is None:
+        last_x = (cart_min_x + cart_max_x) // 2
+
     # ---- ROI guard -------------------------------------------------
     xmin = max(cart_min_x, int(last_x) - MATCH_ROI_HALF)
     xmax = min(cart_max_x, int(last_x) + MATCH_ROI_HALF)
@@ -223,7 +226,12 @@ def process_events(events, visualizer):
         angle_rad = last_angle if last_angle is not None else 0.0
 
     # decide cart_x
+    # decide cart_x: prefer Hough pivot, else last known position
     pivot_x_pred = pivot_x if line is not None else last_cart_x
+
+    # ── EDGE CASE: if still None (first slice), revert to image centre ──
+    if pivot_x_pred is None:
+        pivot_x_pred = PIXEL_CENTER
 
     cart_det = detect_cart_robust(gray,
                                   last_cart_x,
