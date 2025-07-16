@@ -23,7 +23,7 @@ from Driver.DriverFunctions.DVS.angle_pos_zmq import (
 # --- USER TUNED MATCH FILTER PARAMETERS ---
 CART_RADIUS         = 5      # px, radius of template for match filter
 CART_THRESH         = 0.50   # threshold for match quality (0-1)
-TRACK_LENGTH_METERS = 0.44   # physical track length for calibration
+TRACK_LENGTH_METERS = 0.396   # physical track length for calibration
 
 # --- Global/Shared State ---
 latest_detection = {
