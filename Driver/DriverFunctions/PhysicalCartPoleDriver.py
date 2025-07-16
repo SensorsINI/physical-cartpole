@@ -154,7 +154,7 @@ class PhysicalCartPoleDriver:
 
         self.angle_position_client = AnglePositionClient()
 
-        if not self._ekf_initialized:
+        if USE_EKF and not self._ekf_initialized:
             x0 = np.array([self.s[POSITION_IDX],  # cart position
                            0.0,  # start with v = 0
                            self.s[ANGLE_IDX],  # pole angle
