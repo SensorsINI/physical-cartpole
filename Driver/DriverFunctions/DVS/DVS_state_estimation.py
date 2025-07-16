@@ -130,6 +130,8 @@ def process_events(events, visualizer):
             px = line_horizontal_intersect(x1, y1, x2, y2, pivot_y, W)
             if px is None:
                 continue
+            if px < cart_min_x or px > cart_max_x:
+                continue
             length = np.hypot(x2 - x1, y2 - y1)
             if length > best_len:
                 best_len = length
