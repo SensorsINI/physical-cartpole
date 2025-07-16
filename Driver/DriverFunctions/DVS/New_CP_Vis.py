@@ -25,6 +25,8 @@ ROI_BAND = 40        # px, half-height of ROI after calibration
 TCP_HOST = '127.0.0.1'
 TCP_PORT = 65432
 
+TRACK_LENGTH_METERS = 0.44
+
 # --- Global/Shared State ---
 latest_detection = {
     "frame": None, "line": None, "cart_x": None, "cart_y": None,
@@ -50,6 +52,9 @@ prev_cart_x = None
 prev_cart_x_time = None
 prev_angle = None
 prev_angle_time = None
+
+PIXELS_PER_METER = None
+PIXEL_CENTER    = None
 
 def make_circle_template(radius, thickness=-1, image_size=None):
     """Create a circular template for match filtering."""
@@ -230,10 +235,13 @@ def visualisation_thread():
                 calib_cart_ys.clear()
             else:
                 calibrating = False
+                global PIXEL_CENTER, PIXELS_PER_METER
                 if calib_cart_xs:
                     fixed_pivot_y = int(np.median(calib_cart_ys))
                     cart_min_x = int(np.min(calib_cart_xs))
                     cart_max_x = int(np.max(calib_cart_xs))
+                    PIXELS_PER_METER = (cart_max_x - cart_min_x) / TRACK_LENGTH_METERS
+                    PIXEL_CENTER = 0.5 * (cart_min_x + cart_max_x)
                     print(f"[CALIBRATION] Complete. Setpoint y: {fixed_pivot_y}, Cart x-range: [{cart_min_x}, {cart_max_x}]")
                 else:
                     fixed_pivot_y, cart_min_x, cart_max_x = None, None, None
@@ -255,11 +263,14 @@ def output_thread():
                 omega = output_values['angular_velocity']
                 ts = output_values['timestamp']
 
+            cart_x_m = (cart_x - PIXEL_CENTER) / PIXELS_PER_METER
+            linear_velocity_mps = v / PIXELS_PER_METER
+
             # Publish via ZMQ
             publish_estimate(
                 angle_rad=np.deg2rad(angle),
-                cart_x=cart_x,
-                linear_velocity=v,
+                cart_x=cart_x_m,
+                linear_velocity=linear_velocity_mps,
                 angular_velocity=np.deg2rad(omega),
                 timestamp=ts,
             )

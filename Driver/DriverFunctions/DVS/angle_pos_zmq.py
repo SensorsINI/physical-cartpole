@@ -46,7 +46,7 @@ _thread: Optional[threading.Thread] = None
 
 def publish_estimate(
     angle_rad:         float | None,
-    cart_x:            int   | None,
+    cart_x:            float   | None,
     linear_velocity:   float | None,
     angular_velocity:  float | None,
     timestamp:         float | None = None,
