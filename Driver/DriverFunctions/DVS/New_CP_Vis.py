@@ -189,11 +189,17 @@ def visualisation_thread():
             prev_angle_time = now
 
         # Output values (always numbers)
+        # Only update when we actually detected something
         with lock:
-            output_values['cart_x'] = int(cart_x) if cart_x is not None else 0
-            output_values['linear_velocity'] = float(linear_velocity)
-            output_values['angle'] = float(angle_from_vertical) if angle_from_vertical is not None else 0.0
-            output_values['angular_velocity'] = float(angular_velocity)
+            if cart_x is not None:
+                output_values['cart_x'] = int(cart_x)
+            if prev_cart_x_time is not None:
+                output_values['linear_velocity'] = float(linear_velocity)
+            if angle_from_vertical is not None:
+                output_values['angle'] = float(angle_from_vertical)
+            if prev_angle_time is not None:
+                output_values['angular_velocity'] = float(angular_velocity)
+            # always update timestamp so downstream threads know “freshness”
             output_values['timestamp'] = now
 
         # --- Draw overlays ---
