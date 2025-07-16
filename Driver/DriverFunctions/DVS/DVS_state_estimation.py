@@ -25,6 +25,7 @@ CART_RADIUS         = 5      # px, radius of template for match filter
 CART_THRESH         = 0.50   # threshold for match quality (0-1)
 TRACK_LENGTH_METERS = 0.396   # physical track length for calibration
 
+
 # --- Global/Shared State ---
 latest_detection = {
     "frame": None, "line": None,
@@ -58,12 +59,23 @@ last_cart_y      = None
 PIXELS_PER_METER = None
 PIXEL_CENTER     = None
 
+
 def make_circle_template(radius, thickness=-1, image_size=None):
     size = 2 * radius + 5 if image_size is None else image_size
     template = np.zeros((size, size), dtype=np.uint8)
     center = (size//2, size//2)
     cv2.circle(template, center, radius, 255, thickness)
     return template
+
+
+CIRCLE_TEMPLATE = make_circle_template(CART_RADIUS)
+
+Y_TOLERANCE_PX   = CIRCLE_TEMPLATE.shape[0]//2          # allowed vertical drift from pivot_y
+GATE_PX_STATIC   = 25          # max Δx from pole pivot (pixels)
+ADAPTIVE_ALPHA   = 0.1         # EWMA for adapting template-score threshold
+MIN_THRESH       = 0.35        # never let threshold drop below this
+tmpl_threshold   = CART_THRESH   # start with the user value
+MATCH_ROI_HALF = GATE_PX_STATIC + 5
 
 def line_horizontal_intersect(x1, y1, x2, y2, y_horiz, img_width):
     if abs(y2 - y1) < 1e-3:
@@ -74,6 +86,56 @@ def line_horizontal_intersect(x1, y1, x2, y2, y_horiz, img_width):
 
 def gaussian_blur_uint8(img):
     return cv2.GaussianBlur(img, (3, 3), 0)
+
+def detect_cart_robust(gray, last_x, last_y, pivot_x_pred, H, W):
+    """
+    Returns (cx, cy, score) if a gated detection passes all three guards,
+    else None.
+    """
+
+    if cart_min_x is None or cart_max_x is None:
+        return None
+
+    # ---- ROI guard -------------------------------------------------
+    xmin = max(cart_min_x, int(last_x) - MATCH_ROI_HALF)
+    xmax = min(cart_max_x, int(last_x) + MATCH_ROI_HALF)
+    ymin = max(0,          fixed_pivot_y - Y_TOLERANCE_PX)
+    ymax = min(H,          fixed_pivot_y + Y_TOLERANCE_PX)
+    if xmin >= xmax or ymin >= ymax:
+        return None
+
+    roi = gray[ymin:ymax, xmin:xmax]
+    blurred = gaussian_blur_uint8(roi)
+    res = cv2.matchTemplate(blurred,
+                            CIRCLE_TEMPLATE,
+                            cv2.TM_CCOEFF_NORMED)
+    _, score, _, loc = cv2.minMaxLoc(res)
+
+    # ---- Template‐score guard -------------------------------------
+    global tmpl_threshold
+    # 1) First compare…
+    if score < tmpl_threshold:
+        return None
+
+    # 2) Then update (EWMA) only on accepted detections:
+    tmpl_threshold = max(
+        MIN_THRESH,
+        (1 - ADAPTIVE_ALPHA)*tmpl_threshold
+        + ADAPTIVE_ALPHA*score
+    )
+
+    # Map ROI coords -> full-image coords
+    cx = xmin + loc[0] + CIRCLE_TEMPLATE.shape[1]//2
+    cy = ymin + loc[1] + CIRCLE_TEMPLATE.shape[0]//2
+
+    cy = fixed_pivot_y
+
+    # ---- Kinematic-consistency guard ------------------------------
+    if abs(cx - pivot_x_pred) > GATE_PX_STATIC:
+        return None
+
+    return cx, cy, score
+
 
 def process_events(events, visualizer):
     global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
@@ -90,20 +152,21 @@ def process_events(events, visualizer):
 
     # ── CALIBRATION PHASE ──────────────────────────────────────────
     if calibrating or fixed_pivot_y is None:
-        template = make_circle_template(CART_RADIUS)
+        template = CIRCLE_TEMPLATE
         blurred  = gaussian_blur_uint8(gray)
         result   = cv2.matchTemplate(blurred, template,
                                      cv2.TM_CCOEFF_NORMED)
         _, conf, _, loc = cv2.minMaxLoc(result)
         if conf >= CART_THRESH:
-            cx = loc[0] + template.shape[1]//2
-            cy = loc[1] + template.shape[0]//2
+            cx = loc[0] + template.shape[1] // 2
+            cy = loc[1] + template.shape[0] // 2
             last_cart_x, last_cart_y = cx, cy
             if calibrating:
                 calib_cart_xs.append(cx)
                 calib_cart_ys.append(cy)
         else:
-            cx, cy = last_cart_x or (W//2), last_cart_y or (H//2)
+            cx = last_cart_x if last_cart_x is not None else W // 2
+            cy = last_cart_y if last_cart_y is not None else H // 2
 
         return {
             "frame":    frame,
@@ -160,8 +223,22 @@ def process_events(events, visualizer):
         angle_rad = last_angle if last_angle is not None else 0.0
 
     # decide cart_x
-    cx = pivot_x if (line is not None) else last_cart_x
-    last_cart_x, last_cart_y = cx, pivot_y
+    pivot_x_pred = pivot_x if line is not None else last_cart_x
+
+    cart_det = detect_cart_robust(gray,
+                                  last_cart_x,
+                                  last_cart_y,
+                                  pivot_x_pred,
+                                  H, W)
+
+    if cart_det is not None:
+        # High-confidence, gated template match
+        cx, cy, _ = cart_det
+    else:
+        # Fallback: trust pole geometry or last valid
+        cx, cy = pivot_x_pred, pivot_y
+
+    last_cart_x, last_cart_y = cx, cy
 
     # ─── VELOCITIES & TIMESTAMP ───────────────────────────────────
     # 1) obtain a consistent timestamp for this batch:
@@ -223,17 +300,18 @@ def process_events(events, visualizer):
 
 
     # 4) now you can publish using your usual API:
-    publish_estimate(
-        angle_rad        = angle_rad,
-        cart_x           = (cx - PIXEL_CENTER)/PIXELS_PER_METER,
-        linear_velocity  = linear_velocity,
-        angular_velocity = angular_velocity_rad_s,
-        timestamp        = ts,
-    )
-    print(f"[DATA] t={ts:.3f} cart_x={cx:.0f} "
-          f"v={linear_velocity:.2f} m/s "
-          f"angle={np.rad2deg(angle_rad):.1f}° "
-          f"omega={angular_velocity_rad_s:.2f} rad/s")
+    if PIXELS_PER_METER is not None and PIXEL_CENTER is not None:
+        publish_estimate(
+            angle_rad        = angle_rad,
+            cart_x           = (cx - PIXEL_CENTER) / PIXELS_PER_METER,
+            linear_velocity  = linear_velocity,
+            angular_velocity = angular_velocity_rad_s,
+            timestamp        = ts,
+        )
+        print(f"[DATA] t={ts:.3f} cart_x={cx:.0f} "
+              f"v={linear_velocity:.2f} m/s "
+              f"angle={np.rad2deg(angle_rad):.1f}° "
+              f"omega={angular_velocity_rad_s:.2f} rad/s")
 
     # ─── RETURN THE DICT ──────────────────────────────────────────
     return {
