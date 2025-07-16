@@ -40,6 +40,7 @@ quit_flag = {'quit': False}
 # --- Calibration state ---
 calibrating = False
 calib_cart_xs = []
+calib_cart_ys = []
 fixed_pivot_y = None
 cart_min_x = None
 cart_max_x = None
@@ -66,7 +67,7 @@ def process_events(events, visualizer):
       - Handles calibration accumulation (x values)
       - Returns results for vis/output
     """
-    global calibrating, calib_cart_xs, fixed_pivot_y
+    global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
     global last_cart_x, last_cart_y
 
     frame = visualizer.generateImage(events)
@@ -130,6 +131,7 @@ def process_events(events, visualizer):
         last_cart_x, last_cart_y = cart_x, cart_y
         if calibrating:
             calib_cart_xs.append(cart_x)
+            calib_cart_ys.append(cart_y)
     else:
         cart_x = last_cart_x if last_cart_x is not None else width // 2
         cart_y = last_cart_y if last_cart_y is not None else height // 2
@@ -147,7 +149,7 @@ def visualisation_thread():
     Handles display and calibration logic.
     Draws green cart circle at actual detected y (never fixed).
     """
-    global calibrating, calib_cart_xs, fixed_pivot_y, cart_min_x, cart_max_x
+    global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y, cart_min_x, cart_max_x
     global prev_cart_x, prev_cart_x_time, prev_angle, prev_angle_time
 
     cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
@@ -225,10 +227,11 @@ def visualisation_thread():
                 print("[CALIBRATION] Starting: move cart to both ends, then press 'c' again.")
                 calibrating = True
                 calib_cart_xs.clear()
+                calib_cart_ys.clear()
             else:
                 calibrating = False
                 if calib_cart_xs:
-                    fixed_pivot_y = int(np.median([cart_y for _ in range(5)]))
+                    fixed_pivot_y = int(np.median(calib_cart_ys))
                     cart_min_x = int(np.min(calib_cart_xs))
                     cart_max_x = int(np.max(calib_cart_xs))
                     print(f"[CALIBRATION] Complete. Setpoint y: {fixed_pivot_y}, Cart x-range: [{cart_min_x}, {cart_max_x}]")
