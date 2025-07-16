@@ -155,6 +155,42 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             }
     #endif
             break;
+
+        case NETWORK_DIFFLOGIC:
+    #ifdef HLS4ML
+            {
+                // Use DiffLogic accelerator
+                int tx_counter = 0;
+                for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++)
+                {
+                    actv_floating_point = *((float*)&][neuron_idx * DATA_WORD_BYTES]);
+                    actv_floating_point = (actv_floating_point + 1.0) / 2.0
+                    float threshold = 0.0f;
+                    float step = 1.0f / 100.0f;
+                    for (int bits = 0; bits < 100; bits += 32)
+                    {
+                        int32_t value = 0;
+                        for (int q = 0; q < 32; ++q, threshold += step)
+                        {
+                            if (actv_floating_point >= threshold)
+                                value |= (1<<31);
+                            value >>= 1;
+                        }
+                        TxBufferPtr[tx_counter++] = value;
+                    }
+                }
+                int rx_counter = 1000 / 32;
+                HLS4ML_Network_Evaluate((UINTPTR)TxBufferPtr, tx_counter * sizeof(int32_t), (UINTPTR)RxBufferPtr, rx_counter);
+
+                int32_t count = 0;
+                for (size_t i = 0; i < rx_counter; ++i) {
+                    count += __builtin_popcount(RxBufferPtr[i]);
+                }
+                *((float*)&network_output_buffer[0]) = ((float)count / 500.0f) - 1.0f;
+            }
+    #endif
+            break;
+
         case NETWORK_C:
             {
                 // Prepare C-network I/O buffers
