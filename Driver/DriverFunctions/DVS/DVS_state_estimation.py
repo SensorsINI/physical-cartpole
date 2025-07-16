@@ -160,38 +160,51 @@ def process_events(events, visualizer):
     last_cart_x, last_cart_y = cx, pivot_y
 
     # ─── VELOCITIES & TIMESTAMP ───────────────────────────────────
+    # 1) obtain a consistent timestamp for this batch:
+    #    * If your EventStore exposes timestamps, use that (psuedocode here):
+    #       ts = events.getLastEventTimestamp()  # in seconds
+    #    * Otherwise, fall back to wall‑clock:
     ts = time.time()
 
-    # linear (px/s)
-    linear_velocity = 0.0
+    # 2) LINEAR velocity (px/s → m/s):
+    #    Δx is in pixels; Δt may vary, so we divide by ts_prev.
+    linear_velocity_px_s = 0.0
     if prev_cart_x is not None and prev_cart_x_time is not None:
         dt = ts - prev_cart_x_time
         if dt > 0:
-            linear_velocity = (cx - prev_cart_x) / dt
+            linear_velocity_px_s = (cx - prev_cart_x) / dt
+    # update previous for next slice
     prev_cart_x, prev_cart_x_time = cx, ts
 
-    # angular (deg/s)
-    angular_velocity = 0.0
+    # convert to meters per second if calibrated
+    if PIXELS_PER_METER is not None:
+        linear_velocity = linear_velocity_px_s / PIXELS_PER_METER
+    else:
+        linear_velocity = linear_velocity_px_s  # fallback
+
+    # 3) ANGULAR velocity (deg/s → rad/s):
+    angular_velocity_deg_s = 0.0
     if prev_angle is not None and prev_angle_time is not None:
         dt = ts - prev_angle_time
         if dt > 0:
-            angular_velocity = (angle_deg - prev_angle) / dt
+            angular_velocity_deg_s = (angle_deg - prev_angle) / dt
     prev_angle, prev_angle_time = angle_deg, ts
 
-    # ─── PUBLISH & LOG (only post-calibration) ────────────────────
-    if PIXEL_CENTER is not None and PIXELS_PER_METER is not None:
-        cart_x_m   = (cx - PIXEL_CENTER) / PIXELS_PER_METER
-        vel_mps    = linear_velocity / PIXELS_PER_METER
-        publish_estimate(
-            angle_rad        = np.deg2rad(angle_deg),
-            cart_x           = cart_x_m,
-            linear_velocity  = vel_mps,
-            angular_velocity = np.deg2rad(angular_velocity),
-            timestamp        = ts,
-        )
-        print(f"[DATA] t={ts:.3f} cart_x={cx:.0f} "
-              f"v={linear_velocity:.2f} angle={angle_deg:.1f} "
-              f"omega={angular_velocity:.2f}")
+    # convert to radians per second
+    angular_velocity = np.deg2rad(angular_velocity_deg_s)
+
+    # 4) now you can publish using your usual API:
+    publish_estimate(
+        angle_rad        = np.deg2rad(angle_deg),
+        cart_x           = (cx - PIXEL_CENTER)/PIXELS_PER_METER,
+        linear_velocity  = linear_velocity,
+        angular_velocity = angular_velocity,
+        timestamp        = ts,
+    )
+    print(f"[DATA] t={ts:.3f} cart_x={cx:.0f} "
+          f"v={linear_velocity:.2f} m/s "
+          f"angle={angle_deg:.1f}° "
+          f"omega={angular_velocity:.2f} rad/s")
 
     # ─── RETURN THE DICT ──────────────────────────────────────────
     return {
@@ -334,8 +347,8 @@ def main():
                     latest_detection.update(result)
 
     slicer = dv.EventStreamSlicer()
-    slicer.doEveryTimeInterval(
-        timedelta(milliseconds=5),
+    slicer.doEveryNumberOfEvents(
+        1000,
         slicing_callback
     )
 
