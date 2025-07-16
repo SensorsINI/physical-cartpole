@@ -14,8 +14,9 @@ import cv2
 import time
 import numpy as np
 import threading
-import socket
 from datetime import timedelta
+
+from Driver.DriverFunctions.DVS.angle_pos_zmq import start_zmq_server, stop_zmq_server, publish_estimate
 
 # --- USER TUNED MATCH FILTER PARAMETERS ---
 CART_RADIUS = 9      # px, radius of template for match filter
@@ -219,45 +220,39 @@ def visualisation_thread():
 
 def output_thread():
     """
-    Outputs raw detected cart x/velocity, pole angle/angular velocity to TCP and console.
+    Outputs raw detected cart x/velocity, pole angle/angular velocity via ZeroMQ and console.
     """
-    tcp_sock = None
-    connected = False
     def safe(val, places=2, default=""): return f"{val:.{places}f}" if isinstance(val, float) else str(val) if val is not None else default
     while not quit_flag['quit']:
         if fixed_pivot_y is not None and not calibrating:
-            if not connected or tcp_sock is None:
-                try:
-                    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                    tcp_sock.connect((TCP_HOST, TCP_PORT))
-                    connected = True
-                    print(f"[TCP] Connected to {TCP_HOST}:{TCP_PORT}")
-                except Exception:
-                    connected = False
-                    tcp_sock = None
-                    time.sleep(1)
-                    continue
             with lock:
                 cart_x = output_values['cart_x']
                 v = output_values['linear_velocity']
                 angle = output_values['angle']
                 omega = output_values['angular_velocity']
                 ts = output_values['timestamp']
-            out_line = f"{safe(ts,3)},{safe(cart_x,0)},{safe(v)},{safe(angle,1)},{safe(omega)}\n"
-            print(f"[DATA] t={safe(ts,3)} cart_x={safe(cart_x,0)} v={safe(v)} angle={safe(angle,1)} omega={safe(omega)}")
-            try:
-                if connected and tcp_sock:
-                    tcp_sock.sendall(out_line.encode())
-            except Exception:
-                connected = False
-                tcp_sock = None
+
+            # Publish via ZMQ
+            publish_estimate(
+                angle_deg=angle,
+                cart_x=cart_x,
+                linear_velocity=v,
+                angular_velocity=omega,
+                timestamp=ts,
+            )
+
+            out_line = f"{safe(ts, 3)},{safe(cart_x, 0)},{safe(v)},{safe(angle, 1)},{safe(omega)}\n"
+            print(f"[DATA] t={safe(ts, 3)} cart_x={safe(cart_x, 0)} v={safe(v)} angle={safe(angle, 1)} omega={safe(omega)}")
+
         time.sleep(0.01)
 
 def main():
     """
     Initializes DVS camera, visualizer, threads, and starts event-processing loop.
     """
+
+    start_zmq_server()
+
     global last_cart_x, last_cart_y
     capture = dv.io.CameraCapture()
     if not capture.isEventStreamAvailable():
@@ -300,6 +295,7 @@ def main():
     print("Quit signal received. Shutting down threads...")
     vis_thread.join()
     out_thread.join()
+    stop_zmq_server()
     print("Exited cleanly.")
 
 if __name__ == "__main__":
