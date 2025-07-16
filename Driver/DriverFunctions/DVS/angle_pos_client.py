@@ -3,7 +3,7 @@ import json
 
 class AnglePositionClient:
     """
-    REQ-side ZeroMQ client for fetching the freshest (angle_deg, cart_x, linear_velocity, angular_velocity, timestamp_s) estimate
+    REQ-side ZeroMQ client for fetching the freshest (angle_rad, cart_x, linear_velocity, angular_velocity, timestamp_s) estimate
     from the companion REP server.
     """
 
@@ -26,11 +26,11 @@ class AnglePositionClient:
         self._sock.connect(self._endpoint)
         self._sock.setsockopt(zmq.RCVTIMEO, self._timeout_ms)
 
-        self._cached = None  # (angle_deg, cart_x, linear_velocity, angular_velocity, timestamp_s)
+        self._cached = None  # (angle_rad, cart_x, linear_velocity, angular_velocity, timestamp_s)
 
     def get_estimate(self) -> tuple[float, float, float, float, float]:
         """
-        Returns the tuple (angle_deg, cart_x, linear_velocity, angular_velocity, timestamp_s).
+        Returns the tuple (angle_rad, cart_x, linear_velocity, angular_velocity, timestamp_s).
 
         If the server does not reply in time, returns the last cached estimate
         to prevent blocking the caller. If no cached value exists, raises TimeoutError.
@@ -40,7 +40,7 @@ class AnglePositionClient:
             self._sock.send(b"?")
             raw = self._sock.recv()
             data = json.loads(raw.decode())
-            angle = data.get("angle_deg")
+            angle = data.get("angle_rad")
             cart_x   = data.get("cart_x")
             lin_vel  = data.get("linear_velocity")
             ang_vel  = data.get("angular_velocity")

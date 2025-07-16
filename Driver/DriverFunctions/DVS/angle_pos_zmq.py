@@ -30,7 +30,7 @@ import zmq
 # ──────────────────────────────────────────────────────────────────────────────
 _latest = {
     "timestamp": None,   # float | None
-    "angle_deg": None,   # float | None
+    "angle_rad": None,   # float | None
     "cart_x":           None,   # float | None
     "linear_velocity":  None,   # float | None
     "angular_velocity": None,   # float | None
@@ -45,7 +45,7 @@ _thread: Optional[threading.Thread] = None
 # ──────────────────────────────────────────────────────────────────────────────
 
 def publish_estimate(
-    angle_deg:         float | None,
+    angle_rad:         float | None,
     cart_x:            int   | None,
     linear_velocity:   float | None,
     angular_velocity:  float | None,
@@ -55,7 +55,7 @@ def publish_estimate(
 
     with _lock:
         _latest["timestamp"]   = time.time() if timestamp is None else timestamp
-        _latest["angle_deg"]   = angle_deg
+        _latest["angle_rad"]   = angle_rad
         _latest["cart_x"]           = cart_x
         _latest["linear_velocity"]  = linear_velocity
         _latest["angular_velocity"] = angular_velocity

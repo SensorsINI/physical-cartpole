@@ -234,10 +234,10 @@ def output_thread():
 
             # Publish via ZMQ
             publish_estimate(
-                angle_deg=angle,
+                angle_rad=np.deg2rad(angle),
                 cart_x=cart_x,
                 linear_velocity=v,
-                angular_velocity=omega,
+                angular_velocity=np.deg2rad(omega),
                 timestamp=ts,
             )
 
