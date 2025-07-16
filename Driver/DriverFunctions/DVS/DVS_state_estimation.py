@@ -119,7 +119,7 @@ def process_events(events, visualizer):
                                 maxLineGap=10)
 
     line      = None
-    angle_deg = None
+    angle_rad = None
     pivot_y   = fixed_pivot_y
 
     if lines is not None:
@@ -147,13 +147,13 @@ def process_events(events, visualizer):
                 tip_x, tip_y = x2, y2
             line      = (pivot_x, pivot_y, tip_x, tip_y)
             dx, dy    = tip_x-pivot_x, tip_y-pivot_y
-            angle_deg = np.degrees(np.arctan2(-dx, -dy))
+            angle_rad = np.arctan2(-dx, -dy)
 
     # fallback to last_angle or zero
-    if angle_deg is not None:
-        last_angle = angle_deg
+    if angle_rad is not None:
+        last_angle = angle_rad
     else:
-        angle_deg = last_angle if last_angle is not None else 0.0
+        angle_rad = last_angle if last_angle is not None else 0.0
 
     # decide cart_x
     cx = pivot_x if (line is not None) else last_cart_x
@@ -182,29 +182,34 @@ def process_events(events, visualizer):
     else:
         linear_velocity = linear_velocity_px_s  # fallback
 
-    # 3) ANGULAR velocity (deg/s → rad/s):
-    angular_velocity_deg_s = 0.0
+    # 3) ANGULAR velocity (rad/s):
+    angular_velocity_rad_s = 0.0
     if prev_angle is not None and prev_angle_time is not None:
         dt = ts - prev_angle_time
         if dt > 0:
-            angular_velocity_deg_s = (angle_deg - prev_angle) / dt
-    prev_angle, prev_angle_time = angle_deg, ts
+            # compute smallest angular difference to handle wrap‑around at ±π
+            delta_rad = angle_rad - prev_angle
+            if delta_rad > np.pi:
+                delta_rad -= 2 * np.pi
+            elif delta_rad < -np.pi:
+                delta_rad += 2 * np.pi
+            angular_velocity_rad_s = delta_rad / dt
+    # update previous for next slice
+    prev_angle, prev_angle_time = angle_rad, ts
 
-    # convert to radians per second
-    angular_velocity = np.deg2rad(angular_velocity_deg_s)
 
     # 4) now you can publish using your usual API:
     publish_estimate(
-        angle_rad        = np.deg2rad(angle_deg),
+        angle_rad        = angle_rad,
         cart_x           = (cx - PIXEL_CENTER)/PIXELS_PER_METER,
         linear_velocity  = linear_velocity,
-        angular_velocity = angular_velocity,
+        angular_velocity = angular_velocity_rad_s,
         timestamp        = ts,
     )
     print(f"[DATA] t={ts:.3f} cart_x={cx:.0f} "
           f"v={linear_velocity:.2f} m/s "
-          f"angle={angle_deg:.1f}° "
-          f"omega={angular_velocity:.2f} rad/s")
+          f"angle={np.rad2deg(angle_rad):.1f}° "
+          f"omega={angular_velocity_rad_s:.2f} rad/s")
 
     # ─── RETURN THE DICT ──────────────────────────────────────────
     return {
@@ -212,7 +217,7 @@ def process_events(events, visualizer):
         "line":      line,
         "cart_x":    cx,
         "cart_y":    pivot_y,
-        "angle":     angle_deg,
+        "angle":     angle_rad,
         "timestamp": ts
     }
 
