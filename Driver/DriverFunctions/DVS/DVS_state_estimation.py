@@ -50,7 +50,7 @@ prev_cart_x = None
 prev_cart_x_time = None
 prev_angle = None
 prev_angle_time = None
-
+last_angle = None
 PIXELS_PER_METER = None
 PIXEL_CENTER    = None
 
@@ -88,27 +88,28 @@ def process_events(events, visualizer):
     Processes one event batch:
       - During calibration, runs circle detection only to accumulate samples for pivot y.
       - After calibration, uses Hough-line intersection exclusively to compute pivot and cart position.
+      - Filters *all* candidate lines by true intersection with the pivot, then picks the longest.
+      - Falls back to last valid angle when no detection survives.
       - Returns a dict with:
         frame, line (pivot→tip), cart_x, cart_y, angle (deg), timestamp
     """
     global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
-    global last_cart_x, last_cart_y
+    global last_cart_x, last_cart_y, last_angle
 
+    # render and preprocess
     frame = visualizer.generateImage(events)
     frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if frame.ndim == 3 else frame
     H, W  = gray.shape
 
-    # If still calibrating or not yet calibrated, use circle matcher for pivot y sampling
+    # ── Calibration: circle matcher only ────────────────────────────
     if calibrating or fixed_pivot_y is None:
         template = make_circle_template(CART_RADIUS)
         blurred  = gaussian_blur_uint8(gray)
-        # matchTemplate returns a heatmap; we pick the maximum location
         result   = cv2.matchTemplate(blurred, template, cv2.TM_CCOEFF_NORMED)
         _, conf, _, loc = cv2.minMaxLoc(result)
 
         if conf >= CART_THRESH:
-            # convert top-left corner to circle center
             cx = loc[0] + template.shape[1] // 2
             cy = loc[1] + template.shape[0] // 2
             last_cart_x, last_cart_y = cx, cy
@@ -116,19 +117,18 @@ def process_events(events, visualizer):
                 calib_cart_xs.append(cx)
                 calib_cart_ys.append(cy)
         else:
-            # no reliable circle: fallback to last known
             cx, cy = last_cart_x or (W//2), last_cart_y or (H//2)
 
         return {
-            "frame": frame,
-            "line": None,                # no pivot line during calibration
-            "cart_x": cx,
-            "cart_y": cy,
-            "angle": None,               # angle not used in calibration
+            "frame":    frame,
+            "line":     None,
+            "cart_x":   cx,
+            "cart_y":   cy,
+            "angle":    None,
             "timestamp": time.time()
         }
 
-    # ── Runtime: Hough-line intersection only ─────────────────────────
+    # ── Runtime: Hough + *all‑lines* intersection filtering ─────────
     _, binary = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)
     edges     = cv2.Canny(binary, 50, 150, apertureSize=3)
     lines     = cv2.HoughLinesP(edges, 1, np.pi/180,
@@ -140,41 +140,54 @@ def process_events(events, visualizer):
     pivot_y   = fixed_pivot_y
 
     if lines is not None:
-        # choose the longest segment to improve crossing probability
-        seg = max(lines,
-                  key=lambda L: np.hypot(L[0][2]-L[0][0], L[0][3]-L[0][1]))[0]
-        x1, y1, x2, y2 = map(float, seg)
+        best_len = 0
+        best_seg = None
 
-        # geometric intersection test with horizontal pivot line
-        px = line_horizontal_intersect(x1, y1, x2, y2, fixed_pivot_y)
-        if px is not None:
+        # 1) Test *every* segment for a real crossing at pivot_y
+        for L in lines:
+            x1, y1, x2, y2 = map(float, L[0])
+            px = line_horizontal_intersect(x1, y1, x2, y2, pivot_y)
+            if px is None:
+                continue  # no true intersection within segment
+
+            length = np.hypot(x2 - x1, y2 - y1)
+            if length > best_len:
+                best_len = length
+                best_seg = (x1, y1, x2, y2, px)
+
+        # 2) If at least one line crossed the pivot, pick the longest
+        if best_seg is not None:
+            x1, y1, x2, y2, px = best_seg
             pivot_x = px
-            # select the endpoint farthest from the pivot as "tip"
-            if np.hypot(x1-px, y1-pivot_y) > np.hypot(x2-px, y2-pivot_y):
+
+            # choose tip as endpoint farthest from the pivot
+            if np.hypot(x1 - px, y1 - pivot_y) > np.hypot(x2 - px, y2 - pivot_y):
                 tip_x, tip_y = x1, y1
             else:
                 tip_x, tip_y = x2, y2
 
             line      = (pivot_x, pivot_y, tip_x, tip_y)
             dx, dy    = tip_x - pivot_x, tip_y - pivot_y
+
+            # compute angle from vertical (deg)
             angle_deg = np.degrees(np.arctan2(-dx, -dy))
 
-    # Fallback to last known pivot if no valid intersection
-    if pivot_x is None:
-        pivot_x, angle_deg = last_cart_x, None
-        tip_y             = None  # no line means no tip for viz
-        # pivot_y remains fixed for displaying ROI
+    # ── Fallback: hold last valid angle if no new detection ─────────
+    if angle_deg is not None:
+        last_angle = angle_deg
+    else:
+        angle_deg = last_angle
 
-    # enforce cart_x == pivot_x at runtime
-    cx, cy = (pivot_x, pivot_y)
-    last_cart_x, last_cart_y = cx, cy
+    # enforce cart_x == pivot_x (or reuse last_cart_x)
+    cx = pivot_x if pivot_x is not None else last_cart_x
+    last_cart_x, last_cart_y = cx, pivot_y
 
     return {
-        "frame": frame,
-        "line": line,
-        "cart_x": cx,
-        "cart_y": cy,
-        "angle": angle_deg,
+        "frame":     frame,
+        "line":      line,
+        "cart_x":    cx,
+        "cart_y":    pivot_y,
+        "angle":     angle_deg,
         "timestamp": time.time()
     }
 
