@@ -40,6 +40,9 @@ prev_cart_x_time = None
 prev_angle       = None
 prev_angle_time  = None
 
+prev_linear_velocity  = 0.0
+prev_angular_velocity = 0.0
+
 # fallback for angle
 last_angle = None
 
@@ -76,6 +79,7 @@ def process_events(events, visualizer):
     global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
     global last_cart_x, last_cart_y
     global prev_cart_x, prev_cart_x_time, prev_angle, prev_angle_time
+    global prev_angular_velocity, prev_linear_velocity
     global last_angle
 
     # preprocess
@@ -196,6 +200,26 @@ def process_events(events, visualizer):
             angular_velocity_rad_s = delta_rad / dt
     # update previous for next slice
     prev_angle, prev_angle_time = angle_rad, ts
+
+    # ─── VELOCITY CAPPING ────────────────────────────────────────
+    # max linear speed: 1 m/s
+    MAX_LINEAR = 1.0
+    # max angular speed: 4 rotations/sec → 4 * 2π rad/s
+    MAX_ANGULAR = 4 * 2 * np.pi
+
+    # cap linear velocity
+    if abs(linear_velocity) > MAX_LINEAR:
+        # spike detected → use last valid
+        linear_velocity = prev_linear_velocity
+    else:
+        prev_linear_velocity = linear_velocity
+
+    # cap angular velocity
+    if abs(angular_velocity_rad_s) > MAX_ANGULAR:
+        # spike detected → use last valid
+        angular_velocity_rad_s = prev_angular_velocity
+    else:
+        prev_angular_velocity = angular_velocity_rad_s
 
 
     # 4) now you can publish using your usual API:
