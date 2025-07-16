@@ -203,7 +203,7 @@ def process_events(events, visualizer):
 
 def visualisation_thread():
     global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
-    global cart_min_x, cart_max_x  # bring in the boundary globals
+    global cart_min_x, cart_max_x, PIXELS_PER_METER, PIXEL_CENTER
 
     cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
     waiting_overlay = True
