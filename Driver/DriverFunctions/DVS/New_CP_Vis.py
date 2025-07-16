@@ -22,8 +22,6 @@ from Driver.DriverFunctions.DVS.angle_pos_zmq import start_zmq_server, stop_zmq_
 CART_RADIUS = 9      # px, radius of template for match filter
 CART_THRESH = 0.50   # threshold for match quality (0-1)
 ROI_BAND = 40        # px, half-height of ROI after calibration
-TCP_HOST = '127.0.0.1'
-TCP_PORT = 65432
 
 TRACK_LENGTH_METERS = 0.44
 
