@@ -21,7 +21,6 @@ from Driver.DriverFunctions.DVS.angle_pos_zmq import start_zmq_server, stop_zmq_
 # --- USER TUNED MATCH FILTER PARAMETERS ---
 CART_RADIUS = 5      # px, radius of template for match filter
 CART_THRESH = 0.50   # threshold for match quality (0-1)
-ROI_BAND = 40        # px, half-height of ROI after calibration
 
 TRACK_LENGTH_METERS = 0.44
 
@@ -63,19 +62,21 @@ def make_circle_template(radius, thickness=-1, image_size=None):
     return template
 
 # ───────────────────────────── helpers ──────────────────────────────
-def line_horizontal_intersect(x1, y1, x2, y2, y_horiz):
+def line_horizontal_intersect(x1, y1, x2, y2, y_horiz, img_width):
     """
-    Return x-coordinate of intersection between the segment (x1,y1)-(x2,y2)
-    and the horizontal line y = y_horiz **iff** the intersection lies between
-    the endpoints; otherwise return None.
+    Return the x‐coordinate where the infinite line through
+    (x1,y1)-(x2,y2) crosses y = y_horiz, provided that
+    intersection x falls within [0, img_width); else None.
     """
-    # Segment is (almost) horizontal → no reliable crossing
     if abs(y2 - y1) < 1e-3:
-        return None
-    t = (y_horiz - y1) / float(y2 - y1)      # barycentric coordinate
-    if 0.0 <= t <= 1.0:
-        return x1 + t * (x2 - x1)
+        return None         # line is (nearly) horizontal
+    t = (y_horiz - y1) / float(y2 - y1)
+    px = x1 + t * (x2 - x1)
+    # only require that this x lies within image bounds
+    if 0.0 <= px < img_width:
+        return px
     return None
+
 
 
 def gaussian_blur_uint8(img):
@@ -146,7 +147,7 @@ def process_events(events, visualizer):
         # 1) Test *every* segment for a real crossing at pivot_y
         for L in lines:
             x1, y1, x2, y2 = map(float, L[0])
-            px = line_horizontal_intersect(x1, y1, x2, y2, pivot_y)
+            px = line_horizontal_intersect(x1, y1, x2, y2, pivot_y, W)
             if px is None:
                 continue  # no true intersection within segment
 
@@ -251,12 +252,6 @@ def visualisation_thread():
         if frame is not None:
             waiting_overlay = False
             vis = frame.copy()
-            height, width = vis.shape[:2]
-            # ROI band
-            if fixed_pivot_y is not None:
-                y_min = max(0, fixed_pivot_y - ROI_BAND)
-                y_max = min(height-1, fixed_pivot_y + ROI_BAND)
-                cv2.rectangle(vis, (0, y_min), (width-1, y_max), (0, 255, 0), 1)
             # Red pole
             if line is not None:
                 x1, y1, x2, y2 = line
