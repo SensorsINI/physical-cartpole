@@ -25,6 +25,11 @@ CART_RADIUS         = 5      # px, radius of template for match filter
 CART_THRESH         = 0.50   # threshold for match quality (0-1)
 TRACK_LENGTH_METERS = 0.396   # physical track length for calibration
 
+# max linear speed: 1 m/s
+MAX_LINEAR = 1.0
+# max angular speed: 4 rotations/sec → 4 * 2π rad/s
+MAX_ANGULAR = 4 * 2 * np.pi
+
 
 # --- Global/Shared State ---
 latest_detection = {
@@ -58,6 +63,15 @@ last_cart_x      = None
 last_cart_y      = None
 PIXELS_PER_METER = None
 PIXEL_CENTER     = None
+
+
+# ---- NEW: keep track of last *valid* kinematic state -------------
+last_valid_cart_x      = None
+last_valid_cart_time   = None
+last_valid_angle       = None
+last_valid_angle_time  = None
+prev_linear_velocity_px_s = 0.0   # last valid linear speed in *pixels/s*
+
 
 
 def make_circle_template(radius, thickness=-1, image_size=None):
@@ -150,6 +164,7 @@ def process_events(events, visualizer):
     global prev_cart_x, prev_cart_x_time, prev_angle, prev_angle_time
     global prev_angular_velocity, prev_linear_velocity
     global last_angle
+    global last_valid_cart_x, last_valid_cart_time, last_valid_angle, last_valid_angle_time, prev_linear_velocity_px_s
 
     # preprocess
     frame = visualizer.generateImage(events)
@@ -259,6 +274,44 @@ def process_events(events, visualizer):
     #    * Otherwise, fall back to wall‑clock:
     ts = time.time()
 
+    # ─── HARD‑LIMIT GATE for position & angle ─────────────────────────
+    if PIXELS_PER_METER is not None:  # only after calibration
+        # ---------- linear position -----------------------------------
+        valid_cart = True  # assume OK until proven impossible
+        if last_valid_cart_x is not None:
+            dt_clip = ts - last_valid_cart_time
+            if dt_clip > 0:
+                max_dx_px = dt_clip * MAX_LINEAR * PIXELS_PER_METER
+                x_pred = last_valid_cart_x + prev_linear_velocity_px_s * dt_clip
+                if abs(cx - x_pred) > max_dx_px:  # impossible ⇒ reject
+                    cx = int(round(x_pred))  # substitute prediction
+                    valid_cart = False
+
+        if valid_cart:  # update *only* on success
+            last_valid_cart_x = cx
+            last_valid_cart_time = ts
+
+        # ---------- angular position ----------------------------------
+        valid_ang = True
+        if last_valid_angle is not None:
+            dt_clip = ts - last_valid_angle_time
+            if dt_clip > 0:
+                max_dtheta = dt_clip * MAX_ANGULAR
+                theta_pred = (last_valid_angle + prev_angular_velocity * dt_clip + np.pi) % (2 * np.pi) - np.pi
+                dtheta = angle_rad - theta_pred
+                if dtheta > np.pi: dtheta -= 2 * np.pi
+                if dtheta < -np.pi: dtheta += 2 * np.pi
+                if abs(dtheta) > max_dtheta:  # impossible ⇒ reject
+                    angle_rad = theta_pred
+                    valid_ang = False
+                else:
+                    valid_ang = True
+
+
+        if valid_ang:
+            last_valid_angle = angle_rad
+            last_valid_angle_time = ts
+
     # 2) LINEAR velocity (px/s → m/s):
     #    Δx is in pixels; Δt may vary, so we divide by ts_prev.
     linear_velocity_px_s = 0.0
@@ -291,10 +344,6 @@ def process_events(events, visualizer):
     prev_angle, prev_angle_time = angle_rad, ts
 
     # ─── VELOCITY CAPPING ────────────────────────────────────────
-    # max linear speed: 1 m/s
-    MAX_LINEAR = 1.0
-    # max angular speed: 4 rotations/sec → 4 * 2π rad/s
-    MAX_ANGULAR = 4 * 2 * np.pi
 
     # cap linear velocity
     if abs(linear_velocity) > MAX_LINEAR:
@@ -310,6 +359,8 @@ def process_events(events, visualizer):
     else:
         prev_angular_velocity = angular_velocity_rad_s
 
+    # keep a pixel/s copy for the next prediction corridor
+    prev_linear_velocity_px_s = linear_velocity * PIXELS_PER_METER if PIXELS_PER_METER else linear_velocity_px_s
 
     # 4) now you can publish using your usual API:
     if PIXELS_PER_METER is not None and PIXEL_CENTER is not None:
