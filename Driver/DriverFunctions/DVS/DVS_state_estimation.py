@@ -203,6 +203,7 @@ def process_events(events, visualizer):
 
 def visualisation_thread():
     global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
+    global cart_min_x, cart_max_x  # bring in the boundary globals
 
     cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
     waiting_overlay = True
@@ -217,22 +218,52 @@ def visualisation_thread():
         if frame is not None:
             waiting_overlay = False
             vis = frame.copy()
+
+            # ── draw pivot line ────────────────────────────────
+            if fixed_pivot_y is not None:
+                # full‑width horizontal line at the calibrated pivot y
+                cv2.line(vis,
+                         (0, fixed_pivot_y),
+                         (vis.shape[1], fixed_pivot_y),
+                         (255, 0, 255), 1)  # magenta, 1px thick
+
+            # ── draw left/right boundaries ───────────────────────
+            if cart_min_x is not None and cart_max_x is not None:
+                # left boundary
+                cv2.line(vis,
+                         (cart_min_x, 0),
+                         (cart_min_x, vis.shape[0]),
+                         (255, 255, 0), 1)  # cyan, 1px thick
+                # right boundary
+                cv2.line(vis,
+                         (cart_max_x, 0),
+                         (cart_max_x, vis.shape[0]),
+                         (255, 255, 0), 1)
+
+            # ── existing overlays ────────────────────────────────
+            # Red pole
             if line is not None:
                 x1, y1, x2, y2 = line
                 cv2.line(vis, (int(x1), int(y1)),
                          (int(x2), int(y2)),
                          (0, 0, 255), 2)
+            # Green cart (always at detected y)
             if cart_x is not None and cart_y is not None:
-                cv2.circle(vis, (int(cart_x), int(cart_y)),
-                           CART_RADIUS, (0, 255, 0), 2)
+                cv2.circle(vis,
+                           (int(cart_x), int(cart_y)),
+                           CART_RADIUS,
+                           (0, 255, 0), 2)
+
             if calibrating:
                 cv2.putText(vis,
                             "CALIBRATING: move cart to ends, press 'c'",
                             (30, 40),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.7, (0,0,255), 2)
+
             cv2.imshow("Preview", vis)
         else:
+            # … (unchanged waiting overlay) …
             if waiting_overlay:
                 black = np.zeros((240, 346, 3), dtype=np.uint8)
                 cv2.putText(black, "Waiting for events...",
@@ -245,6 +276,7 @@ def visualisation_thread():
         if key == ord('q'):
             quit_flag['quit'] = True
         elif key == ord('c'):
+            # … (unchanged calibration logic) …
             if not calibrating:
                 print("[CALIBRATION] Starting: move cart to both ends, then press 'c' again.")
                 calibrating = True
@@ -256,17 +288,15 @@ def visualisation_thread():
                     fixed_pivot_y    = int(np.median(calib_cart_ys))
                     cart_min_x       = int(np.min(calib_cart_xs))
                     cart_max_x       = int(np.max(calib_cart_xs))
-                    PIXELS_PER_METER = ((cart_max_x - cart_min_x)
-                                        / TRACK_LENGTH_METERS)
+                    PIXELS_PER_METER = (cart_max_x - cart_min_x) / TRACK_LENGTH_METERS
                     PIXEL_CENTER     = 0.5 * (cart_min_x + cart_max_x)
-                    print(f"[CALIBRATION] Complete. Setpoint y: {fixed_pivot_y}, "
-                          f"Cart x-range: [{cart_min_x}, {cart_max_x}]")
+                    print(f"[CALIBRATION] Complete. Setpoint y: {fixed_pivot_y}, Cart x-range: [{cart_min_x}, {cart_max_x}]")
                 else:
                     fixed_pivot_y, cart_min_x, cart_max_x = None, None, None
                     print("[CALIBRATION] FAILED: No cart detections were made.")
         time.sleep(0.01)
-
     cv2.destroyAllWindows()
+
 
 def main():
     start_zmq_server()
