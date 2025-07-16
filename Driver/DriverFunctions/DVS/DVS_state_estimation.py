@@ -19,7 +19,7 @@ from datetime import timedelta
 from Driver.DriverFunctions.DVS.angle_pos_zmq import start_zmq_server, stop_zmq_server, publish_estimate
 
 # --- USER TUNED MATCH FILTER PARAMETERS ---
-CART_RADIUS = 9      # px, radius of template for match filter
+CART_RADIUS = 5      # px, radius of template for match filter
 CART_THRESH = 0.50   # threshold for match quality (0-1)
 ROI_BAND = 40        # px, half-height of ROI after calibration
 
@@ -98,7 +98,7 @@ def process_events(events, visualizer):
 
     # render and preprocess
     frame = visualizer.generateImage(events)
-    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    # frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if frame.ndim == 3 else frame
     H, W  = gray.shape
 
