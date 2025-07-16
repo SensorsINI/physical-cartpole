@@ -81,13 +81,33 @@ def process_events(events, visualizer):
     line = None
     angle_from_vertical = None
     if lines is not None:
-        # Use the longest line
-        longest_line = max(lines, key=lambda l: np.linalg.norm((l[0][2] - l[0][0], l[0][3] - l[0][1])))
+        # Pick the longest segment
+        longest_line = max(lines, key=lambda l: np.hypot(l[0][2] - l[0][0], l[0][3] - l[0][1]))
         x1, y1, x2, y2 = map(float, longest_line[0])
-        line = (x1, y1, x2, y2)
-        angle_rad = np.arctan2(y2 - y1, x2 - x1)
-        angle_deg = np.degrees(angle_rad)
-        angle_from_vertical = ((angle_deg - 90 + 180) % 360) - 180
+
+        # === identify pivot (hinge) and tip ===
+        if fixed_pivot_y is not None:
+            # after calibration, pivot is the endpoint closest to fixed_pivot_y
+            if abs(y1 - fixed_pivot_y) < abs(y2 - fixed_pivot_y):
+                pivot_x, pivot_y, tip_x, tip_y = x1, y1, x2, y2
+            else:
+                pivot_x, pivot_y, tip_x, tip_y = x2, y2, x1, y1
+        else:
+            # fallback: assume the lower endpoint in image coords (larger y) is the pivot
+            if y1 > y2:
+                pivot_x, pivot_y, tip_x, tip_y = x1, y1, x2, y2
+            else:
+                pivot_x, pivot_y, tip_x, tip_y = x2, y2, x1, y1
+
+        line = (pivot_x, pivot_y, tip_x, tip_y)
+
+        # vector from pivot to tip
+        dx = tip_x - pivot_x    # +dx → tip is to the right
+        dy = tip_y - pivot_y    # +dy → tip is downwards
+
+        # 0° = vertical up; positive = left tilt; negative = right tilt
+        angle_from_vertical = np.degrees(np.arctan2(-dx, -dy))
+
 
     # --- Cart detection: match filter (never fixed y) ---
     template = make_circle_template(CART_RADIUS)
