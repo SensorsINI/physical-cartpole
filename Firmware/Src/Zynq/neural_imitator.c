@@ -25,6 +25,8 @@
 
 #include "NC_C/network.h"
 
+#include "difflogic/difflg_weights.h"
+
 
 #define NETWORKS_SWITCH_NUMBER	3
 
@@ -182,11 +184,21 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                 int rx_counter = 1000 / 32;
                 HLS4ML_Network_Evaluate((UINTPTR)TxBufferPtr, tx_counter * sizeof(int32_t), (UINTPTR)RxBufferPtr, rx_counter);
 
-                int32_t count = 0;
-                for (size_t i = 0; i < rx_counter; ++i) {
-                    count += __builtin_popcount(RxBufferPtr[i]);
+                float output = linear_biases[0];
+                for (size_t i = 0; i < rx_counter; ++i)
+                {
+                    int32_t value = RxBufferPtr[i];
+                    for (int q = 0; q < 32; q++, value >>= 1)
+                        if (value & 1)
+                            output += linear_weight_0[i*32 + q];
                 }
-                *((float*)&network_output_buffer[0]) = ((float)count / 500.0f) - 1.0f;
+                *((float*)&network_output_buffer[0]) = output;
+
+                // int32_t count = 0;
+                // for (size_t i = 0; i < rx_counter; ++i) {
+                //     count += __builtin_popcount(RxBufferPtr[i]);
+                // }
+                // *((float*)&network_output_buffer[0]) = ((float)count / 500.0f) - 1.0f;
             }
     #endif
             break;
