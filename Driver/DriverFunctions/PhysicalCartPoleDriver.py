@@ -36,6 +36,7 @@ from globals import (
     SEND_CHANGE_IN_TARGET_POSITION_ALWAYS,
     AUTOSTART,
     USE_DVS_STATE_ESTIMATION,
+    USE_EKF, EKF_CALIBRATION_RUN,
 )
 
 import warnings
@@ -102,12 +103,15 @@ class PhysicalCartPoleDriver:
 
         self.angle_position_client = None
 
-        self.ekf = EKFCartPole(
-            CONTROL_PERIOD_MS / 1000.0,
-            self.CartPoleInstance.cpe.params,
-        )
-        self.ekf_tuner = EKFAdaptiveTuner(self.ekf)
-        self._ekf_initialized = False
+        if USE_EKF:
+            self.ekf = EKFCartPole(
+                CONTROL_PERIOD_MS / 1000.0,
+                self.CartPoleInstance.cpe.params,
+            )
+            self.ekf_tuner = EKFAdaptiveTuner(self.ekf)
+            self._ekf_initialized = True
+        else:
+            self._ekf_initialized = False
 
     def run(self):
         self.setup()
@@ -156,7 +160,7 @@ class PhysicalCartPoleDriver:
                            self.s[ANGLE_IDX],  # pole angle
                            0.0])  # start with ω = 0
             self.ekf.reset(x0)
-            self._ekf_initialized = False
+            self._ekf_initialized = True
 
 
     def run_experiment(self):
@@ -188,6 +192,9 @@ class PhysicalCartPoleDriver:
 
         self.s_original[:] = self.s
 
+        if USE_DVS_STATE_ESTIMATION:
+            self.overwrite_with_state_from_DVS(self.s)
+
         if self._ekf_initialized:
 
             # Feed the adaptive tuner *before* the EKF step
@@ -195,7 +202,7 @@ class PhysicalCartPoleDriver:
                 pos=self.s[POSITION_IDX],
                 ang=self.s[ANGLE_IDX],
                 u=self.Q_prev,  # motor effort of previous cycle
-                hi_grade=False,
+                hi_grade=EKF_CALIBRATION_RUN,
                 vel_gt=self.s[POSITIOND_IDX],  # only valid while hi‑grade == True
                 angvel_gt=self.s[ANGLED_IDX],
             )
@@ -219,8 +226,7 @@ class PhysicalCartPoleDriver:
             self.s_ekf[ANGLE_COS_IDX] = np.cos(x_hat[2])
             self.s_ekf[ANGLE_SIN_IDX] = np.sin(x_hat[2])
 
-        if USE_DVS_STATE_ESTIMATION:
-            self.overwrite_with_state_from_DVS(self.s)
+            self.s[:] = self.s_ekf[:]
 
         self.s = self.th.add_latency(self.s)
 
