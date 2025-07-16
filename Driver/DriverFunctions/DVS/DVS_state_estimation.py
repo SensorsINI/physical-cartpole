@@ -69,8 +69,8 @@ def make_circle_template(radius, thickness=-1, image_size=None):
 
 
 CIRCLE_TEMPLATE = make_circle_template(CART_RADIUS)
-
-Y_TOLERANCE_PX   = CIRCLE_TEMPLATE.shape[0]//2          # allowed vertical drift from pivot_y
+TEMPLATE_H, TEMPLATE_W = CIRCLE_TEMPLATE.shape           # helper aliases
+Y_TOLERANCE_PX = (TEMPLATE_H + 1) // 2
 GATE_PX_STATIC   = 25          # max Δx from pole pivot (pixels)
 ADAPTIVE_ALPHA   = 0.1         # EWMA for adapting template-score threshold
 MIN_THRESH       = 0.35        # never let threshold drop below this
@@ -108,6 +108,10 @@ def detect_cart_robust(gray, last_x, last_y, pivot_x_pred, H, W):
         return None
 
     roi = gray[ymin:ymax, xmin:xmax]
+    roi_h, roi_w = roi.shape
+    if roi_h < TEMPLATE_H or roi_w < TEMPLATE_W:
+        # ROI too small for safe template matching → skip this slice
+        return None
     blurred = gaussian_blur_uint8(roi)
     res = cv2.matchTemplate(blurred,
                             CIRCLE_TEMPLATE,
