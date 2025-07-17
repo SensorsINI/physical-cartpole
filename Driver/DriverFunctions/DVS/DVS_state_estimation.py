@@ -185,6 +185,8 @@ def detect_cart_robust(gray, last_x, last_y, pivot_x_pred, H, W):
 
     return cx, cy, score
 
+MISS_LIMIT_FOR_RESET = 4        # frames without a match → broaden search
+miss_counter         = 0        # increments when detect_cart_robust() fails
 
 def process_events(events, visualizer):
     global calibrating, calib_cart_xs, calib_cart_ys, fixed_pivot_y
@@ -194,6 +196,7 @@ def process_events(events, visualizer):
     global last_angle
     global last_valid_cart_x, last_valid_cart_time, last_valid_angle, last_valid_angle_time, prev_linear_velocity_px_s
     global smoothed_cart_x
+    global miss_counter
     smoothed_angular_velocity = None
 
     # preprocess
@@ -289,11 +292,20 @@ def process_events(events, visualizer):
                                   H, W)
 
     if cart_det is not None:
-        # High-confidence, gated template match
+        # ── SUCCESS: reset counter and update position ─────────────
+        miss_counter = 0
         cx, cy, _ = cart_det
     else:
-        # Fallback: trust pole geometry or last valid
-        cx, cy = last_cart_x, last_cart_y #pivot_x_pred, pivot_y
+        # ── MISS: widen search window or perform global search ─────
+        miss_counter += 1
+
+        if miss_counter >= MISS_LIMIT_FOR_RESET:
+            # Abandon stale coordinates → force detect_cart_robust()
+            # to use a *wide* search on next frame.
+            last_cart_x = None
+            last_cart_y = fixed_pivot_y     # keep y anchored to rail
+            miss_counter = 0                # prevent runaway growth
+        cx, cy = last_cart_x, last_cart_y   # interim fallback
 
     last_cart_x, last_cart_y = cx, cy
 
@@ -306,14 +318,18 @@ def process_events(events, visualizer):
 
     # ─── HARD‑LIMIT GATE for position & angle ─────────────────────────
     if PIXELS_PER_METER is not None:  # only after calibration
-        # ---------- linear position -----------------------------------
-        valid_cart = True  # assume OK until proven impossible
-        if last_valid_cart_x is not None:
+        valid_cart = True
+        if cx is None:
+            # No detection this frame → force prediction
+            if last_valid_cart_x is not None:
+                cx = int(round(last_valid_cart_x))  # fallback to last valid
+                valid_cart = False
+        if cx is not None and last_valid_cart_x is not None:
             dt_clip = ts - last_valid_cart_time
             if dt_clip > 0:
                 max_dx_px = dt_clip * MAX_LINEAR * PIXELS_PER_METER
                 x_pred = last_valid_cart_x + prev_linear_velocity_px_s * dt_clip
-                if abs(cx - x_pred) > max_dx_px:  # impossible ⇒ reject
+                if abs(cx - x_pred) > max_dx_px:
                     cx = int(round(x_pred))  # substitute prediction
                     valid_cart = False
 
