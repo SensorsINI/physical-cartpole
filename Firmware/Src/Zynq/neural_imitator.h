@@ -10,8 +10,8 @@ typedef enum {
     NETWORK_C,
 } NeuralNetworkType;
 
-#define SELECTED_NETWORK_UP NETWORK_C;  // Assign to switch UP position
-#define SELECTED_NETWORK_DOWN NETWORK_C;  // Assign to switch DOWN position
+#define SELECTED_NETWORK_UP NETWORK_DIFFLOGIC;  // Assign to switch UP position
+#define SELECTED_NETWORK_DOWN NETWORK_DIFFLOGIC;  // Assign to switch DOWN position
 
 
 #define MLP_TOTAL_BITS_PER_VARIABLE	12

@@ -1,7 +1,7 @@
 // Generated from: difflg_cartpole.pth
 
 module net (
-    input  wire [697:0] in,
+    input  wire [699:0] in,
     output wire [999:0] out,
     output wire [999:0] categories
 );

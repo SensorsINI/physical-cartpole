@@ -59,6 +59,7 @@ float hls_normalize_b[] = {-0.07883823,0.00000000,0.00000000,0.01648343,-0.01449
 };
 float hls_denormalize_A[] = {1.0};
 float hls_denormalize_B[] = {0.0};
+float norm_vect[] = {0.05440483, 1.0, 1.0, 5.05050516, 0.88866770, 1.0, 5.05050516};
 
 // Normalization f1t 31
 //float hls_normalize_a[] = {3.10077524,2.03045702,1.03896105,0.62952471,0.43591982,0.32637075,0.25913447,0.21468441,0.18336849,1.39860129,1.39860129,0.68027210,0.44179368,0.32976091,0.26413101,0.22121446,0.19166268,0.16701461,0.14775415,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.12087514,0.14740567,1.26502204,2.23214269
@@ -165,8 +166,11 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                 int tx_counter = 0;
                 for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++)
                 {
-                    actv_floating_point = *((float*)&][neuron_idx * DATA_WORD_BYTES]);
-                    actv_floating_point = (actv_floating_point + 1.0) / 2.0
+                    actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
+                    actv_floating_point = actv_floating_point * norm_vect[neuron_idx];
+                    actv_floating_point = (actv_floating_point > 1.0f) ? 1.0f : (actv_floating_point < -1.0f ? -1.0f : actv_floating_point);
+
+                    actv_floating_point = (actv_floating_point + 1.0) / 2.0;
                     float threshold = 0.0f;
                     float step = 1.0f / 100.0f;
                     for (int bits = 0; bits < 100; bits += 32)
@@ -192,7 +196,11 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                         if (value & 1)
                             output += linear_weight_0[i*32 + q];
                 }
+
+
+                output = (output > 1.0f) ? 1.0f : (output < -1.0f ? -1.0f : output);
                 *((float*)&network_output_buffer[0]) = output;
+
 
                 // int32_t count = 0;
                 // for (size_t i = 0; i < rx_counter; ++i) {
