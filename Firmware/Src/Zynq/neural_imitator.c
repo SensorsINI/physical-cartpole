@@ -159,48 +159,53 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             break;
 
         case NETWORK_DIFFLOGIC:
-    #ifdef HLS4ML
+#ifdef HLS4ML   // correct BSP symbol for your DiffLogic DMA
+        {
+            /* Use DiffLogic accelerator
+               –– NET_INPUT_BITS=698, NET_OUTPUT_BITS=1000, AXI word=32 bits –– */
+            const int TX_WORDS = (NET_INPUT_BITS  + 31) >> 5;   // 22 words
+            const int RX_WORDS = (NET_OUTPUT_BITS + 31) >> 5;   // 32 words
+            int tx_counter = 0;
+
+
+            for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; ++neuron_idx)
             {
-                // Use DiffLogic accelerator
-                int tx_counter = 0;
-                for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++)
-                {
-                    actv_floating_point = *((float*)&][neuron_idx * DATA_WORD_BYTES]);
-                    actv_floating_point = (actv_floating_point + 1.0) / 2.0
-                    float threshold = 0.0f;
-                    float step = 1.0f / 100.0f;
-                    for (int bits = 0; bits < 100; bits += 32)
-                    {
-                        int32_t value = 0;
-                        for (int q = 0; q < 32; ++q, threshold += step)
-                        {
-                            if (actv_floating_point >= threshold)
-                                value |= (1<<31);
-                            value >>= 1;
-                        }
-                        TxBufferPtr[tx_counter++] = value;
-                    }
-                }
-                int rx_counter = 1000 / 32;
-                HLS4ML_Network_Evaluate((UINTPTR)TxBufferPtr, tx_counter * sizeof(int32_t), (UINTPTR)RxBufferPtr, rx_counter);
+                float actv = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
+                actv = 0.5f * (actv + 1.0f);                    // map [–1,1]→[0,1]
 
-                float output = linear_biases[0];
-                for (size_t i = 0; i < rx_counter; ++i)
+                const float step = 1.0f / 100.0f;           // 1/698 ≈ 0.00143
+                float threshold = 0.0f;
+                for (int w = 0; w < TX_WORDS; ++w)
                 {
-                    int32_t value = RxBufferPtr[i];
-                    for (int q = 0; q < 32; q++, value >>= 1)
-                        if (value & 1)
-                            output += linear_weight_0[i*32 + q];
+                    uint32_t bits = 0;
+                    for (int q = 0; q < 32; ++q, threshold += step)
+                        //bits = (bits >> 1) | (actv <= threshold ? (1 << 31) : 0);
+                    	bits |= (actv >= threshold) ? (1 << q) : 0;
+                    TxBufferPtr[tx_counter++] = bits;
                 }
-                *((float*)&network_output_buffer[0]) = output;
-
-                // int32_t count = 0;
-                // for (size_t i = 0; i < rx_counter; ++i) {
-                //     count += __builtin_popcount(RxBufferPtr[i]);
-                // }
-                // *((float*)&network_output_buffer[0]) = ((float)count / 500.0f) - 1.0f;
             }
-    #endif
+
+            HLS4ML_Network_Evaluate(
+                (UINTPTR)TxBufferPtr,
+                TX_WORDS * sizeof(uint32_t),
+                (UINTPTR)RxBufferPtr,
+                RX_WORDS * sizeof(uint32_t)
+            );
+
+            float output = linear_biases[0];
+            for (int i = 0; i < RX_WORDS; ++i)
+            {
+                uint32_t v = (uint32_t)RxBufferPtr[i];
+                for (int q = 0; q < 32; ++q, v >>= 1)
+                {
+                	if ((i * 32 + q) >= NET_OUTPUT_BITS) break;
+                    if (v & 1u)
+                    	output += linear_weight_0[i * 32 + q];
+                }
+            }
+            *((float*)&network_output_buffer[0]) = output;
+        }
+#endif  // XPAR_HARDWARE_ACCEL_DIFFLOGIC_AXI_DMA_0_DEVICE_ID
             break;
 
         case NETWORK_C:
