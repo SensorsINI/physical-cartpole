@@ -22,8 +22,17 @@ from Driver.DriverFunctions.DVS.angle_pos_zmq import (
 
 # --- USER TUNED MATCH FILTER PARAMETERS ---
 CART_RADIUS         = 5      # px, radius of template for match filter
-CART_THRESH         = 0.50   # threshold for match quality (0-1)
+CART_THRESH         = 0.5   # threshold for match quality (0-1)
 TRACK_LENGTH_METERS = 0.396   # physical track length for calibration
+# --- New Ellipse Parameters ---
+ELLIPSE_AXIS_A = 5  # semi-major axis (width)
+ELLIPSE_AXIS_B = 6   # semi-minor axis (height)
+
+# --- Exponential Smoothing for cart_x ---
+ANG_V_ALPHA = 0.3     # Lower is smoother, try 0.1–0.3
+ang_v_ema = None       # Holds the smoothed value
+linear_velocity_px_s = 0.0
+counter = 0
 
 # max linear speed: 1 m/s
 MAX_LINEAR = 1.0
@@ -81,12 +90,31 @@ def make_circle_template(radius, thickness=-1, image_size=None):
     cv2.circle(template, center, radius, 255, thickness)
     return template
 
+def make_ellipse_template(axis_a, axis_b, thickness=-1, image_size=None):
+    """
+    Create an elliptical template for match filtering.
+    axis_a: semi-major axis (width/2)
+    axis_b: semi-minor axis (height/2)
+    thickness: -1 for filled ellipse
+    image_size: (optional) size of template image (width, height)
+    """
+    # Calculate minimum size needed
+    size_x = 2 * axis_a + 5
+    size_y = 2 * axis_b + 5
+    if image_size is not None:
+        size_x, size_y = image_size
+    template = np.zeros((size_y, size_x), dtype=np.uint8)
+    center = (size_x // 2, size_y // 2)
+    cv2.ellipse(template, center, (axis_a, axis_b), 0, 0, 360, 255, thickness)
+    return template
 
-CIRCLE_TEMPLATE = make_circle_template(CART_RADIUS)
+
+
+CIRCLE_TEMPLATE = make_ellipse_template(ELLIPSE_AXIS_A, ELLIPSE_AXIS_B)
 TEMPLATE_H, TEMPLATE_W = CIRCLE_TEMPLATE.shape           # helper aliases
 Y_TOLERANCE_PX = (TEMPLATE_H + 1) // 2
 GATE_PX_STATIC   = 25          # max Δx from pole pivot (pixels)
-ADAPTIVE_ALPHA   = 0.1         # EWMA for adapting template-score threshold
+ADAPTIVE_ALPHA   = 0.0         # EWMA for adapting template-score threshold
 MIN_THRESH       = 0.35        # never let threshold drop below this
 tmpl_threshold   = CART_THRESH   # start with the user value
 MATCH_ROI_HALF = GATE_PX_STATIC + 5
@@ -114,8 +142,8 @@ def detect_cart_robust(gray, last_x, last_y, pivot_x_pred, H, W):
         last_x = (cart_min_x + cart_max_x) // 2
 
     # ---- ROI guard -------------------------------------------------
-    xmin = max(cart_min_x, int(last_x) - MATCH_ROI_HALF)
-    xmax = min(cart_max_x, int(last_x) + MATCH_ROI_HALF)
+    xmin = max(cart_min_x, int(last_x) - MATCH_ROI_HALF)-10
+    xmax = min(cart_max_x, int(last_x) + MATCH_ROI_HALF)+10
     ymin = max(0,          fixed_pivot_y - Y_TOLERANCE_PX)
     ymax = min(H,          fixed_pivot_y + Y_TOLERANCE_PX)
     if xmin >= xmax or ymin >= ymax:
@@ -152,8 +180,8 @@ def detect_cart_robust(gray, last_x, last_y, pivot_x_pred, H, W):
     cy = fixed_pivot_y
 
     # ---- Kinematic-consistency guard ------------------------------
-    if abs(cx - pivot_x_pred) > GATE_PX_STATIC:
-        return None
+    # if abs(cx - pivot_x_pred) > GATE_PX_STATIC:
+    #     return None
 
     return cx, cy, score
 
@@ -165,6 +193,8 @@ def process_events(events, visualizer):
     global prev_angular_velocity, prev_linear_velocity
     global last_angle
     global last_valid_cart_x, last_valid_cart_time, last_valid_angle, last_valid_angle_time, prev_linear_velocity_px_s
+    global smoothed_cart_x
+    smoothed_angular_velocity = None
 
     # preprocess
     frame = visualizer.generateImage(events)
@@ -263,8 +293,9 @@ def process_events(events, visualizer):
         cx, cy, _ = cart_det
     else:
         # Fallback: trust pole geometry or last valid
-        cx, cy = pivot_x_pred, pivot_y
+        cx, cy = last_cart_x, last_cart_y #pivot_x_pred, pivot_y
 
+    last_cart_x, last_cart_y = cx, cy
 
     # ─── VELOCITIES & TIMESTAMP ───────────────────────────────────
     # 1) obtain a consistent timestamp for this batch:
@@ -315,11 +346,28 @@ def process_events(events, visualizer):
 
     # 2) LINEAR velocity (px/s → m/s):
     #    Δx is in pixels; Δt may vary, so we divide by ts_prev.
-    linear_velocity_px_s = 0.0
+    global linear_velocity_px_s
+    global counter
+    linear_velocity_px_s_temp = 0
     if prev_cart_x is not None and prev_cart_x_time is not None:
         dt = ts - prev_cart_x_time
         if dt > 0:
-            linear_velocity_px_s = (cx - prev_cart_x) / dt
+            # linear_velocity_px_s = (cx - prev_cart_x) / dt
+            if (cx == prev_cart_x):
+                counter = counter + 1
+                if counter == 1:
+                    linear_velocity_px_s_temp = linear_velocity_px_s
+                else:
+                    linear_velocity_px_s_temp = linear_velocity_px_s_temp
+                if ((counter > 2 & counter < 20) & (abs(angle_rad) > np.pi/10 )):
+                    linear_velocity_px_s = linear_velocity_px_s_temp
+                else:
+                    linear_velocity_px_s = (cx - prev_cart_x) / dt
+            #     print(f"updated! cx,prev_cart_x = {cx,prev_cart_x}")
+            else:
+                linear_velocity_px_s = (cx - prev_cart_x) / dt
+                counter = 0
+            #     print(f"It'saME! cx,prev_cart_x = {cx,prev_cart_x}")
     # update previous for next slice
     prev_cart_x, prev_cart_x_time = cx, ts
 
@@ -328,6 +376,16 @@ def process_events(events, visualizer):
         linear_velocity = linear_velocity_px_s / PIXELS_PER_METER
     else:
         linear_velocity = linear_velocity_px_s  # fallback
+
+    if (PIXELS_PER_METER is not None                 # calibration done
+            and valid_cart                           # last position accepted
+            and abs(linear_velocity_px_s) < MAX_LINEAR * PIXELS_PER_METER):
+        # first‑order low‑pass: keeps prediction realistic without jitter
+        alpha_vel = 0.30            # 0 → very smooth, 1 → raw reading
+        prev_linear_velocity_px_s = (
+            alpha_vel * linear_velocity_px_s +
+            (1.0 - alpha_vel) * prev_linear_velocity_px_s
+        )
 
     # 3) ANGULAR velocity (rad/s):
     angular_velocity_rad_s = 0.0
@@ -342,9 +400,20 @@ def process_events(events, visualizer):
                 delta_rad += 2 * np.pi
             angular_velocity_rad_s = delta_rad / dt
     # update previous for next slice
-    prev_angle, prev_angle_time = angle_rad, ts
+    prev_angle, prev_angle_time = angle_rad, ts    # --- EMA smoothing for cart_x --- removed at the moment to test the match filter - PK
+    # reused now to calc ang vel
+    global ang_v_ema
+    if ang_v_ema is None:
+        ang_v_ema = angular_velocity_rad_s
+    else:
+        ang_v_ema = ANG_V_ALPHA * angular_velocity_rad_s + (1 - ANG_V_ALPHA) * ang_v_ema
+
+    smoothed_angular_velocity = ang_v_ema
+
 
     # ─── VELOCITY CAPPING ────────────────────────────────────────
+
+    # prev_linear_velocity_px_s = linear_velocity_px_s
 
     # cap linear velocity
     if abs(linear_velocity) > MAX_LINEAR:
@@ -354,18 +423,18 @@ def process_events(events, visualizer):
         prev_linear_velocity = linear_velocity
 
     # cap angular velocity
-    if abs(angular_velocity_rad_s) > MAX_ANGULAR:
-        # spike detected → use last valid
-        angular_velocity_rad_s = prev_angular_velocity
-    else:
-        prev_angular_velocity = angular_velocity_rad_s
+    # if abs(angular_velocity_rad_s) > MAX_ANGULAR:
+    #     # spike detected → use last valid
+    #     angular_velocity_rad_s = prev_angular_velocity
+    # else:
+    #     prev_angular_velocity = angular_velocity_rad_s
 
-    # keep a pixel/s copy for the next prediction corridor
-    prev_linear_velocity_px_s = (
-        linear_velocity * PIXELS_PER_METER
-        if PIXELS_PER_METER
-        else linear_velocity_px_s
-    )
+    # cap angular velocity
+    angular_velocity_rad_s = smoothed_angular_velocity
+    if (abs(angular_velocity_rad_s - prev_angular_velocity) > 15):
+        angular_velocity_rad_s = prev_angular_velocity
+
+
 
     # 4) now you can publish using your usual API:
     if PIXELS_PER_METER is not None and PIXEL_CENTER is not None:
@@ -523,7 +592,7 @@ def main():
 
     slicer = dv.EventStreamSlicer()
     slicer.doEveryNumberOfEvents(
-        1000,
+        2500,
         slicing_callback
     )
 
