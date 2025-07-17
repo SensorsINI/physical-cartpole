@@ -6,7 +6,7 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 # Motor type selection
@@ -25,7 +25,7 @@ elif CONTROLLER_NAME == 'neural-imitator':
 elif CONTROLLER_NAME == 'fpga':
     CONTROL_PERIOD_MS = 15
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    CONTROL_PERIOD_MS = 25  # e.g. 5 for PID or 20 for mppi
 
 TIMESTEPS_FOR_DERIVATIVE = 1  # TODO: Python only, hardware sets it separately. In number of control cycles
 
@@ -131,10 +131,10 @@ ANGLE_DEVIATION = np.array(0.0)
 
 SEND_CHANGE_IN_TARGET_POSITION_ALWAYS = True  # If false it sends change in target position only if firmware control is active.
 
-USE_DVS_STATE_ESTIMATION = False
+USE_DVS_STATE_ESTIMATION = True
 
 USE_EKF = True
-EKF_CALIBRATION_RUN = not USE_DVS_STATE_ESTIMATION  # If True, EKF calibration is run at the beginning of the experiment
+EKF_CALIBRATION_RUN = False  # If True, EKF calibration is run at the beginning of the experiment
 
 def angle_deviation_update(new_angle_hanging):
     global ANGLE_360_DEG_IN_ADC_UNITS

@@ -221,12 +221,17 @@ class PhysicalCartPoleDriver:
             # splice the estimates back into the pipeline
             self.s_ekf[POSITIOND_IDX] = v_est
             self.s_ekf[ANGLED_IDX] = omega_est
-            self.s_ekf[POSITION_IDX] = x_hat[0]
-            self.s_ekf[ANGLE_IDX] = x_hat[2]
-            self.s_ekf[ANGLE_COS_IDX] = np.cos(x_hat[2])
-            self.s_ekf[ANGLE_SIN_IDX] = np.sin(x_hat[2])
+            # self.s_ekf[POSITION_IDX] = x_hat[0]
+            # self.s_ekf[ANGLE_IDX] = x_hat[2]
+            # self.s_ekf[ANGLE_COS_IDX] = np.cos(x_hat[2])
+            # self.s_ekf[ANGLE_SIN_IDX] = np.sin(x_hat[2])
 
-            self.s[:] = self.s_ekf[:]
+            # self.s[:] = self.s_ekf[:]
+
+            self.s[POSITIOND_IDX] = v_est
+            self.s[ANGLED_IDX] = omega_est
+
+
 
         self.s = self.th.add_latency(self.s)
 

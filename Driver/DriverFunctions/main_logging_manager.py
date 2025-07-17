@@ -137,7 +137,9 @@ class MainLoggingManager:
                     'time', 'Angle', 'Position', 'Q', 'ΔQ',
                     'Target Position', 'AngleD', 'PositionD',
                     'Angle_DVS', 'Position_DVS',
-                    'AngleD_DVS', 'PositionD_DVS'
+                    'AngleD_DVS', 'PositionD_DVS',
+                    'Angle_EKF', 'Position_EKF',
+                    'AngleD_EKF', 'PositionD_EKF',
                 ]
                 # ► controller headers only in the special case
                 if controller_keys:
@@ -163,7 +165,12 @@ class MainLoggingManager:
                     self.driver.s_dvs[ANGLE_IDX],
                     self.driver.s_dvs[POSITION_IDX] * 100,
                     self.driver.s_dvs[ANGLED_IDX],
-                    self.driver.s_dvs[POSITIOND_IDX] * 100
+                    self.driver.s_dvs[POSITIOND_IDX] * 100,
+
+                    self.driver.s_ekf[ANGLE_IDX],
+                    self.driver.s_ekf[POSITION_IDX] * 100,
+                    self.driver.s_ekf[ANGLED_IDX],
+                    self.driver.s_ekf[POSITIOND_IDX] * 100,
                 ])
                 # ► append controller data only when the same special case holds
                 if controller_keys:
