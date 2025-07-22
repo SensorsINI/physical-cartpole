@@ -19,6 +19,9 @@
 # Set the reference directory for source file relative paths (by default the value is script directory path)
 set origin_dir "."
 
+# Set board repoPath pointing to digilent-vivado-boards
+set_param board.repoPaths [list "digilent-vivado-boards/new/board_files"]
+
 # Use origin directory path location variable, if specified in the tcl shell
 if { [info exists ::origin_dir_loc] } {
   set origin_dir $::origin_dir_loc
@@ -91,7 +94,7 @@ set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "digilentinc.com:zybo-z7-20:part0:1.1" -objects $obj
+set_property -name "board_part" -value "digilentinc.com:zybo-z7-20:part0:1.2" -objects $obj
 set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../.Xilinx/Vivado/2020.1/xhub/board_store/xilinx_board_store"]" -objects $obj
 set_property -name "compxlib.activehdl_compiled_library_dir" -value "$proj_dir/${_xil_proj_name_}.cache/compile_simlib/activehdl" -objects $obj
 set_property -name "compxlib.funcsim" -value "1" -objects $obj

@@ -10,8 +10,8 @@
 
 // Select between firmware for STM and firmware for Zynq
 // UNcomment "#define STM" to use STM or UNcomment "#define Zynq" to use Zynq
-#define STM
-//#define ZYNQ
+//#define STM
+#define ZYNQ
 
 // The selection of FPGA board only matters if ZYNQ is defined
 #ifdef ZYNQ

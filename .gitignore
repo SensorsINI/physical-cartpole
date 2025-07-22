@@ -35,3 +35,5 @@ Driver/SI_Toolkit_ASF/Experiments/*
 /Firmware/CubeIDE/FactoryFirmware CubeIDE/.settings/language.settings.xml
 /Firmware/CubeIDE/FactoryFirmware CubeIDE/Debug/
 /Firmware/CubeIDE/FactoryFirmware CubeIDE/*.launch
+
+/zynq
