@@ -6,7 +6,7 @@ import numpy as np
 import seaborn as sns
 
 from DriverFunctions.interface import Interface
-from DriverFunctions.interface import get_serial_port
+from Control_Toolkit.serial_interface_helper import get_serial_port
 from globals import CHIP, SERIAL_PORT_NUMBER, SERIAL_BAUD
 
 sns.set()

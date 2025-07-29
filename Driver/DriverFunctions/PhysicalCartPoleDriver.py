@@ -8,13 +8,13 @@ from CartPoleSimulation.CartPole.cartpole_ekf import EKFCartPole, EKFAdaptiveTun
 
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.interface import Interface, set_ftdi_latency_timer
+from DriverFunctions.interface import Interface
 from DriverFunctions.incoming_data_processor import IncomingDataProcessor
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import ExperimentProtocolsManager
 
 from Driver.DriverFunctions.dancer import Dancer
 from DriverFunctions.timing_helper import TimingHelper
-from Driver.DriverFunctions.interface import get_serial_port
+from Control_Toolkit.serial_interface_helper import get_serial_port, set_ftdi_latency_timer
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
 from Driver.DriverFunctions.DVS.angle_pos_client import AnglePositionClient
