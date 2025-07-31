@@ -197,7 +197,8 @@ cpp() {
 * Connect the STLink or the J-link to the STM32 board and to the PC. For j-link we attach the picture, for st-link, you have to figure it out on your own.
 ![jtag_programming.png](Docs%2Fjtag_programming.png)
 * Open STM32CubeIDE and go to `File -> Import... -> Existing Projects into Workspace`
-and import project from [Firmware/FactoryFirmware CubeIDE](Firmware%2FCartPole%20CubeIDE).
+and import project from [Firmware/FactoryFirmware/CubeIDE](Firmware%2FCartPole%20CubeIDE).
+![CubeImportProject.png](Docs/CubeImportProject.png)
 * Go to hardware_bridge.h and comment out `#define ZYNQ` and uncomment `#define STM`.
 * Build the project (hammer icon).
 * Right click on the project and select `Run As -> STM32 C/C++ Application`. Go to `Debugger` tab and set up your J-link or ST-link.
