@@ -222,7 +222,13 @@ In case you used it first with STM, you need to undo the relevant changes:
   * Open globals.py and set `CHIP` variable to `ZYNQ`
 
   Otherwise you can ignore this first point.
-* 
+
+
+The FTDI chip used in the Zybo-Z7-20 board has a default 16ms latency, meaning that it waits for 16ms before sending data to the PC.
+This can be set to 1 ms instead in code for Linux or in the FTDI driver settings for Windows. I have not yet found solution for MacOS.
+
+Below the print screen demonstrating how to set the latency timer to 1ms in Windows:
+![SettingLatencyTimerOnWindows.png](Docs/SettingLatencyTimerOnWindows.png)
 
 ## Running from PC
 Do the steps as described in `Set up and installation` section.
