@@ -30,7 +30,6 @@
 #include "controller_manager.h"     /* NEW: handshake + data bridge */
 #include "Zynq/neural_imitator.h"   /* exposes NeuralImitator_Ops */
 
-extern const ControllerOps NeuralImitator_Ops; /* already declared in header */
 
 /******************** Constant Definitions **********************************/
 
