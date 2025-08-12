@@ -10,10 +10,13 @@
 #include "experiment_protocol.h"
 #include "offline_data_manager.h"
 #include "controller_bind.h"
+#include "lqr.h"
+
 
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
 #define OnChipController_PID_position 2
+#define OnChipController_LQR 3
 
 // The 3 variables below only matter on Zynq
 #define	CONTROLLERS_SWITCH_NUMBER		0
@@ -271,6 +274,12 @@ void CONTROL_BackgroundTask(void)
                 Q = CB_Eval(&g_cb);
 				break;
 			}
+			case OnChipController_LQR:
+            {
+                CB_RebindOnChange(&g_cb, &LQR_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+                Q = CB_Eval(&g_cb);
+                break;
+            }
 			default:
 			{
 				Q = 0.0;
