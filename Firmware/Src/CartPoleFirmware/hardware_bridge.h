@@ -116,7 +116,6 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 // In future this could be a neural network running on STM
 
 #define Neural_Imitator_Init			Neural_Imitator_Init
-#define neural_imitator_cartpole_step	neural_imitator_cartpole_step
 
 
 #elif defined(ZYNQ)
@@ -188,7 +187,6 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 #include "Zynq/neural_imitator.h"
 
 #define Neural_Imitator_Init			Neural_Imitator_Init
-#define neural_imitator_cartpole_step	neural_imitator_cartpole_step
 
 #ifdef USE_EXTERNAL_INTERFACE
 #include "Zynq/external_interface.h"
