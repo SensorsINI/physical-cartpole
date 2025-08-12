@@ -8,6 +8,10 @@
 #ifndef HARDWARE_PID_H_
 #define HARDWARE_PID_H_
 
+#include "controller_api.h"   /* ControllerSpec / ControllerOps (new API) */
+extern const ControllerOps PID_Ops;        /* Angle+position PID (new API) */
+extern const ControllerOps PIDPos_Ops;     /* Position-only PID (new API) */
+
 
 float pid_step(float angle, float angleD, float position, float positionD, float target_position, float time);
 float pid_position_step(float angle, float angleD, float position, float positionD, float target_position, float time);

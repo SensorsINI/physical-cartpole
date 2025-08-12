@@ -160,3 +160,99 @@ void cmd_GetPIDConfig(unsigned char * txBuffer)
 	enable_irq();
 }
 
+/* =======================================================================
+ * New controller API wrappers (non-invasive):
+ * - Expose two ControllerOps instances while preserving original code.
+ * - PID_Ops (angle+position): inputs = angle, angleD, position, positionD, target_position, time
+ * - PIDPos_Ops (position-only): inputs = position, positionD, target_position, time
+ * - evaluate() forwards to existing pid_step / pid_position_step.
+ * ======================================================================= */
+
+static const char* const PID_InputNames[] = {
+    "angle", "angleD", "position", "positionD", "target_position", "time"
+};
+
+static const ControllerSpec PID_Spec = {
+    .version   = 1,
+    .n_inputs  = 6,
+    .n_outputs = 1,
+    .names     = PID_InputNames
+};
+
+static void PID_Init(void)
+{
+    /* Reset internal state used by the legacy implementation. */
+    pid_state_angle.error_previous = 0.0f;
+    pid_state_angle.error_integral = 0.0f;
+    pid_state_position.error_previous = 0.0f;
+    pid_state_position.error_integral = 0.0f;
+    pid_position_state_position.error_previous = 0.0f;
+    pid_position_state_position.error_integral = 0.0f;
+    position_error = 0.0f;
+    time_last = -1.0f;
+}
+
+static void PID_Release(void)
+{
+    /* nothing */
+}
+
+static void PID_Evaluate(const float* in, float* out)
+{
+    /* Forward to the existing function; 'time' is provided by the caller. */
+    out[0] = pid_step(in[0], in[1], in[2], in[3], in[4], in[5]);
+}
+
+static const ControllerSpec* PID_GetSpec(void)
+{
+    return &PID_Spec;
+}
+
+const ControllerOps PID_Ops = {
+    .spec     = PID_GetSpec,
+    .init     = PID_Init,
+    .evaluate = PID_Evaluate,
+    .release  = PID_Release
+};
+
+
+/* -------- Position-only controller -------- */
+
+static const char* const PIDPos_InputNames[] = {
+    "position", "positionD", "target_position", "time"
+};
+
+static const ControllerSpec PIDPos_Spec = {
+    .version   = 1,
+    .n_inputs  = 4,
+    .n_outputs = 1,
+    .names     = PIDPos_InputNames
+};
+
+static void PIDPos_Init(void)
+{
+    PID_Init();
+}
+
+static void PIDPos_Release(void)
+{
+    /* nothing */
+}
+
+static void PIDPos_Evaluate(const float* in, float* out)
+{
+    /* Existing pid_position_step expects angle,angleD as well; pass zeros. */
+    out[0] = pid_position_step(0.0f, 0.0f, in[0], in[1], in[2], in[3]);
+}
+
+static const ControllerSpec* PIDPos_GetSpec(void)
+{
+    return &PIDPos_Spec;
+}
+
+const ControllerOps PIDPos_Ops = {
+    .spec     = PIDPos_GetSpec,
+    .init     = PIDPos_Init,
+    .evaluate = PIDPos_Evaluate,
+    .release  = PIDPos_Release
+};

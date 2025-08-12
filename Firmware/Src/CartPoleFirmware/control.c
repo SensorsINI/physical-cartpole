@@ -9,6 +9,7 @@
 #include "control_signal_postprocessing.h"
 #include "experiment_protocol.h"
 #include "offline_data_manager.h"
+#include "controller_bind.h"
 
 #define OnChipController_PID 0
 #define OnChipController_NeuralImitator 1
@@ -57,6 +58,21 @@ unsigned short	latency_violation = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[200];
+
+static SignalEntry g_signals[] = {
+    { "angle",              &angle },
+    { "angleD",             &angleD },
+    { "angle_cos",          &angle_cos },
+    { "angle_sin",          &angle_sin },
+    { "position",           &position },
+    { "positionD",          &positionD },
+    { "target_equilibrium", &target_equilibrium },
+    { "target_position",    &target_position },
+    { "time",               &time }    /* simulated/MCU time in seconds */
+};
+#define G_SIGNALS_LEN  (sizeof(g_signals)/sizeof(g_signals[0]))
+
+static ControllerBinding g_cb;
 
 void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
@@ -109,6 +125,8 @@ void CONTROL_Init(void)
 #endif
 
     correct_motor_dynamics = (current_controller == OnChipController_PID) ? false : true;
+
+    CB_Init(&g_cb);
 }
 
 void CONTROL_ToggleState(void)
@@ -158,6 +176,8 @@ int save_to_offline_buffers = 0;
 float time = 0.0;
 
 float angle = 0.0;
+float angle_cos = 0.0f;
+float angle_sin = 0.0f;
 float position = 0.0;
 float angleD = 0.0;
 float angleD_unprocessed = 0.0;
@@ -201,8 +221,6 @@ void CONTROL_BackgroundTask(void)
 
 	    average_derivatives(&angleD, &positionD);
 
-	    float angle_cos, angle_sin;
-
 	    float time_difference_between_measurement_s = time_difference_between_measurement/1000000.0;
 		angle = wrapLocal_rad(((angle_int) + ANGLE_DEVIATION) * (ANGLE_NORMALIZATION_FACTOR));
 	    position = position_short * POSITION_NORMALIZATION_FACTOR;
@@ -237,17 +255,20 @@ void CONTROL_BackgroundTask(void)
 			switch (current_controller){
 			case OnChipController_PID:
 			{
-				Q = pid_step(angle, angleD, position, positionD, target_position, time);
+                CB_RebindOnChange(&g_cb, &PID_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+                Q = CB_Eval(&g_cb);
 				break;
 			}
 			case OnChipController_NeuralImitator:
 			{
-				Q = neural_imitator_cartpole_step(angle, angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position, time);
+                CB_RebindOnChange(&g_cb, &NeuralImitator_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+                Q = CB_Eval(&g_cb);
 				break;
 			}
 			case OnChipController_PID_position:
 			{
-				Q = pid_position_step(angle, angleD, position, positionD, target_position, time);
+                CB_RebindOnChange(&g_cb, &PIDPos_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+                Q = CB_Eval(&g_cb);
 				break;
 			}
 			default:
