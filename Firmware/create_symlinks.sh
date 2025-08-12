@@ -23,6 +23,7 @@ declare -a directories=(
 :'
 declare -a directories=(
   "./Src/CartPoleFirmware ./VitisProjects/CartPoleFirmware/src"
+  "./Src/General ./VitisProjects/CartPoleFirmware/src"
   "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
 )
 '
@@ -30,8 +31,9 @@ declare -a directories=(
 # For NeuralImitator on Zynq (First create NeuralImitator project in Vitis!)
 :'
 declare -a directories=(
-  "./Src/NeuralImitatorZynq ./VitisProjects/NeuralImitator/src"
-  "./Src/Zynq ./VitisProjects/NeuralImitator/src/Zynq"
+  "./Src/FPGA_Controller ./VitisProjects/FPGA_Controller/src"
+  "./Src/General ./VitisProjects/FPGA_Controller/src"
+  "./Src/Zynq ./VitisProjects/FPGA_Controller/src/Zynq"
 )
 '
 
