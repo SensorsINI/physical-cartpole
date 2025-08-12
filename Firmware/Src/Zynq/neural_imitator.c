@@ -27,6 +27,52 @@
 
 #include "difflogic/difflg_weights.h"
 
+/******************** make this module a float-based controller **********/
+#include "controller_api.h"
+#include <string.h>   /* memcpy */
+
+/* Wire-order input names the PC will use; keep short, ASCII. */
+static const char* const kNN_InputNames[] = {
+    "angleD", "angle_cos", "angle_sin", "position", "positionD",
+    "target_equilibrium", "target_position"
+};
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Static_assert(sizeof(kNN_InputNames)/sizeof(kNN_InputNames[0]) == MLP_ACTIVATION_NEURONS,
+               "neural_imitator: names count != MLP_ACTIVATION_NEURONS");
+#endif
+
+static const ControllerSpec kNN_Spec = {
+    .version   = 1,
+    .n_inputs  = MLP_ACTIVATION_NEURONS,
+    .n_outputs = MLP_PREDICTION_NEURONS,
+    .names     = kNN_InputNames
+};
+
+static const ControllerSpec* nn_spec(void) { return &kNN_Spec; }
+static void nn_init(void)    { Neural_Imitator_Init(); }
+static void nn_release(void) { Neural_Imitator_ReleaseResources(); }
+
+/* Controllers speak floats; the legacy core consumes raw bytes.
+ * We bridge locally using memcpy to avoid aliasing/alignment UB. */
+static void nn_evaluate(const float* in, float* out)
+{
+    unsigned char in_b [MLP_ACTIVATION_NEURONS * 4];
+    unsigned char out_b[MLP_PREDICTION_NEURONS * 4];
+
+    for (uint8_t i = 0; i < kNN_Spec.n_inputs;  ++i) memcpy(&in_b [i*4], &in [i], 4);
+    Neural_Imitator_Evaluate(in_b, out_b);
+    for (uint8_t i = 0; i < kNN_Spec.n_outputs; ++i) memcpy(&out[i],    &out_b[i*4], 4);
+}
+
+/* Exported ops object used by the runtime. */
+const ControllerOps NeuralImitator_Ops = {
+    .spec    = nn_spec,
+    .init     = nn_init,
+    .evaluate = nn_evaluate,
+    .release  = nn_release
+};
+
 
 #define NETWORKS_SWITCH_NUMBER	3
 

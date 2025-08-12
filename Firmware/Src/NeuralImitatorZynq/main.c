@@ -25,12 +25,21 @@
 #include "xil_types.h"
 #include "xtime_l.h"
 #include "math.h"
+#include <stdint.h>
 
-#include "Zynq/neural_imitator.h"
+#include "controller_manager.h"     /* NEW: handshake + data bridge */
+#include "Zynq/neural_imitator.h"   /* exposes NeuralImitator_Ops */
+
+extern const ControllerOps NeuralImitator_Ops; /* already declared in header */
 
 /******************** Constant Definitions **********************************/
 
-
+/* Choose the active controller. Later: swap to PID/MPC ops here. */
+static const ControllerOps* select_controller(void)
+{
+    /* Example: keep NN for both switch positions for now. */
+    return &NeuralImitator_Ops;
+}
 
 int main() {
 
@@ -38,37 +47,40 @@ int main() {
 	PC_Connection_Init();
 	Buttons_And_Switches_Init();
 	Led_Init();
-	Neural_Imitator_Init();
+
+    /* --- Controller selection and init (generic) --- */
+    CR_SetActive(select_controller());
+    if (CR_GetActive() && CR_GetActive()->init) CR_GetActive()->init();
+
+    /* --- Control-plane: tell PC what inputs we need (names/order/counts). --- */
+    CR_HandshakeOnce();
+
+    const uint8_t nin  = CR_ActiveNumInputs();
+    const uint8_t nout = CR_ActiveNumOutputs();
+    const unsigned IN_BYTES  = (unsigned)nin  * 4u;
+    const unsigned OUT_BYTES = (unsigned)nout * 4u;
+
+    /* Allocate once with generous bounds; we only use IN_BYTES/OUT_BYTES each cycle. */
+    static unsigned char rx_uart_buffer[MAX_INPUTS  * 4];
+    static unsigned char tx_uart_buffer[MAX_OUTPUTS * 4];
 
 	while (1) {
 
-		static unsigned char rx_uart_buffer[NETWORK_INPUT_SIZE_IN_BYTES];
-		static unsigned char tx_uart_buffer[NETWORK_OUTPUT_SIZE_IN_BYTES];
+        static unsigned int have = 0;
+        while (have < IN_BYTES){
+            int newDataCount = Message_GetFromPC(&rx_uart_buffer[have]);
+            have += (unsigned int)newDataCount;
+        }
+        have -= IN_BYTES;
 
-		static unsigned int  uart_received_Cnt = 0;
-		while(uart_received_Cnt < NETWORK_INPUT_SIZE_IN_BYTES){
-			int newDataCount = Message_GetFromPC(&rx_uart_buffer[uart_received_Cnt]);
-			uart_received_Cnt += newDataCount;
-		}
-		uart_received_Cnt -= NETWORK_INPUT_SIZE_IN_BYTES;
+        /* Compute control using the active controller (works for NN/PID/MPC). */
+        CR_EvaluateBytes(rx_uart_buffer, tx_uart_buffer);
 
-//		float angleD = *((float          *)&rx_uart_buffer[ 0]);
-//		float angle_cos = *((float          *)&rx_uart_buffer[ 4]);
-//		float angle_sin = *((float          *)&rx_uart_buffer[ 8]);
-//		float position = *((float          *)&rx_uart_buffer[ 12]);
-//		float positionD = *((float          *)&rx_uart_buffer[ 16]);
-//		float target_position = *((float          *)&rx_uart_buffer[ 24]);
-//		float Q = neural_imitator_cartpole_step(0.0, angleD, angle_cos, angle_sin, position, positionD, target_position, 0.0);
-//        *((float *)&tx_uart_buffer[0]) = Q;
-
-		Neural_Imitator_Evaluate(rx_uart_buffer, tx_uart_buffer);
-
-		Message_SendToPC(tx_uart_buffer, NETWORK_OUTPUT_SIZE_IN_BYTES);
+		Message_SendToPC(tx_uart_buffer, OUT_BYTES);
 
 		Leds_over_switches_Update(Switches_GetState());
 	}
 
-	Neural_Imitator_ReleaseResources();
-
+    if (CR_GetActive() && CR_GetActive()->release) CR_GetActive()->release();
 	return XST_SUCCESS;
 }
