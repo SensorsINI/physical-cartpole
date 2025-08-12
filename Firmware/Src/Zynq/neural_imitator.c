@@ -23,8 +23,6 @@
 #include "HLS4ML/HLS4ML_Network.h"
 #endif
 
-#include "NC_C/network.h"
-
 #include "difflogic/difflg_weights.h"
 
 /******************** make this module a float-based controller **********/
@@ -107,13 +105,6 @@ float hls_denormalize_A[] = {1.0};
 float hls_denormalize_B[] = {0.0};
 float norm_vect[] = {0.05440483, 1.0, 1.0, 5.05050516, 0.88866770, 1.0, 5.05050516};
 
-
-float c_normalize_a[] = {0.05373850,1.00000000,1.00000000,5.44010401,0.86096680,1.00000000,6.31313133
-};
-float c_normalize_b[] = {-0.07883823,0.00000000,0.00000000,0.01648343,-0.01449436,0.00000000,0.00000000
-};
-float c_denormalize_A[] = {1.0};
-float c_denormalize_B[] = {0.0};
 
 // Normalization f1t 31
 //float hls_normalize_a[] = {3.10077524,2.03045702,1.03896105,0.62952471,0.43591982,0.32637075,0.25913447,0.21468441,0.18336849,1.39860129,1.39860129,0.68027210,0.44179368,0.32976091,0.26413101,0.22121446,0.19166268,0.16701461,0.14775415,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.14385384,0.12087514,0.14740567,1.26502204,2.23214269
@@ -264,29 +255,6 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             }
     #endif
             break;
-
-        case NETWORK_C:
-            {
-                // Prepare C-network I/O buffers
-                float c_input[MLP_ACTIVATION_NEURONS];
-                float c_output[MLP_PREDICTION_NEURONS];
-
-                // 1) Extract raw floats and apply normalization: a*x + b
-                for (int i = 0; i < MLP_ACTIVATION_NEURONS; i++) {
-                    float raw = *((float*)&network_input_buffer[i * DATA_WORD_BYTES]);
-                    c_input[i] = c_normalize_a[i] * raw + c_normalize_b[i];
-                }
-
-                // 2) Invoke your pure-C inference function
-                C_Network_Evaluate(c_input, c_output);
-
-                // 3) Pack the predicted floats back into the raw output buffer
-                for (int i = 0; i < MLP_PREDICTION_NEURONS; i++) {
-                    *((float*)&network_output_buffer[i * DATA_WORD_BYTES]) = c_output[i];
-                }
-            }
-            break;
-
         default:
         {
             for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {

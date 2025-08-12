@@ -8,7 +8,6 @@ typedef enum {
     NETWORK_HLS4ML,
     NETWORK_DIFFLOGIC,
     NETWORK_EDGEDRNN,
-    NETWORK_C,
 } NeuralNetworkType;
 
 #define SELECTED_NETWORK_UP NETWORK_DIFFLOGIC  // Assign to switch UP position

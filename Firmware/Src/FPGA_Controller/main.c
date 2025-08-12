@@ -29,6 +29,7 @@
 
 #include "controller_manager.h"     /* NEW: handshake + data bridge */
 #include "Zynq/neural_imitator.h"   /* exposes NeuralImitator_Ops */
+#include "neural_controller_C.h"
 #include "lqr.h"
 
 /******************** Constant Definitions **********************************/
@@ -39,6 +40,7 @@ static const ControllerOps* select_controller(void)
     /* Example: keep NN for both switch positions for now. */
     return &NeuralImitator_Ops;
 //    return &LQR_Ops;
+//    return &NNC_Ops;
 }
 
 int main() {
