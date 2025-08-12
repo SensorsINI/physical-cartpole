@@ -2,7 +2,12 @@
 #include "hardware_bridge.h"  /* Message_GetFromPC / Message_SendToPC */
 #include <string.h>
 
-static const ControllerOps* g_active = 0;
+static const ControllerOps* g_active  = 0;
+/* controller we will switch to after PC re-handshakes */
+static const ControllerOps* g_pending = 0;
+/* one-shot cookie flag + generation counter (just for uniqueness) */
+static uint8_t g_cookie_pending = 0;
+static uint8_t g_spec_gen       = 1;
 
 void CR_SetActive(const ControllerOps* ops) { g_active = ops; }
 const ControllerOps* CR_GetActive(void)     { return g_active; }
@@ -34,7 +39,28 @@ static void write_padded_token(const char* s) {
     Message_SendToPC(tok, NAME_TOKEN_LEN);
 }
 
+/* ask manager to switch controllers; cookie will announce change to PC. */
+void CR_RequestSwitch(const ControllerOps* new_ops)
+{
+    if (!new_ops) return;
+    if (new_ops == g_active || new_ops == g_pending) return;
+    g_pending        = new_ops;
+    g_cookie_pending = 1;
+    ++g_spec_gen; /* wrap is fine */
+}
+
+/* send the 4B cookie BEFORE outputs to prompt PC to re-handshake. */
+int CR_SendSpecCookieIfPending(void)
+{
+    if (!g_cookie_pending) return 0;
+    unsigned char cookie[4] = { SERIAL_SOF, CMD_SPEC_COOKIE, g_spec_gen, 0 };
+    cookie[3] = crc8_calc(cookie, 3);
+    Message_SendToPC(cookie, 4);
+    return 1;
+}
+
 /* Serve a single framed GET_SPEC: request [SOF, CMD, 4, CRC] -> reply 4B header + names. */
+// if a switch is pending, finalize it *here* so PC gets the new spec.
 void CR_HandshakeOnce(void)
 {
     unsigned char cmd[4];
@@ -45,9 +71,19 @@ void CR_HandshakeOnce(void)
         if (n > 0) got += (unsigned int)n;
     }
     if (!g_active || !g_active->spec) return;
-    const ControllerSpec* N = g_active->spec();
 
     if (cmd[0] == SERIAL_SOF && cmd[1] == CMD_GET_SPEC && cmd[2] == 4 && cmd[3] == crc8_calc(cmd, 3)) {
+
+        /* finalize any pending controller switch right before replying */
+        if (g_pending) {
+            if (g_active->release) g_active->release();
+            g_active = g_pending;
+            g_pending = 0;
+            if (g_active->init) g_active->init();
+            g_cookie_pending = 0; /* cookie served its purpose */
+        }
+
+        const ControllerSpec* N = g_active->spec();
         unsigned char hdr[4] = { N->version, N->n_inputs, N->n_outputs, NAME_TOKEN_LEN };
         Message_SendToPC(hdr, 4);
         for (uint8_t i = 0; i < N->n_inputs; ++i) write_padded_token(N->names[i]);

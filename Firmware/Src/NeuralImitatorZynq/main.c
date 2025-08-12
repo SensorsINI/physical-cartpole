@@ -55,17 +55,23 @@ int main() {
     /* --- Control-plane: tell PC what inputs we need (names/order/counts). --- */
     CR_HandshakeOnce();
 
-    const uint8_t nin  = CR_ActiveNumInputs();
-    const uint8_t nout = CR_ActiveNumOutputs();
-    const unsigned IN_BYTES  = (unsigned)nin  * 4u;
-    const unsigned OUT_BYTES = (unsigned)nout * 4u;
-
     /* Allocate once with generous bounds; we only use IN_BYTES/OUT_BYTES each cycle. */
     static unsigned char rx_uart_buffer[MAX_INPUTS  * 4];
     static unsigned char tx_uart_buffer[MAX_OUTPUTS * 4];
 
 	while (1) {
 
+        /* OPTIONAL: on boards with switches, pick desired controller here */
+        const ControllerOps* desired = select_controller();
+        CR_RequestSwitch(desired);   /* no-op if unchanged */
+
+        /* Sizes may change after a handshake; query each cycle */
+        const uint8_t nin  = CR_ActiveNumInputs();
+        const uint8_t nout = CR_ActiveNumOutputs();
+        const unsigned IN_BYTES  = (unsigned)nin  * 4u;
+        const unsigned OUT_BYTES = (unsigned)nout * 4u;
+
+        /* Accumulate exactly IN_BYTES */
         static unsigned int have = 0;
         while (have < IN_BYTES){
             int newDataCount = Message_GetFromPC(&rx_uart_buffer[have]);
@@ -76,6 +82,16 @@ int main() {
         /* Compute control using the active controller (works for NN/PID/MPC). */
         CR_EvaluateBytes(rx_uart_buffer, tx_uart_buffer);
 
+        /* If a switch is pending, announce & complete the re-handshake now.
+           This sends a 4B cookie BEFORE outputs, then blocks for GET_SPEC,
+           finalizes the switch, and replies with the new spec. */
+        if (CR_SendSpecCookieIfPending()) {
+            CR_HandshakeOnce();
+            /* After this point, active controller may differ; sizes will be
+               picked up next loop via CR_ActiveNumInputs/Outputs(). */
+        }
+
+        /* Send outputs for THIS cycle (from the controller active before switch). */
 		Message_SendToPC(tx_uart_buffer, OUT_BYTES);
 
 		Leds_over_switches_Update(Switches_GetState());
