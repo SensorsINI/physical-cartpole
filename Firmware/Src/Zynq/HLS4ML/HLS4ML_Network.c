@@ -1,97 +1,62 @@
+#include "HLS4ML_Network.h"
+#include "hw_accel_link.h"
 #include "xparameters.h"
 
-#include "xaxidma.h"
+/* ====== Build-time selection ======
+   Set these macros in your project settings or keep defaults below.
+   HLS4ML_USE_DMA = 0 → AXI-Lite registers
+   HLS4ML_USE_DMA = 1 → AXI-DMA (AXI-Stream)
+*/
 
-#include "HLS4ML_Network.h"
-
-#ifdef XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
-
-#define DMA_DEV_ID		XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
-
-u32 HLS4ML_Network_ListenToOutput(UINTPTR BuffAddr, u32 Length);
-u32 HLS4ML_Network_WriteToInput(UINTPTR BuffAddr, u32 Length);
-void HLS4ML_Network_WaitToReturn();
-
-XAxiDma AxiDmaHLS4ML;
-
-u32 HLS4ML_Network_Init()
-{
-	XAxiDma_Config *CfgPtr;
-	/* Initialize the XAxiDma device.
-	 */
-	CfgPtr = XAxiDma_LookupConfig(DMA_DEV_ID);
-	if (!CfgPtr) {
-		return XST_FAILURE;
-	}
-
-	u32 Status = XAxiDma_CfgInitialize(&AxiDmaHLS4ML, CfgPtr);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-
-	if (XAxiDma_HasSg(&AxiDmaHLS4ML)) {
-		return XST_FAILURE;
-	}
-
-	/* Disable interrupts, we use polling mode
-	 */
-	XAxiDma_IntrDisable(&AxiDmaHLS4ML, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DEVICE_TO_DMA);
-	XAxiDma_IntrDisable(&AxiDmaHLS4ML, XAXIDMA_IRQ_ALL_MASK, XAXIDMA_DMA_TO_DEVICE);
-
-	return XST_SUCCESS;
-}
-
-
-void HLS4ML_Network_Evaluate(UINTPTR NetworkInputBuffAddr, u32 network_input_length_in_bytes,
-							 UINTPTR NetworkOutputBuffAddr, u32 network_output_length_in_bytes)
-{
-	/* Flush the buffers before the DMA transfer, in case the Data Cache
-	 * is enabled
-	 */
-	Xil_DCacheFlushRange(NetworkInputBuffAddr, network_input_length_in_bytes);
-	Xil_DCacheFlushRange(NetworkOutputBuffAddr, network_output_length_in_bytes);
-
-	u32 Status;
-	Status = HLS4ML_Network_ListenToOutput(NetworkOutputBuffAddr, network_output_length_in_bytes);
-	Status = HLS4ML_Network_WriteToInput(NetworkInputBuffAddr, network_input_length_in_bytes);
-
-	HLS4ML_Network_WaitToReturn();
-}
-
-
-u32 HLS4ML_Network_ListenToOutput(UINTPTR BuffAddr, u32 Length)
-{
-	// Subscribe the read transaction
-	u32 Status = XAxiDma_SimpleTransfer(&AxiDmaHLS4ML, BuffAddr,
-			Length, XAXIDMA_DEVICE_TO_DMA);
-
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-	return XST_SUCCESS;
-}
-
-
-u32 HLS4ML_Network_WriteToInput(UINTPTR BuffAddr, u32 Length)
-{
-	// Subscribe the write transaction
-	u32 Status = XAxiDma_SimpleTransfer(&AxiDmaHLS4ML, BuffAddr,
-	Length, XAXIDMA_DMA_TO_DEVICE);
-
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-	return XST_SUCCESS;
-}
-
-
-void HLS4ML_Network_WaitToReturn()
-{
-	// Wait until both transaction are completed
-	while ((XAxiDma_Busy(&AxiDmaHLS4ML, XAXIDMA_DEVICE_TO_DMA))
-			|| (XAxiDma_Busy(&AxiDmaHLS4ML, XAXIDMA_DMA_TO_DEVICE))) {
-		/* Wait */
-	}
-}
-
+#ifndef HLS4ML_USE_DMA
+#define HLS4ML_USE_DMA  0
 #endif
+
+/* AXI-Lite config (edit to match your wrapper) */
+#ifndef HLS4ML_AXIL_BASE
+#define HLS4ML_AXIL_BASE      XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_WRAPPER_0_BASEADDR
+#endif
+#ifndef HLS4ML_AXIL_REG_CTRL
+#define HLS4ML_AXIL_REG_CTRL  0x00
+#endif
+#ifndef HLS4ML_AXIL_REG_IN
+#define HLS4ML_AXIL_REG_IN    0x04
+#endif
+#ifndef HLS4ML_AXIL_REG_OUT
+#define HLS4ML_AXIL_REG_OUT   0x08
+#endif
+
+/* DMA device ID (edit to your DMA instance for HLS4ML) */
+#ifndef HLS4ML_DMA_DEV_ID
+#define HLS4ML_DMA_DEV_ID     XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
+#endif
+
+u32 HLS4ML_Network_Init(void)
+{
+#if HLS4ML_USE_DMA
+    HWAccel_LinkConfig cfg = {
+        .iface = HWACCEL_IF_AXI_DMA,
+        .u.dma = { .device_id = HLS4ML_DMA_DEV_ID }
+    };
+#else
+    HWAccel_LinkConfig cfg = {
+        .iface = HWACCEL_IF_AXILITE,
+        .u.axilite = {
+            .base_addr = HLS4ML_AXIL_BASE,
+            .reg_ctrl  = HLS4ML_AXIL_REG_CTRL,
+            .reg_in    = HLS4ML_AXIL_REG_IN,
+            .reg_out   = HLS4ML_AXIL_REG_OUT
+        }
+    };
+#endif
+    return (HWAccelLink_Init(&cfg) == XST_SUCCESS) ? XST_SUCCESS : XST_FAILURE;
+}
+
+void HLS4ML_Network_Evaluate(UINTPTR NetworkInputBuffAddr,
+                             u32     network_input_length_in_bytes,
+                             UINTPTR NetworkOutputBuffAddr,
+                             u32     network_output_length_in_bytes)
+{
+    HWAccelLink_Evaluate((const void*)NetworkInputBuffAddr, network_input_length_in_bytes,
+                         (void*)NetworkOutputBuffAddr,      network_output_length_in_bytes);
+}

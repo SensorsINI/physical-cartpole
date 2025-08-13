@@ -30,8 +30,4 @@ typedef enum {
 /* This controller can now be used via the generic runtime. */
 extern const ControllerOps NeuralImitator_Ops;
 
-void Neural_Imitator_Init();
-void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned char * network_output_buffer);
-void Neural_Imitator_ReleaseResources(void);
-
 #endif /*__NEURAL_IMITATOR_H_*/

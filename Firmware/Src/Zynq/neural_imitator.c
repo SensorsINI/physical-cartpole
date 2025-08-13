@@ -23,7 +23,14 @@
 #include "HLS4ML/HLS4ML_Network.h"
 #endif
 
+#ifdef XPAR_HARDWARE_ACCEL_DIFFLG_AXI_DMA_0_DEVICE_ID
+#define DIFFLG
+#endif
+
+#ifdef DIFFLG
+#include "DiffLG/DiffLG_Network.h"
 #include "difflogic/difflg_weights.h"
+#endif
 
 /******************** make this module a float-based controller **********/
 #include "controller_api.h"
@@ -133,6 +140,10 @@ void Neural_Imitator_Init()
 
 }
 
+#ifdef DIFFLG
+    DiffLG_Network_Init();
+#endif
+
 
 void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned char * network_output_buffer)
 {
@@ -205,7 +216,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             break;
 
         case NETWORK_DIFFLOGIC:
-    #ifdef HLS4ML
+    #ifdef DIFFLG
             {
                 // Use DiffLogic accelerator
                 int tx_counter = 0;
@@ -231,7 +242,8 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                     }
                 }
                 int rx_counter = 1000 / 32;
-                HLS4ML_Network_Evaluate((UINTPTR)TxBufferPtr, tx_counter * sizeof(int32_t), (UINTPTR)RxBufferPtr, rx_counter);
+                DiffLG_Network_Evaluate((UINTPTR)TxBufferPtr, tx_counter * sizeof(int32_t),
+                        (UINTPTR)RxBufferPtr, (u32)(rx_counter * sizeof(int32_t)));
 
                 float output = linear_biases[0];
                 for (size_t i = 0; i < rx_counter; ++i)
