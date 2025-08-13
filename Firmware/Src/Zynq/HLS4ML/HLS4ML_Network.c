@@ -1,6 +1,7 @@
 #include "HLS4ML_Network.h"
-#include "hw_accel_link.h"
+#include "../hw_accel_link.h"
 #include "xparameters.h"
+#include "xstatus.h"
 
 /* ====== Build-time selection ======
    Set these macros in your project settings or keep defaults below.

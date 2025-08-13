@@ -1,6 +1,7 @@
-#include "DiffLG_Network.h"
-#include "hw_accel_link.h"
+#include "difflogic_Network.h"
+#include "../hw_accel_link.h"
 #include "xparameters.h"
+#include "xstatus.h"
 
 /* ====== Build-time selection for DiffLG ======
    DIFFLG_USE_DMA = 1 → AXI-DMA (recommended)
@@ -8,7 +9,7 @@
 */
 
 #ifndef DIFFLG_USE_DMA
-#define DIFFLG_USE_DMA  1
+#define DIFFLG_USE_DMA  0
 #endif
 
 /* AXI-Lite config for DiffLG IP if applicable */

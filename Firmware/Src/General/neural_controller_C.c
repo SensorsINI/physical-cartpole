@@ -8,8 +8,11 @@
  */
 
 #include "controller_api.h"
-#include "neural_imitator.h"   /* for MLP_* constants (input/output sizes) */
 #include "NC_C/network.h"      /* C_Network_Evaluate(float in[], float out[]) */
+
+
+#define MLP_ACTIVATION_NEURONS		7 // 4bytes each
+#define MLP_PREDICTION_NEURONS		1 // 4bytes each
 
 /* --- Spec (same tokens/order as NeuralImitator) ------------------------ */
 static const char* const NNC_InputNames[] = {

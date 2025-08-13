@@ -25,7 +25,7 @@ typedef enum {
 #define NETWORK_OUTPUT_SIZE_IN_BYTES		(MLP_PREDICTION_NEURONS * DATA_WORD_BYTES)
 
 /******************** controller API exposure ****************************/
-#include "controller_api.h"
+#include "../controller_api.h"
 
 /* This controller can now be used via the generic runtime. */
 extern const ControllerOps NeuralImitator_Ops;
