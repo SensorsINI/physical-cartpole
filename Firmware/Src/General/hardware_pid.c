@@ -6,7 +6,7 @@
  */
 
 #include "hardware_bridge.h"
-#include "communication_with_PC.h"
+#include "communication_with_PC_general.h"
 #include "hardware_pid.h"
 #include <stdio.h>
 #include <math.h>
