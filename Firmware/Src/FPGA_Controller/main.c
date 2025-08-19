@@ -38,8 +38,8 @@
 static const ControllerOps* select_controller(void)
 {
     /* Example: keep NN for both switch positions for now. */
-    return &NeuralImitator_Ops;
-//    return &LQR_Ops;
+//    return &NeuralImitator_Ops;
+    return &LQR_Ops;
 //    return &NNC_Ops;
 }
 

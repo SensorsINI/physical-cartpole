@@ -45,6 +45,15 @@ void Message_SendToPC(unsigned char * SendBuffer, unsigned int buffer_size){
 
 }
 
+void Message_SendToPC_blocking(unsigned char * SendBuffer, unsigned int buffer_size){
+    /* Loop until everything is accepted by the driver. */
+    unsigned int sent = 0;
+    while (sent < buffer_size) {
+        sent += XUartPs_Send(&UartPs, SendBuffer + sent, buffer_size - sent);
+    }
+    /* Ensure shift register drains to avoid interleaving with next write. */
+    while (XUartPs_IsSending(&UartPs)) { /* spin */ }
+}
 
 
 int Message_GetFromPC(unsigned char * c) {
@@ -120,7 +129,7 @@ void PC_Connection_INIT(unsigned int baud)
 	Xil_ExceptionEnable();
 
 
-	u32 IntrMask = 	IntrMask =
+	u32 IntrMask =
 			XUARTPS_IXR_TXEMPTY | XUARTPS_IXR_RXFULL |
 			XUARTPS_IXR_RXOVR;
 
@@ -143,6 +152,7 @@ void Message_SendToPC_blocking(unsigned char * SendBuffer, unsigned int buffer_s
 	while(UartPs.SendBuffer.RemainingBytes != 0)
 	{}
 
+    while (XUartPs_IsSending(&UartPs)) { }
 }
 
 int Message_GetFromPC(unsigned char * c) {
@@ -333,6 +343,14 @@ void Message_SendToPC(unsigned char * SendBuffer, unsigned int buffer_size){
 
 }
 
+void Message_SendToPC_blocking(unsigned char * SendBuffer, unsigned int buffer_size){
+    /* Queue once, then wait for driver’s internal send buffer to drain. */
+    XUartNs550_Send(&UartNs550, SendBuffer, buffer_size);
+    while (UartNs550.SendBuffer.RemainingBytes != 0) { }
+    /* Conservative: also wait for transmitter empty (LSR.TEMT). */
+    while (!(XUartNs550_GetLineStatusReg(UartNs550.BaseAddress) & XUN_LSR_TEMT)) { }
+}
+
 
 
 int Message_GetFromPC(unsigned char * c) {
@@ -515,6 +533,13 @@ void Message_SendToPC(unsigned char * SendBuffer, unsigned int buffer_size){
 
 	XUartLite_Send(&UartLite, SendBuffer, buffer_size);
 
+}
+
+
+void Message_SendToPC_blocking(unsigned char * SendBuffer, unsigned int buffer_size){
+    XUartLite_Send(&UartLite, SendBuffer, buffer_size);
+    /* Wait for the Lite core to finish (driver exposes IsSending). */
+    while (XUartLite_IsSending(&UartLite)) { }
 }
 
 

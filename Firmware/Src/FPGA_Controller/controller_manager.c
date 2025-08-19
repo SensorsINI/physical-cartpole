@@ -36,7 +36,7 @@ static void write_padded_token(const char* s) {
     size_t i = 0;
     for (; i < NAME_TOKEN_LEN && s[i] != '\0'; ++i) tok[i] = (unsigned char)s[i];
     for (; i < NAME_TOKEN_LEN; ++i) tok[i] = 0;
-    Message_SendToPC(tok, NAME_TOKEN_LEN);
+    Message_SendToPC_blocking(tok, NAME_TOKEN_LEN);
 }
 
 /* ask manager to switch controllers; cookie will announce change to PC. */
@@ -55,7 +55,7 @@ int CR_SendSpecCookieIfPending(void)
     if (!g_cookie_pending) return 0;
     unsigned char cookie[4] = { SERIAL_SOF, CMD_SPEC_COOKIE, g_spec_gen, 0 };
     cookie[3] = crc8_calc(cookie, 3);
-    Message_SendToPC(cookie, 4);
+    Message_SendToPC_blocking(cookie, 4);
     return 1;
 }
 
@@ -85,7 +85,7 @@ void CR_HandshakeOnce(void)
 
         const ControllerSpec* N = g_active->spec();
         unsigned char hdr[4] = { N->version, N->n_inputs, N->n_outputs, NAME_TOKEN_LEN };
-        Message_SendToPC(hdr, 4);
+        Message_SendToPC_blocking(hdr, 4);
         for (uint8_t i = 0; i < N->n_inputs; ++i) write_padded_token(N->names[i]);
     }
     /* Malformed? Ignore; PC will timeout and retry. */
