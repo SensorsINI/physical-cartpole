@@ -177,6 +177,30 @@ int Message_GetFromPC(unsigned char * c) {
 
 }
 
+int Message_GetFromPC_blocking(unsigned char * c, unsigned int len) {
+    unsigned int count = 0;
+    
+    while (count < len) {
+        while (rxCnt == 0) {
+            // Wait for data to arrive
+        }
+        
+        c[count] = (unsigned char)usartRxBuffer[rxOut++];
+        if (rxOut == USART_RX_BUFFER_SIZE)
+        {
+            rxOut = 0;
+        }
+
+        disable_irq();
+        rxCnt--;
+        enable_irq();
+
+        count++;
+    }
+
+    return count;
+}
+
 extern u32 XUartPs_ReceiveBuffer(XUartPs *InstancePtr);
 extern u32 XUartPs_SendBuffer(XUartPs *InstancePtr);
 void Handler(XUartPs *InstancePtr)

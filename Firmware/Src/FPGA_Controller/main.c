@@ -55,11 +55,7 @@ int main() {
     if (CR_GetActive() && CR_GetActive()->init) CR_GetActive()->init();
 
     /* --- Control-plane: tell PC what inputs we need (names/order/counts). --- */
-    CR_HandshakeOnce();
-
-    /* Allocate once with generous bounds; we only use IN_BYTES/OUT_BYTES each cycle. */
-    static unsigned char rx_uart_buffer[MAX_INPUTS  * 4];
-    static unsigned char tx_uart_buffer[MAX_OUTPUTS * 4];
+    /* Note: Handshake will be called when PC sends GET_SPEC command */
 
 	while (1) {
 
@@ -67,34 +63,17 @@ int main() {
         const ControllerOps* desired = select_controller();
         CR_RequestSwitch(desired);   /* no-op if unchanged */
 
-        /* Sizes may change after a handshake; query each cycle */
-        const uint8_t nin  = CR_ActiveNumInputs();
-        const uint8_t nout = CR_ActiveNumOutputs();
-        const unsigned IN_BYTES  = (unsigned)nin  * 4u;
-        const unsigned OUT_BYTES = (unsigned)nout * 4u;
-
-        /* Accumulate exactly IN_BYTES */
-        static unsigned int have = 0;
-        while (have < IN_BYTES){
-            int newDataCount = Message_GetFromPC(&rx_uart_buffer[have]);
-            have += (unsigned int)newDataCount;
+        /* Process messages from PC using unified message handling */
+        /* This handles both state data and control commands (spec requests, pings) */
+        while (CR_ProcessMessage()) {
+            /* Keep processing messages until no more are available */
+            /* State data messages will automatically trigger controller evaluation and output */
         }
-        have -= IN_BYTES;
 
-        /* Compute control using the active controller (works for NN/PID/MPC). */
-        CR_EvaluateBytes(rx_uart_buffer, tx_uart_buffer);
-
-        /* If a switch is pending, announce & complete the re-handshake now.
-           This sends a 4B cookie BEFORE outputs, then blocks for GET_SPEC,
-           finalizes the switch, and replies with the new spec. */
+        /* If a switch is pending, announce it to PC */
         if (CR_SendSpecCookieIfPending()) {
-            CR_HandshakeOnce();
-            /* After this point, active controller may differ; sizes will be
-               picked up next loop via CR_ActiveNumInputs/Outputs(). */
+            /* PC will send a new spec request, which will be handled by CR_ProcessMessage() */
         }
-
-        /* Send outputs for THIS cycle (from the controller active before switch). */
-		Message_SendToPC(tx_uart_buffer, OUT_BYTES);
 
 		Leds_over_switches_Update(Switches_GetState());
 	}
