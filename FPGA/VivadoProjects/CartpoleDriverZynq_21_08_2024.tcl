@@ -16,6 +16,14 @@
 #
 #*****************************************************************************************
 
+# Set the reference directory for source file relative paths (by default the value is script directory path)
+set origin_dir "."
+
+# Use origin directory path location variable, if specified in the tcl shell
+if { [info exists ::origin_dir_loc] } {
+  set origin_dir $::origin_dir_loc
+}
+
 # Set the project name
 set _xil_proj_name_ "CartpoleDriverZynq"
 
@@ -72,40 +80,19 @@ if { $::argc > 0 } {
   }
 }
 
-# --- Resolve paths relative to this script (works in GUI/Parallels/console) ---
-set script_path [info script]
-if {$script_path eq ""} {
-  # Sourced from console: fall back to current working dir
-  set this_dir [pwd]
-} else {
-  set this_dir [file normalize [file dirname $script_path]]
-}
-
-if {[info exists ::origin_dir_loc]} {
-  set origin_dir $::origin_dir_loc
-} else {
-  set origin_dir $this_dir
-}
-
-set orig_proj_dir [file normalize "$origin_dir/"]
-
-source [file join $this_dir tcl_helper_scripts/path_setup.tcl]
-
-# find VivadoProjects root and (on Windows) map it to a short drive (e.g. P:)
-set _viv_root [ensure_short_project_root]
+# Set the directory path for the original project from where this script was exported
+set orig_proj_dir "[file normalize "$origin_dir/"]"
 
 # Create project
-create_project ${_xil_proj_name_} [file join $_viv_root ${_xil_proj_name_}] -part xc7z020clg400-1
+create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xc7z020clg400-1
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-
-source [file join $this_dir tcl_helper_scripts/boards_setup.tcl]
-set used_bp [ensure_zybo_z7_20]     ;# or: set used_bp [ensure_zedboard]
-
+set_property -name "board_part" -value "digilentinc.com:zybo-z7-20:part0:1.1" -objects $obj
+set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../.Xilinx/Vivado/2020.1/xhub/board_store/xilinx_board_store"]" -objects $obj
 set_property -name "compxlib.activehdl_compiled_library_dir" -value "$proj_dir/${_xil_proj_name_}.cache/compile_simlib/activehdl" -objects $obj
 set_property -name "compxlib.funcsim" -value "1" -objects $obj
 set_property -name "compxlib.ies_compiled_library_dir" -value "$proj_dir/${_xil_proj_name_}.cache/compile_simlib/ies" -objects $obj
@@ -126,6 +113,7 @@ set_property -name "ip_interface_inference_priority" -value "" -objects $obj
 set_property -name "ip_output_repo" -value "$proj_dir/${_xil_proj_name_}.cache/ip" -objects $obj
 set_property -name "legacy_ip_repo_paths" -value "" -objects $obj
 set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
+set_property -name "platform.board_id" -value "zybo-z7-20" -objects $obj
 set_property -name "platform.default_output_type" -value "undefined" -objects $obj
 set_property -name "platform.design_intent.datacenter" -value "undefined" -objects $obj
 set_property -name "platform.design_intent.embedded" -value "undefined" -objects $obj
@@ -755,6 +743,7 @@ proc cr_bd_cartpole_driver_design { parentCell } {
 # The design that will be created by this Tcl proc contains the following
 # module references:
 # PmodAD1_AXI, edgedrnn_wrapper, mlp
+
 
 
   # CHANGE DESIGN NAME HERE
