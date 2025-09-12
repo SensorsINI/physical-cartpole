@@ -515,7 +515,6 @@ set_property -name "generic" -value "" -objects $obj
 set_property -name "include_dirs" -value "" -objects $obj
 set_property -name "lib_map_file" -value "" -objects $obj
 set_property -name "loop_count" -value "1000" -objects $obj
-set_property -name "name" -value "sources_1" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "verilog_define" -value "" -objects $obj
 set_property -name "verilog_uppercase" -value "0" -objects $obj
@@ -550,7 +549,6 @@ set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 # Set 'constrs_1' fileset properties
 set obj [get_filesets constrs_1]
 set_property -name "constrs_type" -value "XDC" -objects $obj
-set_property -name "name" -value "constrs_1" -objects $obj
 set_property -name "target_constrs_file" -value "$proj_dir/${_xil_proj_name_}.srcs/constrs_1/imports/Constraints/cartpole_pinout_zybo.xdc" -objects $obj
 set_property -name "target_ucf" -value "$proj_dir/${_xil_proj_name_}.srcs/constrs_1/imports/Constraints/cartpole_pinout_zybo.xdc" -objects $obj
 
@@ -602,7 +600,6 @@ set_property -name "generic" -value "" -objects $obj
 set_property -name "hbs.configure_design_for_hier_access" -value "1" -objects $obj
 set_property -name "include_dirs" -value "" -objects $obj
 set_property -name "incremental" -value "1" -objects $obj
-set_property -name "name" -value "sim_1" -objects $obj
 set_property -name "nl.cell" -value "" -objects $obj
 set_property -name "nl.incl_unisim_models" -value "0" -objects $obj
 set_property -name "nl.process_corner" -value "slow" -objects $obj
@@ -654,88 +651,8 @@ set obj [get_filesets utils_1]
 
 # Set 'utils_1' fileset properties
 set obj [get_filesets utils_1]
-set_property -name "name" -value "utils_1" -objects $obj
 
 
-# Adding sources referenced in BDs, if not already added
-if { [get_files s_axi_lite_v1_0.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0.v
-}
-if { [get_files s_axi_lite_v1_0_S_AXI.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v
-}
-if { [get_files hdr_macros.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hdr_macros.v
-}
-if { [get_files axis_fifo.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv
-}
-if { [get_files bram_sdp.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/bram_sdp.sv
-}
-if { [get_files edgedrnn.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn.sv
-}
-if { [get_files hpc.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpc.sv
-}
-if { [get_files hpe.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpe.sv
-}
-if { [get_files ieu.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/ieu.sv
-}
-if { [get_files mem_acc.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_acc.sv
-}
-if { [get_files mem_state.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_state.sv
-}
-if { [get_files sigmoid_lut.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv
-}
-if { [get_files tanh_lut.sv] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv
-}
-if { [get_files edgedrnn_wrapper.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v
-}
-if { [get_files dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd
-}
-if { [get_files dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd
-}
-if { [get_files dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd
-}
-if { [get_files linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd
-}
-if { [get_files mlp_top_pkg.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_axi/mlp_top_pkg.vhd
-}
-if { [get_files myproject.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd
-}
-if { [get_files tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd
-}
-if { [get_files tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd
-}
-if { [get_files tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd
-}
-if { [get_files mlp_top.vhd] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../NeuralNetworks/hls4ml_axi/mlp_top.vhd
-}
-if { [get_files ad1_spi.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../CustomIPs/PmodAD1/ad1_spi.v
-}
-if { [get_files PmodAD1_AXI.v] == "" } {
-  import_files -quiet -fileset sources_1 $proj_dir/../CustomIPs/PmodAD1/PmodAD1_AXI.v
-}
 
 
 # Proc to create BD cartpole_driver_design
@@ -2088,7 +2005,6 @@ set obj [get_runs synth_1]
 set_property -name "constrset" -value "constrs_1" -objects $obj
 set_property -name "description" -value "Vivado Synthesis Defaults" -objects $obj
 set_property -name "flow" -value "Vivado Synthesis 2020" -objects $obj
-set_property -name "name" -value "synth_1" -objects $obj
 set_property -name "needs_refresh" -value "0" -objects $obj
 set_property -name "srcset" -value "sources_1" -objects $obj
 set_property -name "incremental_checkpoint" -value "" -objects $obj
@@ -2520,7 +2436,6 @@ set obj [get_runs impl_1]
 set_property -name "constrset" -value "constrs_1" -objects $obj
 set_property -name "description" -value "Default settings for Implementation." -objects $obj
 set_property -name "flow" -value "Vivado Implementation 2020" -objects $obj
-set_property -name "name" -value "impl_1" -objects $obj
 set_property -name "needs_refresh" -value "0" -objects $obj
 set_property -name "pr_configuration" -value "" -objects $obj
 set_property -name "srcset" -value "sources_1" -objects $obj
