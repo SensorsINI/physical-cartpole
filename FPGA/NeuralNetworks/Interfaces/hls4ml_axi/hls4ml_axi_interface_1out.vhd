@@ -64,7 +64,7 @@ entity mlp_axi_interface is
     );
 end entity;
 
-architecture RTL of mlp_axi_full_wrapper is
+architecture RTL of mlp_axi_interface is
 
     ------------------------------------------------------------------------------
     -- 1) Neural Network Parameters (from mlp_top_pkg)

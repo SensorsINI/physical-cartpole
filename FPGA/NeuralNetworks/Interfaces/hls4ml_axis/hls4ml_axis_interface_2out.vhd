@@ -30,9 +30,9 @@ entity mlp_axis_interface is
         M_AXIS_TLAST  : out std_logic;
         M_AXIS_TREADY : in  std_logic
     );
-end entity mlp;
+end entity mlp_axis_interface;
 
-architecture RTL of mlp is
+architecture RTL of mlp_axis_interface is
     -- Signal declaration
     signal ap_rst                             : STD_LOGIC;
     signal ap_start                           : STD_LOGIC;

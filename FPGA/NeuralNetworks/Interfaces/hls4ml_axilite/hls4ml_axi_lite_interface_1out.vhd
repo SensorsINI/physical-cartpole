@@ -48,7 +48,7 @@ entity mlp_axi_lite_interface is
     );
 end entity;
 
-architecture RTL of mlp_axi_lite_wrapper is
+architecture RTL of mlp_axi_lite_interface is
 
     -----------------------------------------------------------------------------
     -- Constants from your package
