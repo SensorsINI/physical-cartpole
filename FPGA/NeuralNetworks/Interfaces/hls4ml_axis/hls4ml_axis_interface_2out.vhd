@@ -11,7 +11,7 @@ use ieee.numeric_std.all;
 library work;                           -- @suppress "Superfluous library clause: access to library 'work' is implicit"
 use work.mlp_top_pkg.all;
 
-entity mlp is
+entity mlp_axis_interface is
     generic(
         AXI_DATA_WIDTH : integer := 32
     );

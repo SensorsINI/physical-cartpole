@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 library work;
 use work.mlp_top_pkg.all;
 
-entity mlp_axi_lite_wrapper is
+entity mlp_axi_lite_interface is
     generic(
         C_S_AXI_DATA_WIDTH : integer := 32;
         C_S_AXI_ADDR_WIDTH : integer := 5

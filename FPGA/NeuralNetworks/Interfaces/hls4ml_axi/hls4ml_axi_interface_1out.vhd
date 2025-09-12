@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 library work;
 use work.mlp_top_pkg.all;  -- => your package with MLP_* constants
 
-entity mlp_axi_full_wrapper is
+entity mlp_axi_interface is
     generic(
         C_S_AXI_DATA_WIDTH : integer := 32;  -- Must be 32
         C_S_AXI_ADDR_WIDTH : integer := 12   -- 4KB region
