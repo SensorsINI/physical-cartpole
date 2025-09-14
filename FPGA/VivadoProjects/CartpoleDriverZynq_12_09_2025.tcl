@@ -15,51 +15,9 @@
 #   run results please launch the synthesis/implementation runs as needed.
 #
 #*****************************************************************************************
-# NOTE: In order to use this script for source control purposes, please make sure that the
-#       following files are added to the source control system:-
-#
-# 1. This project restoration tcl script (CartpoleDriverZynq_12_09_2025.tcl) that was generated.
-#
-# 2. The following source(s) files that were local or imported into the original project.
-#    (Please see the '$orig_proj_dir' and '$origin_dir' variable setting below at the start of the script)
-#
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/VivadoProjects/CartpoleDriverZynq_AXI_Stream/CartpoleDriverZynq_AXI_Stream.srcs/sources_1/bd/cartpole_driver_design/hdl/cartpole_driver_design_wrapper.v"
-#
-# 3. The following remote source files that were added to the original project:-
-#
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0.v"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hdr_macros.v"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/bram_sdp.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpc.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpe.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/ieu.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_acc.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_state.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv"
-#    "/home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/CustomIPs/PmodAD1/ad1_spi.v"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/CustomIPs/PmodAD1/PmodAD1_AXI.v"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/Interfaces/mlp_top_pkg.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/Interfaces/hls4ml_axis/hls4ml_axis_interface_1out.vhd"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/Constraints/cartpole_pinout_zybo.xdc"
-#    "/home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/Interfaces/mlp_top_pkg.vhd"
-#
-#*****************************************************************************************
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
-set origin_dir "/home/marcin/PycharmProjects/physical-cartpole/FPGA/VivadoProjects"
+set origin_dir "."
 
 # Use origin directory path location variable, if specified in the tcl shell
 if { [info exists ::origin_dir_loc] } {
@@ -67,7 +25,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "CartpoleDriverZynq_AXI_Stream"
+set _xil_proj_name_ "CartpoleDriverZynq_Test1"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -123,7 +81,7 @@ if { $::argc > 0 } {
 }
 
 # Set the directory path for the original project from where this script was exported
-set orig_proj_dir "[file normalize "$origin_dir/CartpoleDriverZynq_AXI_Stream"]"
+set orig_proj_dir "[file normalize "$origin_dir/"]"
 
 # Create project
 create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xc7z020clg400-1
@@ -134,7 +92,7 @@ set proj_dir [get_property directory [current_project]]
 # Set project properties
 set obj [current_project]
 set_property -name "board_part" -value "digilentinc.com:zybo-z7-20:part0:1.1" -objects $obj
-set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../../.Xilinx/Vivado/2020.1/xhub/board_store/xilinx_board_store"]" -objects $obj
+set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../.Xilinx/Vivado/2020.1/xhub/board_store/xilinx_board_store"]" -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "enable_vhdl_2008" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
@@ -201,13 +159,13 @@ add_files -norecurse -fileset $obj $files
 
 # Import local files from the original project
 set files [list \
- [file normalize "${origin_dir}/CartpoleDriverZynq_AXI_Stream/CartpoleDriverZynq_AXI_Stream.srcs/sources_1/bd/cartpole_driver_design/hdl/cartpole_driver_design_wrapper.v" ]\
-]
+
+
 set imported_files [import_files -fileset sources_1 $files]
 
 # Set 'sources_1' fileset file properties for remote files
 set file "$origin_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv"
-set file [file normalize $file]
+
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
@@ -371,85 +329,6 @@ set obj [get_filesets utils_1]
 set obj [get_filesets utils_1]
 
 
-# Adding sources referenced in BDs, if not already added
-if { [get_files s_axi_lite_v1_0.v] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0.v
-}
-if { [get_files s_axi_lite_v1_0_S_AXI.v] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/s_axi_lite_v1_0_S_AXI.v
-}
-if { [get_files hdr_macros.v] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hdr_macros.v
-}
-if { [get_files axis_fifo.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv
-}
-if { [get_files bram_sdp.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/bram_sdp.sv
-}
-if { [get_files edgedrnn.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn.sv
-}
-if { [get_files hpc.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpc.sv
-}
-if { [get_files hpe.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/hpe.sv
-}
-if { [get_files ieu.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/ieu.sv
-}
-if { [get_files mem_acc.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_acc.sv
-}
-if { [get_files mem_state.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/mem_state.sv
-}
-if { [get_files sigmoid_lut.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv
-}
-if { [get_files tanh_lut.sv] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv
-}
-if { [get_files edgedrnn_wrapper.v] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v
-}
-if { [get_files ad1_spi.v] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/CustomIPs/PmodAD1/ad1_spi.v
-}
-if { [get_files PmodAD1_AXI.v] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/CustomIPs/PmodAD1/PmodAD1_AXI.v
-}
-if { [get_files dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd
-}
-if { [get_files dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd
-}
-if { [get_files dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd
-}
-if { [get_files mlp_top_pkg.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/Interfaces/mlp_top_pkg.vhd
-}
-if { [get_files myproject.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd
-}
-if { [get_files linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd
-}
-if { [get_files tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd
-}
-if { [get_files tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd
-}
-if { [get_files tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd
-}
-if { [get_files hls4ml_axis_interface_1out.vhd] == "" } {
-  import_files -quiet -fileset sources_1 /home/marcin/PycharmProjects/physical-cartpole/FPGA/NeuralNetworks/Interfaces/hls4ml_axis/hls4ml_axis_interface_1out.vhd
-}
 
 
 # Proc to create BD cartpole_driver_design
@@ -1734,12 +1613,22 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  regenerate_bd_layout
   validate_bd_design
   save_bd_design
   close_bd_design $design_name 
 }
 # End of cr_bd_cartpole_driver_design()
 cr_bd_cartpole_driver_design ""
+
+# DESIGN NAME MUST BE SAME AS ABOVE
+set design_name cartpole_driver_design
+# Create HDL wrapper
+make_wrapper -files [get_files $proj_dir/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
+add_files -norecurse $proj_dir/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/hdl/${design_name}_wrapper.v
+update_compile_order -fileset sources_1
+set_property top ${design_name}_wrapper [current_fileset]
+update_compile_order -fileset sources_1
 set_property REGISTERED_WITH_MANAGER "1" [get_files cartpole_driver_design.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files cartpole_driver_design.bd ] 
 
