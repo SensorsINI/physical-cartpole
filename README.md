@@ -501,6 +501,13 @@ source ./zybo.tcl
 ```
 The vivado project will be create and it will be ready for synthesis. Yo can modify this project according your needs.
 
+# Archiving Vivado project.
+
+To generate a new tcl script with the current project configuration, run the next command in the TCL console:
+```console
+write_project_tcl -force ./zybo_new.tcl
+``` 
+
 ### Creating Vitis project
 Vitis projects are compressed in [zybo_vitis_pot_motor_test.zip](zynq/zybo_vitis_pot_motor_test.zip) file. So to import then into Vitis follow the next steps:
 - Open Vitis using a new workspace
