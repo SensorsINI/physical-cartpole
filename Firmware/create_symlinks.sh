@@ -31,9 +31,9 @@ declare -a directories=(
 # For NeuralImitator on Zynq (First create NeuralImitator project in Vitis!)
 :'
 declare -a directories=(
-  "./Src/FPGA_Controller ./VitisProjects/FPGA_Controller/src"
-  "./Src/General ./VitisProjects/FPGA_Controller/src"
-  "./Src/Zynq ./VitisProjects/FPGA_Controller/src/Zynq"
+  "./Src/Embedded_Controller ./VitisProjects/Embedded_Controller/src"
+  "./Src/General ./VitisProjects/Embedded_Controller/src"
+  "./Src/Zynq ./VitisProjects/Embedded_Controller/src/Zynq"
 )
 '
 
