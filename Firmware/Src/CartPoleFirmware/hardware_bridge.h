@@ -104,6 +104,7 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 #define General_Init		General_Init
 #define Sleep_ms			Sleep_ms
 
+#include <stdio.h>
 
 #include "STM/buttons_and_switches.h"
 

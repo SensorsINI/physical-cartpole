@@ -183,8 +183,6 @@ int CR_ProcessMessage(void)
 {
     static unsigned char msg_buffer[4 + MAX_INPUTS * 4]; /* SOF + type + length + max data + CRC */
     static int got = 0;
-    static int expecting_data = 0;
-    static int data_length = 0;
     static int timeout_counter = 0;
     
     /* Try to get at least 4 bytes (SOF + type + length + CRC) */
@@ -197,8 +195,6 @@ int CR_ProcessMessage(void)
             timeout_counter++;
             if (timeout_counter > 10000) {
                 got = 0;
-                expecting_data = 0;
-                data_length = 0;
                 timeout_counter = 0;
             }
             return 0; /* No data available */
@@ -222,15 +218,11 @@ int CR_ProcessMessage(void)
     if (msg_length < 4 || msg_length > sizeof(msg_buffer)) {
         /* Invalid length, reset */
         got = 0;
-        expecting_data = 0;
-        data_length = 0;
         return 1;
     }
     
     /* Check if we need more data */
     if (got < msg_length) {
-        expecting_data = 1;
-        data_length = msg_length;
         int n = Message_GetFromPC(&msg_buffer[got]);
         if (n > 0) {
             got += n;
@@ -239,8 +231,6 @@ int CR_ProcessMessage(void)
             timeout_counter++;
             if (timeout_counter > 10000) {
                 got = 0;
-                expecting_data = 0;
-                data_length = 0;
                 timeout_counter = 0;
             }
         }
@@ -251,8 +241,6 @@ int CR_ProcessMessage(void)
     if (msg_buffer[msg_length - 1] != crc8_calc(msg_buffer, msg_length - 1)) {
         /* CRC failed, reset */
         got = 0;
-        expecting_data = 0;
-        data_length = 0;
         return 1;
     }
     
@@ -279,8 +267,6 @@ int CR_ProcessMessage(void)
     
     /* Reset for next message */
     got = 0;
-    expecting_data = 0;
-    data_length = 0;
     return 1;
 }
 

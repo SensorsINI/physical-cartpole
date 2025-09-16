@@ -8,6 +8,13 @@
 #ifndef HARDWARE_BRIDGE_H_
 #define HARDWARE_BRIDGE_H_
 
+// Select chip
+#define ZYNQ
+//#define STM
+
+/* Uncomment the following line to enable timing test mode */
+#define TIMING_TEST
+
 #include <stdbool.h>
 
 #define CLOCK_FREQ 						333333343
@@ -15,7 +22,7 @@
 #define MOTOR_FULL_SCALE_SAFE           ((int)(0.95 * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES + 0.5))
 
 
-#define UART_BAUD 230400 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
+#define UART_BAUD 115200 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
 #include "Zynq/led_zynq.h"
@@ -41,6 +48,11 @@
 #define General_Init		General_Init
 #define Sleep_ms			Sleep_ms
 
+#include "Zynq/timer_interrupt.h"
+#define GetTimeNow				TIMER1_getSystemTime_Us
+#define GetTimeNowHighRes		TIMER1_getSystemTime_Cycles
+
+#include <stdio.h>
 
 #include "Zynq/buttons_and_switches.h"
 

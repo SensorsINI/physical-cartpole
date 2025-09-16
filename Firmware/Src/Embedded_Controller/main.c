@@ -13,6 +13,20 @@
  * extern u32  XUartPs_SendBuffer(XUartPs *InstancePtr);
  * extern u32  XUartPs_ReceiveBuffer(XUartPs *InstancePtr);
  *
+ * TIMING TEST MODE:
+ * To enable timing test mode instead of normal operation:
+ * 1. Uncomment the line: #define TIMING_TEST in hardware_bridge.h
+ * 2. Configure the controller to test in main.c select_controller() function
+ * 3. Compile and run - the program will execute timing tests instead of normal operation
+ * 4. Comment out #define TIMING_TEST in hardware_bridge.h to return to normal operation
+ * 
+ * PLATFORM SUPPORT:
+ * - Works on both STM and Zynq platforms
+ * - Uses hardware_bridge abstraction for platform-agnostic timing and printing
+ * - All timing test functionality is in timing_test.c for clean separation
+ * - Platform-specific controller implementations are automatically selected
+ * - STM: Only NeuralImitator available, Zynq: All controllers available
+ *
  */
 
 
@@ -26,11 +40,17 @@
 #include "xtime_l.h"
 #include "math.h"
 #include <stdint.h>
+#include <string.h>
 
 #include "controller_manager.h"     /* NEW: handshake + data bridge */
 #include "Zynq/neural_imitator.h"   /* exposes NeuralImitator_Ops */
 #include "neural_controller_C.h"
 #include "lqr.h"
+#include "hardware_pid.h"
+
+#ifdef TIMING_TEST
+#include "timing_test.h"
+#endif
 
 /******************** Constant Definitions **********************************/
 
@@ -43,6 +63,7 @@ static const ControllerOps* select_controller(void)
 //    return &NNC_Ops;
 }
 
+
 int main() {
 
 	General_Init();
@@ -50,6 +71,15 @@ int main() {
 	Buttons_And_Switches_Init();
 	Led_Init();
 
+#ifdef TIMING_TEST
+    /* === TIMING TEST MODE === */
+    /* --- Controller selection and init (same as normal mode) --- */
+    CR_SetActive(select_controller());
+    if (CR_GetActive() && CR_GetActive()->init) CR_GetActive()->init();
+    
+    run_timing_test_suite();
+#else
+    /* === NORMAL OPERATION MODE === */
     /* --- Controller selection and init (generic) --- */
     CR_SetActive(select_controller());
     if (CR_GetActive() && CR_GetActive()->init) CR_GetActive()->init();
@@ -79,5 +109,7 @@ int main() {
 	}
 
     if (CR_GetActive() && CR_GetActive()->release) CR_GetActive()->release();
+#endif
+
 	return XST_SUCCESS;
 }

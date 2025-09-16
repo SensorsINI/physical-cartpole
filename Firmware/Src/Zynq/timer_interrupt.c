@@ -9,6 +9,12 @@ unsigned long TIMER1_getSystemTime_Us() {
 
 }
 
+/* High-resolution timing function for sub-microsecond measurements */
+unsigned long TIMER1_getSystemTime_Cycles(void) {
+		XTime_GetTime(&MyTime);
+		return (unsigned long)MyTime;
+}
+
 static void Timer_Intr_Handler(void *CallBackRef);
 
 void TIMER1_Init(unsigned int _periodMS){
