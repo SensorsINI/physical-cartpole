@@ -39,7 +39,6 @@ In `timing_config.h`, adjust test parameters:
 ```c
 #define TIMING_ITERATIONS         1000    // Number of iterations
 #define WARMUP_ITERATIONS         10      // Warmup runs
-#define STATS_SAMPLES             100     // Detailed statistics samples
 #define VERBOSE_OUTPUT            1       // Show individual timing values
 #define TEST_MEMORY_USAGE         0       // Enable memory analysis
 #define CONTINUOUS_TESTING        0       // Enable continuous testing

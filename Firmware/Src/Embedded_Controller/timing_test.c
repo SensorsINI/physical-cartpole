@@ -70,8 +70,8 @@ static void generate_test_inputs(float* inputs, int num_inputs)
 }
 
 /* Calculate statistics from timing data */
-static void calculate_statistics(unsigned long* times, int count, float* mean, float* std_dev, 
-                                unsigned long* min_time, unsigned long* max_time)
+static void calculate_statistics(unsigned long long* times, int count, float* mean, float* std_dev, 
+                                unsigned long long* min_time, unsigned long long* max_time)
 {
     if (count == 0) {
         *mean = 0.0f;
@@ -81,7 +81,7 @@ static void calculate_statistics(unsigned long* times, int count, float* mean, f
         return;
     }
     
-    unsigned long total = 0;
+    unsigned long long total = 0;
     *min_time = times[0];
     *max_time = times[0];
     
@@ -102,7 +102,7 @@ static void calculate_statistics(unsigned long* times, int count, float* mean, f
     *std_dev = sqrtf(variance);
     
     // Debug: Print raw values to check for corruption
-    printf("DEBUG: calculate_statistics - count=%d, total=%lu, mean=%.6f\r\n", 
+    printf("DEBUG: calculate_statistics - count=%d, total=%llu, mean=%.6f\r\n", 
            count, total, *mean);
 }
 
@@ -112,30 +112,30 @@ static float us_to_float(unsigned long us)
     return (float)us;
 }
 
-/* Convert clock cycles to nanoseconds */
-static float cycles_to_ns(unsigned long cycles)
+/* Convert clock cycles to microseconds */
+static float cycles_to_us(unsigned long long cycles)
 {
     // Clock frequency is 333.333 MHz (from CLOCK_FREQ in hardware_bridge.h)
-    return (float)cycles * 1000.0f / 333.333f; // Convert to nanoseconds
+    return (float)cycles / 333.333f; // Convert to microseconds
 }
 
 
 /* Print timing results using standard printf (supports float formatting) */
-static void print_timing_results(const char* test_name, unsigned long* times, int count, 
-                                float mean_cycles, float std_dev_cycles, unsigned long min_cycles, unsigned long max_cycles)
+static void print_timing_results(const char* test_name, unsigned long long* times, int count, 
+                                float mean_cycles, float std_dev_cycles, unsigned long long min_cycles, unsigned long long max_cycles)
 {
-    // Convert clock cycles to microseconds and nanoseconds
-    float mean_us = cycles_to_ns((unsigned long)mean_cycles) / 1000.0f;
-    float std_dev_us = cycles_to_ns((unsigned long)std_dev_cycles) / 1000.0f;
-    float min_us = cycles_to_ns(min_cycles) / 1000.0f;
-    float max_us = cycles_to_ns(max_cycles) / 1000.0f;
+    // Convert clock cycles to microseconds
+    float mean_us = cycles_to_us((unsigned long long)mean_cycles);
+    float std_dev_us = cycles_to_us((unsigned long long)std_dev_cycles);
+    float min_us = cycles_to_us(min_cycles);
+    float max_us = cycles_to_us(max_cycles);
     
     printf("\r\n=== %s Results ===\r\n", test_name);
     printf("Iterations: %d\r\n", count);
-    printf("Mean time: %.2f us (%.0f ns, %.0f cycles)\r\n", mean_us, mean_us * 1000.0f, mean_cycles);
-    printf("Std deviation: %.2f us (%.0f ns, %.0f cycles)\r\n", std_dev_us, std_dev_us * 1000.0f, std_dev_cycles);
-    printf("Min time: %.2f us (%.0f ns, %lu cycles)\r\n", min_us, min_us * 1000.0f, min_cycles);
-    printf("Max time: %.2f us (%.0f ns, %lu cycles)\r\n", max_us, max_us * 1000.0f, max_cycles);
+    printf("Mean time: %.2f us (%.0f cycles)\r\n", mean_us, mean_cycles);
+    printf("Std deviation: %.2f us (%.0f cycles)\r\n", std_dev_us, std_dev_cycles);
+    printf("Min time: %.2f us (%llu cycles)\r\n", min_us, min_cycles);
+    printf("Max time: %.2f us (%llu cycles)\r\n", max_us, max_cycles);
     
 #if SHOW_FREQUENCY_ANALYSIS
     if (mean_us > 0) {
@@ -205,17 +205,36 @@ static void run_controller_timing_test(void)
     float inputs[MAX_INPUTS];
     float outputs[MAX_OUTPUTS];
     
-    // Warmup runs
+    // Warmup runs with timing
     printf("Warming up controller...\r\n");
+    unsigned long long warmup_times[WARMUP_ITERATIONS];
+    
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
+        unsigned long long warmup_start, warmup_end;
+        warmup_start = GetTimeNowHighRes();
+        
         generate_test_inputs(inputs, num_inputs);
         if (controller->evaluate) {
             controller->evaluate(inputs, outputs);
         }
+        
+        warmup_end = GetTimeNowHighRes();
+        warmup_times[i] = warmup_end - warmup_start;
     }
     
+    // Calculate and print warmup statistics
+    float warmup_mean, warmup_std_dev;
+    unsigned long long warmup_min, warmup_max;
+    calculate_statistics(warmup_times, WARMUP_ITERATIONS, 
+                        &warmup_mean, &warmup_std_dev, &warmup_min, &warmup_max);
+    
+    printf("Warmup completed - Mean: %.2f us (%.0f cycles), Std: %.2f us, Min: %.2f us, Max: %.2f us\r\n",
+           cycles_to_us((unsigned long long)warmup_mean), warmup_mean,
+           cycles_to_us((unsigned long long)warmup_std_dev),
+           cycles_to_us(warmup_min), cycles_to_us(warmup_max));
+    
     // Main timing test - use stack allocation instead of heap
-    unsigned long iteration_times[TIMING_ITERATIONS];
+    unsigned long long iteration_times[TIMING_ITERATIONS];
     
     printf("Running %d iterations...\r\n", TIMING_ITERATIONS);
     
@@ -224,7 +243,7 @@ static void run_controller_timing_test(void)
     int measurement_count = TIMING_ITERATIONS / iterations_per_measurement;
     
     for (int i = 0; i < measurement_count; i++) {
-        unsigned long iter_start, iter_end;
+        unsigned long long iter_start, iter_end;
         iter_start = GetTimeNowHighRes();
         
         // Run multiple iterations
@@ -244,48 +263,25 @@ static void run_controller_timing_test(void)
         iteration_times[i] = iteration_times[measurement_count - 1];
     }
     
-    // Filter out invalid timing measurements (very large values likely due to timer overflow)
-    int valid_count = 0;
-    unsigned long filtered_times[TIMING_ITERATIONS];
-    for (int i = 0; i < TIMING_ITERATIONS; i++) {
-        // Filter out values that are too large (likely timer overflow) or negative
-        if (iteration_times[i] < 1000000) { // Less than 1 second
-            filtered_times[valid_count] = iteration_times[i];
-            valid_count++;
-        }
-    }
-    
-    // Debug: Print first few raw and filtered values
+    // Debug: Print first few raw values
     printf("DEBUG: First 5 raw values (cycles): ");
     for (int i = 0; i < 5 && i < TIMING_ITERATIONS; i++) {
-        printf("%lu ", iteration_times[i]);
+        printf("%llu ", iteration_times[i]);
     }
     printf("\r\n");
     
-    printf("DEBUG: First 5 filtered values (cycles): ");
-    for (int i = 0; i < 5 && i < valid_count; i++) {
-        printf("%lu ", filtered_times[i]);
-    }
-    printf("\r\n");
-    
-    if (valid_count == 0) {
-        printf("WARNING: All timing measurements were invalid (timer overflow)\r\n");
-        return;
-    }
-    
-    if (valid_count < TIMING_ITERATIONS) {
-        printf("WARNING: %d out of %d timing measurements were invalid (filtered out)\r\n", 
-               TIMING_ITERATIONS - valid_count, TIMING_ITERATIONS);
-    }
+    // Use all measurements without filtering for now
+    int valid_count = TIMING_ITERATIONS;
+    unsigned long long* filtered_times = iteration_times; // Use the same array
     
     // Calculate statistics on filtered data (in clock cycles)
     float mean_cycles, std_dev_cycles;
-    unsigned long min_cycles, max_cycles;
+    unsigned long long min_cycles, max_cycles;
     calculate_statistics(filtered_times, valid_count, 
                         &mean_cycles, &std_dev_cycles, &min_cycles, &max_cycles);
     
     // Debug: Print what we got
-    printf("DEBUG: valid_count=%d, mean=%.2f cycles, std=%.2f cycles, min=%lu cycles, max=%lu cycles\r\n", 
+    printf("DEBUG: valid_count=%d, mean=%.2f cycles, std=%.2f cycles, min=%llu cycles, max=%llu cycles\r\n", 
            valid_count, mean_cycles, std_dev_cycles, min_cycles, max_cycles);
     
     // Debug: Test simple printf
@@ -300,66 +296,14 @@ static void run_controller_timing_test(void)
     printf("\r\n=== Memory Usage Analysis ===\r\n");
     printf("Input array size: %d bytes\r\n", num_inputs * sizeof(float));
     printf("Output array size: %d bytes\r\n", num_outputs * sizeof(float));
-    printf("Timing data size: %d bytes\r\n", TIMING_ITERATIONS * sizeof(unsigned long));
+    printf("Timing data size: %d bytes\r\n", TIMING_ITERATIONS * sizeof(unsigned long long));
     printf("Total working memory: %d bytes\r\n", 
-           (num_inputs + num_outputs) * sizeof(float) + TIMING_ITERATIONS * sizeof(unsigned long));
+           (num_inputs + num_outputs) * sizeof(float) + TIMING_ITERATIONS * sizeof(unsigned long long));
 #endif
     
     // Cleanup - no longer needed with stack allocation
 }
 
-/* Run detailed statistics on a subset of iterations */
-static void run_detailed_statistics(void)
-{
-    const ControllerOps* controller = get_active_controller();
-    if (!controller || !controller->evaluate) {
-        return;
-    }
-    
-    const ControllerSpec* spec = controller->spec();
-    int num_inputs = spec->n_inputs;
-    
-    float inputs[MAX_INPUTS];
-    float outputs[MAX_OUTPUTS];
-    unsigned long times[STATS_SAMPLES];
-    
-    printf("\r\nRunning detailed statistics on %d samples...\r\n", STATS_SAMPLES);
-    
-    // Use same improved timing approach as main test
-    const int iterations_per_measurement = 10;
-    int measurement_count = STATS_SAMPLES / iterations_per_measurement;
-    
-    for (int i = 0; i < measurement_count; i++) {
-        unsigned long start, end;
-        start = GetTimeNow();
-        
-        // Run multiple iterations
-        for (int j = 0; j < iterations_per_measurement; j++) {
-            generate_test_inputs(inputs, num_inputs);
-            if (controller->evaluate) {
-                controller->evaluate(inputs, outputs);
-            }
-        }
-        
-        end = GetTimeNow();
-        times[i] = (end - start) / iterations_per_measurement;
-    }
-    
-    // Fill remaining slots with the last measurement
-    for (int i = measurement_count; i < STATS_SAMPLES; i++) {
-        times[i] = times[measurement_count - 1];
-    }
-    
-    // Calculate statistics on filtered data (in clock cycles)
-    float mean_cycles, std_dev_cycles;
-    unsigned long min_cycles, max_cycles;
-    calculate_statistics(times, STATS_SAMPLES, 
-                        &mean_cycles, &std_dev_cycles, &min_cycles, &max_cycles);
-    
-    print_timing_results("Detailed Statistics", times, STATS_SAMPLES,
-                        mean_cycles, std_dev_cycles, min_cycles, max_cycles);
-    
-}
 
 /******************** Public Interface **********************************/
 
@@ -395,14 +339,12 @@ void run_timing_test_suite(void)
     printf("\r\n=== Configuration ===\r\n");
     printf("Iterations: %d\r\n", TIMING_ITERATIONS);
     printf("Warmup iterations: %d\r\n", WARMUP_ITERATIONS);
-    printf("Stats samples: %d\r\n", STATS_SAMPLES);
     printf("Verbose output: %s\r\n", VERBOSE_OUTPUT ? "Yes" : "No");
     printf("Memory test: %s\r\n", TEST_MEMORY_USAGE ? "Yes" : "No");
     printf("Continuous testing: %s\r\n", CONTINUOUS_TESTING ? "Yes" : "No");
     
-    // Run timing tests
+    // Run timing test
     run_controller_timing_test();
-    run_detailed_statistics();
     
     // Cleanup
     if (controller->release) {

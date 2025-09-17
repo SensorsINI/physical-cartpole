@@ -19,10 +19,7 @@
 #define TIMING_ITERATIONS         1000
 
 /* Number of warmup iterations before timing starts */
-#define WARMUP_ITERATIONS         10
-
-/* Number of samples for detailed statistics */
-#define STATS_SAMPLES             100
+#define WARMUP_ITERATIONS         1
 
 /* Maximum number of iterations (safety limit) */
 #define MAX_ITERATIONS            10000
