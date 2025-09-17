@@ -26,7 +26,7 @@ unsigned long TIMER1_getSystemTime_Us();
 void Interrupt_Set(TIMER1_Callback cb);
 
 /* High-resolution timing function for sub-microsecond measurements */
-unsigned long TIMER1_getSystemTime_Cycles(void);
+unsigned long long TIMER1_getSystemTime_Cycles(void);
 
 /************************** Variable Definitions *****************************/
 
