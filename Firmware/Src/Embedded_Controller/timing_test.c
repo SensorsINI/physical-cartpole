@@ -238,29 +238,19 @@ static void run_controller_timing_test(void)
     
     printf("Running %d iterations...\r\n", TIMING_ITERATIONS);
     
-    // Since controller is very fast, measure multiple iterations at once for better accuracy
-    const int iterations_per_measurement = 10;
-    int measurement_count = TIMING_ITERATIONS / iterations_per_measurement;
-    
-    for (int i = 0; i < measurement_count; i++) {
+    // Measure each iteration individually for accurate statistics
+    for (int i = 0; i < TIMING_ITERATIONS; i++) {
         unsigned long long iter_start, iter_end;
+        
+        generate_test_inputs(inputs, num_inputs);
         iter_start = GetTimeNowHighRes();
         
-        // Run multiple iterations
-        for (int j = 0; j < iterations_per_measurement; j++) {
-            generate_test_inputs(inputs, num_inputs);
-            if (controller->evaluate) {
-                controller->evaluate(inputs, outputs);
-            }
+        if (controller->evaluate) {
+            controller->evaluate(inputs, outputs);
         }
         
         iter_end = GetTimeNowHighRes();
-        iteration_times[i] = (iter_end - iter_start) / iterations_per_measurement;
-    }
-    
-    // Fill remaining slots with the last measurement
-    for (int i = measurement_count; i < TIMING_ITERATIONS; i++) {
-        iteration_times[i] = iteration_times[measurement_count - 1];
+        iteration_times[i] = iter_end - iter_start;
     }
     
     // Debug: Print first few raw values
