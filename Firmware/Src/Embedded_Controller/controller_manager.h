@@ -21,7 +21,10 @@
 #define CMD_GET_SPEC  0xC6
 #define CMD_SPEC_COOKIE  0xC7
 
-#define NAME_TOKEN_LEN 16   /* fixed-size ASCII tokens, NUL padded */
+#define NAME_TOKEN_LEN 24   /* fixed-size ASCII tokens, NUL padded */
+
+/* Compile-time assertion to ensure NAME_TOKEN_LEN is sufficient for all input names */
+_Static_assert(NAME_TOKEN_LEN >= 17, "NAME_TOKEN_LEN must be at least 17 for 'target_equilibrium'");
 
 void                 CR_SetActive(const ControllerOps* ops);
 const ControllerOps* CR_GetActive(void);
