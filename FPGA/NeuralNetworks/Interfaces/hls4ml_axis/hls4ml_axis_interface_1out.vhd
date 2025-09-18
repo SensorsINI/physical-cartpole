@@ -143,7 +143,7 @@ begin
             when write_axi_outputs =>
                 if M_AXIS_TREADY = '1' then
                     -- Write the first output data
-                    M_AXIS_TDATA(MLP_OUTPUT_DATA_BITS - 1 downto 0) <= prediction_data((MLP_OUTPUT_DATA_BITS * read_inputs_r) + MLP_OUTPUT_DATA_BITS - 1 downto (MLP_OUTPUT_DATA_BITS * write_outputs_r));
+                    M_AXIS_TDATA(MLP_OUTPUT_DATA_BITS - 1 downto 0) <= prediction_data((MLP_OUTPUT_DATA_BITS * write_outputs_r) + MLP_OUTPUT_DATA_BITS - 1 downto (MLP_OUTPUT_DATA_BITS * write_outputs_r));
                     write_outputs                                   <= write_outputs_r + 1;
                     M_AXIS_TVALID                                   <= '1';
                     -- Check if it is the last output data
