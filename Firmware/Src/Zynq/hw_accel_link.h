@@ -6,7 +6,8 @@
 
 typedef enum {
     HWACCEL_IF_AXILITE = 0,
-    HWACCEL_IF_AXI_DMA = 1
+    HWACCEL_IF_AXI_DMA = 1,
+    HWACCEL_IF_AXI4_MEM = 2
 } HWAccel_Interface;
 
 typedef struct {
@@ -17,6 +18,12 @@ typedef struct {
 } HWAccel_AXILiteCfg;
 
 typedef struct {
+    uint32_t base_addr;
+    uint32_t input_base;   /* 0x010 - input region start */
+    uint32_t output_base;  /* 0x200 - output region start */
+} HWAccel_AXI4MemCfg;
+
+typedef struct {
     int device_id;   /* XPAR_* device ID of that DMA IP */
 } HWAccel_AXIDmaCfg;
 
@@ -25,6 +32,7 @@ typedef struct {
     union {
         HWAccel_AXILiteCfg axilite;
         HWAccel_AXIDmaCfg  dma;
+        HWAccel_AXI4MemCfg axi4mem;
     } u;
 } HWAccel_LinkConfig;
 
