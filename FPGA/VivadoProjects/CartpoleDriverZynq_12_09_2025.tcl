@@ -15,6 +15,7 @@
 #   run results please launch the synthesis/implementation runs as needed.
 #
 #*****************************************************************************************
+# Removed info using absolute paths.
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
 set origin_dir "."
@@ -25,7 +26,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "CartpoleDriverZynq_Test1"
+set _xil_proj_name_ "CartpoleDriverZynq_AXIS"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -142,8 +143,6 @@ set files [list \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv"] \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv"] \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v"] \
- [file normalize "${origin_dir}/../CustomIPs/PmodAD1/ad1_spi.v"] \
- [file normalize "${origin_dir}/../CustomIPs/PmodAD1/PmodAD1_AXI.v"] \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"] \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"] \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"] \
@@ -154,14 +153,10 @@ set files [list \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"] \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"] \
  [file normalize "${origin_dir}/../NeuralNetworks/Interfaces/hls4ml_axis/hls4ml_axis_interface_1out.vhd"] \
+ [file normalize "${origin_dir}/../CustomIPs/PmodAD1/ad1_spi.v"] \
+ [file normalize "${origin_dir}/../CustomIPs/PmodAD1/PmodAD1_AXI.v"] \
 ]
 add_files -norecurse -fileset $obj $files
-
-# Import local files from the original project
-set files [list \
-
-
-set imported_files [import_files -fileset sources_1 $files]
 
 # Set 'sources_1' fileset file properties for remote files
 set file "$origin_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv"
@@ -328,7 +323,7 @@ set obj [get_filesets utils_1]
 # Set 'utils_1' fileset properties
 set obj [get_filesets utils_1]
 
-
+# Removed fallback using absolute paths
 
 
 # Proc to create BD cartpole_driver_design
