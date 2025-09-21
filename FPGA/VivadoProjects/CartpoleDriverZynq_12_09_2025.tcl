@@ -160,6 +160,7 @@ add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset file properties for remote files
 set file "$origin_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv"
+set file [file normalize $file]
 
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
