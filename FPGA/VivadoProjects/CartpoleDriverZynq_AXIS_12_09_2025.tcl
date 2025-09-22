@@ -34,7 +34,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "CartpoleDriverZynq_12_09_2025.tcl"
+set script_file "CartpoleDriverZynq_AXIS_12_09_2025.tcl"
 
 # Help information for this script
 proc print_help {} {
