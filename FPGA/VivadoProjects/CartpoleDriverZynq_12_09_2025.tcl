@@ -93,7 +93,9 @@ set proj_dir [get_property directory [current_project]]
 # Set project properties
 set obj [current_project]
 set_property -name "board_part" -value "digilentinc.com:zybo-z7-20:part0:1.1" -objects $obj
-set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../.Xilinx/Vivado/2020.1/xhub/board_store/xilinx_board_store"]" -objects $obj
+set vivado_ver [version -short]
+set board_repo [file normalize [file join $::env(HOME) .Xilinx Vivado $vivado_ver xhub board_store xilinx_board_store]]
+set_property -name "board_part_repo_paths" -value $board_repo -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "enable_vhdl_2008" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
@@ -161,7 +163,6 @@ add_files -norecurse -fileset $obj $files
 # Set 'sources_1' fileset file properties for remote files
 set file "$origin_dir/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/axis_fifo.sv"
 set file [file normalize $file]
-
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
