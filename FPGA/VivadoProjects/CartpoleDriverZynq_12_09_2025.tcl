@@ -296,16 +296,9 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 
 # Set 'sim_1' fileset object
 set obj [get_filesets sim_1]
-set files [list \
- [file normalize "${origin_dir}/../NeuralNetworks/Interfaces/mlp_top_pkg.vhd"] \
-]
-add_files -norecurse -fileset $obj $files
+# No explicit simulation-only source files are added here; simulation uses sources_1.
 
-# Set 'sim_1' fileset file properties for remote files
-set file "$origin_dir/../NeuralNetworks/Interfaces/mlp_top_pkg.vhd"
-set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
-set_property -name "file_type" -value "VHDL" -objects $file_obj
+# No sim-only file properties required
 
 
 # Set 'sim_1' fileset file properties for local files
