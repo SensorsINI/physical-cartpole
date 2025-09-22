@@ -296,13 +296,7 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 
 # Set 'sim_1' fileset object
 set obj [get_filesets sim_1]
-# No explicit simulation-only source files are added here; simulation uses sources_1.
-
-# No sim-only file properties required
-
-
-# Set 'sim_1' fileset file properties for local files
-# None
+# Empty (no sources present)
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
