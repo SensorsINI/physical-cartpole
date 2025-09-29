@@ -11,14 +11,13 @@ PLATFORM_POSTFIX="test"
 VIVADO_BIN="/tools/Xilinx/Vivado/2020.1/bin"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VITIS_WORKSPACE="${SCRIPT_DIR}/../Firmware/VitisProjects"
 VIVADO_PROJECTS_ROOT="${SCRIPT_DIR}/VivadoProjects"
 
 DATE_YYYYMMDD="$(date +%Y%m%d)"
 PLATFORM_NAME="${VIVADO_PROJECT_NAME}_${DATE_YYYYMMDD}_${PLATFORM_POSTFIX}"
 PROJECT_DIR="${VIVADO_PROJECTS_ROOT}/${VIVADO_PROJECT_NAME}"
 XPR_PATH="${PROJECT_DIR}/${VIVADO_PROJECT_NAME}.xpr"
-PLATFORM_OUT_DIR="${VITIS_WORKSPACE}/${PLATFORM_NAME}"
+PLATFORM_OUT_DIR="${PROJECT_DIR}/${PLATFORM_NAME}"
 XSA_PATH="${PLATFORM_OUT_DIR}/${PLATFORM_NAME}.xsa"
 
 export PATH="${VIVADO_BIN}:$PATH"
@@ -74,7 +73,7 @@ cleanup_vivado_aux() {
   if [ -d "${PROJECT_DIR}" ]; then
     (
       cd "${PROJECT_DIR}" && \
-      rm -f vivado.jou vivado.log || true && \
+      rm -f vivado.jou vivado.log vivado_*.jou vivado_*.log || true && \
       rm -rf .Xil || true
     )
   fi
@@ -154,7 +153,7 @@ if [ ! -f "${XSA_PATH}" ]; then
   exit 1
 fi
 
-# -------- Create hardware platform in Vitis workspace via XSCT --------
+# -------- Create hardware platform in Vivado project directory via XSCT --------
 xsct_tcl="$(mktemp -t create_platform_XXXXXXXX.tcl)"
 cat > "${xsct_tcl}" <<'TCL'
 set ws $::env(VITIS_WS)
@@ -169,7 +168,12 @@ if {![file exists $xsa]} {
 file mkdir $ws
 setws $ws
 
-set existing_platforms [platform list]
+# Check if platform already exists, handle gracefully if workspace is empty
+set existing_platforms {}
+if {[catch {set existing_platforms [platform list]} err]} {
+  puts "INFO: No existing platforms found or workspace empty: $err"
+}
+
 if {[lsearch -exact $existing_platforms $pname] >= 0} {
   puts "Platform '$pname' already exists. Activating and cleaning..."
   platform active $pname
@@ -180,6 +184,7 @@ if {[lsearch -exact $existing_platforms $pname] >= 0} {
   platform active $pname
 }
 
+# Clean up any default domains
 foreach d [domain list] {
   if {[string match "default*" $d]} {
     catch {domain delete $d}
@@ -187,33 +192,42 @@ foreach d [domain list] {
 }
 
 set proc "ps7_cortexa9_0"
-# Note: platform list processors is not available in Vitis 2020.1
-# Using default processor for Zynq-7000
+set domain_name "domain_ps7_cortexa9_0"
 
-if {[lsearch -exact [domain list] "standalone_domain"] < 0} {
-  domain create -name standalone_domain -proc $proc -os standalone
+# Create standalone domain if it doesn't exist
+if {[lsearch -exact [domain list] $domain_name] < 0} {
+  domain create -name $domain_name -proc $proc -os standalone
 }
-domain active standalone_domain
+domain active $domain_name
+
+# Generate boot components including FSBL
+domain config -boot {/tools/Xilinx/Vitis/2020.1/data/embeddedsw/lib/sw_apps/zynq_fsbl}
+domain config -bif {bootgen_bif}
 
 platform write
-if {[catch {platform generate -domains standalone_domain} err]} {
+if {[catch {platform generate -domains $domain_name} err]} {
   puts "ERROR: platform generate failed: $err"
   exit 1
+}
+
+# Generate platform again to ensure boot components are built
+if {[catch {platform generate} err]} {
+  puts "WARN: Second platform generate failed: $err"
 }
 
 puts "Platform '$pname' ready in workspace: $ws"
 exit 0
 TCL
 
-echo "Creating Vitis platform '${PLATFORM_NAME}' in workspace: ${VITIS_WORKSPACE}"
-VITIS_WS="${VITIS_WORKSPACE}" XSA="${XSA_PATH}" PLATFORM_NAME="${PLATFORM_NAME}" \
+echo "Creating Vitis platform '${PLATFORM_NAME}' in workspace: ${PLATFORM_OUT_DIR}"
+VITIS_WS="${PLATFORM_OUT_DIR}" XSA="${XSA_PATH}" PLATFORM_NAME="${PLATFORM_NAME}" \
 	xsct "${xsct_tcl}" | cat
 rm -f "${xsct_tcl}"
 
 if [ -d "${PROJECT_DIR}" ]; then
   (
     cd "${PROJECT_DIR}" && \
-    rm -f vivado.jou vivado.log && \
+    rm -f vivado.jou vivado.log vivado_*.jou vivado_*.log && \
     rm -rf .Xil || true
   )
 fi
