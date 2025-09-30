@@ -58,23 +58,42 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         u32*       prx = (u32*)rx;
         const u32 nin  = tx_bytes / 4u;
         const u32 nout = rx_bytes / 4u;
+        const u32 data_bits = (MLP_TOTAL_BITS_PER_VARIABLE >= 32u) ? 32u : (u32)MLP_TOTAL_BITS_PER_VARIABLE;
+        const u32 mask      = (data_bits == 32u) ? 0xFFFFFFFFu : ((1u << data_bits) - 1u);
+        const u32 sign_bit  = (data_bits == 32u) ? 31u : (data_bits - 1u);
 
-        Xil_DCacheFlushRange((INTPTR)tx, tx_bytes);
+        /* Prepare for a fresh transaction: clear start & indices */
+        Xil_Out32(G.axil.base_addr + G.axil.reg_ctrl, 0x00000000u);
 
+        /* Back-to-back input writes (one word per input; LSBs carry the quantized value) */
         for (u32 i = 0; i < nin; ++i) {
-            Xil_Out32(G.axil.base_addr + G.axil.reg_in, ptx[i]);
-            // Wait for write to complete by polling write status register
-            while ((Xil_In32(G.axil.base_addr + 0x4) & 0x1u) != 0u) { /* spin */ }
+            u32 input_masked = ptx[i] & mask;
+            Xil_Out32(G.axil.base_addr + G.axil.reg_in, input_masked);
         }
 
-        Xil_Out32(G.axil.base_addr + G.axil.reg_ctrl, 0x1u);  /* start */
+        /* Kick computation */
+        Xil_Out32(G.axil.base_addr + G.axil.reg_ctrl, 0x00000001u);  /* start=1 */
 
-        while ((Xil_In32(G.axil.base_addr + G.axil.reg_ctrl) & 0x2u) == 0u) { /* spin */ }
+        /* Poll for done (bit1) with timeout */
+        u32 timeout = 1000000;  /* prevent infinite loop */
+        while (((Xil_In32(G.axil.base_addr + G.axil.reg_ctrl) & 0x00000002u) == 0u) && (timeout > 0u)) {
+            timeout--;
+        }
 
-        for (u32 i = 0; i < nout; ++i)
-            prx[i] = Xil_In32(G.axil.base_addr + G.axil.reg_out);
+        /* Back-to-back output reads (one word per output; LSBs valid) */
+        for (u32 i = 0; i < nout; ++i) {
+            u32 output_raw = Xil_In32(G.axil.base_addr + G.axil.reg_out);
+            if (data_bits == 32u) {
+                prx[i] = output_raw;
+            } else if (output_raw & (1u << sign_bit)) {
+                prx[i] = output_raw | (~mask);  /* sign-extend */
+            } else {
+                prx[i] = output_raw & mask;     /* zero-extend */
+            }
+        }
 
-        Xil_DCacheInvalidateRange((INTPTR)rx, rx_bytes);
+        /* Optional: disarm start, ready for the next cycle */
+        Xil_Out32(G.axil.base_addr + G.axil.reg_ctrl, 0x00000000u);
         return;
     }
 
