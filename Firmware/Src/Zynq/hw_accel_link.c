@@ -3,6 +3,7 @@
 #include "xil_io.h"
 #include "xil_cache.h"
 #include "xaxidma.h"
+#include "neural_imitator.h"
 
 typedef struct {
     HWAccel_Interface iface;
@@ -82,6 +83,9 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         u32*       prx = (u32*)rx;
         const u32 nin  = tx_bytes / 4u;
         const u32 nout = rx_bytes / 4u;
+        const u32 data_bits = (MLP_TOTAL_BITS_PER_VARIABLE >= 32u) ? 32u : (u32)MLP_TOTAL_BITS_PER_VARIABLE;
+        const u32 mask      = (data_bits == 32u) ? 0xFFFFFFFFu : ((1u << data_bits) - 1u);
+        const u32 sign_bit  = (data_bits == 32u) ? 31u : (data_bits - 1u);
 
         Xil_DCacheFlushRange((INTPTR)tx, tx_bytes);
 
@@ -89,11 +93,11 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         Xil_Out32(G.axi4mem.base_addr + 0x0, 0x0u);
 
         // Write inputs to input memory region (0x010 + i*4)
-        // The VHDL interface expects 12-bit data in the lower 12 bits of each 32-bit word
+        // The VHDL interface expects the value in the lower data_bits of each 32-bit word
         for (u32 i = 0; i < nin; ++i) {
-            // Extract 12-bit data from the 32-bit fixed-point input
-            u32 input_12bit = ptx[i] & 0xFFF;  // Mask to 12 bits
-            Xil_Out32(G.axi4mem.base_addr + G.axi4mem.input_base + i*4, input_12bit);
+            // Extract lower data_bits from the 32-bit fixed-point input
+            u32 input_masked = ptx[i] & mask;
+            Xil_Out32(G.axi4mem.base_addr + G.axi4mem.input_base + i*4, input_masked);
         }
 
         // Start computation (set bit 0 in control register)
@@ -106,14 +110,16 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         }
 
         // Read outputs from output memory region (0x200 + i*4)
-        // The VHDL interface provides 12-bit data in the lower 12 bits
+        // The VHDL interface provides data_bits in the lower bits
         for (u32 i = 0; i < nout; ++i) {
             u32 output_raw = Xil_In32(G.axi4mem.base_addr + G.axi4mem.output_base + i*4);
-            // Sign-extend 12-bit output to 32-bit for compatibility
-            if (output_raw & 0x800) {  // Check if bit 11 (MSB of 12-bit) is set
-                prx[i] = output_raw | 0xFFFFF000;  // Sign-extend
+            // Sign-extend variable-width output to 32-bit for compatibility
+            if (data_bits == 32u) {
+                prx[i] = output_raw;  // already full width
+            } else if (output_raw & (1u << sign_bit)) {
+                prx[i] = output_raw | (~mask);  // Sign-extend
             } else {
-                prx[i] = output_raw & 0xFFF;  // Zero-extend
+                prx[i] = output_raw & mask;     // Zero-extend
             }
         }
 
