@@ -5,13 +5,13 @@
 
 /* ====== HLS4ML Interface Auto-Selection ======
    Interface is automatically selected based on available hardware:
-   - AXI4-Memory (highest priority) - if XPAR_HARDWARE_ACCEL_MLP_AXI_FULL_WRAPPER_0_BASEADDR exists
+   - AXI4-Memory (highest priority) - if XPAR_HARDWARE_ACCEL_MLP_AXI_INTERFACE_0_BASEADDR exists
    - AXI-Stream (medium priority)   - if XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID exists  
    - AXI-Lite (lowest priority)     - if XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR exists
 */
 
 /* Auto-select interface based on available hardware */
-#ifdef XPAR_HARDWARE_ACCEL_MLP_AXI_FULL_WRAPPER_0_BASEADDR
+#ifdef XPAR_HARDWARE_ACCEL_MLP_AXI_INTERFACE_0_BASEADDR
     #define HLS4ML_INTERFACE 2  /* AXI4-Memory */
 #elif defined(XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID)
     #define HLS4ML_INTERFACE 1  /* AXI-Stream */
@@ -43,7 +43,7 @@
 
 #elif HLS4ML_INTERFACE == 2  /* AXI4-Memory */
     #ifndef HLS4ML_AXI4_BASE
-    #define HLS4ML_AXI4_BASE      XPAR_HARDWARE_ACCEL_MLP_AXI_FULL_WRAPPER_0_BASEADDR
+    #define HLS4ML_AXI4_BASE      XPAR_HARDWARE_ACCEL_MLP_AXI_INTERFACE_0_BASEADDR
     #endif
     #ifndef HLS4ML_AXI4_INPUT_BASE
     #define HLS4ML_AXI4_INPUT_BASE  0x010
