@@ -9,7 +9,7 @@
 
 extern XGpioPs GpioPS;
 extern XGpio Gpio;
-XGpio GpioRGB;
+extern XGpio GpioRGB;
 
 void Led_Init(void);
 void Led_Switch(bool en);

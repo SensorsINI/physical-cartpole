@@ -15,7 +15,7 @@
 #define TIMER_IRPT_INTR		XPAR_SCUTIMER_INTR
 
 typedef void (*TIMER1_Callback)(void);
-TIMER1_Callback timer_interrupt;
+extern TIMER1_Callback timer_interrupt;
 
 void TIMER1_Init(unsigned int _periodMS);
 

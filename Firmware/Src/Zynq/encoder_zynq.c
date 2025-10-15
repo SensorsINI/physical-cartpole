@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+short EncoderValue;
 short EncoderDirection = 1;
 
 // Uses Timer 4 configured in encoder mode

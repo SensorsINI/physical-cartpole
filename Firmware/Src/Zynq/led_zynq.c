@@ -2,6 +2,8 @@
 
 #include "../hardware_bridge.h"
 
+XGpio GpioRGB;
+
 #define LED_PIN 7 // Replace with the correct MIO pin number for your LED
 
 void Led_Init(void)

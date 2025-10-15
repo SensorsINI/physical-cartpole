@@ -9,7 +9,7 @@
 #include "control_signal_postprocessing.h"
 #include "experiment_protocol.h"
 #include "offline_data_manager.h"
-#include "controller_bind.h"
+#include "controller_api_helper.h"
 #include "neural_controller_C.h"
 #include "lqr.h"
 
@@ -64,6 +64,18 @@ unsigned short	latency_violation = 0;
 
 static unsigned char rxBuffer[SERIAL_MAX_PKT_LENGTH];
 static unsigned char txBuffer[200];
+
+// Global state variables for controller binding
+float time = 0.0f;
+float angle = 0.0f;
+float angleD = 0.0f;
+float angle_cos = 0.0f;
+float angle_sin = 0.0f;
+float position = 0.0f;
+float positionD = 0.0f;
+float target_equilibrium = 1.0f;
+float target_position = 0.0f;
+float angleD_unprocessed = 0.0f;
 
 static SignalEntry g_signals[] = {
     { "angle",              &angle },
@@ -167,8 +179,6 @@ void CONTROL_Loop(void)
 
 }
 float Q;
-float target_equilibrium = 1.0;
-float target_position = 0.0;
 
 // The 4 variable below only matter on Zynq if USE_TARGET_SWITCHES==TRUE
 int position_period  = 1000;  // In a unit of control updates
@@ -179,15 +189,6 @@ int position_jumps_interval_counter = 0;
 int run_hardware_experiment = 0;
 int save_to_offline_buffers = 0;
 
-float time = 0.0;
-
-float angle = 0.0;
-float angle_cos = 0.0f;
-float angle_sin = 0.0f;
-float position = 0.0;
-float angleD = 0.0;
-float angleD_unprocessed = 0.0;
-float positionD = 0.0;
 
 void CONTROL_BackgroundTask(void)
 {
