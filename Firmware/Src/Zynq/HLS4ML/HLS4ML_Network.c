@@ -51,6 +51,16 @@
     #ifndef HLS4ML_AXI4_OUTPUT_BASE
     #define HLS4ML_AXI4_OUTPUT_BASE 0x200
     #endif
+    /* CDMA device ID for burst transfers */
+    #ifdef HWACCEL_ENABLE_CDMA
+        #ifdef XPAR_HARDWARE_ACCEL_AXI_CDMA_0_DEVICE_ID
+            #define HLS4ML_CDMA_DEVICE_ID  XPAR_HARDWARE_ACCEL_AXI_CDMA_0_DEVICE_ID
+        #else
+            #error "HWACCEL_ENABLE_CDMA is defined but no CDMA hardware found! Check your Vivado design or disable HWACCEL_ENABLE_CDMA in hw_accel_link.h"
+        #endif
+    #else
+        #define HLS4ML_CDMA_DEVICE_ID  -1  /* CDMA disabled by user */
+    #endif
 #endif
 
 u32 HLS4ML_Network_Init(void)
@@ -66,6 +76,7 @@ u32 HLS4ML_Network_Init(void)
     cfg.u.axi4mem.base_addr   = HLS4ML_AXI4_BASE;
     cfg.u.axi4mem.input_base  = HLS4ML_AXI4_INPUT_BASE;
     cfg.u.axi4mem.output_base = HLS4ML_AXI4_OUTPUT_BASE;
+    cfg.u.axi4mem.cdma_device_id = HLS4ML_CDMA_DEVICE_ID;
     
 #else  /* AXI-Lite (default) */
     cfg.iface = HWACCEL_IF_AXILITE;

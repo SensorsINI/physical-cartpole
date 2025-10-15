@@ -2,7 +2,15 @@
 #include "xparameters.h"
 #include "xil_io.h"
 #include "xil_cache.h"
+#include "xil_printf.h"
 #include "xaxidma.h"
+#ifdef HWACCEL_ENABLE_CDMA
+    #include "xaxicdma.h"
+    /* Verify CDMA is available in BSP when requested */
+    #ifndef XPAR_XAXICDMA_NUM_INSTANCES
+        #error "HWACCEL_ENABLE_CDMA is defined but CDMA driver not available in BSP! Check your platform configuration or disable HWACCEL_ENABLE_CDMA in hw_accel_link.h"
+    #endif
+#endif
 #include "neural_imitator.h"
 
 typedef struct {
@@ -14,6 +22,13 @@ typedef struct {
         int     inited;
         int     device_id;
     } d;
+    struct {
+#ifdef HWACCEL_ENABLE_CDMA
+        XAxiCdma cdma;
+#endif
+        int      inited;
+        int      device_id;     /* from axi4mem.cdma_device_id */
+    } m;
 } HWAccel_State;
 
 static HWAccel_State G = {0};
@@ -32,6 +47,37 @@ int HWAccelLink_Init(const HWAccel_LinkConfig* cfg)
     if (G.iface == HWACCEL_IF_AXI4_MEM) {
         G.axi4mem = cfg->u.axi4mem;
         Xil_Out32(G.axi4mem.base_addr + 0x0, 0x0u);  /* clear control reg */
+
+        /* Setup AXI CDMA for burst mode */
+        G.m.inited    = 0;
+        G.m.device_id = G.axi4mem.cdma_device_id;
+        
+#ifdef HWACCEL_ENABLE_CDMA
+        /* CDMA is enabled: require valid device ID */
+        if (G.m.device_id < 0) {
+            xil_printf("ERROR: CDMA is enabled but no device ID configured!\r\n");
+            return XST_FAILURE;
+        }
+        
+        XAxiCdma_Config* CdmaCfg = XAxiCdma_LookupConfig(G.m.device_id);
+        if (!CdmaCfg) {
+            xil_printf("ERROR: CDMA device ID %d not found in configuration!\r\n", G.m.device_id);
+            return XST_FAILURE;
+        }
+        if (XAxiCdma_CfgInitialize(&G.m.cdma, CdmaCfg, CdmaCfg->BaseAddress) != XST_SUCCESS) {
+            xil_printf("ERROR: Failed to initialize CDMA!\r\n");
+            return XST_FAILURE;
+        }
+        /* Disable interrupts; we use polling */
+        XAxiCdma_IntrDisable(&G.m.cdma, XAXICDMA_XR_IRQ_ALL_MASK);
+        G.m.inited = 1;
+        xil_printf("CDMA burst mode enabled (device ID %d)\r\n", G.m.device_id);
+#else
+        /* CDMA is disabled: MMIO will be used */
+        if (G.m.device_id >= 0) {
+            xil_printf("WARNING: CDMA device configured but HWACCEL_ENABLE_CDMA not defined. Using MMIO.\r\n");
+        }
+#endif
         return XST_SUCCESS;
     }
 
@@ -111,13 +157,19 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         // Clear control register first
         Xil_Out32(G.axi4mem.base_addr + 0x0, 0x0u);
 
-        // Write inputs to input memory region (0x010 + i*4)
-        // The VHDL interface expects the value in the lower data_bits of each 32-bit word
+        /* Write inputs: use CDMA if enabled, else MMIO */
+#ifdef HWACCEL_ENABLE_CDMA
+        /* Use CDMA to transfer input buffer to device */
+        u32 dst_addr = G.axi4mem.base_addr + G.axi4mem.input_base;
+        (void)XAxiCdma_SimpleTransfer(&G.m.cdma, (UINTPTR)ptx, (UINTPTR)dst_addr, tx_bytes, NULL, NULL);
+        while (XAxiCdma_IsBusy(&G.m.cdma)) { /* spin */ }
+#else
+        /* Write inputs via MMIO */
         for (u32 i = 0; i < nin; ++i) {
-            // Extract lower data_bits from the 32-bit fixed-point input
             u32 input_masked = ptx[i] & mask;
             Xil_Out32(G.axi4mem.base_addr + G.axi4mem.input_base + i*4, input_masked);
         }
+#endif
 
         // Start computation (set bit 0 in control register)
         Xil_Out32(G.axi4mem.base_addr + 0x0, 0x1u);
@@ -128,19 +180,33 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
             timeout--;
         }
 
-        // Read outputs from output memory region (0x200 + i*4)
-        // The VHDL interface provides data_bits in the lower bits
-        for (u32 i = 0; i < nout; ++i) {
-            u32 output_raw = Xil_In32(G.axi4mem.base_addr + G.axi4mem.output_base + i*4);
-            // Sign-extend variable-width output to 32-bit for compatibility
-            if (data_bits == 32u) {
-                prx[i] = output_raw;  // already full width
-            } else if (output_raw & (1u << sign_bit)) {
-                prx[i] = output_raw | (~mask);  // Sign-extend
-            } else {
-                prx[i] = output_raw & mask;     // Zero-extend
+        /* Read outputs: use CDMA if enabled, else MMIO */
+#ifdef HWACCEL_ENABLE_CDMA
+        /* DMA out the output window into rx */
+        u32 src_addr = G.axi4mem.base_addr + G.axi4mem.output_base;
+        (void)XAxiCdma_SimpleTransfer(&G.m.cdma, (UINTPTR)src_addr, (UINTPTR)prx, rx_bytes, NULL, NULL);
+        while (XAxiCdma_IsBusy(&G.m.cdma)) { /* spin */ }
+        /* Post-process sign extension in place if needed */
+        if (data_bits != 32u) {
+            for (u32 i = 0; i < nout; ++i) {
+                u32 v = prx[i];
+                if (v & (1u << sign_bit)) prx[i] = v | (~mask);
+                else                       prx[i] = v & mask;
             }
         }
+#else
+        /* Read outputs via MMIO */
+        for (u32 i = 0; i < nout; ++i) {
+            u32 output_raw = Xil_In32(G.axi4mem.base_addr + G.axi4mem.output_base + i*4);
+            if (data_bits == 32u) {
+                prx[i] = output_raw;
+            } else if (output_raw & (1u << sign_bit)) {
+                prx[i] = output_raw | (~mask);
+            } else {
+                prx[i] = output_raw & mask;
+            }
+        }
+#endif
 
         // Clear control register to reset FSM
         Xil_Out32(G.axi4mem.base_addr + 0x0, 0x0u);
