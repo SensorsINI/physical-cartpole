@@ -33,6 +33,17 @@ typedef struct {
 
 static HWAccel_State G = {0};
 
+/* Static buffer for CDMA input masking (cache-aligned) */
+#ifdef HWACCEL_ENABLE_CDMA
+static u32 cdma_tx_buf[256] __attribute__((aligned(32)));
+#endif
+
+
+#ifdef HWACCEL_ENABLE_CDMA
+static u32 cdma_src[256] __attribute__((aligned(32)));
+static u32 cdma_dst[256] __attribute__((aligned(32)));
+#endif
+
 int HWAccelLink_Init(const HWAccel_LinkConfig* cfg)
 {
     if (!cfg) return XST_FAILURE;
@@ -71,7 +82,6 @@ int HWAccelLink_Init(const HWAccel_LinkConfig* cfg)
         /* Disable interrupts; we use polling */
         XAxiCdma_IntrDisable(&G.m.cdma, XAXICDMA_XR_IRQ_ALL_MASK);
         G.m.inited = 1;
-        xil_printf("CDMA burst mode enabled (device ID %d)\r\n", G.m.device_id);
 #else
         /* CDMA is disabled: MMIO will be used */
         if (G.m.device_id >= 0) {
@@ -121,7 +131,7 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         Xil_Out32(G.axil.base_addr + G.axil.reg_ctrl, 0x00000001u);  /* start=1 */
 
         /* Poll for done (bit1) with timeout */
-        u32 timeout = 1000000;  /* prevent infinite loop */
+        u32 timeout = 1000000u;  /* prevent infinite loop */
         while (((Xil_In32(G.axil.base_addr + G.axil.reg_ctrl) & 0x00000002u) == 0u) && (timeout > 0u)) {
             timeout--;
         }
@@ -152,52 +162,141 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
         const u32 mask      = (data_bits == 32u) ? 0xFFFFFFFFu : ((1u << data_bits) - 1u);
         const u32 sign_bit  = (data_bits == 32u) ? 31u : (data_bits - 1u);
 
-        Xil_DCacheFlushRange((INTPTR)tx, tx_bytes);
-
-        // Clear control register first
-        Xil_Out32(G.axi4mem.base_addr + 0x0, 0x0u);
+        /* Ensure CTRL[0] = 0 so that the next write of 1 generates a clean rising edge (start). */
+        Xil_Out32(G.axi4mem.base_addr + 0x0, 0x00000000u);
 
         /* Write inputs: use CDMA if enabled, else MMIO */
 #ifdef HWACCEL_ENABLE_CDMA
+        int cdma_status;
+        u32 err;
+        /* If masking needed, use temporary buffer to avoid modifying const input */
+        const void* tx_src = tx;
+
+        if (data_bits != 32u) {
+            /* Copy and mask into static buffer without modifying original */
+            if (nin > 256u) {
+                /* Buffer too small - fallback to MMIO for safety */
+                for (u32 i = 0; i < nin; ++i) {
+                    u32 input_masked = ptx[i] & mask;
+                    Xil_Out32(G.axi4mem.base_addr + G.axi4mem.input_base + i*4u, input_masked);
+                }
+                goto skip_cdma_input;
+            }
+            for (u32 i = 0; i < nin; ++i) {
+                cdma_tx_buf[i] = ptx[i] & mask;
+            }
+            tx_src = cdma_tx_buf;
+        }
+
+        Xil_DCacheFlushRange((INTPTR)tx_src, tx_bytes);
+
         /* Use CDMA to transfer input buffer to device */
-        u32 dst_addr = G.axi4mem.base_addr + G.axi4mem.input_base;
-        (void)XAxiCdma_SimpleTransfer(&G.m.cdma, (UINTPTR)ptx, (UINTPTR)dst_addr, tx_bytes, NULL, NULL);
-        while (XAxiCdma_IsBusy(&G.m.cdma)) { /* spin */ }
+        {
+            u32 dst_addr = G.axi4mem.base_addr + G.axi4mem.input_base;
+
+            cdma_status = XAxiCdma_SimpleTransfer(
+                &G.m.cdma,
+                (UINTPTR)tx_src,
+                (UINTPTR)dst_addr,
+                tx_bytes,
+                NULL,
+                NULL
+            );
+            if (cdma_status != XST_SUCCESS) {
+                xil_printf("ERROR: CDMA input transfer failed to start with status %d\r\n", cdma_status);
+            }
+
+            while (XAxiCdma_IsBusy(&G.m.cdma)) { /* spin */ }
+
+            /* Check for transfer errors */
+            err = XAxiCdma_GetError(&G.m.cdma);
+            if (err != 0u) {
+                xil_printf("ERROR: CDMA input transfer error: 0x%08x\r\n", err);
+                XAxiCdma_Reset(&G.m.cdma);
+                while (!XAxiCdma_ResetIsDone(&G.m.cdma)) { /* wait for reset */ }
+            }
+        }
+skip_cdma_input:
 #else
         /* Write inputs via MMIO */
         for (u32 i = 0; i < nin; ++i) {
             u32 input_masked = ptx[i] & mask;
-            Xil_Out32(G.axi4mem.base_addr + G.axi4mem.input_base + i*4, input_masked);
+            Xil_Out32(G.axi4mem.base_addr + G.axi4mem.input_base + i*4u, input_masked);
         }
 #endif
 
-        // Start computation (set bit 0 in control register)
-        Xil_Out32(G.axi4mem.base_addr + 0x0, 0x1u);
+        /* Issue start: write 1 to CTRL[0] to generate the rising edge expected by the RTL. */
+        Xil_Out32(G.axi4mem.base_addr + 0x0, 0x00000001u);
 
-        // Wait for done (poll bit 1 in control register)
-        u32 timeout = 1000000;  // Add timeout to prevent infinite loop
-        while (((Xil_In32(G.axi4mem.base_addr + 0x0) & 0x2u) == 0u) && (timeout > 0)) { 
-            timeout--;
+        /* Wait for DONE (bit1); BUSY (bit2) should remain high until outputs are packed. */
+        {
+            u32 timeout = 1000000u;
+            while (timeout-- > 0u) {
+                u32 ctrl = Xil_In32(G.axi4mem.base_addr + 0x0);
+
+                if (ctrl & 0x00000002u) {
+                    /* DONE set: outputs are valid and latched */
+                    break;
+                }
+
+                if ((ctrl & 0x00000004u) == 0u) {
+                    /* BUSY deasserted but DONE not set: unexpected, avoid infinite loop */
+                    break;
+                }
+            }
         }
 
         /* Read outputs: use CDMA if enabled, else MMIO */
 #ifdef HWACCEL_ENABLE_CDMA
-        /* DMA out the output window into rx */
-        u32 src_addr = G.axi4mem.base_addr + G.axi4mem.output_base;
-        (void)XAxiCdma_SimpleTransfer(&G.m.cdma, (UINTPTR)src_addr, (UINTPTR)prx, rx_bytes, NULL, NULL);
-        while (XAxiCdma_IsBusy(&G.m.cdma)) { /* spin */ }
-        /* Post-process sign extension in place if needed */
-        if (data_bits != 32u) {
-            for (u32 i = 0; i < nout; ++i) {
-                u32 v = prx[i];
-                if (v & (1u << sign_bit)) prx[i] = v | (~mask);
-                else                       prx[i] = v & mask;
+        {
+            int cdma_status;
+            u32 err;
+            u32 src_addr = G.axi4mem.base_addr + G.axi4mem.output_base;
+
+            /* Flush rx buffer cache before DMA to avoid dirty lines overwriting DMA results */
+            Xil_DCacheFlushRange((INTPTR)rx, rx_bytes);
+
+            cdma_status = XAxiCdma_SimpleTransfer(
+                &G.m.cdma,
+                (UINTPTR)src_addr,
+                (UINTPTR)prx,
+                rx_bytes,
+                NULL,
+                NULL
+            );
+            if (cdma_status != XST_SUCCESS) {
+                xil_printf("ERROR: CDMA output transfer failed to start with status %d\r\n", cdma_status);
+            }
+
+            while (XAxiCdma_IsBusy(&G.m.cdma)) { /* spin */ }
+
+            /* Check for transfer errors */
+            err = XAxiCdma_GetError(&G.m.cdma);
+            if (err != 0u) {
+                xil_printf("ERROR: CDMA output transfer error: 0x%08x\r\n", err);
+                XAxiCdma_Reset(&G.m.cdma);
+                while (!XAxiCdma_ResetIsDone(&G.m.cdma)) { /* wait for reset */ }
+            }
+
+            /* Invalidate cache to ensure CPU reads fresh DMA'd data */
+            Xil_DCacheInvalidateRange((INTPTR)rx, rx_bytes);
+
+            /* Post-process sign extension in place if needed */
+            if (data_bits != 32u) {
+                for (u32 i = 0; i < nout; ++i) {
+                    u32 v = prx[i];
+                    if (v & (1u << sign_bit)) {
+                        prx[i] = v | (~mask);   /* sign-extend */
+                    } else {
+                        prx[i] = v & mask;      /* zero-extend */
+                    }
+                }
             }
         }
 #else
         /* Read outputs via MMIO */
         for (u32 i = 0; i < nout; ++i) {
-            u32 output_raw = Xil_In32(G.axi4mem.base_addr + G.axi4mem.output_base + i*4);
+            u32 output_raw = Xil_In32(G.axi4mem.base_addr + G.axi4mem.output_base + i*4u);
             if (data_bits == 32u) {
                 prx[i] = output_raw;
             } else if (output_raw & (1u << sign_bit)) {
@@ -210,8 +309,6 @@ void HWAccelLink_Evaluate(const void* tx, u32 tx_bytes, void* rx, u32 rx_bytes)
 
         // Clear control register to reset FSM
         Xil_Out32(G.axi4mem.base_addr + 0x0, 0x0u);
-
-        Xil_DCacheInvalidateRange((INTPTR)rx, rx_bytes);
         return;
     }
 
