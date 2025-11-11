@@ -17,7 +17,8 @@ use work.mlp_top_pkg.all;
 entity mlp_axi_interface is
   generic(
     C_S_AXI_DATA_WIDTH : integer := 32;
-    C_S_AXI_ADDR_WIDTH : integer := 12
+    C_S_AXI_ADDR_WIDTH : integer := 12;
+    C_S_AXI_ID_WIDTH   : integer := 1
   );
   port(
     -- Global
@@ -25,6 +26,7 @@ entity mlp_axi_interface is
     S_AXI_ARESETN : in  std_logic;
 
     -- AXI4 Write Address
+    S_AXI_AWID    : in  std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0);
     S_AXI_AWADDR  : in  std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
     S_AXI_AWLEN   : in  std_logic_vector(7 downto 0);
     S_AXI_AWSIZE  : in  std_logic_vector(2 downto 0);
@@ -40,11 +42,13 @@ entity mlp_axi_interface is
     S_AXI_WREADY  : out std_logic;
 
     -- AXI4 Write Response
+    S_AXI_BID     : out std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0);
     S_AXI_BRESP   : out std_logic_vector(1 downto 0);
     S_AXI_BVALID  : out std_logic;
     S_AXI_BREADY  : in  std_logic;
 
     -- AXI4 Read Address
+    S_AXI_ARID    : in  std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0);
     S_AXI_ARADDR  : in  std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
     S_AXI_ARLEN   : in  std_logic_vector(7 downto 0);
     S_AXI_ARSIZE  : in  std_logic_vector(2 downto 0);
@@ -53,6 +57,7 @@ entity mlp_axi_interface is
     S_AXI_ARREADY : out std_logic;
 
     -- AXI4 Read Data
+    S_AXI_RID     : out std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0);
     S_AXI_RDATA   : out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
     S_AXI_RRESP   : out std_logic_vector(1 downto 0);
     S_AXI_RLAST   : out std_logic;
@@ -66,6 +71,62 @@ entity mlp_axi_interface is
 end entity;
 
 architecture RTL of mlp_axi_interface is
+
+  -- Vivado interface metadata (for IP packager / BD automation)
+  attribute X_INTERFACE_INFO      : string;
+  attribute X_INTERFACE_PARAMETER : string;
+
+  -- Clock
+  attribute X_INTERFACE_INFO of S_AXI_ACLK : signal is
+    "xilinx.com:signal:clock:1.0 S_AXI_ACLK CLK";
+  attribute X_INTERFACE_PARAMETER of S_AXI_ACLK : signal is
+    "XIL_INTERFACENAME S_AXI_ACLK, ASSOCIATED_BUSIF S_AXI, ASSOCIATED_RESET S_AXI_ARESETN";
+
+  -- Reset (active-low)
+  attribute X_INTERFACE_INFO of S_AXI_ARESETN : signal is
+    "xilinx.com:signal:reset:1.0 S_AXI_ARESETN RST";
+  attribute X_INTERFACE_PARAMETER of S_AXI_ARESETN : signal is
+    "XIL_INTERFACENAME S_AXI_ARESETN, POLARITY ACTIVE_LOW";
+
+  -- AXI4 slave interface (group all S_AXI_* into one bus)
+  attribute X_INTERFACE_INFO of S_AXI_AWID    : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWID";
+  attribute X_INTERFACE_INFO of S_AXI_AWADDR  : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWADDR";
+  attribute X_INTERFACE_INFO of S_AXI_AWLEN   : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWLEN";
+  attribute X_INTERFACE_INFO of S_AXI_AWSIZE  : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWSIZE";
+  attribute X_INTERFACE_INFO of S_AXI_AWBURST : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWBURST";
+  attribute X_INTERFACE_INFO of S_AXI_AWVALID : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWVALID";
+  attribute X_INTERFACE_INFO of S_AXI_AWREADY : signal is "xilinx.com:interface:aximm:1.0 S_AXI AWREADY";
+
+  attribute X_INTERFACE_INFO of S_AXI_WDATA   : signal is "xilinx.com:interface:aximm:1.0 S_AXI WDATA";
+  attribute X_INTERFACE_INFO of S_AXI_WSTRB   : signal is "xilinx.com:interface:aximm:1.0 S_AXI WSTRB";
+  attribute X_INTERFACE_INFO of S_AXI_WLAST   : signal is "xilinx.com:interface:aximm:1.0 S_AXI WLAST";
+  attribute X_INTERFACE_INFO of S_AXI_WVALID  : signal is "xilinx.com:interface:aximm:1.0 S_AXI WVALID";
+  attribute X_INTERFACE_INFO of S_AXI_WREADY  : signal is "xilinx.com:interface:aximm:1.0 S_AXI WREADY";
+
+  attribute X_INTERFACE_INFO of S_AXI_BID     : signal is "xilinx.com:interface:aximm:1.0 S_AXI BID";
+  attribute X_INTERFACE_INFO of S_AXI_BRESP   : signal is "xilinx.com:interface:aximm:1.0 S_AXI BRESP";
+  attribute X_INTERFACE_INFO of S_AXI_BVALID  : signal is "xilinx.com:interface:aximm:1.0 S_AXI BVALID";
+  attribute X_INTERFACE_INFO of S_AXI_BREADY  : signal is "xilinx.com:interface:aximm:1.0 S_AXI BREADY";
+
+  attribute X_INTERFACE_INFO of S_AXI_ARID    : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARID";
+  attribute X_INTERFACE_INFO of S_AXI_ARADDR  : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARADDR";
+  attribute X_INTERFACE_INFO of S_AXI_ARLEN   : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARLEN";
+  attribute X_INTERFACE_INFO of S_AXI_ARSIZE  : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARSIZE";
+  attribute X_INTERFACE_INFO of S_AXI_ARBURST : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARBURST";
+  attribute X_INTERFACE_INFO of S_AXI_ARVALID : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARVALID";
+  attribute X_INTERFACE_INFO of S_AXI_ARREADY : signal is "xilinx.com:interface:aximm:1.0 S_AXI ARREADY";
+
+  attribute X_INTERFACE_INFO of S_AXI_RID     : signal is "xilinx.com:interface:aximm:1.0 S_AXI RID";
+  attribute X_INTERFACE_INFO of S_AXI_RDATA   : signal is "xilinx.com:interface:aximm:1.0 S_AXI RDATA";
+  attribute X_INTERFACE_INFO of S_AXI_RRESP   : signal is "xilinx.com:interface:aximm:1.0 S_AXI RRESP";
+  attribute X_INTERFACE_INFO of S_AXI_RLAST   : signal is "xilinx.com:interface:aximm:1.0 S_AXI RLAST";
+  attribute X_INTERFACE_INFO of S_AXI_RVALID  : signal is "xilinx.com:interface:aximm:1.0 S_AXI RVALID";
+  attribute X_INTERFACE_INFO of S_AXI_RREADY  : signal is "xilinx.com:interface:aximm:1.0 S_AXI RREADY";
+
+  -- Let Vivado infer DATA_WIDTH / ADDR_WIDTH / ID_WIDTH from generics and vector sizes.
+  attribute X_INTERFACE_PARAMETER of S_AXI_AWADDR : signal is
+    "XIL_INTERFACENAME S_AXI, PROTOCOL AXI4";
+
   -- NN parameters from package
   constant INPUT_NEURONS          : integer := MLP_INPUT_NEURONS;
   constant INPUT_BITS_PER_NEURON  : integer := MLP_INPUT_DATA_BITS;
@@ -127,6 +188,10 @@ architecture RTL of mlp_axi_interface is
   signal awaddr_lsb : std_logic_vector(1 downto 0) := (others => '0');
   signal araddr_lsb : std_logic_vector(1 downto 0) := (others => '0');
 
+  -- AXI IDs: latched per transaction to return via BID/RID
+  signal awid_reg : std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0) := (others => '0');
+  signal arid_reg : std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0) := (others => '0');
+
   -- HLS ports
   signal ap_rst           : std_logic;
   signal ap_start         : std_logic := '0';
@@ -166,12 +231,14 @@ begin
   S_AXI_WREADY  <= wready_int;
   S_AXI_BVALID  <= bvalid_int;
   S_AXI_BRESP   <= bresp_int;
+  S_AXI_BID     <= awid_reg;
 
   S_AXI_ARREADY <= arready_int;
   S_AXI_RVALID  <= rvalid_int;
   S_AXI_RLAST   <= rlast_int;
   S_AXI_RRESP   <= rresp_int;
   S_AXI_RDATA   <= rdata_int;
+  S_AXI_RID     <= arid_reg;
 
   ap_rst       <= not S_AXI_ARESETN;
   ap_start_out <= ap_start;
@@ -212,6 +279,7 @@ begin
         waddr_word_reg  <= (others => '0');
         burst_wcount    <= (others => '0');
         awaddr_lsb      <= (others => '0');
+        awid_reg        <= (others => '0');
       else
         -- default ready behavior:
         --  - accept new AW only when no write in progress AND no BRESP pending
@@ -233,6 +301,7 @@ begin
 
         -- latch AW
         if (write_active='0' and bvalid_int='0' and S_AXI_AWVALID='1' and awready_int='1') then
+          awid_reg        <= S_AXI_AWID;  -- track ID for this write transaction
           awaddr_word_reg <= unsigned(S_AXI_AWADDR(C_S_AXI_ADDR_WIDTH-1 downto 2));
           awlen_reg       <= unsigned(S_AXI_AWLEN);
           awsize_reg      <= S_AXI_AWSIZE;
@@ -342,9 +411,9 @@ begin
         arlen_reg       <= (others => '0');
         arsize_reg      <= (others => '0');
         arburst_reg     <= (others => '0');
-        burst_rcount    <= (others => '0');
         load_raddr      <= '0';
         araddr_lsb      <= (others => '0');
+        arid_reg        <= (others => '0');
       else
         load_raddr <= '0';
         if read_active='0' then
@@ -354,6 +423,7 @@ begin
         end if;
 
         if (S_AXI_ARVALID='1' and arready_int='1') then
+          arid_reg        <= S_AXI_ARID;
           araddr_word_reg <= unsigned(S_AXI_ARADDR(C_S_AXI_ADDR_WIDTH-1 downto 2));
           arlen_reg       <= unsigned(S_AXI_ARLEN);
           arsize_reg      <= S_AXI_ARSIZE;
