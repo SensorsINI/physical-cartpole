@@ -14,7 +14,7 @@ use ieee.numeric_std.all;
 library work;
 use work.controller_io_parameters.all;
 
-entity mlp_axi_interface is
+entity controller_axi is
   generic(
     C_S_AXI_DATA_WIDTH : integer := 32;
     C_S_AXI_ADDR_WIDTH : integer := 12;
@@ -70,7 +70,7 @@ entity mlp_axi_interface is
   );
 end entity;
 
-architecture RTL of mlp_axi_interface is
+architecture RTL of controller_axi is
 
   -- Vivado interface metadata (for IP packager / BD automation)
   attribute X_INTERFACE_INFO      : string;
