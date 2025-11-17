@@ -1,11 +1,24 @@
 -- =====================================================================
--- AXI4 (memory-mapped) bridge for 'myproject' HLS MLP
--- Matches AXIS packing: each 32-bit input word contributes the low
--- MLP_INPUT_DATA_BITS bits, concatenated LSB-first across inputs.
+-- AXI4 (memory-mapped) bridge for controller via adapter
+-- Each 32-bit input word contributes the low BITS_PER_CONTROLLER_INPUT
+-- bits, concatenated LSB-first across inputs.
 -- Address map:
 --   0x000 : CTRL    [bit0 start (W), bit1 done (R), bit2 busy (R)]
 --   0x010 : INPUTS  (NUM_INPUT_WORDS x 4B)
 --   0x200 : OUTPUTS (NUM_OUTPUT_WORDS x 4B)
+-- =====================================================================
+--
+-- =====================================================================
+-- *** CONFIGURATION: Select HLS Core Adapter ***
+-- =====================================================================
+-- Change the entity name below to match your HLS core:
+--   - controller_adapter_cp   : For 1-output CartPole cores (layer9_out_0_V)
+--   - controller_adapter_f1t  : For 2-output F1T cores (layer8_out_0_V, layer8_out_1_V)
+-- 
+-- Edit the entity name on this line ONLY:
+-- >>> CONTROLLER_ADAPTER_ENTITY: controller_adapter_cp <<<
+--
+-- Then update line ~734 in the architecture to match.
 -- =====================================================================
 library ieee;
 use ieee.std_logic_1164.all;
@@ -192,16 +205,15 @@ architecture RTL of controller_axi is
   signal awid_reg : std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0) := (others => '0');
   signal arid_reg : std_logic_vector(C_S_AXI_ID_WIDTH-1 downto 0) := (others => '0');
 
-  -- HLS ports
-  signal ap_rst           : std_logic;
-  signal ap_start         : std_logic := '0';
-  signal ap_done          : std_logic;
-  signal ap_idle          : std_logic;
-  signal ap_ready         : std_logic;
-  signal input_1_v        : std_logic_vector(TOTAL_INPUT_BITS -1 downto 0) := (others => '0');
-  signal input_1_v_ap_vld : std_logic := '0';
-  signal layer9_out_0_v        : std_logic_vector(TOTAL_OUTPUT_BITS-1 downto 0);
-  signal layer9_out_0_v_ap_vld : std_logic;
+  -- Core adapter ports
+  signal ap_rst          : std_logic;
+  signal ap_start        : std_logic := '0';
+  signal ap_done         : std_logic;
+  signal ap_ready        : std_logic;
+  signal core_in_data    : std_logic_vector(TOTAL_INPUT_BITS -1 downto 0) := (others => '0');
+  signal core_in_valid   : std_logic := '0';
+  signal core_out_data   : std_logic_vector(TOTAL_OUTPUT_BITS-1 downto 0);
+  signal core_out_valid  : std_logic;
 
   -- Simple control FSM
   type fsm_state is (S_IDLE, S_START, S_WAIT_READY, S_WAIT_DONE, S_PACK_OUTPUTS, S_DONE);
@@ -603,14 +615,14 @@ begin
   begin
     if rising_edge(S_AXI_ACLK) then
       if S_AXI_ARESETN='0' then
-        cs               <= S_IDLE;
-        ap_start         <= '0';
-        input_1_v_ap_vld <= '0';
-        done_bit         <= '0';
-        busy_bit         <= '0';
-        output_mem       <= (others => (others => '0'));
-        reg_ctrl_sw_d0   <= '0';
-        start_pulse      <= '0';
+        cs             <= S_IDLE;
+        ap_start       <= '0';
+        core_in_valid  <= '0';
+        done_bit       <= '0';
+        busy_bit       <= '0';
+        output_mem     <= (others => (others => '0'));
+        reg_ctrl_sw_d0 <= '0';
+        start_pulse    <= '0';
       else
         -- CTRL[0] rising edge -> one-cycle start pulse
         start_pulse_i := '0';
@@ -624,9 +636,9 @@ begin
 
         case cs is
           when S_IDLE =>
-            ap_start         <= '0';
-            input_1_v_ap_vld <= '0';
-            busy_bit         <= '0';
+            ap_start      <= '0';
+            core_in_valid <= '0';
+            busy_bit      <= '0';
             -- clear sticky DONE whenever SW has deasserted start
             if reg_ctrl_sw(0) = '0' then
               done_bit <= '0';
@@ -635,29 +647,29 @@ begin
           when S_START =>
             -- LSB-first packing, identical to AXIS bridge
             for i in 0 to NUM_INPUTS-1 loop
-              input_1_v(i*BITS_PER_INPUT + BITS_PER_INPUT-1 downto
-                        i*BITS_PER_INPUT)
+              core_in_data(i*BITS_PER_INPUT + BITS_PER_INPUT-1 downto
+                           i*BITS_PER_INPUT)
                 <= input_mem(i)(BITS_PER_INPUT-1 downto 0);
             end loop;
-            ap_start         <= '1';
-            input_1_v_ap_vld <= '1';
-            busy_bit         <= '1';
+            ap_start      <= '1';
+            core_in_valid <= '1';
+            busy_bit      <= '1';
 
           when S_WAIT_READY =>
-            ap_start         <= '1';
-            input_1_v_ap_vld <= '1';
-            busy_bit         <= '1';
+            ap_start      <= '1';
+            core_in_valid <= '1';
+            busy_bit      <= '1';
 
           when S_WAIT_DONE =>
-            ap_start         <= '0';
-            input_1_v_ap_vld <= '0';
-            busy_bit         <= '1';
+            ap_start      <= '0';
+            core_in_valid <= '0';
+            busy_bit      <= '1';
 
           when S_PACK_OUTPUTS =>
-            -- Capture HLS outputs atomically once valid/done is seen.
+            -- Capture core outputs atomically once valid/done is seen.
             for j in 0 to NUM_OUTPUTS-1 loop
               output_mem(j)(BITS_PER_OUTPUT-1 downto 0) <=
-                layer9_out_0_v((j+1)*BITS_PER_OUTPUT-1 downto j*BITS_PER_OUTPUT);
+                core_out_data((j+1)*BITS_PER_OUTPUT-1 downto j*BITS_PER_OUTPUT);
               output_mem(j)(31 downto BITS_PER_OUTPUT) <= (others => '0');
             end loop;
             busy_bit <= '1';
@@ -674,7 +686,7 @@ begin
   end process;
 
   -- Next state
-  process(cs, start_pulse, ap_ready, ap_done, layer9_out_0_v_ap_vld)
+  process(cs, start_pulse, ap_ready, ap_done, core_out_valid)
   begin
     ns <= cs;
     case cs is
@@ -696,7 +708,7 @@ begin
         end if;
 
       when S_WAIT_DONE =>
-        if (ap_done='1') or (layer9_out_0_v_ap_vld='1') then
+        if (ap_done='1') or (core_out_valid='1') then
           ns <= S_PACK_OUTPUTS;
         end if;
 
@@ -711,18 +723,24 @@ begin
     end case;
   end process;
 
-  -- HLS instance
-  inst_myproject: entity work.myproject
+  -- =====================================================================
+  -- Controller adapter instance (wraps HLS core)
+  -- =====================================================================
+  -- *** TO CHANGE ADAPTER: Edit the entity name on the line below ***
+  -- Current: controller_adapter_cp (1-output CartPole core)
+  -- Options: controller_adapter_cp | controller_adapter_f1t
+  -- See configuration section at top of file for details.
+  -- =====================================================================
+  inst_adapter: entity work.controller_adapter_cp
     port map(
-      ap_clk                => S_AXI_ACLK,
-      ap_rst                => ap_rst,
-      ap_start              => ap_start,
-      ap_done               => ap_done,
-      ap_idle               => ap_idle,
-      ap_ready              => ap_ready,
-      input_1_V             => input_1_v,
-      input_1_V_ap_vld      => input_1_v_ap_vld,
-      layer9_out_0_V        => layer9_out_0_v,
-      layer9_out_0_V_ap_vld => layer9_out_0_v_ap_vld
+      core_clk       => S_AXI_ACLK,
+      core_rst       => ap_rst,
+      core_start     => ap_start,
+      core_ready     => ap_ready,
+      core_done      => ap_done,
+      core_in        => core_in_data,
+      core_in_valid  => core_in_valid,
+      core_out       => core_out_data,
+      core_out_valid => core_out_valid
     );
 end RTL;
