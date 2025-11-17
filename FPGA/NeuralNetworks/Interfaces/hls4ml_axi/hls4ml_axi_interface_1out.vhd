@@ -12,7 +12,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.mlp_top_pkg.all;
+use work.controller_io_parameters.all;
 
 entity mlp_axi_interface is
   generic(
@@ -127,14 +127,14 @@ architecture RTL of mlp_axi_interface is
   attribute X_INTERFACE_PARAMETER of S_AXI_AWADDR : signal is
     "XIL_INTERFACENAME S_AXI, PROTOCOL AXI4";
 
-  -- NN parameters from package
-  constant INPUT_NEURONS          : integer := MLP_INPUT_NEURONS;
-  constant INPUT_BITS_PER_NEURON  : integer := MLP_INPUT_DATA_BITS;
-  constant OUTPUT_NEURONS         : integer := MLP_OUTPUT_NEURONS;
-  constant OUTPUT_BITS_PER_NEURON : integer := MLP_OUTPUT_DATA_BITS;
+  -- Controller I/O parameters from package
+  constant NUM_INPUTS        : integer := CONTROLLER_INPUTS;
+  constant BITS_PER_INPUT    : integer := BITS_PER_CONTROLLER_INPUT;
+  constant NUM_OUTPUTS       : integer := CONTROLLER_OUTPUTS;
+  constant BITS_PER_OUTPUT   : integer := BITS_PER_CONTROLLER_OUTPUT;
 
-  constant TOTAL_INPUT_BITS  : integer := INPUT_NEURONS  * INPUT_BITS_PER_NEURON;
-  constant TOTAL_OUTPUT_BITS : integer := OUTPUT_NEURONS * OUTPUT_BITS_PER_NEURON;
+  constant TOTAL_INPUT_BITS  : integer := NUM_INPUTS  * BITS_PER_INPUT;
+  constant TOTAL_OUTPUT_BITS : integer := NUM_OUTPUTS * BITS_PER_OUTPUT;
 
   -- Address map
   constant CTRL_BASE_ADDR   : integer := 16#000#;  -- 0x000
@@ -146,8 +146,8 @@ architecture RTL of mlp_axi_interface is
   constant RESP_SLVERR : std_logic_vector(1 downto 0) := "10";
 
   -- Local memories (32-bit words)
-  constant NUM_INPUT_WORDS  : integer := INPUT_NEURONS;
-  constant NUM_OUTPUT_WORDS : integer := OUTPUT_NEURONS;
+  constant NUM_INPUT_WORDS  : integer := NUM_INPUTS;
+  constant NUM_OUTPUT_WORDS : integer := NUM_OUTPUTS;
 
   type mem_in_t  is array(0 to NUM_INPUT_WORDS -1) of std_logic_vector(31 downto 0);
   type mem_out_t is array(0 to NUM_OUTPUT_WORDS-1) of std_logic_vector(31 downto 0);
@@ -634,10 +634,10 @@ begin
 
           when S_START =>
             -- LSB-first packing, identical to AXIS bridge
-            for i in 0 to INPUT_NEURONS-1 loop
-              input_1_v(i*INPUT_BITS_PER_NEURON + INPUT_BITS_PER_NEURON-1 downto
-                        i*INPUT_BITS_PER_NEURON)
-                <= input_mem(i)(INPUT_BITS_PER_NEURON-1 downto 0);
+            for i in 0 to NUM_INPUTS-1 loop
+              input_1_v(i*BITS_PER_INPUT + BITS_PER_INPUT-1 downto
+                        i*BITS_PER_INPUT)
+                <= input_mem(i)(BITS_PER_INPUT-1 downto 0);
             end loop;
             ap_start         <= '1';
             input_1_v_ap_vld <= '1';
@@ -655,10 +655,10 @@ begin
 
           when S_PACK_OUTPUTS =>
             -- Capture HLS outputs atomically once valid/done is seen.
-            for j in 0 to OUTPUT_NEURONS-1 loop
-              output_mem(j)(OUTPUT_BITS_PER_NEURON-1 downto 0) <=
-                layer9_out_0_v((j+1)*OUTPUT_BITS_PER_NEURON-1 downto j*OUTPUT_BITS_PER_NEURON);
-              output_mem(j)(31 downto OUTPUT_BITS_PER_NEURON) <= (others => '0');
+            for j in 0 to NUM_OUTPUTS-1 loop
+              output_mem(j)(BITS_PER_OUTPUT-1 downto 0) <=
+                layer9_out_0_v((j+1)*BITS_PER_OUTPUT-1 downto j*BITS_PER_OUTPUT);
+              output_mem(j)(31 downto BITS_PER_OUTPUT) <= (others => '0');
             end loop;
             busy_bit <= '1';
 
