@@ -1,11 +1,32 @@
+-- =====================================================================
+-- AXI4-Lite interface for controller via adapter
+-- Auto-increment registers for back-to-back input/output transfers
+-- Address map:
+--   0x00 : CTRL  [bit0=start (W), bit1=done (R)]
+--   0x04 : IN    (write inputs sequentially, auto-increments)
+--   0x08 : OUT   (read outputs sequentially, auto-increments)
+-- =====================================================================
+--
+-- =====================================================================
+-- *** CONFIGURATION: Select HLS Core Adapter ***
+-- =====================================================================
+-- Change the entity name below to match your HLS core:
+--   - controller_adapter_cp   : For 1-output CartPole cores (layer9_out_0_V)
+--   - controller_adapter_f1t  : For 2-output F1T cores (layer8_out_0_V, layer8_out_1_V)
+-- 
+-- Edit the entity name on this line ONLY:
+-- >>> CONTROLLER_ADAPTER_ENTITY: controller_adapter_cp <<<
+--
+-- Then update line ~420 in the architecture to match.
+-- =====================================================================
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.mlp_top_pkg.all;
+use work.controller_io_parameters.all;
 
-entity mlp_axi_lite_interface is
+entity controller_axilite is
     generic(
         C_S_AXI_DATA_WIDTH : integer := 32;
         C_S_AXI_ADDR_WIDTH : integer := 5
@@ -48,16 +69,16 @@ entity mlp_axi_lite_interface is
     );
 end entity;
 
-architecture RTL of mlp_axi_lite_interface is
+architecture RTL of controller_axilite is
     -----------------------------------------------------------------------------
-    -- Package constants
+    -- Controller I/O parameters from package
     -----------------------------------------------------------------------------
-    constant INPUT_NEURONS          : integer := MLP_INPUT_NEURONS;
-    constant INPUT_BITS_PER_NEURON  : integer := MLP_INPUT_DATA_BITS;
-    constant OUTPUT_NEURONS         : integer := MLP_OUTPUT_NEURONS;
-    constant OUTPUT_BITS_PER_NEURON : integer := MLP_OUTPUT_DATA_BITS;
-    constant TOTAL_INPUT_BITS       : integer := INPUT_NEURONS  * INPUT_BITS_PER_NEURON;
-    constant TOTAL_OUTPUT_BITS      : integer := OUTPUT_NEURONS * OUTPUT_BITS_PER_NEURON;
+    constant NUM_INPUTS        : integer := CONTROLLER_INPUTS;
+    constant BITS_PER_INPUT    : integer := BITS_PER_CONTROLLER_INPUT;
+    constant NUM_OUTPUTS       : integer := CONTROLLER_OUTPUTS;
+    constant BITS_PER_OUTPUT   : integer := BITS_PER_CONTROLLER_OUTPUT;
+    constant TOTAL_INPUT_BITS  : integer := NUM_INPUTS  * BITS_PER_INPUT;
+    constant TOTAL_OUTPUT_BITS : integer := NUM_OUTPUTS * BITS_PER_OUTPUT;
 
     -----------------------------------------------------------------------------
     -- AXI4-Lite internal
@@ -85,12 +106,12 @@ architecture RTL of mlp_axi_lite_interface is
 
     -- Input/Output scratch (each entry is a full 32b word; only LSBs used)
     type word_array_t is array(natural range <>) of std_logic_vector(31 downto 0);
-    signal input_items  : word_array_t(0 to INPUT_NEURONS-1)  := (others => (others => '0'));
-    signal output_items : word_array_t(0 to OUTPUT_NEURONS-1) := (others => (others => '0'));
+    signal input_items  : word_array_t(0 to NUM_INPUTS-1)  := (others => (others => '0'));
+    signal output_items : word_array_t(0 to NUM_OUTPUTS-1) := (others => (others => '0'));
 
     -- Auto-increment indices
-    signal input_count  : integer range 0 to INPUT_NEURONS  := 0;
-    signal output_count : integer range 0 to OUTPUT_NEURONS := 0;
+    signal input_count  : integer range 0 to NUM_INPUTS  := 0;
+    signal output_count : integer range 0 to NUM_OUTPUTS := 0;
 
     -- Control pulses (single-clock enables synthesized from writes/reads)
     signal reset_counters   : std_logic := '0';
@@ -98,19 +119,16 @@ architecture RTL of mlp_axi_lite_interface is
     signal inc_output_count : std_logic := '0';
 
     -----------------------------------------------------------------------------
-    -- HLS block I/O (myproject)
+    -- Core adapter ports
     -----------------------------------------------------------------------------
-    signal ap_rst    : std_logic;
-    signal ap_start  : std_logic := '0';
-    signal ap_done   : std_logic;
-    signal ap_idle   : std_logic;
-    signal ap_ready  : std_logic;
-
-    signal input_1_v        : std_logic_vector(TOTAL_INPUT_BITS-1 downto 0) := (others => '0');
-    signal input_1_v_ap_vld : std_logic := '0';
-
-    signal layer9_out_0_v        : std_logic_vector(TOTAL_OUTPUT_BITS-1 downto 0);
-    signal layer9_out_0_v_ap_vld : std_logic;
+    signal ap_rst          : std_logic;
+    signal ap_start        : std_logic := '0';
+    signal ap_done         : std_logic;
+    signal ap_ready        : std_logic;
+    signal core_in_data    : std_logic_vector(TOTAL_INPUT_BITS-1 downto 0) := (others => '0');
+    signal core_in_valid   : std_logic := '0';
+    signal core_out_data   : std_logic_vector(TOTAL_OUTPUT_BITS-1 downto 0);
+    signal core_out_valid  : std_logic;
 
     -----------------------------------------------------------------------------
     -- FSM
@@ -199,7 +217,7 @@ begin
 
                             when 1 =>
                                 -- IN: back-to-back input words
-                                if input_count < INPUT_NEURONS then
+                                if input_count < NUM_INPUTS then
                                     -- honor WSTRB minimally: only update enabled bytes
                                     for b in 0 to 3 loop
                                         if S_AXI_WSTRB(b) = '1' then
@@ -263,7 +281,7 @@ begin
 
                         when 2 =>
                             -- OUT: next output word (auto-increments after RREADY)
-                            if output_count < OUTPUT_NEURONS then
+                            if output_count < NUM_OUTPUTS then
                                 rdata <= output_items(output_count);
                             else
                                 rdata <= (others => '0');
@@ -301,10 +319,10 @@ begin
                     input_count  <= 0;
                     output_count <= 0;
                 else
-                    if (inc_input_count = '1') and (input_count < INPUT_NEURONS) then
+                    if (inc_input_count = '1') and (input_count < NUM_INPUTS) then
                         input_count <= input_count + 1;
                     end if;
-                    if (inc_output_count = '1') and (output_count < OUTPUT_NEURONS) then
+                    if (inc_output_count = '1') and (output_count < NUM_OUTPUTS) then
                         output_count <= output_count + 1;
                     end if;
                 end if;
@@ -313,51 +331,51 @@ begin
     end process;
 
     -----------------------------------------------------------------------------
-    -- HLS control FSM
+    -- Controller FSM
     -----------------------------------------------------------------------------
     fsm_seq : process(S_AXI_ACLK)
     begin
         if rising_edge(S_AXI_ACLK) then
             if S_AXI_ARESETN = '0' then
-                cs                <= S_IDLE;
-                ap_start          <= '0';
-                input_1_v_ap_vld  <= '0';
-                done_bit          <= '0';
-                output_items      <= (others => (others => '0'));
+                cs            <= S_IDLE;
+                ap_start      <= '0';
+                core_in_valid <= '0';
+                done_bit      <= '0';
+                output_items  <= (others => (others => '0'));
             else
                 cs <= ns;
 
                 case cs is
                     when S_IDLE =>
-                        ap_start         <= '0';
-                        input_1_v_ap_vld <= '0';
-                        done_bit         <= '0';
+                        ap_start      <= '0';
+                        core_in_valid <= '0';
+                        done_bit      <= '0';
 
                     when S_START =>
-                        -- pack inputs (same order & bit slicing as AXIS)
-                        for i in 0 to INPUT_NEURONS-1 loop
-                            input_1_v(i*INPUT_BITS_PER_NEURON + INPUT_BITS_PER_NEURON-1 downto
-                                      i*INPUT_BITS_PER_NEURON)
-                                <= input_items(i)(INPUT_BITS_PER_NEURON-1 downto 0);
+                        -- pack inputs (same order & bit slicing as other interfaces)
+                        for i in 0 to NUM_INPUTS-1 loop
+                            core_in_data(i*BITS_PER_INPUT + BITS_PER_INPUT-1 downto
+                                         i*BITS_PER_INPUT)
+                                <= input_items(i)(BITS_PER_INPUT-1 downto 0);
                         end loop;
-                        ap_start         <= '1';
-                        input_1_v_ap_vld <= '1';
+                        ap_start      <= '1';
+                        core_in_valid <= '1';
 
                     when S_WAIT_READY =>
-                        ap_start         <= '1';
-                        input_1_v_ap_vld <= '1';
+                        ap_start      <= '1';
+                        core_in_valid <= '1';
 
                     when S_WAIT_DONE =>
-                        ap_start         <= '0';
-                        input_1_v_ap_vld <= '0';
+                        ap_start      <= '0';
+                        core_in_valid <= '0';
 
                     when S_PACK_OUT =>
                         -- unpack outputs (LSBs hold the fixed-point result)
-                        for i in 0 to OUTPUT_NEURONS-1 loop
-                            output_items(i)(OUTPUT_BITS_PER_NEURON-1 downto 0) <=
-                                layer9_out_0_v((i+1)*OUTPUT_BITS_PER_NEURON - 1 downto
-                                               i*OUTPUT_BITS_PER_NEURON);
-                            output_items(i)(31 downto OUTPUT_BITS_PER_NEURON) <= (others => '0');
+                        for i in 0 to NUM_OUTPUTS-1 loop
+                            output_items(i)(BITS_PER_OUTPUT-1 downto 0) <=
+                                core_out_data((i+1)*BITS_PER_OUTPUT - 1 downto
+                                              i*BITS_PER_OUTPUT);
+                            output_items(i)(31 downto BITS_PER_OUTPUT) <= (others => '0');
                         end loop;
 
                     when S_DONE =>
@@ -369,12 +387,12 @@ begin
         end if;
     end process;
 
-    fsm_comb : process(cs, reg_ctrl_sw, ap_ready, ap_done, layer9_out_0_v_ap_vld, input_count)
+    fsm_comb : process(cs, reg_ctrl_sw, ap_ready, ap_done, core_out_valid, input_count)
     begin
         ns <= cs;
         case cs is
             when S_IDLE =>
-                if (reg_ctrl_sw(0) = '1') and (input_count = INPUT_NEURONS) then
+                if (reg_ctrl_sw(0) = '1') and (input_count = NUM_INPUTS) then
                     ns <= S_START;
                 end if;
 
@@ -391,7 +409,7 @@ begin
                 end if;
 
             when S_WAIT_DONE =>
-                if (ap_done = '1') or (layer9_out_0_v_ap_vld = '1') then
+                if (ap_done = '1') or (core_out_valid = '1') then
                     ns <= S_PACK_OUT;
                 end if;
 
@@ -417,22 +435,23 @@ begin
     end process;
 
     -----------------------------------------------------------------------------
-    -- HLS MLP instance
+    -- Controller adapter instance
     -----------------------------------------------------------------------------
-    u_mlp : entity work.myproject
+    -- *** TO CHANGE ADAPTER: Edit the entity name on the line below ***
+    -- Current: controller_adapter_cp (1-output CartPole core)
+    -- Options: controller_adapter_cp | controller_adapter_f1t
+    -- See configuration section at top of file for details.
+    -----------------------------------------------------------------------------
+    inst_adapter: entity work.controller_adapter_cp
         port map(
-            ap_clk  => S_AXI_ACLK,
-            ap_rst  => ap_rst,
-
-            ap_start => ap_start,
-            ap_done  => ap_done,
-            ap_idle  => ap_idle,
-            ap_ready => ap_ready,
-
-            input_1_V        => input_1_v,
-            input_1_V_ap_vld => input_1_v_ap_vld,
-
-            layer9_out_0_V        => layer9_out_0_v,
-            layer9_out_0_V_ap_vld => layer9_out_0_v_ap_vld
+            core_clk       => S_AXI_ACLK,
+            core_rst       => ap_rst,
+            core_start     => ap_start,
+            core_ready     => ap_ready,
+            core_done      => ap_done,
+            core_in        => core_in_data,
+            core_in_valid  => core_in_valid,
+            core_out       => core_out_data,
+            core_out_valid => core_out_valid
         );
 end RTL;
