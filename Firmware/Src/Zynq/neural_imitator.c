@@ -1,13 +1,13 @@
 #include "neural_imitator.h"
 
-#include "xparameters.h"
+#include "hw_platform_config.h"
 
 #include "buttons_and_switches.h"
 
 
 #include "fixed_point.hpp"
 
-#ifdef XPAR_HARDWARE_ACCEL_EDGEDRNN_AXI_DMA_1_DEVICE_ID
+#if HW_HAS_EDGEDRNN
 #define EdgeDRNN
 #endif
 
@@ -15,15 +15,7 @@
 #include "EdgeDRNN/EdgeDRNN_Network.h"
 #endif
 
-#ifdef XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
-#define HLS4ML
-#endif
-
-#ifdef XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR
-#define HLS4ML
-#endif
-
-#ifdef XPAR_HARDWARE_ACCEL_CONTROLLER_AXI_0_BASEADDR
+#if HW_HAS_HLS4ML
 #define HLS4ML
 #endif
 
@@ -31,7 +23,7 @@
 #include "HLS4ML/HLS4ML_Network.h"
 #endif
 
-#ifdef XPAR_HARDWARE_ACCEL_DIFFLG_AXI_DMA_0_DEVICE_ID
+#if HW_HAS_DIFFLG
 #define DIFFLG
 #endif
 

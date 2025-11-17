@@ -1,30 +1,30 @@
 #include "HLS4ML_Network.h"
 #include "../hw_accel_link.h"
-#include "xparameters.h"
+#include "../hw_platform_config.h"
 #include "xstatus.h"
 
 /* ====== HLS4ML Interface Auto-Selection ======
    Interface is automatically selected based on available hardware:
-   - AXI4-Memory (highest priority) - if XPAR_HARDWARE_ACCEL_CONTROLLER_AXI_0_BASEADDR exists
-   - AXI-Stream (medium priority)   - if XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID exists  
-   - AXI-Lite (lowest priority)     - if XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR exists
+   - AXI4-Memory (highest priority) - if controller AXI interface exists
+   - AXI-Stream (medium priority)   - if HLS4ML DMA exists  
+   - AXI-Lite (lowest priority)     - if HLS4ML AXI-Lite exists
 */
 
 /* Auto-select interface based on available hardware */
-#ifdef XPAR_HARDWARE_ACCEL_CONTROLLER_AXI_0_BASEADDR
+#if HW_HAS_CONTROLLER_AXI
     #define HLS4ML_INTERFACE 2  /* AXI4-Memory */
-#elif defined(XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID)
+#elif HW_HAS_HLS4ML_DMA
     #define HLS4ML_INTERFACE 1  /* AXI-Stream */
-#elif defined(XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR)
+#elif HW_HAS_HLS4ML_AXILITE
     #define HLS4ML_INTERFACE 0  /* AXI-Lite */
 #else
-    #error "No HLS4ML interface hardware detected! Check your XPAR definitions."
+    #error "No HLS4ML interface hardware detected! Check hw_platform_config.h"
 #endif
 
 /* Configuration parameters for selected interface */
 #if HLS4ML_INTERFACE == 0  /* AXI-Lite */
     #ifndef HLS4ML_AXIL_BASE
-    #define HLS4ML_AXIL_BASE      XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR
+    #define HLS4ML_AXIL_BASE      HW_HLS4ML_AXILITE_BASEADDR
     #endif
     #ifndef HLS4ML_AXIL_REG_CTRL
     #define HLS4ML_AXIL_REG_CTRL  0x00
@@ -38,12 +38,12 @@
 
 #elif HLS4ML_INTERFACE == 1  /* AXI-Stream */
     #ifndef HLS4ML_DMA_DEV_ID
-    #define HLS4ML_DMA_DEV_ID     XPAR_HARDWARE_ACCEL_HLS4ML_AXI_DMA_0_DEVICE_ID
+    #define HLS4ML_DMA_DEV_ID     HW_HLS4ML_DMA_DEVICE_ID
     #endif
 
 #elif HLS4ML_INTERFACE == 2  /* AXI4-Memory */
     #ifndef HLS4ML_AXI4_BASE
-    #define HLS4ML_AXI4_BASE      XPAR_HARDWARE_ACCEL_CONTROLLER_AXI_0_BASEADDR
+    #define HLS4ML_AXI4_BASE      HW_CONTROLLER_AXI_BASEADDR
     #endif
     #ifndef HLS4ML_AXI4_INPUT_BASE
     #define HLS4ML_AXI4_INPUT_BASE  0x010
@@ -53,8 +53,8 @@
     #endif
     /* CDMA device ID for burst transfers */
     #ifdef HWACCEL_ENABLE_CDMA
-        #ifdef XPAR_HARDWARE_ACCEL_AXI_CDMA_0_DEVICE_ID
-            #define HLS4ML_CDMA_DEVICE_ID  XPAR_HARDWARE_ACCEL_AXI_CDMA_0_DEVICE_ID
+        #if HW_HAS_CDMA
+            #define HLS4ML_CDMA_DEVICE_ID  HW_CDMA_DEVICE_ID
         #else
             #error "HWACCEL_ENABLE_CDMA is defined but no CDMA hardware found! Check your Vivado design or disable HWACCEL_ENABLE_CDMA in hw_accel_link.h"
         #endif
