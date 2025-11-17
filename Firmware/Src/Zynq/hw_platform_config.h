@@ -26,12 +26,12 @@
     #define HW_HAS_CONTROLLER_AXI       0
 #endif
 
-/* HLS4ML AXI-Lite Interface */
-#ifdef XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR
-    #define HW_HLS4ML_AXILITE_BASEADDR  XPAR_HARDWARE_ACCEL_MLP_AXI_LITE_INTERFA_0_BASEADDR
-    #define HW_HAS_HLS4ML_AXILITE       1
+/* Controller AXI-Lite Interface */
+#ifdef XPAR_HARDWARE_ACCEL_CONTROLLER_AXILITE_0_BASEADDR
+    #define HW_CONTROLLER_AXILITE_BASEADDR  XPAR_HARDWARE_ACCEL_CONTROLLER_AXILITE_0_BASEADDR
+    #define HW_HAS_CONTROLLER_AXILITE       1
 #else
-    #define HW_HAS_HLS4ML_AXILITE       0
+    #define HW_HAS_CONTROLLER_AXILITE       0
 #endif
 
 /* HLS4ML AXI-Stream DMA Interface */
@@ -74,7 +74,7 @@
  * ======================================================================== */
 
 /* HLS4ML is available if ANY of its interfaces are present */
-#if HW_HAS_CONTROLLER_AXI || HW_HAS_HLS4ML_AXILITE || HW_HAS_HLS4ML_DMA
+#if HW_HAS_CONTROLLER_AXI || HW_HAS_CONTROLLER_AXILITE || HW_HAS_HLS4ML_DMA
     #define HW_HAS_HLS4ML               1
 #else
     #define HW_HAS_HLS4ML               0

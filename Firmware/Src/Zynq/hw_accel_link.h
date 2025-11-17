@@ -3,14 +3,17 @@
 
 #include <stdint.h>
 #include "xil_types.h"
+#include "hw_platform_config.h"
 
 /* ====== CDMA Burst Mode Configuration ======
- * Uncomment the following line to enable CDMA burst transfers for AXI4-Memory interface.
- * When enabled, requires CDMA IP core in hardware and proper device ID configuration.
+ * CDMA burst transfers are automatically enabled when CDMA hardware is present.
+ * This is detected via hw_platform_config.h (HW_HAS_CDMA).
+ * When enabled, uses CDMA for fast AXI4-Memory transfers.
  * When disabled, uses direct MMIO register access (slower but simpler).
- * This is a compile-time only setting - no runtime switching.
  */
-//#define HWACCEL_ENABLE_CDMA
+#if HW_HAS_CDMA
+    #define HWACCEL_ENABLE_CDMA
+#endif
 
 typedef enum {
     HWACCEL_IF_AXILITE = 0,

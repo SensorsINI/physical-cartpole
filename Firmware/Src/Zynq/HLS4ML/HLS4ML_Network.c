@@ -15,7 +15,7 @@
     #define HLS4ML_INTERFACE 2  /* AXI4-Memory */
 #elif HW_HAS_HLS4ML_DMA
     #define HLS4ML_INTERFACE 1  /* AXI-Stream */
-#elif HW_HAS_HLS4ML_AXILITE
+#elif HW_HAS_CONTROLLER_AXILITE
     #define HLS4ML_INTERFACE 0  /* AXI-Lite */
 #else
     #error "No HLS4ML interface hardware detected! Check hw_platform_config.h"
@@ -24,7 +24,7 @@
 /* Configuration parameters for selected interface */
 #if HLS4ML_INTERFACE == 0  /* AXI-Lite */
     #ifndef HLS4ML_AXIL_BASE
-    #define HLS4ML_AXIL_BASE      HW_HLS4ML_AXILITE_BASEADDR
+    #define HLS4ML_AXIL_BASE      HW_CONTROLLER_AXILITE_BASEADDR
     #endif
     #ifndef HLS4ML_AXIL_REG_CTRL
     #define HLS4ML_AXIL_REG_CTRL  0x00
