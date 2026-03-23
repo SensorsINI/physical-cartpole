@@ -28,9 +28,30 @@ Driver/SI_Toolkit_ASF/Experiments/*
 /FPGA/VivadoProjects/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
 
+# Vitis HLS build artifacts
 /FPGA/CustomIPs/vitis_hls.log
+/FPGA/CustomIPs/**/.autopilot/
+/FPGA/CustomIPs/**/.debug/
+/FPGA/CustomIPs/**/impl/
+/FPGA/CustomIPs/**/syn/
+/FPGA/CustomIPs/**/.apc/
+/FPGA/CustomIPs/**/.settings/
+/FPGA/CustomIPs/**/.cproject
+/FPGA/CustomIPs/**/.project
+/FPGA/CustomIPs/**/.vitis_hls_log_all.xml
+/FPGA/CustomIPs/**/hls.app
+/FPGA/CustomIPs/**/*.log
+/FPGA/CustomIPs/**/*.jou
+/FPGA/CustomIPs/**/*.aps
+/FPGA/CustomIPs/**/*_data.json
+/FPGA/CustomIPs/**/*.directive
+/FPGA/CustomIPs/**/*.funcunit
+/FPGA/CustomIPs/**/directives.tcl
+/FPGA/CustomIPs/**/script.tcl
+/FPGA/CustomIPs/**/*.protoinst
 
 /Firmware/VitisProjects/*
+/Firmware/Packages/
 
 /Firmware/CubeIDE/.metadata/
 
