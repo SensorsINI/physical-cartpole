@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-short EncoderValue;
+int EncoderValue;
 short EncoderDirection = 1;
 
 // Uses Timer 4 configured in encoder mode
@@ -15,8 +15,10 @@ void Encoder_Init(void)
 
 short Encoder_Read()
 {
-	EncoderValue = EncoderDirection * Xil_In32(ENCODER_COUNT_ADDR);
-	return EncoderValue;
+	// Cast to signed int first to correctly interpret negative values from FPGA
+	int raw_count = (int)Xil_In32(ENCODER_COUNT_ADDR);
+	EncoderValue = EncoderDirection * raw_count;
+	return (short)EncoderValue;
 }
 
 void Encoder_Set_Direction(short new_direction)

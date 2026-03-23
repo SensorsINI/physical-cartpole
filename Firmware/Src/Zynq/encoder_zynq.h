@@ -16,7 +16,7 @@
 #define GEARBOX_RATIO        18.75
 #define ENCODER_FULL_TRACK 4690
 
-extern short EncoderValue;
+extern int EncoderValue;
 
 void  Encoder_Init(void);
 short Encoder_Read(void);
