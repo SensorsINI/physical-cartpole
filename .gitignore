@@ -2,6 +2,8 @@
 .DS_Store
 /Driver/ExperimentRecordings/
 
+/provide_password.patch
+
 *env
 .DS_Store
 *__pycache__
@@ -26,7 +28,11 @@ Driver/SI_Toolkit_ASF/Experiments/*
 /FPGA/VivadoProjects/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
 
+/FPGA/CustomIPs/vitis_hls.log
+
 /Firmware/VitisProjects/*
+
+/Firmware/CubeIDE/.metadata/
 
 /Firmware/CubeIDE/CartPoleFirmware/Debug/*
 /Firmware/CubeIDE/CartPoleFirmware/.settings/language.settings.xml
