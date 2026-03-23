@@ -133,7 +133,7 @@ SEND_CHANGE_IN_TARGET_POSITION_ALWAYS = True  # If false it sends change in targ
 
 USE_DVS_STATE_ESTIMATION = False
 
-USE_EKF = True
+USE_EKF = False
 EKF_CALIBRATION_RUN = not USE_DVS_STATE_ESTIMATION  # If True, EKF calibration is run at the beginning of the experiment
 
 def angle_deviation_update(new_angle_hanging):
