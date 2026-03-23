@@ -13,7 +13,7 @@
 //#define STM
 
 /* Uncomment the following line to enable timing test mode */
-#define TIMING_TEST
+//#define TIMING_TEST
 
 #include <stdbool.h>
 
