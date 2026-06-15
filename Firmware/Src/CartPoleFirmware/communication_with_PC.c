@@ -1,4 +1,5 @@
 #include "communication_with_PC.h"
+#include <string.h>
 
 
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
@@ -209,7 +210,7 @@ void prepare_message_to_PC_state(
 		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
-		unsigned long time_current_measurement,
+		unsigned long long time_current_measurement,
 		unsigned long latency,
 		unsigned short	latency_violation
 		){
@@ -224,9 +225,9 @@ void prepare_message_to_PC_state(
 	*((short *)&buffer[15]) = motor_command;
 	*((unsigned char *)&buffer[17]) = invalid_step;
 	*((unsigned int *)&buffer[18]) = (unsigned int)time_difference_between_measurement;
-	*((unsigned int *)&buffer[22]) = (unsigned int)time_current_measurement;
-	*((unsigned short *)&buffer[26]) = (unsigned short)(latency / 10);
-	*((unsigned short *)&buffer[28]) = (unsigned short)(latency_violation);
+	memcpy(&buffer[22], &time_current_measurement, sizeof(time_current_measurement));
+	*((unsigned short *)&buffer[30]) = (unsigned short)(latency / 10);
+	*((unsigned short *)&buffer[32]) = (unsigned short)(latency_violation);
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
 }

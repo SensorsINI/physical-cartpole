@@ -52,6 +52,8 @@ unsigned long	time_measurement_done = 0, time_motor_command_obtained = 0, latenc
 
 unsigned long 	time_current_measurement = 0;
 unsigned long	time_last_measurement = 0;
+// Monotonic firmware-owned experiment time; avoids exposing raw 32-bit timer wrap to the PC.
+unsigned long long time_accumulated_us = 0;
 
 bool			new_motor_command_obtained			= true;
 
@@ -201,7 +203,7 @@ void CONTROL_BackgroundTask(void)
 			Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
 		}
 
-		static unsigned char	buffer[30];
+		static unsigned char	buffer[STATE_MESSAGE_LEN];
 
 		static unsigned short 	ledPeriodCnt	= 0;
 		static bool				ledState 		= false;
@@ -223,6 +225,11 @@ void CONTROL_BackgroundTask(void)
         angleD_unprocessed = angleD;
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
+		if (time_difference_between_measurement == 0) {
+			// Should not happen in normal operation; use the configured loop period to avoid a zero-division sample.
+			time_difference_between_measurement = CONTROL_LOOP_PERIOD_MS * 1000;
+		}
+		time_accumulated_us += (unsigned long long)time_difference_between_measurement;
 
 		calculate_position_difference_per_timestep(&position_short, &positionD);
 
@@ -237,7 +244,7 @@ void CONTROL_BackgroundTask(void)
 	    angleD = (angleD*(ANGLE_NORMALIZATION_FACTOR)/time_difference_between_measurement_s);
 	    positionD = (positionD*POSITION_NORMALIZATION_FACTOR/time_difference_between_measurement_s);
 
-        time = time_current_measurement/1000000.0;
+        time = time_accumulated_us/1000000.0;
 
 		// Microcontroller Control Routine
 		if (ControlOnChip_Enabled)	{
@@ -356,7 +363,7 @@ void CONTROL_BackgroundTask(void)
 
 	    	prepare_message_to_PC_state(
 	    			buffer,
-					31,
+					STATE_MESSAGE_LEN,
 					angle_int,
 					angleD_unprocessed,
 					position_short,
@@ -364,12 +371,12 @@ void CONTROL_BackgroundTask(void)
 					motor_command,
 					invalid_step,
 					time_difference_between_measurement,
-					time_current_measurement,
+					time_accumulated_us,
 					latency,
 					latency_violation
 					);
 
-	    	Message_SendToPC(buffer, 31);
+	    	Message_SendToPC(buffer, STATE_MESSAGE_LEN);
 
 	        if(new_motor_command_obtained) {
 	        	time_measurement_done = time_current_measurement;

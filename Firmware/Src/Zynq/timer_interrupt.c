@@ -5,7 +5,12 @@ XTime MyTime;
 
 unsigned long TIMER1_getSystemTime_Us() {
 		XTime_GetTime(&MyTime);
-		return (unsigned long)(1000000.0*(float)MyTime/TIMER_LOAD_VALUE_1s);
+		// Keep the conversion integer-only so long-running tick counts do not lose microsecond precision.
+		unsigned long long ticks = (unsigned long long)MyTime;
+		unsigned long long seconds = ticks / TIMER_LOAD_VALUE_1s;
+		unsigned long long remainder = ticks % TIMER_LOAD_VALUE_1s;
+		unsigned long long microseconds = seconds * 1000000ULL + (remainder * 1000000ULL) / TIMER_LOAD_VALUE_1s;
+		return (unsigned long)microseconds;
 
 }
 

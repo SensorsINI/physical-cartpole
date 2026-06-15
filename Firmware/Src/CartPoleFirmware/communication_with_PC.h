@@ -4,6 +4,9 @@
 #include "communication_with_PC_general.h"
 #include <stdbool.h>
 
+// State packet length includes an 8-byte accumulated chip timestamp.
+#define STATE_MESSAGE_LEN 35
+
 
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);
 void prepare_message_to_PC_state(
@@ -16,7 +19,7 @@ void prepare_message_to_PC_state(
 		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
-		unsigned long timeMeasured,
+		unsigned long long timeMeasured,
 		unsigned long latency,
 		unsigned short	latency_violation
 		);

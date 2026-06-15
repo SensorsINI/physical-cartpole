@@ -62,8 +62,7 @@ class TimingHelper:
 
         if self.time_between_measurements_chip < 1.0e-9:
             raise ValueError(f'\nTime between measurements measured on chip is {self.time_between_measurements_chip}. '
-                             f'\nThis might indicate that timer on the microcontroller has overflown. '
-                             f'\nTry to restart it.')
+                             f'\nFirmware should guarantee a positive measurement interval.')
 
         self.time_last_measurement_chip = self.time_current_measurement_chip
 

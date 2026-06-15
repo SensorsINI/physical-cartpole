@@ -23,6 +23,8 @@ CMD_STATE = 0xCC
 CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
 CMD_TRANSFER_BUFFERS = 0xD1
+# Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp.
+STATE_MESSAGE_LEN = 35
 
 
 class Interface:
@@ -212,11 +214,11 @@ class Interface:
 
     def read_state(self):
         self.clear_read_buffer()
-        message_length = 31
+        message_length = STATE_MESSAGE_LEN
         reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
 
         (angle, angleD, position, target_position, command, invalid_steps, time_difference,
-         time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhB2I2H',
+         time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhBIQ2H',
                                                                                     bytes(reply[3:message_length - 1]))
 
         return angle, angleD, position, target_position, command, invalid_steps, time_difference / 1e6, time_current_measurement_chip / 1e6, latency / 1e5, latency_violation
