@@ -39,6 +39,7 @@ float  			ANGLE_DEVIATION;
 
 volatile bool	HardwareConfigSetFromPC;
 volatile bool 	ControlOnChip_Enabled;
+volatile bool	PCControl_Enabled;
 
 int 			motor_command 		= 0;
 
@@ -97,6 +98,7 @@ static ControllerBinding g_cb;
 void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
 void 			cmd_ControlMode(bool en);
+void			cmd_PCControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
@@ -119,6 +121,7 @@ float angle_deviation_update(float new_angle_hanging){
 void CONTROL_Init(void)
 {
 	ControlOnChip_Enabled		= false;
+	PCControl_Enabled			= false;
 	HardwareConfigSetFromPC = false;
     isCalibrated        = false;
     ledPeriod           = 500/CONTROL_LOOP_PERIOD_MS;
@@ -377,7 +380,10 @@ void CONTROL_BackgroundTask(void)
 			if(time_motor_command_obtained > 0 && time_measurement_done > 0 && new_motor_command_obtained) {
 				latency = time_motor_command_obtained - time_measurement_done;
 				latency_violation = 0;
-			} else{
+			} else if (PCControl_Enabled) {
+				latency_violation = 1;
+				latency = CONTROL_LOOP_PERIOD_MS*1000;
+			} else {
 				latency_violation = 0;
 				latency = 0;
 			}
@@ -532,6 +538,11 @@ void CONTROL_BackgroundTask(void)
 			cmd_ControlMode(rxBuffer[3] != 0);
 			break;
 		}
+		case CMD_PC_CONTROL_MODE:
+		{
+			cmd_PCControlMode(rxBuffer[3] != 0);
+			break;
+		}
 		case CMD_SET_PID_CONFIG:
 		{
 			cmd_SetPIDConfig(&rxBuffer[3]);
@@ -637,6 +648,7 @@ void cmd_Calibrate(void)
 	}
 
 	ControlOnChip_Enabled = false;
+	PCControl_Enabled = false;
 	isCalibrated = false;
 	calibrate = true;
 	calibrationState = CalibrationState_DriveToWall;
@@ -810,16 +822,42 @@ void cmd_ControlMode(bool en)
     disable_irq();
 	if (en && !ControlOnChip_Enabled)
 	{
+		PCControl_Enabled = false;
         ledPeriod           = 100/CONTROL_LOOP_PERIOD_MS;
 	}
 	else if (!en && ControlOnChip_Enabled)
 	{
 		Motor_Stop();
 		motor_command = 0;
+		time_motor_command_obtained = 0;
+		new_motor_command_obtained = false;
         ledPeriod           = 500/CONTROL_LOOP_PERIOD_MS;
 	}
 
 	ControlOnChip_Enabled = en;
+	enable_irq();
+}
+
+void cmd_PCControlMode(bool en)
+{
+	disable_irq();
+	if (en)
+	{
+		ControlOnChip_Enabled = false;
+		time_motor_command_obtained = 0;
+		new_motor_command_obtained = false;
+		ledPeriod = 100/CONTROL_LOOP_PERIOD_MS;
+	}
+	else if (PCControl_Enabled)
+	{
+		Motor_Stop();
+		motor_command = 0;
+		time_motor_command_obtained = 0;
+		new_motor_command_obtained = false;
+		ledPeriod = 500/CONTROL_LOOP_PERIOD_MS;
+	}
+
+	PCControl_Enabled = en;
 	enable_irq();
 }
 

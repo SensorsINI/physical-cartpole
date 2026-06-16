@@ -4,7 +4,7 @@ import time
 import pandas as pd
 
 PING_TIMEOUT = 1.0  # Seconds
-CALIBRATE_TIMEOUT = 40.0  # Seconds
+CALIBRATE_TIMEOUT = 20.0  # Seconds
 HARDWARE_EXPERIMENT_TIMEOUT = 30.0  # Seconds
 READ_STATE_TIMEOUT = 1.0  # Seconds
 SERIAL_SOF = 0xAA
@@ -19,6 +19,7 @@ CMD_GET_CONTROL_CONFIG = 0xC7
 CMD_SET_MOTOR = 0xC8
 CMD_SET_TARGET_POSITION = 0xC9
 CMD_COLLECT_RAW_ANGLE = 0xCA
+CMD_PC_CONTROL_MODE = 0xCB
 CMD_STATE = 0xCC
 CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
@@ -49,6 +50,7 @@ class Interface:
 
     def close(self):
         if self.device:
+            self.pc_control_mode(False)
             self.control_mode(False)
             self.set_motor(0)
             time.sleep(2)
@@ -156,6 +158,11 @@ class Interface:
 
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
+        msg.append(self._crc(msg))
+        self.device.write(bytearray(msg))
+
+    def pc_control_mode(self, en):
+        msg = [SERIAL_SOF, CMD_PC_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
         self.device.write(bytearray(msg))
 

@@ -126,6 +126,7 @@ class PhysicalCartPoleDriver:
         if CHIP == 'ZYNQ':
             set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
+        self.InterfaceInstance.pc_control_mode(False)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
 
@@ -397,6 +398,7 @@ class PhysicalCartPoleDriver:
         self.controlEnabled = False
         self.Q = 0
         self.InterfaceInstance.set_motor(0)
+        self.InterfaceInstance.pc_control_mode(False)
         if self.controller.controller_name == 'mppi-tf':
             self.controller.controller_report()
         try:
@@ -410,14 +412,19 @@ class PhysicalCartPoleDriver:
     def switch_on_control(self):
         self.controlEnabled = True
         self.th.reset_timing_helper_memory()
+        self.InterfaceInstance.control_mode(False)
+        self.InterfaceInstance.pc_control_mode(True)
 
     def hardware_controller_on_off(self):
         self.firmwareControl = not self.firmwareControl
+        if self.firmwareControl and self.controlEnabled:
+            self.switch_off_control()
         print("\nFirmware Control", self.firmwareControl)
         self.InterfaceInstance.control_mode(self.firmwareControl)
 
     def run_hardware_experiment(self):
         self.controlEnabled = False
+        self.InterfaceInstance.pc_control_mode(False)
         if self.epm.current_experiment_protocol.is_running():
             self.epm.current_experiment_protocol.stop()
         self.InterfaceInstance.run_hardware_experiment()
@@ -425,6 +432,7 @@ class PhysicalCartPoleDriver:
 
     def calibrate(self):
         self.controlEnabled = False
+        self.InterfaceInstance.pc_control_mode(False)
         if self.epm.current_experiment_protocol.is_running():
             self.epm.current_experiment_protocol.stop()
 
@@ -514,6 +522,7 @@ class PhysicalCartPoleDriver:
                 print('\nSafety Switch.')
                 self.controlEnabled = False
                 self.InterfaceInstance.set_motor(0)
+                self.InterfaceInstance.pc_control_mode(False)
 
                 if hasattr(self.controller, 'controller_report') and self.th.controlled_iterations > 1:
                     self.controller.controller_report()

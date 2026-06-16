@@ -82,6 +82,15 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
+							case CMD_PC_CONTROL_MODE:
+							{
+								if (pktLen == 5)
+								{
+									current_command = CMD_PC_CONTROL_MODE;
+								}
+								break;
+							}
+
 							case CMD_SET_PID_CONFIG:
 							{
 								if (pktLen == 34)
