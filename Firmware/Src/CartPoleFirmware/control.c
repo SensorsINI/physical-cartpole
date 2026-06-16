@@ -102,6 +102,7 @@ void 			cmd_GetControlConfig(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
 void			cmd_RunHardwareExperiment(void);
 void 			cmd_transfer_buffers(void);
+void			CONTROL_CalibrationStep(void);
 
 float angle_deviation_update(float new_angle_hanging);
 float angle_deviation_update(float new_angle_hanging){
@@ -154,7 +155,23 @@ void CONTROL_ToggleState(void)
 	cmd_ControlMode(!ControlOnChip_Enabled);
 }
 
+typedef enum {
+	CalibrationState_Idle,
+	CalibrationState_DriveToWall,
+	CalibrationState_ReverseDetect,
+	CalibrationState_DriveToCenter,
+	CalibrationState_SettleAtCenter,
+	CalibrationState_Finished
+} CalibrationState;
+
 bool calibrate = false;
+static CalibrationState calibrationState = CalibrationState_Idle;
+static int calibrationTicks = 0;
+static int calibrationLastPosition = 0;
+static int calibrationLowMotionSamples = 0;
+static short calibrationEncoderDirection = 1;
+static bool calibrationFailed = false;
+
 void CONTROL_ToggleCalibration(void)
 {
     disable_irq();
@@ -246,85 +263,89 @@ void CONTROL_BackgroundTask(void)
 
         time = time_accumulated_us/1000000.0;
 
-		// Microcontroller Control Routine
-		if (ControlOnChip_Enabled)	{
+		if (calibrate) {
+			CONTROL_CalibrationStep();
+		} else {
+			// Microcontroller Control Routine
+			if (ControlOnChip_Enabled)	{
 
 #ifdef ZYNQ
 #ifndef USE_EXTERNAL_INTERFACE
-			if(USE_TARGET_SWITCHES && position_jumps_enabled){
+				if(USE_TARGET_SWITCHES && position_jumps_enabled){
 
-				if (position_jumps_interval_counter >= position_period)
+					if (position_jumps_interval_counter >= position_period)
+					{
+						position_jumps_target = -position_jumps_target;
+						target_position = position_jumps_target;
+						position_jumps_interval_counter = 0;
+					} else {
+						++position_jumps_interval_counter;
+					}
+
+
+				}
+#endif
+#endif
+				switch (current_controller){
+				case OnChipController_PID:
 				{
-					position_jumps_target = -position_jumps_target;
-					target_position = position_jumps_target;
-					position_jumps_interval_counter = 0;
-				} else {
-					++position_jumps_interval_counter;
+	                CB_RebindOnChange(&g_cb, &PID_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+					break;
+				}
+				case OnChipController_NeuralImitator:
+				{
+	                CB_RebindOnChange(&g_cb, &NeuralImitator_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+					break;
+				}
+				case OnChipController_PID_position:
+				{
+	                CB_RebindOnChange(&g_cb, &PIDPos_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+					break;
+				}
+				case OnChipController_LQR:
+	            {
+	                CB_RebindOnChange(&g_cb, &LQR_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
+	            case OnChipController_neural_controller_C:
+	            {
+	                CB_RebindOnChange(&g_cb, &NNC_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
+				default:
+				{
+					Q = 0.0;
+					break;
 				}
 
+				}
 
-			}
-#endif
-#endif
-			switch (current_controller){
-			case OnChipController_PID:
-			{
-                CB_RebindOnChange(&g_cb, &PID_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
-                Q = CB_Eval(&g_cb);
-				break;
-			}
-			case OnChipController_NeuralImitator:
-			{
-                CB_RebindOnChange(&g_cb, &NeuralImitator_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
-                Q = CB_Eval(&g_cb);
-				break;
-			}
-			case OnChipController_PID_position:
-			{
-                CB_RebindOnChange(&g_cb, &PIDPos_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
-                Q = CB_Eval(&g_cb);
-				break;
-			}
-			case OnChipController_LQR:
-            {
-                CB_RebindOnChange(&g_cb, &LQR_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
-                Q = CB_Eval(&g_cb);
-                break;
-            }
-            case OnChipController_neural_controller_C:
-            {
-                CB_RebindOnChange(&g_cb, &NNC_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
-                Q = CB_Eval(&g_cb);
-                break;
-            }
-			default:
-			{
-				Q = 0.0;
-				break;
+		        motor_command_from_chip = control_signal_to_motor_command(Q, positionD, correct_motor_dynamics);
+		        motor_command_safety_check(&motor_command_from_chip);
+		        safety_switch_off(&motor_command_from_chip, positionLimitLeft, positionLimitRight);
+
+				time_motor_command_obtained = GetTimeNow();
+				new_motor_command_obtained = true;
+				time_measurement_done = time_current_measurement;
+
+				motor_command = motor_command_from_chip;
+
+				if(!CONTROL_SYNC)
+				{
+					Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
+				}
 			}
 
-			}
-
-	        motor_command_from_chip = control_signal_to_motor_command(Q, positionD, correct_motor_dynamics);
-	        motor_command_safety_check(&motor_command_from_chip);
-	        safety_switch_off(&motor_command_from_chip, positionLimitLeft, positionLimitRight);
-
-			time_motor_command_obtained = GetTimeNow();
-			new_motor_command_obtained = true;
-            time_measurement_done = time_current_measurement;
-
-            motor_command = motor_command_from_chip;
-
-	        if(!CONTROL_SYNC)
-	        {
-	        	Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
-	        }
+			HardwareExperimentProtocol(position, angle, time,
+					&target_position, &target_equilibrium,
+					&run_hardware_experiment, &save_to_offline_buffers,
+					&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
 		}
-
-        HardwareExperimentProtocol(position, angle, time,
-        		&target_position, &target_equilibrium,
-				&run_hardware_experiment, &save_to_offline_buffers,
-				&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
 
         if(save_to_offline_buffers){
             fill_data_buffers(
@@ -489,7 +510,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_CALIBRATE:
 		{
-			calibrate=true;
+			cmd_Calibrate();
 			break;
 		}
 
@@ -576,7 +597,7 @@ void CONTROL_BackgroundTask(void)
 		}
 	}
 
-	if (calibrate){
+	if (calibrate && calibrationState == CalibrationState_Idle){
 		cmd_Calibrate();
 	}
 
@@ -610,93 +631,178 @@ void cmd_transfer_buffers(void)
 void cmd_Calibrate(void)
 {
 	unsigned short SPEED_CALIBRATION = (float)(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES) * 0.3;
-	int pos;
-	int diff;
-	float fDiff;
+
+	if (calibrationState != CalibrationState_Idle) {
+		return;
+	}
+
+	ControlOnChip_Enabled = false;
+	isCalibrated = false;
+	calibrate = true;
+	calibrationState = CalibrationState_DriveToWall;
+	calibrationTicks = 0;
+	calibrationLowMotionSamples = 0;
+	calibrationEncoderDirection = 1;
+	calibrationFailed = false;
+
+	Encoder_Set_Direction(calibrationEncoderDirection);
+	calibrationLastPosition = Encoder_Read();
+	motor_command = SPEED_CALIBRATION;
+	Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
+	Led_Switch(true);
+}
+
+void CONTROL_CalibrationStep(void)
+{
+	const unsigned short SPEED_CALIBRATION = (float)(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES) * 0.3;
+	const int wallMotionThreshold = 15;
 	static unsigned char	buffer[30];
-	short encoderDirection	= 1;
 
-	Encoder_Set_Direction(encoderDirection);
+	int sampleTicks = 100 / CONTROL_LOOP_PERIOD_MS;
+	int initialDriveTicks = 500 / CONTROL_LOOP_PERIOD_MS;
+	int reverseDetectTimeoutTicks = 5000 / CONTROL_LOOP_PERIOD_MS;
+	int centerTimeoutTicks = 15000 / CONTROL_LOOP_PERIOD_MS;
+	int centerSettleTicks = 300 / CONTROL_LOOP_PERIOD_MS;
+	int wallTimeoutTicks = 15000 / CONTROL_LOOP_PERIOD_MS;
 
-	disable_irq();
-	Motor_Stop();
-	Led_Switch(true);
+	if (sampleTicks < 1) sampleTicks = 1;
+	if (initialDriveTicks < 1) initialDriveTicks = 1;
+	if (reverseDetectTimeoutTicks < 1) reverseDetectTimeoutTicks = 1;
+	if (centerTimeoutTicks < 1) centerTimeoutTicks = 1;
+	if (centerSettleTicks < 1) centerSettleTicks = 1;
+	if (wallTimeoutTicks < 1) wallTimeoutTicks = 1;
 
-	// Get left limit
-	Sleep_ms(100);
-	positionLimitRight = Encoder_Read();
-	Motor_SetPower(SPEED_CALIBRATION, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
+	calibrationTicks++;
 
-	do {
-		Sleep_ms(100);
-		pos  = Encoder_Read();
-		diff = pos - positionLimitRight;
-		positionLimitRight = pos;
+	switch (calibrationState) {
+	case CalibrationState_DriveToWall:
+		motor_command = SPEED_CALIBRATION;
 
-		// if we don't move enough, must have hit limit
-	} while(abs(diff) > 15);
+		if (calibrationTicks >= initialDriveTicks && calibrationTicks % sampleTicks == 0) {
+			int currentPosition = Encoder_Read();
+			int diff = currentPosition - calibrationLastPosition;
+			calibrationLastPosition = currentPosition;
 
-	Motor_Stop();
-	Led_Switch(false);
+			if (abs(diff) <= wallMotionThreshold) {
+				calibrationLowMotionSamples++;
+			} else {
+				calibrationLowMotionSamples = 0;
+			}
 
-	// Get right limit
-	Sleep_ms(100);
-	positionLimitLeft = Encoder_Read();
-	Motor_SetPower(-SPEED_CALIBRATION, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
-
-	do {
-		Sleep_ms(100);
-		pos  = Encoder_Read();
-		diff = pos - positionLimitLeft;
-		positionLimitLeft = pos;
-
-		// if we don't move enough, must have hit limit
-	} while(abs(diff) > 15);
-
-	Motor_Stop();
-
-	// Move pendulum to the centre (roughly)
-	Led_Switch(true);
-	Sleep_ms(200);
-	// invert reading for original motor
-	if (positionLimitLeft > positionLimitRight) {
-		positionLimitLeft *= -1;
-		positionLimitRight *= -1;
-		encoderDirection = -1;
-		Encoder_Set_Direction(encoderDirection);
-	} else {
-		encoderDirection = 1;
-	}
-
-	positionCentre = (positionLimitLeft + positionLimitRight) / 2;			// average limits
-
-	// Slower to get back to middle
-	Motor_SetPower(SPEED_CALIBRATION, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
-	do {
-		fDiff = 2.0 * abs(Encoder_Read() - positionCentre) / abs(positionLimitRight - positionLimitLeft);
-		// Slow Down even more to get more accurately to the middle
-		if(fDiff < 1e-1) {
-			Motor_SetPower(SPEED_CALIBRATION/2, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
+			if (calibrationLowMotionSamples >= 2) {
+				Motor_Stop();
+				motor_command = 0;
+				Encoder_Init();
+				calibrationState = CalibrationState_ReverseDetect;
+				calibrationTicks = 0;
+				calibrationLowMotionSamples = 0;
+				Led_Switch(false);
+			}
 		}
-	} while(fDiff > 5e-4);
-	Motor_Stop();
 
-	if(!HardwareConfigSetFromPC)
+		if (calibrationTicks > wallTimeoutTicks) {
+			calibrationFailed = true;
+			Motor_Stop();
+			motor_command = 0;
+			calibrationState = CalibrationState_Finished;
+		}
+		break;
+
+	case CalibrationState_ReverseDetect:
+		motor_command = -SPEED_CALIBRATION;
+
+		if (abs(Encoder_Read()) >= 30) {
+			if (Encoder_Read() > 0) {
+				calibrationEncoderDirection = -1;
+			} else {
+				calibrationEncoderDirection = 1;
+			}
+			Encoder_Set_Direction(calibrationEncoderDirection);
+			Encoder_Init();
+			calibrationState = CalibrationState_DriveToCenter;
+			calibrationTicks = 0;
+		} else if (calibrationTicks > reverseDetectTimeoutTicks) {
+			calibrationFailed = true;
+			Motor_Stop();
+			motor_command = 0;
+			calibrationState = CalibrationState_Finished;
+		}
+		break;
+
+	case CalibrationState_DriveToCenter:
 	{
-		MOTOR = encoderDirection==1 ? MOTOR_POLOLU : MOTOR_ORIGINAL;
-		ANGLE_HANGING = MOTOR==MOTOR_POLOLU ? ANGLE_HANGING_POLOLU : ANGLE_HANGING_ORIGINAL;
+		int target = -(int)(POSITION_ENCODER_RANGE / 2);
+		int currentPosition = Encoder_Read();
+		int error = currentPosition - target;
+		float fDiff = 2.0 * abs(error) / POSITION_ENCODER_RANGE;
 
-		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+		if (fDiff <= 1e-2) {
+			Motor_Stop();
+			motor_command = 0;
+			calibrationState = CalibrationState_SettleAtCenter;
+			calibrationTicks = 0;
+		} else if (calibrationTicks > centerTimeoutTicks) {
+			calibrationFailed = true;
+			Motor_Stop();
+			motor_command = 0;
+			calibrationState = CalibrationState_Finished;
+		} else {
+			int speed = (fDiff < 1e-1) ? SPEED_CALIBRATION / 3 : SPEED_CALIBRATION;
+			int direction = (error > 0) ? -1 : 1;
+			motor_command = direction * speed;
+		}
+		break;
 	}
 
-	Sleep_ms(100);
-	prepare_message_to_PC_calibration(buffer, encoderDirection);
-    Message_SendToPC(buffer, 5);
+	case CalibrationState_SettleAtCenter:
+		Motor_Stop();
+		motor_command = 0;
 
-	isCalibrated = true;
-	calibrate = false;
-	Led_Switch(false);
-	enable_irq();
+		if (calibrationTicks >= centerSettleTicks) {
+			Encoder_Init();
+			int halfTrack = (int)(POSITION_ENCODER_RANGE / 2);
+			positionCentre = 0;
+			positionLimitRight = halfTrack;
+			positionLimitLeft = -halfTrack;
+			calibrationState = CalibrationState_Finished;
+		}
+		break;
+
+	case CalibrationState_Finished:
+		Motor_Stop();
+		motor_command = 0;
+
+		if(!HardwareConfigSetFromPC && !calibrationFailed)
+		{
+			MOTOR = calibrationEncoderDirection==1 ? MOTOR_POLOLU : MOTOR_ORIGINAL;
+			ANGLE_HANGING = MOTOR==MOTOR_POLOLU ? ANGLE_HANGING_POLOLU : ANGLE_HANGING_ORIGINAL;
+
+			ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+		}
+
+		prepare_message_to_PC_calibration(buffer, calibrationFailed ? 0 : calibrationEncoderDirection);
+	    Message_SendToPC(buffer, 5);
+
+		isCalibrated = !calibrationFailed;
+		calibrate = false;
+		calibrationState = CalibrationState_Idle;
+		Led_Switch(false);
+		break;
+
+	case CalibrationState_Idle:
+	default:
+		motor_command = 0;
+		break;
+	}
+
+	time_motor_command_obtained = GetTimeNow();
+	new_motor_command_obtained = true;
+	time_measurement_done = time_current_measurement;
+
+	if(!CONTROL_SYNC)
+	{
+		Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
+	}
 }
 
 void cmd_ControlMode(bool en)
