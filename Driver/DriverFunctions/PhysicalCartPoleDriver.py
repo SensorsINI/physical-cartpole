@@ -429,6 +429,31 @@ class PhysicalCartPoleDriver:
             self.epm.current_experiment_protocol.stop()
         self.InterfaceInstance.run_hardware_experiment()
 
+    def measure_and_apply_hanging_angle(self):
+        global ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_DEVIATION
+
+        if self.controlEnabled:
+            self.switch_off_control()
+        if self.firmwareControl:
+            self.firmwareControl = False
+            self.InterfaceInstance.control_mode(False)
+        if self.epm.current_experiment_protocol.is_running():
+            self.epm.current_experiment_protocol.stop()
+
+        angle_hanging, angle_hanging_std = self.idp.precise_angle_measurement(self.InterfaceInstance)
+        ANGLE_HANGING = float(angle_hanging)
+        ANGLE_HANGING_DEFAULT = False
+        ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
+        self.idp.angle_deviation_finetune = 0.0
+
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+                                                  controlSync=CONTROL_SYNC,
+                                                  angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
+                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+
+        print('\nApplied measured hanging angle for this run.')
+        print('ANGLE_HANGING: {:.3f} ADC reading (std {:.3f})'.format(ANGLE_HANGING, angle_hanging_std))
+        print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
 
     def calibrate(self):
         self.controlEnabled = False
@@ -454,12 +479,12 @@ class PhysicalCartPoleDriver:
         if self.InterfaceInstance.encoderDirection == 1:
             MOTOR = 'POLOLU'
             MOTOR_CORRECTION = MOTOR_CORRECTION_POLOLU
-            ANGLE_HANGING = ANGLE_HANGING_POLOLU
+            detected_motor_angle_hanging = ANGLE_HANGING_POLOLU
 
         elif self.InterfaceInstance.encoderDirection == -1:
             MOTOR = 'ORIGINAL'
             MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
-            ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
+            detected_motor_angle_hanging = ANGLE_HANGING_ORIGINAL
         elif self.InterfaceInstance.encoderDirection == 0:
             raise RuntimeError(
                 'Firmware calibration failed: reverse movement was not detected or the cart did not reach center. '
@@ -471,6 +496,7 @@ class PhysicalCartPoleDriver:
             )
 
         if ANGLE_HANGING_DEFAULT:
+            ANGLE_HANGING = detected_motor_angle_hanging
             ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
 
         print("Done calibrating")

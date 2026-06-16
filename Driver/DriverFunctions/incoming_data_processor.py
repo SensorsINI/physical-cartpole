@@ -211,7 +211,6 @@ class IncomingDataProcessor:
         s[ANGLE_SIN_IDX] = np.sin(angle)
 
     def precise_angle_measurement(self, InterfaceInstance):
-        global ANGLE_DEVIATION, ANGLE_HANGING_DEFAULT
         measured_angles = []
         number_of_measurements = 1000
         time_measurement_start = time.time()
@@ -225,7 +224,7 @@ class IncomingDataProcessor:
         angle_std = np.std(measured_angles)
 
         angle_rad = wrap_angle_rad(
-            (self.angle_raw + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
+            (angle_average + ANGLE_DEVIATION) * ANGLE_NORMALIZATION_FACTOR - self.angle_deviation_finetune)
         angle_std_rad = angle_std * ANGLE_NORMALIZATION_FACTOR
         print('\nAverage angle of {} measurements: {} rad, {} ADC reading'.format(number_of_measurements,
                                                                                   angle_rad,
@@ -234,6 +233,7 @@ class IncomingDataProcessor:
                                                                               angle_std_rad,
                                                                               angle_std))
         print('\nMeasurement took {} s'.format(time_measurement))
+        return angle_average, angle_std
 
     def finetune_zero_angle(self, direction='increase'):
         step_change = 0.002
