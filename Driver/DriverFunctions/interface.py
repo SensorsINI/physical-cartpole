@@ -4,7 +4,7 @@ import time
 import pandas as pd
 
 PING_TIMEOUT = 1.0  # Seconds
-CALIBRATE_TIMEOUT = 10.0  # Seconds
+CALIBRATE_TIMEOUT = 40.0  # Seconds
 HARDWARE_EXPERIMENT_TIMEOUT = 30.0  # Seconds
 READ_STATE_TIMEOUT = 1.0  # Seconds
 SERIAL_SOF = 0xAA
@@ -36,6 +36,8 @@ class Interface:
         self.end = None
 
         self.encoderDirection = None
+        self.calibration_in_progress = False
+        self.calibration_completed = False
 
         self.hardware_experiment_length = 0
 
@@ -70,15 +72,27 @@ class Interface:
         self.device.write(bytearray(msg))
         self.clear_read_buffer()
 
-    def calibrate(self):
+    def start_calibration(self):
+        if self.calibration_in_progress:
+            return False
+
         msg = [SERIAL_SOF, CMD_CALIBRATE, 4]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
 
         self.clear_read_buffer()
+        self.encoderDirection = None
+        self.calibration_completed = False
+        self.calibration_in_progress = True
+        self.device.write(bytearray(msg))
+
+        return True
+
+    def calibrate(self):
+        if not self.start_calibration():
+            return False
 
         reply = self._receive_reply(CMD_CALIBRATE, 5, CALIBRATE_TIMEOUT)
-        self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
+        self._handle_calibration_reply(reply)
 
         return True
 
@@ -213,9 +227,16 @@ class Interface:
         return struct.unpack(str(lenght) + 'H', bytes(reply[3:3 + 2 * lenght]))
 
     def read_state(self):
-        self.clear_read_buffer()
+        if not self.calibration_in_progress:
+            self.clear_read_buffer()
         message_length = STATE_MESSAGE_LEN
-        reply = self._receive_reply(CMD_STATE, message_length, READ_STATE_TIMEOUT)
+        timeout = CALIBRATE_TIMEOUT if self.calibration_in_progress else READ_STATE_TIMEOUT
+        reply = self._receive_reply(
+            CMD_STATE,
+            message_length,
+            timeout,
+            reconnect_at_timeout=not self.calibration_in_progress,
+        )
 
         (angle, angleD, position, target_position, command, invalid_steps, time_difference,
          time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhBIQ2H',
@@ -245,11 +266,28 @@ class Interface:
                 if self.start == False:
                     self.start = time.time()
 
-            while len(self.msg) >= cmdLen:
+            while True:
                 # print('I am looping! Hurra!')
                 # Message must start with SOF character
+                if len(self.msg) < 3:
+                    break
+
                 if self.msg[0] != SERIAL_SOF:
                     # print('\nMissed SERIAL_SOF')
+                    del self.msg[0]
+                    continue
+
+                packet_len = self.msg[2] if cmdLen < 256 else cmdLen
+                if len(self.msg) < packet_len:
+                    break
+
+                if cmd != CMD_CALIBRATE and self.msg[1] == CMD_CALIBRATE and packet_len == 5:
+                    if self.msg[4] == self._crc(self.msg[:4]):
+                        self._handle_calibration_reply(self.msg[:5])
+                        del self.msg[:5]
+                        continue
+
+                    print('\nCRC Failed.')
                     del self.msg[0]
                     continue
 
@@ -275,6 +313,11 @@ class Interface:
                 reply = self.msg[:cmdLen]
                 del self.msg[:cmdLen]
                 return reply
+
+    def _handle_calibration_reply(self, reply):
+        self.encoderDirection = struct.unpack('b', bytes(reply[3:4]))[0]
+        self.calibration_in_progress = False
+        self.calibration_completed = True
 
     def _crc(self, msg):
         crc8 = 0x00

@@ -183,6 +183,7 @@ class PhysicalCartPoleDriver:
         self.keyboard_controller.keyboard_input()
 
         self.load_data_from_chip()
+        self.check_calibration_status()
 
         self.th.time_measurement()
 
@@ -272,7 +273,13 @@ class PhysicalCartPoleDriver:
             self.motor_command_safety_check()
             self.safety_switch_off()
 
-        if self.controlEnabled or (self.epm.current_experiment_protocol.is_running() and self.epm.current_experiment_protocol.Q is not None):
+        if (
+                not self.InterfaceInstance.calibration_in_progress
+                and (self.controlEnabled or (
+                    self.epm.current_experiment_protocol.is_running()
+                    and self.epm.current_experiment_protocol.Q is not None
+                ))
+        ):
             self.InterfaceInstance.set_motor(self.actualMotorCmd)
 
         if self.firmwareControl:
@@ -417,12 +424,24 @@ class PhysicalCartPoleDriver:
 
 
     def calibrate(self):
-        global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
         self.controlEnabled = False
+        if self.epm.current_experiment_protocol.is_running():
+            self.epm.current_experiment_protocol.stop()
 
-        print("\nCalibrating motor position.... ")
-        self.InterfaceInstance.calibrate()
-        print("Done calibrating")
+        if self.InterfaceInstance.start_calibration():
+            print("\nCalibrating motor position.... ")
+        else:
+            print("\nCalibration already in progress.")
+
+    def check_calibration_status(self):
+        if not self.InterfaceInstance.calibration_completed:
+            return
+
+        self.InterfaceInstance.calibration_completed = False
+        self.apply_calibration_result()
+
+    def apply_calibration_result(self):
+        global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
 
         if self.InterfaceInstance.encoderDirection == 1:
             MOTOR = 'POLOLU'
@@ -433,13 +452,20 @@ class PhysicalCartPoleDriver:
             MOTOR = 'ORIGINAL'
             MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
             ANGLE_HANGING = ANGLE_HANGING_ORIGINAL
+        elif self.InterfaceInstance.encoderDirection == 0:
+            raise RuntimeError(
+                'Firmware calibration failed: reverse movement was not detected or the cart did not reach center. '
+                'Check motor direction, encoder counts, and mechanical friction/stall.'
+            )
         else:
-            raise ValueError('Unexpected value for self.InterfaceInstance.encoderDirection = '.format(
-                self.InterfaceInstance.encoderDirection))
+            raise ValueError(
+                f'Unexpected value for self.InterfaceInstance.encoderDirection = {self.InterfaceInstance.encoderDirection}'
+            )
 
         if ANGLE_HANGING_DEFAULT:
             ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
 
+        print("Done calibrating")
         print('Detected motor: {}'.format(MOTOR))
 
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
