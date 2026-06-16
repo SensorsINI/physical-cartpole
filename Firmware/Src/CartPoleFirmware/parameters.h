@@ -30,6 +30,7 @@ typedef enum {
 
 
 extern const float ANGLE_360_DEG_IN_ADC_UNITS;
+extern const float POSITION_ENCODER_RANGE;
 
 extern float ANGLE_HANGING_POLOLU;
 extern float ANGLE_HANGING_ORIGINAL;
