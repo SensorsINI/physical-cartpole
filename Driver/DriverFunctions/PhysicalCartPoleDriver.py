@@ -187,7 +187,7 @@ class PhysicalCartPoleDriver:
 
         self.th.time_measurement()
 
-        self.th.check_latency_violation(self.controlEnabled)
+        self.th.check_latency_violation(self.controlEnabled or self.firmwareControl)
 
         self.idp.process_state_information(self.s, self.th.time_between_measurements_chip)
 

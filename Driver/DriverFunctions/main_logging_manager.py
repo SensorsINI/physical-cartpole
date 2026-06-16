@@ -237,8 +237,10 @@ class MainLoggingManager:
                 else:
                     mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROL_PERIOD_MS,
                                                                              CONTROL_SYNC)
-            else:
+            elif self.driver.firmwareControl:
                 mode = 'CONTROLLER:   Firmware'
+            else:
+                mode = 'CONTROLLER:   Idle'
             self.tcm.print_temporary(BACK_TO_BEGINNING + mode + CLEAR_LINE)
 
             # Experiment Protocol

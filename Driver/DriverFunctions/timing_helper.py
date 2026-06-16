@@ -68,6 +68,10 @@ class TimingHelper:
 
     # FIXME: Think if these cases are right
     def check_latency_violation(self, controlEnabled):
+        if not controlEnabled:
+            self.latency_violation = 0
+            return
+
         # Latency Violations
         if self.latency_violation == 1:
             self.latency_violations += 1

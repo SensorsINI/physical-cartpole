@@ -370,17 +370,17 @@ void CONTROL_BackgroundTask(void)
 
 		// Send latest state to the PC
 		static int slowdown = 0;
-	    if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN && run_hardware_experiment==0)
-	    {
-	        slowdown = 0;
+		if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN && run_hardware_experiment==0)
+		{
+			slowdown = 0;
 
-	    	if(time_motor_command_obtained > 0 && time_measurement_done > 0 && new_motor_command_obtained) {
-	        	latency = time_motor_command_obtained - time_measurement_done;
-	        	latency_violation = 0;
-	    	} else{
-	    		latency_violation = 1;
-	    		latency = CONTROL_LOOP_PERIOD_MS*1000;
-	    	}
+			if(time_motor_command_obtained > 0 && time_measurement_done > 0 && new_motor_command_obtained) {
+				latency = time_motor_command_obtained - time_measurement_done;
+				latency_violation = 0;
+			} else{
+				latency_violation = 0;
+				latency = 0;
+			}
 
 	    	prepare_message_to_PC_state(
 	    			buffer,
