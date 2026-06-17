@@ -6,8 +6,27 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
+
+##### Real-time CPU pinning #####
+# CPU core(s) the control process is pinned to for time-predictable single-step
+# execution. control.py applies this BEFORE TensorFlow is imported, so the TF/XLA
+# worker threads inherit the mask (see Driver/DriverFunctions/cpu_affinity.py).
+# This setting alone decides the policy:
+#   non-empty -> pin to those core(s) AND run TensorFlow single-threaded. Use for
+#                single-threaded optimizers, e.g. 'rpgd'.
+#   ""        -> no pin, auto threading. Use for parallel optimizers, e.g. 'rpgd-c',
+#                which a single-core pin would throttle.
+# So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
+# "2-3" allow those cores; "" disables pinning.
+CONTROL_CPU_AFFINITY = "2"
+
+# Which GPUs TensorFlow may see, applied by control.py before TF is imported.
+#   "-1"      -> CPU only (default; the TF control path is CPU-pinned anyway)
+#   "0", "0,1"-> expose those GPU(s)
+#   None      -> leave the CUDA_VISIBLE_DEVICES environment variable untouched
+CONTROL_CUDA_VISIBLE_DEVICES = "-1"
 
 # Motor type selection
 # Choose 'POLOLU' or 'ORIGINAL'

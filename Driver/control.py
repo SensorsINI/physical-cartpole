@@ -4,23 +4,26 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
 sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
 
-# Set device
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # TF: If uncommented, only uses CPU
+
+# Pinning is driven solely by globals.CONTROL_CPU_AFFINITY: set it for single-threaded
+# optimizers (rpgd), clear it for parallel ones (rpgd-c). Must run before TF imports.
+from globals import CONTROL_CPU_AFFINITY, CONTROL_CUDA_VISIBLE_DEVICES
+from DriverFunctions.cpu_affinity import configure_control_cpu_policy
+
+if CONTROL_CUDA_VISIBLE_DEVICES is not None:
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(CONTROL_CUDA_VISIBLE_DEVICES)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+
+_policy = configure_control_cpu_policy(CONTROL_CPU_AFFINITY)
 
 os.chdir("Driver")
 
-import tensorflow as tf
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 from CartPoleSimulation.CartPole import CartPole
 from globals import CONTROL_PERIOD_MS
 
-tf.keras.backend.clear_session()
-tf.config.optimizer.set_jit(True) # Enable XLA.
-
-print("TF Devices:", tf.config.list_physical_devices())
-print("TF Device Placement:", tf.config.get_soft_device_placement())
-print("TF Float Type:", tf.keras.backend.floatx())
+print("TF threads (env):", _policy["tf_threads"])
+print("XLA Flags:", _policy["xla_flags"])
 
 CartPoleInstance = CartPole()
 CartPoleInstance.dt_controller = float(CONTROL_PERIOD_MS)/1000.0
