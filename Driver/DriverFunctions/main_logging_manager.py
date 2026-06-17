@@ -224,9 +224,7 @@ class MainLoggingManager:
 
             ESC = '\033['
             BACK_TO_BEGINNING = '\r'
-            CLEAR_LINE = ESC + 'K'  # Clear the entire line
-
-            self.tcm.print_temporary(BACK_TO_BEGINNING + CLEAR_LINE)
+            CLEAR_LINE = ESC + 'K'  # Clear after the status text
 
             # Controller
             if self.driver.controlEnabled:
