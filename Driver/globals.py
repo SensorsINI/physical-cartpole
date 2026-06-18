@@ -6,8 +6,8 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'mpc', 'do-mpc', 'do-mpc-discrete'
-OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
+CONTROLLER_NAME = 'lqr'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete'
+OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
@@ -20,7 +20,7 @@ OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CO
 #                which a single-core pin would throttle.
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
-CONTROL_CPU_AFFINITY = "2"
+CONTROL_CPU_AFFINITY = None
 
 # Which GPUs TensorFlow may see, applied by control.py before TF is imported.
 #   "-1"      -> CPU only (default; the TF control path is CPU-pinned anyway)
@@ -39,6 +39,8 @@ MOTOR = 'POLOLU'
 ##### Controller Settings #####
 if CONTROLLER_NAME == 'pid':
     CONTROL_PERIOD_MS = 5
+elif CONTROLLER_NAME == 'lqr':
+    CONTROL_PERIOD_MS = 8
 elif CONTROLLER_NAME == 'neural-imitator':
     CONTROL_PERIOD_MS = 10
 elif CONTROLLER_NAME == 'fpga':
@@ -67,12 +69,15 @@ elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
     MOTOR_CORRECTION_POLOLU = (0.6216901, 0.0750750, 0.0549491)
-    ANGLE_360_DEG_IN_ADC_UNITS = 4085.89  # Explanation - see above for STM case.
+    # Calibrated from up/down ADC readings: hanging = 1063.779, upright = 3088.5,
+    # so 180 deg spans 3088.5 - 1063.779 = 2024.721 ADC units -> 360 deg = 4049.44.
+    # (12-bit ADC is ~4096 counts/rev; the old 4117 was above 4096, i.e. wrong.)
+    ANGLE_360_DEG_IN_ADC_UNITS = 4049.44  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1048.874  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 1063.779  # Measured hanging ADC ('b' calibration); with the corrected ANGLE_360 this maps upright -> 0
     ANGLE_HANGING_ORIGINAL = 1078.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 

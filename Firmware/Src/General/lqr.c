@@ -19,11 +19,13 @@ static const ControllerSpec LQR_Spec = {
     .names     = LQR_InputNames
 };
 
-/* ---- Gains (float-precision constants). ---- */
-static const float K0 = -0.99999994f;    /* from -0.9999999999999905  -> float */
-static const float K1 = -4.08279276f;    /* from -4.082792666616755   -> float */
-static const float K2 =  10.16550636f;   /* from  10.165506421041542  -> float */
-static const float K3 =  1.63372719f;    /* from  1.6337271346217523  -> float */
+/* ---- Gains for Q=[10000, 1, 1, 1], R=2000 (float-precision constants). ----
+ * Must match Driver/CartPoleSimulation/Control_Toolkit_ASF/config_controllers.yml
+ * (lqr: Q, R) so the on-chip and Python LQR are the same controller. */
+static const float K0 = -2.23606798f;    /* from -2.2360679774997900  -> float */
+static const float K1 = -4.55099888f;    /* from -4.5509988800000000  -> float */
+static const float K2 =  10.86611478f;   /* from  10.866114780000000  -> float */
+static const float K3 =  1.71854851f;    /* from  1.7185485100000000  -> float */
 
 /* ---- Lifecycle hooks (kept trivial). ---- */
 static void LQR_Init(void)    { /* nothing to set up at the program start */ }

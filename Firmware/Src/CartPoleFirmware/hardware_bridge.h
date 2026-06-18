@@ -21,7 +21,7 @@
 
 
 //configuration for Zynq
-#define USE_EXTERNAL_INTERFACE
+//#define USE_EXTERNAL_INTERFACE
 
 
 

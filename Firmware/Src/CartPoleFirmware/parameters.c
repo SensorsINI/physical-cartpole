@@ -7,7 +7,7 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short CONTROL_LOOP_PERIOD_MS				=		20;
+unsigned short CONTROL_LOOP_PERIOD_MS				=		8;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
@@ -49,12 +49,12 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 #elif defined(ZYNQ)
 
-float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429}; // Pololu
+float MOTOR_CORRECTION[3] 							=		{0.6216901, 0.0750750, 0.0549491}; // Pololu
 
-float ANGLE_HANGING_POLOLU 							=		1048.874;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_POLOLU 							=		1063.779;  // Measured hanging ADC ('b' calibration); with corrected ANGLE_360 this maps upright -> 0
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4085.89;
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4049.44;  // Calibrated: hanging=1063.779, upright=3088.5 -> 180deg=2024.721 ADC. Must match Driver/globals.py ZYNQ value; mismatch shifts on-chip angle zero and offsets LQR centering
 const float POSITION_ENCODER_RANGE					=		4695.0;
 
 const unsigned int CLOCK_FREQ						=		333333343;
@@ -62,7 +62,7 @@ const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		10000;
 
 const int MOTOR_FULL_SCALE_SAFE						=		((int)(0.95 * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES + 0.5));
 
-bool USE_TARGET_SWITCHES							=		true;					// You can set it true or false
+bool USE_TARGET_SWITCHES							=		false;					// Keep switch positions from changing target during LQR tests
 
 #endif
 

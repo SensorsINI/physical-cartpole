@@ -26,7 +26,7 @@
 #define	POSITION_JUMPS_SWITCH_NUMBER	1
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
-unsigned short current_controller = OnChipController_NeuralImitator;
+unsigned short current_controller = OnChipController_LQR;
 
 bool correct_motor_dynamics = true;
 
@@ -447,13 +447,18 @@ void CONTROL_BackgroundTask(void)
 	}
 
 #ifdef ZYNQ
-	if(Switch_GetState(CONTROLLERS_SWITCH_NUMBER)){
-		current_controller = OnChipController_PID;
-	} else{
-		current_controller = OnChipController_NeuralImitator;
-	}
+#ifdef USE_EXTERNAL_INTERFACE
+	current_controller = OnChipController_LQR;
 
-#ifndef USE_EXTERNAL_INTERFACE
+	target_position = get_normed_slider_state()*2*position_jumps_target;
+
+	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
+	if (target_equilibrium_from_external_button != 0){
+		target_equilibrium = target_equilibrium_from_external_button;
+	}
+#else
+	current_controller = OnChipController_LQR;
+
 	if (USE_TARGET_SWITCHES)
 	{
 		if(Switch_GetState(POSITION_JUMPS_SWITCH_NUMBER)){
@@ -469,18 +474,6 @@ void CONTROL_BackgroundTask(void)
 		} else{
 			target_equilibrium = -1.0;
 		}
-	}
-#else
-
-	if(Switch_GetState(EQUILIBRIUM_SWITCH_NUMBER)){ // Reuse the switch to enable position PID
-			current_controller = OnChipController_PID_position;
-		}
-
-	target_position = get_normed_slider_state()*2*position_jumps_target;
-
-	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
-	if (target_equilibrium_from_external_button != 0){
-		target_equilibrium = target_equilibrium_from_external_button;
 	}
 #endif
 	Leds_over_switches_Update(Switches_GetState());
