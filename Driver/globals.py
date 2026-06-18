@@ -69,9 +69,6 @@ elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
     MOTOR_CORRECTION_POLOLU = (0.6216901, 0.0750750, 0.0549491)
-    # Calibrated from up/down ADC readings: hanging = 1063.779, upright = 3088.5,
-    # so 180 deg spans 3088.5 - 1063.779 = 2024.721 ADC units -> 360 deg = 4049.44.
-    # (12-bit ADC is ~4096 counts/rev; the old 4117 was above 4096, i.e. wrong.)
     ANGLE_360_DEG_IN_ADC_UNITS = 4049.44  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
