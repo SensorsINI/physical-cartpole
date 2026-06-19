@@ -1,5 +1,6 @@
 import serial
 import struct
+import termios
 import time
 import pandas as pd
 
@@ -26,6 +27,7 @@ CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
 CMD_TRANSFER_BUFFERS = 0xD1
 # Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp.
 STATE_MESSAGE_LEN = 35
+SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
 
 class Interface:
@@ -61,17 +63,47 @@ class Interface:
         self.device.reset_input_buffer()
         self.prevPktNum = 1000
 
+    def _write_message(self, msg):
+        self.device.write(bytearray(msg))
+
+    def _send_stream_output_request(self, en):
+        msg = [SERIAL_SOF, CMD_STREAM_ON, 5, en]
+        msg.append(self._crc(msg))
+        self._write_message(msg)
+
+    def _reconnect(self, timeout=None, restart_stream=False):
+        print('\nSerial I/O error; reconnecting.')
+        try:
+            if self.device:
+                self.device.close()
+        except SERIAL_IO_ERRORS:
+            pass
+
+        time.sleep(1)
+        self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
+        self.msg = []
+        self.start = False
+        self.prevPktNum = 1000
+
+        if restart_stream:
+            self._send_stream_output_request(True)
+            try:
+                self.clear_read_buffer()
+            except SERIAL_IO_ERRORS:
+                # If the newly opened port cannot be flushed either, let the
+                # following read timeout/error drive the next reconnect attempt.
+                self.msg = []
+                self.prevPktNum = 1000
+
     def ping(self):
         msg = [SERIAL_SOF, CMD_PING, 4]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
         self.prevPktNum = 1000
         return self._receive_reply(CMD_PING, 4, PING_TIMEOUT) == msg
 
     def stream_output(self, en):
-        msg = [SERIAL_SOF, CMD_STREAM_ON, 5, en]
-        msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._send_stream_output_request(en)
         self.clear_read_buffer()
 
     def start_calibration(self):
@@ -85,7 +117,7 @@ class Interface:
         self.encoderDirection = None
         self.calibration_completed = False
         self.calibration_in_progress = True
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
         return True
 
@@ -101,7 +133,7 @@ class Interface:
     def run_hardware_experiment(self):
         msg = [SERIAL_SOF, CMD_RUN_HARDWARE_EXPERIMENT, 4]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
         self.clear_read_buffer()
 
@@ -112,7 +144,7 @@ class Interface:
 
         msg = [SERIAL_SOF, CMD_TRANSFER_BUFFERS, 4]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
         self.clear_read_buffer()
         variables_bytes = []
@@ -159,12 +191,12 @@ class Interface:
     def control_mode(self, en):
         msg = [SERIAL_SOF, CMD_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def pc_control_mode(self, en):
         msg = [SERIAL_SOF, CMD_PC_CONTROL_MODE, 5, 1 if en else 0]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def set_config_PID(self, setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD):
         msg = [SERIAL_SOF, CMD_SET_PID_CONFIG, 28]
@@ -178,12 +210,12 @@ class Interface:
         msg += list(struct.pack('f', angle_KD))
 
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def get_config_PID(self):
         msg = [SERIAL_SOF, CMD_GET_PID_CONFIG, 4]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
         reply = self._receive_reply(CMD_GET_PID_CONFIG, 28)
         (setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD) = struct.unpack(
             'h7f', bytes(reply[3:27]))
@@ -197,12 +229,12 @@ class Interface:
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('?', correct_motor_dynamics))
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def get_config_control(self):
         msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
         reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
         (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(
             reply[3:12]))
@@ -212,30 +244,33 @@ class Interface:
         msg = [SERIAL_SOF, CMD_SET_MOTOR, 8]
         msg += list(struct.pack('i', speed))
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def set_target_position(self, target_position):
         msg = [SERIAL_SOF, CMD_SET_TARGET_POSITION, 8]
         msg += list(struct.pack('f', target_position))
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def set_target_equilibrium(self, target_equilibrium):
         msg = [SERIAL_SOF, CMD_SET_TARGET_EQUILIBRIUM, 8]
         msg += list(struct.pack('f', target_equilibrium))
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
 
     def collect_raw_angle(self, lenght=100, interval_us=100):
         msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8, lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
         msg.append(self._crc(msg))
-        self.device.write(bytearray(msg))
+        self._write_message(msg)
         reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2 * lenght, crc=False, timeout=100)
         return struct.unpack(str(lenght) + 'H', bytes(reply[3:3 + 2 * lenght]))
 
     def read_state(self):
         if not self.calibration_in_progress:
-            self.clear_read_buffer()
+            try:
+                self.clear_read_buffer()
+            except SERIAL_IO_ERRORS:
+                self._reconnect(timeout=READ_STATE_TIMEOUT, restart_stream=True)
         message_length = STATE_MESSAGE_LEN
         timeout = CALIBRATE_TIMEOUT if self.calibration_in_progress else READ_STATE_TIMEOUT
         reply = self._receive_reply(
@@ -256,18 +291,18 @@ class Interface:
         self.start = False
 
         while True:
-            c = self.device.read()
+            try:
+                c = self.device.read()
+            except SERIAL_IO_ERRORS:
+                if reconnect_at_timeout:
+                    self._reconnect(timeout=timeout, restart_stream=True)
+                    continue
+                raise
             # Timeout: reopen device, start stream, reset msg and try again
             if len(c) == 0:
                 if reconnect_at_timeout:
                     print('\n_receive_reply: no response; reconnecting.')
-                    self.device.close()
-                    self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
-                    self.clear_read_buffer()
-                    time.sleep(1)
-                    self.stream_output(True)
-                    self.msg = []
-                    self.start = False
+                    self._reconnect(timeout=timeout, restart_stream=True)
             else:
                 self.msg.append(ord(c))
                 if self.start == False:
