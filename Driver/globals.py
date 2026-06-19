@@ -6,7 +6,7 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'pid'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
 OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 ##### Real-time CPU pinning #####
@@ -20,7 +20,7 @@ OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd-tf', 'mppi', only taken into account if 
 #                which a single-core pin would throttle.
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
-CONTROL_CPU_AFFINITY = None
+CONTROL_CPU_AFFINITY = "2"
 
 # Which GPUs TensorFlow may see, applied by control.py before TF is imported.
 #   "-1"      -> CPU only (default; the TF control path is CPU-pinned anyway)
@@ -48,7 +48,7 @@ elif CONTROLLER_NAME == 'fpga':
 else:
     CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 
-TIMESTEPS_FOR_DERIVATIVE = 1  # TODO: Python only, hardware sets it separately. In number of control cycles
+TIMESTEPS_FOR_DERIVATIVE = 1  # Derivative window in control cycles. Must match firmware parameters.c (angleD on-chip, positionD here).
 
 if CHIP == 'STM':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 7200

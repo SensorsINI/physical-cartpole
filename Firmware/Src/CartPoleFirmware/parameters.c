@@ -12,7 +12,7 @@ unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
 // Calculating derivatives and dead angle detection
-unsigned short TIMESTEPS_FOR_DERIVATIVE				=		1;  // 20 at most
+unsigned short TIMESTEPS_FOR_DERIVATIVE				=		1;  // 20 at most. Must match Driver/globals.py (angleD computed here, positionD in driver).
 // TIMESTEPS_FOR_DERIVATIVE: How many timesteps are taken for derivative (position and angle) calculation
 // and dead angle detection.
 // Too small value makes the effect of sensor quantization severe.
