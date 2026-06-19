@@ -49,7 +49,7 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 #elif defined(ZYNQ)
 
-float MOTOR_CORRECTION[3] 							=		{0.6216901, 0.0750750, 0.0549491}; // Pololu
+float MOTOR_CORRECTION[3] 							=		{0.5116974, 0.0178784, 0.0280385}; // Pololu; force-fit on committed CPP_step_response.csv (u_max=2.62N, mass=0.317kg). Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
 
 float ANGLE_HANGING_POLOLU 							=		1063.779;  // Measured hanging ADC ('b' calibration); with corrected ANGLE_360 this maps upright -> 0
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
