@@ -54,12 +54,12 @@
 
 /******************** Constant Definitions **********************************/
 
-/* Choose the active controller. Later: swap to PID/MPC ops here. */
+/* Choose the active controller used by the embedded controller manager. */
 static const ControllerOps* select_controller(void)
 {
     /* Example: keep NN for both switch positions for now. */
 //    return &NeuralImitator_Ops;
-    return &LQR_Ops;
+    return &PID_Ops;
 //    return &NNC_Ops;
 }
 

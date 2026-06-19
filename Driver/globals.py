@@ -6,7 +6,7 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'lqr'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete'
+CONTROLLER_NAME = 'pid'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete'
 OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
 
 ##### Real-time CPU pinning #####
