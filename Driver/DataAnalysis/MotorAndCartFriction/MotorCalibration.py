@@ -58,9 +58,12 @@ Attention! a, b, A and B are here unfortunately not consistent with the names us
 import matplotlib.pyplot as plt
 
 from double_regression import double_regression, double_regression_2
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import platform
+import argparse
+import os
 
 # Change backend for matplotlib to plot interactively in pycharm
 
@@ -68,8 +71,10 @@ from matplotlib import use
 
 if platform.system() == 'Darwin':
     use('macOSX')
-else:
+elif os.environ.get('DISPLAY'):
     use('TkAgg')
+else:
+    use('Agg')
 
 DATA_SMOOTHING = 2  # May strongly influence what is the max velocity and hence the results of calibration
 
@@ -79,18 +84,22 @@ MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # 10000 Zynq, 7200 STM
 
 # Define the variables
 # FILE_NAME = 'Pololu.csv'
-FILE_NAME = 'CPP_step_response-2-07-2024-check.csv'
+FILE_NAME = 'CPP_step_response.csv'
+DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / 'ExperimentRecordings'
 
 PLOT_CORRECTED = True
 
-v_sat_max = 0.55
-v_sat_max_lin = 0.85
+v_sat_max = 0.55  # Velocity target for Q = 1 in this fit; this does not set the physical force u_max.
+v_sat_max_lin = 0.85  # 2024 paper setup threshold selecting points used for the linear v_sat-vs-motor_input fit.
+u_max_target = 2.62  # Force target in newtons for Q = 1 in --force-fit mode; matches the active paper network scale.
+effective_mass = 0.230 + 0.087  # Effective moving mass [kg] (cart + pole). Approx: ignores belt/bearing inertia and wire; keep consistent with the simulation, it sets the absolute gain.
 
 
 def motor_calibration(FILE_NAME):
 
-    PATH_TO_DATA = './'
-    file_path = PATH_TO_DATA + FILE_NAME
+    file_path = Path(FILE_NAME)
+    if not file_path.is_absolute() and not file_path.exists():
+        file_path = DEFAULT_DATA_DIR / file_path
 
     # Define functions
     def smooth(y, box_pts):
@@ -218,10 +227,143 @@ def motor_calibration(FILE_NAME):
 
     return p[0], sn, sp
 
+
+def motor_force_calibration(FILE_NAME):
+    file_path = Path(FILE_NAME)
+    if not file_path.is_absolute() and not file_path.exists():
+        file_path = DEFAULT_DATA_DIR / file_path
+
+    def smooth(y, box_pts):
+        box = np.ones(box_pts) / box_pts
+        return np.convolve(y, box, mode='same')
+
+    data: pd.DataFrame = pd.read_csv(file_path, comment='#')
+    data['dt'] = data['time'].shift(-1) - data['time']
+    data['positionD_last'] = data['positionD'].shift(1)
+    data['positionD_smoothed'] = smooth(data['positionD'], DATA_SMOOTHING)
+    data['positionDD'] = data['positionD_smoothed'].diff() / data['dt'].shift(1)
+    if 'motor_input' not in data.columns:
+        data['motor_input'] = data['actualMotorSave']
+
+    data = data.iloc[2:-1].reset_index(drop=True)
+    data = data.loc[data['measurement'].str.contains('State:moving')]
+    data = data.loc[np.logical_and(data['motor_input'] != 0, np.sign(data['motor_input']) == np.sign(data['positionD_last']))]
+    data = data.replace([np.inf, -np.inf], np.nan).dropna(
+        subset=['motor_input', 'positionD_smoothed', 'positionDD']
+    )
+
+    data_pos = data.loc[data['motor_input'] > 0]
+    data_neg = data.loc[data['motor_input'] < 0]
+
+    gb_pos = data_pos.groupby(['motor_input'], as_index=False)
+    data_stat_pos = gb_pos.size().reset_index(drop=True)
+    data_stat_pos['v_max'] = gb_pos['positionD_smoothed'].max()['positionD_smoothed']
+
+    gb_neg = data_neg.groupby(['motor_input'], as_index=False)
+    data_stat_neg = gb_neg.size().reset_index(drop=True)
+    data_stat_neg['v_max'] = gb_neg['positionD_smoothed'].min()['positionD_smoothed']
+
+    data_stat_pos_lin = data_stat_pos[data_stat_pos['v_max'].abs() <= v_sat_max_lin]
+    data_stat_neg_lin = data_stat_neg[data_stat_neg['v_max'].abs() <= v_sat_max_lin]
+    motor_inputs_linear = set(data_stat_pos_lin['motor_input']).union(data_stat_neg_lin['motor_input'])
+    data_linear = data[data['motor_input'].isin(motor_inputs_linear)]
+
+    direction_pos = (data_linear['motor_input'] > 0).astype(float).to_numpy()
+    direction_neg = (data_linear['motor_input'] < 0).astype(float).to_numpy()
+    design = np.column_stack(
+        (
+            data_linear['motor_input'].to_numpy(),
+            data_linear['positionD_smoothed'].to_numpy(),
+            direction_pos,
+            direction_neg,
+        )
+    )
+    target = data_linear['positionDD'].to_numpy()
+    motor_to_acceleration, damping, offset_pos, offset_neg = np.linalg.lstsq(design, target, rcond=None)[0]
+
+    target_acceleration = u_max_target / effective_mass
+    S = target_acceleration / motor_to_acceleration
+    I_pos = -offset_pos / motor_to_acceleration
+    I_neg = -offset_neg / motor_to_acceleration
+
+    S_normed = S / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+    I_pos_normed = I_pos / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+    I_neg_normed = I_neg / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+
+    motor_input_at_q_pos = S + I_pos
+    motor_input_at_q_neg = -S + I_neg
+    pos_linear_limit = data_stat_pos_lin['motor_input'].max()
+    neg_linear_limit = data_stat_neg_lin['motor_input'].min()
+    pos_in_linear_range = motor_input_at_q_pos <= pos_linear_limit
+    neg_in_linear_range = motor_input_at_q_neg >= neg_linear_limit
+
+    print()
+    print()
+    print('**************************')
+    print(FILE_NAME)
+    print('---------------')
+    print('Force-based motor calibration')
+    print('positionDD = A * motor_input + D * positionD + C_direction')
+    print('A     = {}'.format(motor_to_acceleration))
+    print('D     = {}'.format(damping))
+    print('C_pos = {}'.format(offset_pos))
+    print('C_neg = {}'.format(offset_neg))
+    print('')
+    print('Target force calibration')
+    print('u_max_target = {} N'.format(u_max_target))
+    print('effective_mass = {} kg'.format(effective_mass))
+    print('target_acceleration = u_max_target / effective_mass = {} m/s^2'.format(target_acceleration))
+    print('')
+    print('M = S * Q + I_direction')
+    print('S     = {}'.format(S))
+    print('I_pos = {}'.format(I_pos))
+    print('I_neg = {}'.format(I_neg))
+    print('Motor correction give MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = {}:'.format(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES))
+    print('MOTOR_CORRECTION = ({:.7f}, {:.7f}, {:.7f})'.format(S_normed, I_pos_normed, -I_neg_normed))
+    print('')
+    print('Linear-range check based on v_sat_max_lin = {}'.format(v_sat_max_lin))
+    print('positive linear motor_input max = {}'.format(pos_linear_limit))
+    print('negative linear motor_input min = {}'.format(neg_linear_limit))
+    print('motor_input at Q=+1 = {} -> {}'.format(
+        motor_input_at_q_pos, 'OK' if pos_in_linear_range else 'OUTSIDE LINEAR RANGE'))
+    print('motor_input at Q=-1 = {} -> {}'.format(
+        motor_input_at_q_neg, 'OK' if neg_in_linear_range else 'OUTSIDE LINEAR RANGE'))
+    print('**************************')
+
+    fig, axes = plt.subplots()
+    axes.set_title(str(file_path))
+    axes.scatter(data['motor_input'], data['positionDD'], color='red', s=8, label='all moving samples')
+    axes.scatter(data_linear['motor_input'], data_linear['positionDD'], color='green', s=8, label='linear-range samples')
+    motor_input_axis = np.linspace(data['motor_input'].min(), data['motor_input'].max(), 100)
+    axes.plot(motor_input_axis, motor_to_acceleration * motor_input_axis, color='blue', label='force-fit motor slope')
+    axes.set_xlabel('motor_input')
+    axes.set_ylabel('positionDD [m/s^2]')
+    axes.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Calculate motor correction from a bidirectional step-response recording.'
+    )
+    parser.add_argument(
+        'file_name',
+        nargs='?',
+        default=FILE_NAME,
+        help=f'CSV file path. Relative names default to {DEFAULT_DATA_DIR}.',
+    )
+    parser.add_argument(
+        '--force-fit',
+        action='store_true',
+        help='Fit MOTOR_CORRECTION so Q=1 maps to u_max_target for cart+pole mass, and check linear range.',
+    )
+    args = parser.parse_args()
 
     if EVALUATION_SINGLE_FILE:
-        motor_calibration(FILE_NAME)
+        if args.force_fit:
+            motor_force_calibration(args.file_name)
+        else:
+            motor_calibration(args.file_name)
     else:
         FILE_NAME = 'Original.csv'
         p_org, sn_org, sp_org = motor_calibration(FILE_NAME)
