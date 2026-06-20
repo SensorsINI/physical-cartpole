@@ -6,8 +6,8 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
-OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd-tf', 'mppi', only taken into account if CONTROLLER_NAME = 'mpc'
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
+OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
@@ -68,9 +68,14 @@ if CHIP == 'STM':
 elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
-    # Reproducible force-based calibration: MotorCalibration.py --force-fit on the committed
-    # CPP_step_response.csv (u_max_target=2.62 N, effective_mass=0.317 kg, PWM=10000).
-    MOTOR_CORRECTION_POLOLU = (0.5116974, 0.0178784, 0.0280385)
+    # NOTE: MOTOR_CORRECTION is controller-dependent here on purpose.
+    #   - MLP (neural-imitator) checkpoint uses the force-fit value (0.5116974, ...) matching
+    #     its u_max_target=2.62 N training scale.
+    #   - RPGD (mpc) is tuned around a deliberately under-stated model u_max (1.77 N in
+    #     cartpole_physical_parameters.yml) and needs the larger physical authority + stiction
+    #     compensation of the known-good RPGD-era value below (commit 801c9b6d).
+    # Force-fit value kept for reference: (0.5116974, 0.0178784, 0.0280385)
+    MOTOR_CORRECTION_POLOLU = (0.6216901, 0.0750750, 0.0549491)
     ANGLE_360_DEG_IN_ADC_UNITS = 4049.44  # Explanation - see above for STM case.
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
