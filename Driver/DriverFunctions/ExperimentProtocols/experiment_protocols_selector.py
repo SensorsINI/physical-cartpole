@@ -1,4 +1,6 @@
 from DriverFunctions.ExperimentProtocols.step_response_experiment import step_response_experiment
+from DriverFunctions.ExperimentProtocols.emf_identification_experiment import emf_identification_experiment
+from DriverFunctions.ExperimentProtocols.pulse_identification_experiment import pulse_identification_experiment
 from DriverFunctions.ExperimentProtocols.swing_up_experiment import swing_up_experiment
 from DriverFunctions.ExperimentProtocols.follow_a_random_target_experiment import follow_a_random_target_experiment
 from DriverFunctions.ExperimentProtocols.iros24_ex1_experiment import iros24_ex1_experiment
@@ -12,6 +14,8 @@ class experiment_protocols_selector_class:
         self.experiment_protocols = [
             iros24_ex1_experiment,
             step_response_experiment,
+            emf_identification_experiment,
+            pulse_identification_experiment,
             swing_up_experiment,
             follow_a_random_target_experiment,
         ]

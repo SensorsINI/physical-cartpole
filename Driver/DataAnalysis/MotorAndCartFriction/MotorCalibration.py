@@ -228,8 +228,15 @@ def motor_calibration(FILE_NAME):
     return p[0], sn, sp
 
 
-def motor_force_calibration(FILE_NAME):
-    file_path = Path(FILE_NAME)
+def _fit_force_model(file_name):
+    """Load a step-response recording and fit positionDD = A*motor_input + D*positionD + C_direction.
+
+    Returns the motor slope A (motor_to_acceleration, [m/s^2 per motor_input unit]),
+    the velocity damping D [1/s], the directional stiction offsets, the cleaned
+    data and the linear-range limits. Shared by the single-run force calibration
+    and the two-run mass identification so both use an identical fit.
+    """
+    file_path = Path(file_name)
     if not file_path.is_absolute() and not file_path.exists():
         file_path = DEFAULT_DATA_DIR / file_path
 
@@ -281,6 +288,30 @@ def motor_force_calibration(FILE_NAME):
     target = data_linear['positionDD'].to_numpy()
     motor_to_acceleration, damping, offset_pos, offset_neg = np.linalg.lstsq(design, target, rcond=None)[0]
 
+    return {
+        'file_path': file_path,
+        'motor_to_acceleration': motor_to_acceleration,
+        'damping': damping,
+        'offset_pos': offset_pos,
+        'offset_neg': offset_neg,
+        'data': data,
+        'data_linear': data_linear,
+        'pos_linear_limit': data_stat_pos_lin['motor_input'].max(),
+        'neg_linear_limit': data_stat_neg_lin['motor_input'].min(),
+        'n_linear': len(data_linear),
+    }
+
+
+def motor_force_calibration(FILE_NAME):
+    fit = _fit_force_model(FILE_NAME)
+    file_path = fit['file_path']
+    data = fit['data']
+    data_linear = fit['data_linear']
+    motor_to_acceleration = fit['motor_to_acceleration']
+    damping = fit['damping']
+    offset_pos = fit['offset_pos']
+    offset_neg = fit['offset_neg']
+
     target_acceleration = u_max_target / effective_mass
     S = target_acceleration / motor_to_acceleration
     I_pos = -offset_pos / motor_to_acceleration
@@ -292,8 +323,8 @@ def motor_force_calibration(FILE_NAME):
 
     motor_input_at_q_pos = S + I_pos
     motor_input_at_q_neg = -S + I_neg
-    pos_linear_limit = data_stat_pos_lin['motor_input'].max()
-    neg_linear_limit = data_stat_neg_lin['motor_input'].min()
+    pos_linear_limit = fit['pos_linear_limit']
+    neg_linear_limit = fit['neg_linear_limit']
     pos_in_linear_range = motor_input_at_q_pos <= pos_linear_limit
     neg_in_linear_range = motor_input_at_q_neg >= neg_linear_limit
 
@@ -342,6 +373,148 @@ def motor_force_calibration(FILE_NAME):
     plt.show()
 
 
+def _direction_slope(data_linear, positive):
+    """Fit positionDD = A*motor_input + D*positionD + C on one push direction only.
+
+    Returns (A, D, n_samples). Used so a direction contaminated by manual help
+    (e.g. pushing the weight back while retracting) can be excluded.
+    """
+    if positive:
+        sub = data_linear[data_linear['motor_input'] > 0]
+    else:
+        sub = data_linear[data_linear['motor_input'] < 0]
+    n = len(sub)
+    if n < 3:
+        return None, None, n
+    design = np.column_stack(
+        (
+            sub['motor_input'].to_numpy(),
+            sub['positionD_smoothed'].to_numpy(),
+            np.ones(n),
+        )
+    )
+    target = sub['positionDD'].to_numpy()
+    A, D, _C = np.linalg.lstsq(design, target, rcond=None)[0]
+    return A, D, n
+
+
+def mass_identification(baseline_file, loaded_file, delta_mass, q1_gain=None, direction='pos'):
+    """Identify the effective cart mass from two step-response runs that differ
+    only by a known added mass (pole removed in both, identical drive).
+
+    For a fixed motor_input the motor force k is the same in both runs, so the
+    measured slope A = k / M_eff. With A1 (baseline) and A2 (extra mass delta_mass):
+        A1 / A2 = (M_eff + delta_mass) / M_eff  =>  M_eff = delta_mass / (A1/A2 - 1)
+    The reflected drivetrain inertia (rotor + gears + belt) is contained in M_eff
+    in both runs and so is captured automatically. From M_eff the absolute force
+    scale follows: k = A1 * M_eff [N per motor_input unit].
+
+    Slopes are computed per push direction; `direction` ('pos'/'neg') selects which
+    one drives the reported result, so a manually-contaminated direction can be
+    excluded. The other direction is still printed as a cross-check.
+    """
+    fit_base = _fit_force_model(baseline_file)
+    fit_load = _fit_force_model(loaded_file)
+
+    A1_pos, D1_pos, n1_pos = _direction_slope(fit_base['data_linear'], True)
+    A1_neg, D1_neg, n1_neg = _direction_slope(fit_base['data_linear'], False)
+    A2_pos, D2_pos, n2_pos = _direction_slope(fit_load['data_linear'], True)
+    A2_neg, D2_neg, n2_neg = _direction_slope(fit_load['data_linear'], False)
+
+    def solve(A1, A2):
+        if A1 is None or A2 is None or A2 == 0 or not (A1 / A2 > 1.0):
+            return None
+        return delta_mass / (A1 / A2 - 1.0)
+
+    M_pos = solve(A1_pos, A2_pos)
+    M_neg = solve(A1_neg, A2_neg)
+
+    def fmt(x, unit=''):
+        return 'n/a' if x is None else '{:.4f}{}'.format(x, unit)
+
+    print()
+    print()
+    print('**************************')
+    print('Effective-mass identification (two-run, known added mass)')
+    print('---------------')
+    print('baseline : {}  (linear samples: {})'.format(fit_base['file_path'], fit_base['n_linear']))
+    print('loaded   : {}  (linear samples: {})'.format(fit_load['file_path'], fit_load['n_linear']))
+    print('delta_mass = {} kg'.format(delta_mass))
+    print('reported direction = {} (other direction shown as cross-check only)'.format(direction))
+    print('')
+    print('Per-direction slopes A [m/s^2 per motor_input] and resulting M_eff:')
+    print('  forward (+): A1={}, A2={}, A1/A2={}, M_eff={}  (n1={}, n2={})'.format(
+        fmt(A1_pos), fmt(A2_pos),
+        fmt(A1_pos / A2_pos) if (A1_pos and A2_pos) else 'n/a', fmt(M_pos, ' kg'), n1_pos, n2_pos))
+    print('  retract (-): A1={}, A2={}, A1/A2={}, M_eff={}  (n1={}, n2={})'.format(
+        fmt(A1_neg), fmt(A2_neg),
+        fmt(A1_neg / A2_neg) if (A1_neg and A2_neg) else 'n/a', fmt(M_neg, ' kg'), n1_neg, n2_neg))
+
+    if direction == 'pos':
+        A1, D1, M_eff = A1_pos, D1_pos, M_pos
+    else:
+        A1, D1, M_eff = A1_neg, D1_neg, M_neg
+
+    if M_eff is None:
+        print('')
+        print('WARNING: cannot solve for the reported direction ({}). Expected A1/A2 > 1'.format(direction))
+        print('(more mass -> smaller acceleration slope). Check the runs and try the other')
+        print('direction with --direction. No mass reported.')
+        print('**************************')
+        return None
+
+    k = A1 * M_eff  # N per motor_input unit
+    F_full = k * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES  # N at motor_input = full PWM period
+    M_fric_identified = -D1 * M_eff if D1 is not None else float('nan')  # N/(m/s); D = -M_fric/M_eff
+
+    print('')
+    print('Reported effective CART mass (no pole, no hinge; incl. drivetrain inertia):')
+    print('M_eff = delta_mass / (A1/A2 - 1) = {:.4f} kg'.format(M_eff))
+    print('  bare cart in config = 0.230 kg; difference is reflected belt/bearing/rotor inertia')
+    print('  for operation add the hinge that rides with the cart: m_cart_model = M_eff + m_hinge')
+    print('')
+    print('Absolute force scale (direction {}):'.format(direction))
+    print('k      = A1 * M_eff       = {:.6f} N per motor_input unit'.format(k))
+    print('F_full = k * PWM_period   = {:.4f} N at full motor_input ({} units)'.format(
+        F_full, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES))
+    print('')
+    print('Identified viscous friction (from {} damping D = {:.4f} 1/s):'.format(direction, D1))
+    print('M_fric = -D * M_eff       = {:.4f} N/(m/s)   (model yml uses 3.22)'.format(M_fric_identified))
+
+    if q1_gain is not None:
+        u_max_q1 = k * q1_gain * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+        print('')
+        print('True force at Q=1 for MOTOR_CORRECTION gain S = {} :'.format(q1_gain))
+        print('u_max(Q=1) = k * S * PWM_period = {:.4f} N'.format(u_max_q1))
+        print('  -> set this as u_max in cartpole_physical_parameters.yml for an honest model')
+
+    print('**************************')
+
+    fig, axes = plt.subplots()
+    axes.set_title('Effective-mass identification: slope change vs added mass (direction={})'.format(direction))
+    axes.scatter(fit_base['data']['motor_input'], fit_base['data']['positionDD'],
+                 color='tab:blue', s=6, alpha=0.4, label='baseline samples')
+    axes.scatter(fit_load['data']['motor_input'], fit_load['data']['positionDD'],
+                 color='tab:orange', s=6, alpha=0.4, label='loaded (+{} kg) samples'.format(delta_mass))
+    motor_input_axis = np.linspace(
+        min(fit_base['data']['motor_input'].min(), fit_load['data']['motor_input'].min()),
+        max(fit_base['data']['motor_input'].max(), fit_load['data']['motor_input'].max()),
+        100,
+    )
+    if A1 is not None:
+        axes.plot(motor_input_axis, A1 * motor_input_axis, color='tab:blue', label='baseline fit (A1)')
+    if A2_pos is not None and direction == 'pos':
+        axes.plot(motor_input_axis, A2_pos * motor_input_axis, color='tab:orange', label='loaded fit (A2)')
+    if A2_neg is not None and direction == 'neg':
+        axes.plot(motor_input_axis, A2_neg * motor_input_axis, color='tab:orange', label='loaded fit (A2)')
+    axes.set_xlabel('motor_input')
+    axes.set_ylabel('positionDD [m/s^2]')
+    axes.legend()
+    plt.show()
+
+    return M_eff
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Calculate motor correction from a bidirectional step-response recording.'
@@ -357,9 +530,39 @@ if __name__ == '__main__':
         action='store_true',
         help='Fit MOTOR_CORRECTION so Q=1 maps to u_max_target for cart+pole mass, and check linear range.',
     )
+    parser.add_argument(
+        '--mass-id',
+        nargs=2,
+        metavar=('BASELINE_CSV', 'LOADED_CSV'),
+        help='Two step-response recordings (pole removed, identical drive); the second has a known '
+             'extra mass. Identifies the effective cart mass (incl. drivetrain). Requires --delta-mass.',
+    )
+    parser.add_argument(
+        '--delta-mass',
+        type=float,
+        default=None,
+        help='Known added mass [kg] between the two --mass-id runs (e.g. 0.227).',
+    )
+    parser.add_argument(
+        '--q1-gain',
+        type=float,
+        default=None,
+        help='Optional MOTOR_CORRECTION normalized gain S; with --mass-id, report true u_max at Q=1.',
+    )
+    parser.add_argument(
+        '--direction',
+        choices=['pos', 'neg'],
+        default='pos',
+        help="Push direction used for the reported mass with --mass-id ('pos' = forward). "
+             'Use this to exclude a direction contaminated by manual help.',
+    )
     args = parser.parse_args()
 
-    if EVALUATION_SINGLE_FILE:
+    if args.mass_id:
+        if args.delta_mass is None:
+            parser.error('--mass-id requires --delta-mass (known added mass in kg)')
+        mass_identification(args.mass_id[0], args.mass_id[1], args.delta_mass, args.q1_gain, args.direction)
+    elif EVALUATION_SINGLE_FILE:
         if args.force_fit:
             motor_force_calibration(args.file_name)
         else:
