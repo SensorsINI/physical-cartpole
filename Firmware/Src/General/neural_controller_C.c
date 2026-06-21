@@ -30,11 +30,12 @@ static const ControllerSpec NNC_Spec = {
 static const ControllerSpec* NNC_GetSpec(void) { return &NNC_Spec; }
 
 /* --- Normalization ----------------- */
+/* Normalization for Dense-7IN-32H1-32H2-1OUT-8 (matches its normalization_vec_a/b). */
 static const float c_normalize_a[MLP_ACTIVATION_NEURONS] = {
-    0.05373850f, 1.00000000f, 1.00000000f, 5.44010401f, 0.86096680f, 1.00000000f, 6.31313133f
+    0.04595453f, 1.00000000f, 1.00000000f, 5.21186209f, 0.82011247f, 1.00000000f, 6.31313133f
 };
 static const float c_normalize_b[MLP_ACTIVATION_NEURONS] = {
-   -0.07883823f, 0.00000000f, 0.00000000f, 0.01648343f,-0.01449436f, 0.00000000f, 0.00000000f
+    0.02537525f, 0.00000000f, 0.00000000f, 0.01761615f,-0.05823207f, 0.00000000f, 0.00000000f
 };
 
 static const float c_denormalize_A[MLP_PREDICTION_NEURONS] = { 1.0f };

@@ -8,21 +8,19 @@
 // For Dense networks, both are set to 0.
 
 #define IS_GRU 0
-#define IS_LSTM 1
+#define IS_LSTM 0
 #define INPUT_SIZE 7      // Overwritten by python
-#define LAYER1_SIZE     // Overwritten by python (used in Dense mode)
-#define LAYER2_SIZE     // Overwritten by python (used in Dense mode)
+#define LAYER1_SIZE 32     // Overwritten by python (used in Dense mode)
+#define LAYER2_SIZE 32     // Overwritten by python (used in Dense mode)
 #define LAYER3_SIZE 1     // Overwritten by python (used in Dense mode)
 
 #define GRU1_UNITS      // Overwritten by python
 #define GRU2_UNITS      // Overwritten by python
 
-#define LSTM1_UNITS 64
-#define LSTM2_UNITS 64
+#define LSTM1_UNITS     // Overwritten by python
+#define LSTM2_UNITS     // Overwritten by python
 
-//----------------------------------------------------
-// Declarations
-//----------------------------------------------------
+// Declare the function and global variables
 void C_Network_Evaluate(float* inputs, float* outputs);
 
 #if IS_GRU
@@ -33,7 +31,7 @@ void InitializeGRUStates(void);
 void InitializeLSTMStates(void);
 #endif
 
-// These exist for Dense networks
+// Other necessary declarations if required
 extern const float weights1[];
 extern const float bias1[];
 extern const float weights2[];
