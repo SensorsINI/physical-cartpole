@@ -89,6 +89,7 @@ class PhysicalCartPoleDriver:
         self.position_offset = 0
         self.target_position = 0.0
         self.target_position_previous = 0.0
+        self.target_position_from_chip = 0.0
         self.target_equilibrium_previous = 0  # -1 or 1, 0 is not a valid value, but this ensures that at the begining the target equilibrium is always updated
         self.base_target_position = 0.0
 
@@ -323,6 +324,9 @@ class PhysicalCartPoleDriver:
         )
         self.idp.load_state_data_from_chip(angle_raw, angleD_raw, invalid_steps, position_raw)
 
+    def apply_target_position_from_chip(self):
+        self.target_position = self.target_position_from_chip
+
     def update_parameters_in_cartpole_instance(self):
         """
         Just to make changes visible in GUI
@@ -349,7 +353,12 @@ class PhysicalCartPoleDriver:
                 self.CartPoleInstance.target_equilibrium,
             )
 
-        if SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl:
+        send_target_to_chip = (
+            self.controlEnabled
+            or self.firmwareControl
+            or self.epm.current_experiment_protocol.is_running()
+        )
+        if send_target_to_chip and (SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl):
             if self.target_position != self.target_position_previous:
                 self.InterfaceInstance.set_target_position(self.target_position)
                 self.target_position_previous = self.target_position
@@ -357,6 +366,9 @@ class PhysicalCartPoleDriver:
             if self.CartPoleInstance.target_equilibrium != self.target_equilibrium_previous:
                 self.InterfaceInstance.set_target_equilibrium(self.CartPoleInstance.target_equilibrium)
                 self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
+
+        if not self.controlEnabled:
+            self.apply_target_position_from_chip()
 
         self.CartPoleInstance.target_position = self.target_position
 

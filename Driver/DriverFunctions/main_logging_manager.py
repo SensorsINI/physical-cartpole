@@ -41,6 +41,11 @@ class MainLoggingManager:
             'target_position': lambda: driver.target_position,
             'target_equilibrium': lambda: driver.CartPoleInstance.target_equilibrium,
 
+            # TEMP DEBUG: raw 16-bit channel-0 ADC word from the chip. The
+            # firmware temporarily sends (raw_count / 100) as target_position,
+            # so multiply by 100 to recover the integer ADC count for analysis.
+            'slider_adc_raw': lambda: driver.target_position_from_chip * 100,
+
             'actualMotorSave': lambda: driver.actualMotorCmd_prev,
             'Q': lambda: driver.Q_prev,
             'Q_ccrc': lambda: driver.Q_ccrc_prev,
@@ -253,7 +258,7 @@ class MainLoggingManager:
                     self.driver.idp.angle_raw,
                     self.driver.s[POSITION_IDX] * 100,
                     self.driver.idp.position_raw,
-                    f"{self.driver.CartPoleInstance.target_position}, {self.driver.CartPoleInstance.target_equilibrium}",
+                    f"{self.driver.CartPoleInstance.target_position * 100:+.1f}cm, {self.driver.CartPoleInstance.target_equilibrium:+.0f}",
                     self.driver.Q,
                     self.driver.actualMotorCmd,
                     self.driver.idp.invalid_steps,
