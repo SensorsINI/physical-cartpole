@@ -1,13 +1,14 @@
 # Motor force / cart-dynamics identification — investigation log (June 2026)
 
-**Status: UNRESOLVED.** The model parameters currently in
-`Driver/CartPoleSimulation/cartpole_physical_parameters.yml`
-(`m_cart=2.82`, `u_max=13.0`, `M_fric=22.0`, `v_max=0.59`) **do not produce a working
-RPGD controller on the hardware**. The only configuration empirically confirmed to swing
-up and stabilize the physical cartpole is the *old* "working" set
-(`m_cart=0.230`, `u_max=1.77`, `M_fric=3.22`). This folder archives the data, analysis
-scripts, and reasoning from the attempt to replace those empirically-tuned numbers with
-physically honest, decorrelated system-ID values, so the work can be resumed later.
+**Status: RESOLVED OFFLINE (June 2026); one hardware retest pending.** See section 9 for
+the resolution. In short: the earlier `u_max=13` (EMF shuttle) that broke RPGD is **wrong**;
+forward-prediction validation against the real plant identifies the honest set
+`m_cart=2.82`, `u_max=21.7`, `M_fric=36.8`, `v_max=0.59` (acceleration gain 7.70, equal to
+the only authority ever confirmed to drive the hardware). The only configuration *previously*
+confirmed to swing up was the old `m_cart=0.230`, `u_max=1.77`, `M_fric=3.22` — physically
+wrong in absolute magnitude but with the same gain. This folder archives the data, analysis
+scripts, and reasoning. Sections 1–8 below are the original investigation log (kept for the
+record); section 9 is the offline resolution.
 
 This document is meant to be self-contained: a reader who has never seen the chat should be
 able to understand the problem, what we measured, what we concluded, what is still wrong,
@@ -244,6 +245,8 @@ question** and the reason we cannot yet commit a final `u_max`.
 | `estimate_pulse_identification.py` | constrained & free `u_max`/`M_fric` from pulses |
 | `MotorCalibration.py` | added mass-ID helpers (modified) |
 | `README.md` | effective-mass section added (modified) |
+| `validate_forward_prediction.py` | **NEW** forward-prediction arbiter using `predictor_ODE` (Step 2/3/4b) |
+| `refit_motor_forward.py` | **NEW** forward velocity-trajectory motor re-fit (Step 4) |
 
 ### Parameter state at time of writing (NOT committed — live working files)
 * `Driver/CartPoleSimulation/cartpole_physical_parameters.yml` (submodule):
@@ -253,3 +256,120 @@ question** and the reason we cannot yet commit a final `u_max`.
   `MOTOR_FULL_SCALE_SAFE = int(0.95 * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES)`.
 * Confirmed-working RPGD parameters (to restore the hardware to a usable state):
   `m_cart=0.230`, `u_max=1.77`, `M_fric=3.22`.
+
+---
+
+## 9. RESOLUTION (June 2026) — offline forward-prediction validation
+
+The contradiction in section 5 is **resolved offline** by using the project's own
+`predictor_ODE` (the exact analytical model RPGD integrates) as an *arbiter*: feed each
+recording its true initial state and recorded `Q`, roll the model forward, and measure
+multi-step prediction error against the recorded motion. The model that best reproduces
+the **real plant** is the honest one — independent of whether a controller "worked". Two
+new scripts implement this:
+
+* `validate_forward_prediction.py` — the arbiter (Steps 2, 3, 4b).
+* `refit_motor_forward.py` — a forward velocity-trajectory re-fit of the motor law (Step 4).
+
+### 9.1 Which parameter set reproduces the real cart? (arbiter)
+
+Multi-step (500 ms) forward-prediction RMSE on the **real working swing-up**
+`CPP_mpc__2026-06-20_21-02-10.csv` (pole attached):
+
+| set | m_cart / u_max / M_fric | position RMSE [m] | positionD RMSE | angle RMSE [rad] |
+|-----|-------------------------|-------------------|----------------|------------------|
+| A old hand-tuned | 0.230 / 1.77 / 3.22 | 0.0059 | 0.0294 | 0.0472 |
+| B EMF (current yml) | 2.82 / 13.0 / 22.0 | 0.0017 | 0.0082 | 0.0455 |
+| **C pulse / invariant** | **2.82 / 21.7 / 36.8** | **0.0009** | **0.0049** | **0.0447** |
+| D forward-fit | 2.82 / 19.0 / 29.6 | 0.0011 | 0.0053 | 0.0448 |
+
+The heavy-mass sets (C, D) predict the real cart **~6x** better than the old light-mass set
+A and **~2x** better than the EMF set B that is currently in the yml. **B (u_max=13) is
+clearly inferior** — settling the question. The same ordering holds on the pole-removed
+step and pulse recordings. Note A has the *same* acceleration gain as C (7.70 m/s²) yet
+predicts far worse: the gain is not enough — the **absolute mass** (pole back-reaction)
+matters, which is exactly what forward prediction exposes and a "working" controller hides.
+
+### 9.2 The pole's effect on the cart really is small (Step 3)
+
+Magnitude-weighted pole back-reaction as a fraction of the cart's horizontal acceleration,
+on actively-driven samples of the swing-up:
+
+| set | back-reaction on driven cart accel | abs. trajectory change over 500 ms |
+|-----|-----------------------------------|------------------------------------|
+| A (m=0.230) | 36.6% | mean 1.40 mm, max 60.6 mm |
+| B (m=2.82) | 5.5% | mean 0.18 mm, max 9.1 mm |
+| C (m=2.82) | 3.8% | mean 0.13 mm, max 5.9 mm |
+
+With the honest heavy mass the pole changes the cart acceleration by only **~4%** (single-mm
+over half a second), confirming section 6's ~3% estimate **through the actual predictor**.
+With the old 0.230 kg mass it is **~37%** (cm-scale) and cannot be dropped — which is also
+why set A mispredicts the real cart despite the right gain. Consequence: with the honest
+mass the cart may be modeled as a standalone 2nd-order system (useful for embedded predictors).
+
+### 9.3 Why the EMF `u_max = 13` was wrong, and what the motor force really is (Step 4)
+
+`refit_motor_forward.py` fixes the robust `m_cart = 2.82` and fits `(force_gain, M_fric,
+Coulomb)` by minimizing a **multi-step forward rollout of the velocity**, jointly across the
+step + pulse + EMF recordings. This fixes all three defects of the old EMF fit:
+
+1. **No second differentiation.** It uses `positionD` directly (one derivative). The old
+   `estimate_emf.py` differentiates `positionD` again to get acceleration — doubling noise.
+2. **Collinearity broken by joining recordings.** The step run alone has `corr(Q,v)=0.77`;
+   the pulse (0.50) and EMF shuttle (0.31) cover the rest of the `(command, velocity)` plane,
+   so the joint fit can separate force gain from damping.
+3. **M_fric properly constrained.** The step dwell pins the damping that the EMF shuttle
+   alone (no steady high-speed dwell) left under-determined and biased low (→ M_fric≈16,
+   dragging u_max down to 13).
+
+Result (R² = 0.92 on multi-step velocity, **both domains agree**):
+
+| domain | u_max [N] | M_fric [N/(m/s)] | v_term(Q=1) | gain u_max/m_cart |
+|--------|-----------|------------------|-------------|-------------------|
+| Q-domain (model law `u=u_max·Q`) | 19.0 | 29.6 | 0.64 | 6.7 |
+| PWM-domain (`u_max=k·gain·PWM`)   | 19.4 | 31.1 | — | 6.9 |
+
+For contrast, the **old one-step acceleration regression** (the discredited method) still
+scatters wildly across recordings — step 18 N, pulse 17 N, EMF 14 N, with `M_fric` of
+27 / 3.5 / 16 — exactly the "inconclusive, contradictory" picture. The forward-fit removes
+that scatter.
+
+### 9.4 Verdict and recommended parameters
+
+Every trustworthy line of evidence now agrees on a **heavy effective mass and a motor force
+in the ~19–22 N band**:
+
+| evidence | u_max | gain | note |
+|----------|-------|------|------|
+| working hand-tuned (gain only) | 1.77 (m=0.230) | 7.70 | proven authority, wrong absolutes |
+| pulse / 3-invariant (set C) | 21.7 | 7.70 | won the arbiter; v_term=0.59 exactly |
+| forward velocity-fit (set D) | 19.0 | 6.7 | most rigorous offline, full Q-range |
+| swing-up velocity optimum | ~22 | ~7.8 | direct on the real plant |
+| ~~EMF shuttle (current yml)~~ | ~~13~~ | ~~4.6~~ | **discarded** — see 9.3 |
+
+**Recommended set (NOT yet active in the yml — pending one hardware retest):**
+`m_cart = 2.82`, `u_max = 21.7`, `M_fric = 36.8`, `v_max = 0.59`. This is the arbiter winner
+(set C) and is internally consistent on all three clean invariants: effective mass 2.82
+(added-mass ratio), terminal-velocity ratio `u_max/M_fric = 0.59` (step saturation), and
+acceleration gain `u_max/m_cart = 7.70` (the exact authority of the only set ever confirmed
+to drive the hardware). The EMF `u_max = 13` is ~40% too weak (gain 4.6) and is the cause of
+the "motor seems too weak now" symptom.
+
+> NOTE: to keep the hardware in a known-working state, the live
+> `cartpole_physical_parameters.yml` is intentionally left at the **proven working set**
+> (`m_cart=0.230`, `u_max=1.77`, `M_fric=3.22`, same gain 7.70). To run the hardware retest,
+> set the recommended values above; `validate_forward_prediction.py` reproduces the ranking
+> and `refit_motor_forward.py` re-derives the numbers.
+
+### 9.5 Single remaining gate (deferred, offline-first)
+
+The only residual uncertainty is **actuation latency**, which places the absolute force
+within the 19–22 N band (the forward-fit's 19 vs the pulse/arbiter's ~21.7). To close it:
+
+1. Measure actuation latency directly (command a step from rest; time to first
+   above-noise acceleration, several power levels).
+2. One confirming hardware swing-up with the recommended set. Because its gain (7.70) equals
+   the proven-working gain and the pole back-reaction is now only ~4%, it should behave at
+   least as well as the old set — unlike last week's broken 25.8 N (gain 9.15) and 13 N
+   (gain 4.6) attempts. The previous working set is preserved in the yml comments for
+   instant rollback.
