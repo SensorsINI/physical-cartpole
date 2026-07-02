@@ -17,15 +17,14 @@ void Goniometer_Init(void)
     XAdcPs_Config* cfg = XAdcPs_LookupConfig ( XADC_DEVICE_ID ) ;
 
     XAdcPs_CfgInitialize(& XADC_Driver_Instance, cfg , cfg -> BaseAddress );
-    XAdcPs_SetSequencerMode(& XADC_Driver_Instance , XADCPS_SEQ_MODE_SINGCHAN);
     XAdcPs_SetSequencerMode(& XADC_Driver_Instance , XADCPS_SEQ_MODE_SAFE);
-    XAdcPs_SetSeqChEnables(& XADC_Driver_Instance , XADCPS_SEQ_CH_VPVN | XADCPS_SEQ_CH_AUX15) ;
-    XAdcPs_SetSeqInputMode(& XADC_Driver_Instance , XADCPS_SEQ_CH_AUX15) ;
+    // The goniometer is wired to VAUX0 (see cartpole_pinout_zed.xdc and the
+    // xadc_wiz single-channel selection VAUXP0_VAUXN0 in the block design).
+    XAdcPs_SetSeqChEnables(& XADC_Driver_Instance , XADCPS_SEQ_CH_VPVN | XADCPS_SEQ_CH_AUX00);
+    XAdcPs_SetSeqInputMode(& XADC_Driver_Instance , XADCPS_SEQ_CH_AUX00);
     XAdcPs_SetAvg(& XADC_Driver_Instance , XADCPS_AVG_0_SAMPLES ) ;
     //Single Channel
     XAdcPs_SetSequencerMode (& XADC_Driver_Instance , XADCPS_SEQ_MODE_SINGCHAN ) ;
-    XAdcPs_SetSingleChParams (& XADC_Driver_Instance , XADCPS_CH_AUX_MAX ,FALSE , FALSE , FALSE ) ;
-
 }
 
 unsigned short Goniometer_Read(void)
