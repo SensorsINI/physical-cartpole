@@ -53,6 +53,8 @@ Driver/SI_Toolkit_ASF/Experiments/*
 /FPGA/CustomIPs/**/*.protoinst
 
 /Firmware/VitisProjects/*
+/Firmware/*.str
+/Firmware/xrc.log
 /Firmware/Packages/
 
 /Firmware/CubeIDE/.metadata/

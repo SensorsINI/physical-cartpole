@@ -1,236 +1,207 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ====== USER CONFIG ======
+# Export the Zedboard Vivado hardware (XSA with bitstream), create a Vitis
+# platform, create the Vitis applications, populate their sources with relative
+# symlinks into Firmware/Src, and build the ELFs.
 
-VIVADO_PROJECT_NAME="CartpoleDriverZynq_AXIS"
-PLATFORM_POSTFIX="test"
+VIVADO_PROJECT_NAME="${VIVADO_PROJECT_NAME:-CartpoleDriverZynq_AXIS_Zedboard}"
+PLATFORM_NAME="${PLATFORM_NAME:-cartpole_zedboard}"
+PROC="${PROC:-ps7_cortexa9_0}"
+DOMAIN_NAME="${DOMAIN_NAME:-standalone_domain}"
+: "${APPS:=CartPoleFirmware Embedded_Controller}"
+read -r -a APPS <<< "${APPS}"
 
-# =========================
-
-VIVADO_BIN="/tools/Xilinx/Vivado/2020.1/bin"
+XILINX_VERSION="${XILINX_VERSION:-2020.1}"
+XILINX_ROOT="${XILINX_ROOT:-/media/santiago/Data/tools/Xilinx}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VIVADO_PROJECTS_ROOT="${SCRIPT_DIR}/VivadoProjects"
+FIRMWARE_DIR="${REPO_ROOT}/Firmware"
+VITIS_WS="${VITIS_WS:-${FIRMWARE_DIR}/VitisProjects}"
 
-DATE_YYYYMMDD="$(date +%Y%m%d)"
-PLATFORM_NAME="${VIVADO_PROJECT_NAME}_${DATE_YYYYMMDD}_${PLATFORM_POSTFIX}"
 PROJECT_DIR="${VIVADO_PROJECTS_ROOT}/${VIVADO_PROJECT_NAME}"
 XPR_PATH="${PROJECT_DIR}/${VIVADO_PROJECT_NAME}.xpr"
-PLATFORM_OUT_DIR="${PROJECT_DIR}/${PLATFORM_NAME}"
-XSA_PATH="${PLATFORM_OUT_DIR}/${PLATFORM_NAME}.xsa"
+XSA_PATH="${VITIS_WS}/${PLATFORM_NAME}.xsa"
+PLATFORM_XPFM="${VITIS_WS}/${PLATFORM_NAME}/export/${PLATFORM_NAME}/${PLATFORM_NAME}.xpfm"
 
-export PATH="${VIVADO_BIN}:$PATH"
+export PATH="${XILINX_ROOT}/Vivado/${XILINX_VERSION}/bin:${XILINX_ROOT}/Vitis/${XILINX_VERSION}/bin:${PATH}"
 
-# -------- Early debug of resolved paths --------
-echo "DEBUG PATHS:"
-echo "  SCRIPT_DIR=${SCRIPT_DIR}"
-echo "  VIVADO_PROJECT_NAME=${VIVADO_PROJECT_NAME}"
-echo "  VIVADO_PROJECTS_ROOT=${VIVADO_PROJECTS_ROOT}"
-echo "  PROJECT_DIR=${PROJECT_DIR}"
-echo "  XPR_PATH=${XPR_PATH}"
-echo "  PLATFORM_NAME=${PLATFORM_NAME}"
-echo "  PLATFORM_OUT_DIR=${PLATFORM_OUT_DIR}"
-echo "  XSA_PATH=${XSA_PATH}"
-echo "  EXPECTED_IMPL_DIR=${PROJECT_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1"
-
-# Check if impl_1 directory and bitstream exist
-if [ -d "${PROJECT_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1" ]; then
-    echo "  impl_1 directory: EXISTS"
-    if [ -f "${PROJECT_DIR}/${VIVADO_PROJECT_NAME}.runs/impl_1"/*.bit ]; then
-        echo "  Bitstream: EXISTS"
-    else
-        echo "  Bitstream: NOT FOUND"
-    fi
-else
-    echo "  impl_1 directory: NOT FOUND"
-fi
-
-echo
-
-if ! command -v xsct >/dev/null 2>&1; then
-	if [ -x "/tools/Xilinx/Vitis/2020.1/bin/xsct" ]; then
-		export PATH="/tools/Xilinx/Vitis/2020.1/bin:$PATH"
-	fi
+# Vitis 2020.1 xsct needs an X display. Use the live desktop display when the
+# shell has none and Xvfb is not installed.
+if [ -z "${DISPLAY:-}" ] && ! command -v Xvfb >/dev/null 2>&1 && [ -S /tmp/.X11-unix/X0 ]; then
+  export DISPLAY=":0"
+  [ -z "${XAUTHORITY:-}" ] && [ -f "${HOME}/.Xauthority" ] && export XAUTHORITY="${HOME}/.Xauthority"
 fi
 
 if ! command -v vivado >/dev/null 2>&1; then
-	echo "ERROR: vivado not found in PATH. Check VIVADO_BIN: ${VIVADO_BIN}" >&2
-	exit 1
+  echo "ERROR: vivado not found in PATH" >&2
+  exit 1
 fi
 if ! command -v xsct >/dev/null 2>&1; then
-	echo "ERROR: xsct (Vitis) not found in PATH. Please add your Vitis bin to PATH." >&2
-	exit 1
+  echo "ERROR: xsct not found in PATH" >&2
+  exit 1
 fi
 if [ ! -f "${XPR_PATH}" ]; then
-	echo "ERROR: Vivado project not found: ${XPR_PATH}" >&2
-	exit 1
+  echo "ERROR: Vivado project not found: ${XPR_PATH}" >&2
+  exit 1
 fi
 
-mkdir -p "${PLATFORM_OUT_DIR}"
+mkdir -p "${VITIS_WS}"
 
-cleanup_vivado_aux() {
-  if [ -d "${PROJECT_DIR}" ]; then
-    (
-      cd "${PROJECT_DIR}" && \
-      rm -f vivado.jou vivado.log vivado_*.jou vivado_*.log || true && \
-      rm -rf .Xil || true
-    )
-  fi
-}
-trap cleanup_vivado_aux EXIT
+echo "DEBUG PATHS:"
+echo "  REPO_ROOT           = ${REPO_ROOT}"
+echo "  VIVADO_PROJECT_NAME = ${VIVADO_PROJECT_NAME}"
+echo "  XPR_PATH            = ${XPR_PATH}"
+echo "  PLATFORM_NAME       = ${PLATFORM_NAME}"
+echo "  VITIS_WS            = ${VITIS_WS}"
+echo "  XSA_PATH            = ${XSA_PATH}"
+echo "  PLATFORM_XPFM       = ${PLATFORM_XPFM}"
+echo "  APPS                = ${APPS[*]}"
+echo
 
-# -------- Export hardware (fixed, with bitstream) via Vivado --------
+# -----------------------------------------------------------------------------
+# Export hardware with bitstream.
+# -----------------------------------------------------------------------------
 vivado_tcl="$(mktemp -t export_hw_XXXXXXXX.tcl)"
 cat > "${vivado_tcl}" <<'TCL'
 open_project $::env(XPR)
-
-# Verify impl_1 run exists
 if {[llength [get_runs impl_1]] == 0} {
   puts "ERROR: impl_1 run not found in project."
   exit 1
 }
-
-# Open implemented design
-if {[catch {open_run impl_1} err]} {
-  puts "WARN: Could not open impl_1 checkpoint: $err"
-}
-
-# Locate bitstream
+catch {open_run impl_1}
 set run_dir [get_property DIRECTORY [get_runs impl_1]]
 set impl_dir $run_dir
-if {[file tail $run_dir] ne "impl_1"} {
-  set impl_dir [file join $run_dir "impl_1"]
-}
-
-# Search for bitstream inside the implementation directory
+if {[file tail $run_dir] ne "impl_1"} { set impl_dir [file join $run_dir "impl_1"] }
 set bitfiles [glob -nocomplain -directory $impl_dir "*.bit"]
-
 if {[llength $bitfiles] == 0} {
-  puts "INFO: Bitstream not found in $impl_dir. Forcing write_bitstream..."
-  launch_runs impl_1 -to_step write_bitstream -jobs 4 -force
+  puts "INFO: Bitstream missing; launching impl_1 to write_bitstream."
+  launch_runs impl_1 -to_step write_bitstream -jobs 8 -force
   wait_on_run impl_1
-  # Recompute directories in case Vivado adjusted paths
   set run_dir [get_property DIRECTORY [get_runs impl_1]]
   set impl_dir $run_dir
-  if {[file tail $run_dir] ne "impl_1"} {
-    set impl_dir [file join $run_dir "impl_1"]
-  }
+  if {[file tail $run_dir] ne "impl_1"} { set impl_dir [file join $run_dir "impl_1"] }
   set bitfiles [glob -nocomplain -directory $impl_dir "*.bit"]
-  if {[llength $bitfiles] == 0} {
-    puts "ERROR: Bitstream still missing after generation."
-    exit 1
-  }
 }
-
-set bitfile [lindex $bitfiles 0]
-puts "Found bitstream: $bitfile"
-
-# Now export XSA with the bitstream
-file mkdir $::env(OUTPUT_DIR)
-set xsa_path [file join $::env(OUTPUT_DIR) "${::env(PLATFORM_NAME)}.xsa"]
-puts "Writing XSA with bitstream: $xsa_path"
-if {[catch {write_hw_platform -fixed -include_bit -force -file $xsa_path} err]} {
-  puts "ERROR: write_hw_platform failed: $err"
+if {[llength $bitfiles] == 0} {
+  puts "ERROR: Bitstream not found."
   exit 1
 }
-
-puts "Hardware export complete."
+puts "Found bitstream: [lindex $bitfiles 0]"
+write_hw_platform -fixed -include_bit -force -file $::env(XSA_PATH)
+puts "Hardware export complete: $::env(XSA_PATH)"
 exit 0
-
-
 TCL
 
-echo "Exporting hardware with bitstream from: ${XPR_PATH}"
-pushd "${PROJECT_DIR}" >/dev/null
-XPR="${XPR_PATH}" OUTPUT_DIR="${PLATFORM_OUT_DIR}" PLATFORM_NAME="${PLATFORM_NAME}" \
-	vivado -mode batch -source "${vivado_tcl}" -log vivado.log -journal vivado.jou | cat
-popd >/dev/null || true
+if [ -f "${XSA_PATH}" ] && [ "${SKIP_EXPORT:-0}" = "1" ]; then
+  echo "==> SKIP_EXPORT=1 and XSA present, reusing: ${XSA_PATH}"
+else
+  echo "==> Exporting hardware from: ${XPR_PATH}"
+  pushd "${PROJECT_DIR}" >/dev/null
+  XPR="${XPR_PATH}" XSA_PATH="${XSA_PATH}" vivado -mode batch -source "${vivado_tcl}" -log vivado.log -journal vivado.jou | cat
+  popd >/dev/null
+fi
 rm -f "${vivado_tcl}"
 
 if [ ! -f "${XSA_PATH}" ]; then
-  echo "ERROR: Bitstream/XSA not available. Skipping Vitis platform creation." >&2
+  echo "ERROR: XSA not produced: ${XSA_PATH}" >&2
   exit 1
 fi
 
-# -------- Create hardware platform in Vivado project directory via XSCT --------
-xsct_tcl="$(mktemp -t create_platform_XXXXXXXX.tcl)"
-cat > "${xsct_tcl}" <<'TCL'
-set ws $::env(VITIS_WS)
-set xsa $::env(XSA)
-set pname $::env(PLATFORM_NAME)
-
-if {![file exists $xsa]} {
-  puts "ERROR: XSA not found: $xsa"
+# -----------------------------------------------------------------------------
+# Create platform/apps, symlink sources, build. Keep this in one xsct session:
+# Vitis 2020.1 on this machine does not reliably rediscover apps/platforms across
+# fresh xsct sessions. The first app creates the platform from XSA; later apps
+# reuse the same platform/domain.
+# -----------------------------------------------------------------------------
+SELECTED_APPS=()
+for app in "${APPS[@]}"; do
+  if [ -d "${REPO_ROOT}/Firmware/Src/${app}" ]; then
+    SELECTED_APPS+=("${app}")
+  else
+    echo "WARN: skipping ${app}; source directory missing"
+  fi
+done
+if [ "${#SELECTED_APPS[@]}" -eq 0 ]; then
+  echo "ERROR: no apps selected" >&2
   exit 1
-}
+fi
 
-file mkdir $ws
+xsct_tcl="$(mktemp -t vitis_all_XXXXXXXX.tcl)"
+cat > "${xsct_tcl}" <<'TCL'
+set ws    $::env(VITIS_WS)
+set xsa   $::env(XSA_PATH)
+set proc  $::env(PROC)
+set pname $::env(PLATFORM_NAME)
+set dom   $::env(DOMAIN_NAME)
+set fw    $::env(FIRMWARE_DIR)
+set xpfm  $::env(PLATFORM_XPFM)
+set apps  [split [string trim $::env(APPS_LIST)]]
+
 setws $ws
+set existing_apps {}
+catch {set existing_apps [app list]}
+proc has_item {name lst} { return [expr {[lsearch -exact $lst $name] >= 0}] }
+set platform_ready [file exists $xpfm]
 
-# Check if platform already exists, handle gracefully if workspace is empty
-set existing_platforms {}
-if {[catch {set existing_platforms [platform list]} err]} {
-  puts "INFO: No existing platforms found or workspace empty: $err"
-}
-
-if {[lsearch -exact $existing_platforms $pname] >= 0} {
-  puts "Platform '$pname' already exists. Activating and cleaning..."
-  platform active $pname
-  catch {platform clean}
-} else {
-  puts "Creating platform '$pname' from: $xsa"
-  platform create -name $pname -hw $xsa -out $ws
-  platform active $pname
-}
-
-# Clean up any default domains
-foreach d [domain list] {
-  if {[string match "default*" $d]} {
-    catch {domain delete $d}
+foreach app $apps {
+  if {[has_item $app $existing_apps]} {
+    puts "Application '$app' already exists."
+  } elseif {!$platform_ready} {
+    puts "Creating '$app' and platform '$pname' from XSA"
+    app create -name $app -hw $xsa -proc $proc -os standalone -template "Empty Application"
+    set platform_ready 1
+  } else {
+    puts "Creating '$app' on existing platform '$pname'"
+    app create -name $app -platform $pname -domain $dom -template "Empty Application"
   }
 }
 
-set proc "ps7_cortexa9_0"
-set domain_name "domain_ps7_cortexa9_0"
-
-# Create standalone domain if it doesn't exist
-if {[lsearch -exact [domain list] $domain_name] < 0} {
-  domain create -name $domain_name -proc $proc -os standalone
-}
-domain active $domain_name
-
-# Generate boot components including FSBL
-domain config -boot {/tools/Xilinx/Vitis/2020.1/data/embeddedsw/lib/sw_apps/zynq_fsbl}
-domain config -bif {bootgen_bif}
-
-platform write
-if {[catch {platform generate -domains $domain_name} err]} {
-  puts "ERROR: platform generate failed: $err"
-  exit 1
+foreach app $apps {
+  set asrc "$ws/$app/src"
+  exec bash -c "mkdir -p \"$asrc\"; find \"$asrc\" -mindepth 1 ! -name lscript.ld -exec rm -rf {} + 2>/dev/null; true"
+  set rc [catch {exec bash -c "cd \"$fw\" && ./create_symlinks.sh \"./Src/$app ./VitisProjects/$app/src\" \"./Src/General ./VitisProjects/$app/src\" \"./Src/Zynq ./VitisProjects/$app/src/Zynq\""} out]
+  puts $out
+  if {$rc} { puts "WARN: symlink step for '$app' returned non-zero" }
 }
 
-# Generate platform again to ensure boot components are built
-if {[catch {platform generate} err]} {
-  puts "WARN: Second platform generate failed: $err"
+set failed {}
+foreach app $apps {
+  catch {app config -name $app -add include-path {../src}}
+  catch {app config -name $app -add include-path {../src/Zynq}}
+  catch {app config -name $app -add libraries {m}}
+  puts "Building '$app'..."
+  if {[catch {app build -name $app} err]} {
+    puts "BUILD_FAIL $app: $err"
+    lappend failed $app
+  } else {
+    puts "BUILD_OK $app"
+  }
 }
-
-puts "Platform '$pname' ready in workspace: $ws"
+if {[llength $failed] > 0} { puts "APPS_WITH_BUILD_ERRORS: $failed" }
 exit 0
 TCL
 
-echo "Creating Vitis platform '${PLATFORM_NAME}' in workspace: ${PLATFORM_OUT_DIR}"
-VITIS_WS="${PLATFORM_OUT_DIR}" XSA="${XSA_PATH}" PLATFORM_NAME="${PLATFORM_NAME}" \
-	xsct "${xsct_tcl}" | cat
+VITIS_WS="${VITIS_WS}" XSA_PATH="${XSA_PATH}" PROC="${PROC}" PLATFORM_NAME="${PLATFORM_NAME}" \
+  DOMAIN_NAME="${DOMAIN_NAME}" FIRMWARE_DIR="${FIRMWARE_DIR}" PLATFORM_XPFM="${PLATFORM_XPFM}" \
+  APPS_LIST="${SELECTED_APPS[*]}" xsct "${xsct_tcl}" | cat
 rm -f "${xsct_tcl}"
 
-if [ -d "${PROJECT_DIR}" ]; then
-  (
-    cd "${PROJECT_DIR}" && \
-    rm -f vivado.jou vivado.log vivado_*.jou vivado_*.log && \
-    rm -rf .Xil || true
-  )
+echo
+if [ -f "${PLATFORM_XPFM}" ]; then
+  echo "Platform: ${PLATFORM_XPFM}"
+else
+  echo "WARN: platform xpfm not found: ${PLATFORM_XPFM}"
 fi
+for app in "${SELECTED_APPS[@]}"; do
+  elf="${VITIS_WS}/${app}/Debug/${app}.elf"
+  if [ -f "${elf}" ]; then
+    echo "  OK  ${app}: ${elf}"
+  else
+    echo "  ERR ${app}: ELF not found (${elf})"
+  fi
+done
 
-echo "Done. Platform: ${PLATFORM_NAME}"
-exit 0
+echo "Done. Platform '${PLATFORM_NAME}' and apps [${SELECTED_APPS[*]}] under: ${VITIS_WS}"

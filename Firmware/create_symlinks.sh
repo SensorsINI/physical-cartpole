@@ -79,6 +79,13 @@ create_symlinks() {
   done
 }
 
+# Allow overriding the directory pairs from the command line.
+# Each argument must be a single "SRC DEST" pair, e.g.:
+#   ./create_symlinks.sh "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
+if [ "$#" -gt 0 ]; then
+  directories=("$@")
+fi
+
 # Loop through the directory pairs and run the create_symlinks function for each pair
 for dirs in "${directories[@]}"; do
   # Split the pair into source and destination
