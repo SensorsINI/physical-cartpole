@@ -27,6 +27,8 @@ Driver/SI_Toolkit_ASF/Experiments/*
 
 /FPGA/VivadoProjects/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
+!/FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_Zedboard.tcl
+!/FPGA/VivadoProjects/board_files/
 
 # Vitis HLS build artifacts
 /FPGA/CustomIPs/vitis_hls.log

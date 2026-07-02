@@ -6,7 +6,8 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
-CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
+ZYNQ_BOARD = "ZEDBOARD"  # 'ZYBO_Z720' or 'ZEDBOARD'; selects the calibration of the physical cartpole attached to that board. Must match the board define in Firmware hardware_bridge.h.
+CONTROLLER_NAME = 'pid'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'; 'pid' is a safe first smoke test on the Zedboard rig (neural checkpoints were trained on the Zybo-lab cartpole)
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
 ##### Real-time CPU pinning #####
@@ -65,6 +66,17 @@ if CHIP == 'STM':
     ANGLE_360_DEG_IN_ADC_UNITS = 4293.4
     ANGLE_HANGING_ORIGINAL = 910.0  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4672  # This is an empirical approximation
+elif CHIP == 'ZYNQ' and ZYNQ_BOARD == 'ZEDBOARD':
+    # Calibration for the Zedboard-lab physical cartpole (values validated on that rig,
+    # taken from the lab's working setup / Zedboard branch commit ff081abf).
+    # Must match Firmware parameters.c (ZEDBOARD section).
+    MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000
+    MOTOR_CORRECTION_ORIGINAL = (0.5846884, 0.0223145, 0.0224489)
+    MOTOR_CORRECTION_POLOLU = (0.5846884, 0.0223145, 0.0224489)
+    ANGLE_360_DEG_IN_ADC_UNITS = 4302
+    ANGLE_HANGING_POLOLU = 1075  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_ORIGINAL = 1075  # Value from sensor when pendulum is at stable equilibrium point
+    POSITION_ENCODER_RANGE = 4649
 elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)

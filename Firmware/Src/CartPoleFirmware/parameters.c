@@ -49,6 +49,19 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 
 #elif defined(ZYNQ)
 
+#ifdef ZEDBOARD
+// Calibration for the Zedboard-lab physical cartpole (values validated on that rig,
+// taken from the lab's working setup / Zedboard branch commit ff081abf).
+float MOTOR_CORRECTION[3] 							=		{0.5846884, 0.0223145, 0.0224489}; // Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
+
+float ANGLE_HANGING_POLOLU 							=		1075;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_ORIGINAL						=		1075;  // Value from sensor when pendulum is at stable equilibrium point
+
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4302;  // Must match Driver/globals.py ZYNQ value; mismatch shifts on-chip angle zero
+const float POSITION_ENCODER_RANGE					=		4649;
+
+#else  // ZYBO_Z720
+
 float MOTOR_CORRECTION[3] 							=		{0.5116974, 0.0178784, 0.0280385}; // Pololu; force-fit on committed CPP_step_response.csv (u_max=2.62N, mass=0.317kg). Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
 
 float ANGLE_HANGING_POLOLU 							=		1063.779;  // Measured hanging ADC ('b' calibration); with corrected ANGLE_360 this maps upright -> 0
@@ -56,6 +69,8 @@ float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4049.44;  // Calibrated: hanging=1063.779, upright=3088.5 -> 180deg=2024.721 ADC. Must match Driver/globals.py ZYNQ value; mismatch shifts on-chip angle zero and offsets LQR centering
 const float POSITION_ENCODER_RANGE					=		4695.0;
+
+#endif
 
 const unsigned int CLOCK_FREQ						=		333333343;
 const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		10000;
