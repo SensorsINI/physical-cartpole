@@ -38,15 +38,15 @@ MOTOR = 'POLOLU'
 
 ##### Controller Settings #####
 if CONTROLLER_NAME == 'pid':
-    CONTROL_PERIOD_MS = 5
+    POLLING_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'lqr':
-    CONTROL_PERIOD_MS = 8
+    POLLING_PERIOD_MS = 8
 elif CONTROLLER_NAME == 'neural-imitator':
-    CONTROL_PERIOD_MS = 10
+    POLLING_PERIOD_MS = 10
 elif CONTROLLER_NAME == 'fpga':
-    CONTROL_PERIOD_MS = 15
+    POLLING_PERIOD_MS = 15
 else:
-    CONTROL_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    POLLING_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 
 TIMESTEPS_FOR_DERIVATIVE = 1  # Derivative window in control cycles. Must match firmware parameters.c (angleD on-chip, positionD here).
 
@@ -109,7 +109,7 @@ DANCE_PERIOD_S = 10.0
 DANCE_START_TIME = 0.0
 DANCE_UP_AND_DOWN = False
 
-TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = CONTROL_PERIOD_MS)
+TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = POLLING_PERIOD_MS)
 
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR

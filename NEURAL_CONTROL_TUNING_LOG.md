@@ -12,7 +12,7 @@ Pipeline facts (constant across runs):
 Knobs we change (where):
 - Net: `Driver/CartPoleSimulation/Control_Toolkit_ASF/config_controllers.yml` → `neural-imitator: PATH_TO_MODELS + net_name`.
 - Motor calibration: `Driver/globals.py` → `MOTOR_CORRECTION_POLOLU` (PC-control path; firmware `MOTOR_CORRECTION` is on-chip only).
-- Control rate: `Driver/globals.py` → `CONTROL_PERIOD_MS` (neural-imitator branch).
+- Control rate: `Driver/globals.py` → `POLLING_PERIOD_MS` (neural-imitator branch).
 - Input quantization: `config_controllers.yml` → `input_precision`.
 
 Motor-calibration reproducibility (RESOLVED 2026-06-19):
@@ -47,7 +47,7 @@ Older calibration values (legacy / not canonical):
 ### CURRENT BEST KNOWN-GOOD (ACCEPTED) ✅
 - Net: `Dense-7IN-32H1-32H2-1OUT-8` at `PATH_TO_MODELS: ./CartPoleSimulation/SI_Toolkit_ASF/Experiments` (output `Q_calculated`)
 - `MOTOR_CORRECTION_POLOLU = (0.5116974, 0.0178784, 0.0280385)` (force-fit, reproducible; replaced legacy 0.5701800 — re-test pending)
-- `CONTROL_PERIOD_MS = 10`
+- `POLLING_PERIOD_MS = 10`
 - `TIMESTEPS_FOR_DERIVATIVE = 1` in BOTH `globals.py` and firmware `parameters.c` (matched)
 - `input_precision: ap_fixed<12,2>`, `nn_evaluator_mode: normal`
 - Result: reliable swing-up + stabilization + disturbance rejection. Acceptable. (`-1OUT-8` angleD range ±21.2 also tolerates the kick-spin and the N=1 derivative noise.)
