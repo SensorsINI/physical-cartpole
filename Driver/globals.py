@@ -21,7 +21,14 @@ OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi';
 #                which a single-core pin would throttle.
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
+# The controller worker thread (and the TF/XLA pools) stay on this pin, so e.g. rpgd
+# keeps its dedicated core.
 CONTROL_CPU_AFFINITY = "2"
+
+# Core(s) for the chip-polling loop: the main thread re-pins itself (per-thread
+# affinity) to these after the controller worker is created, so the loop never competes
+# with the controller computation. "" leaves the main thread on CONTROL_CPU_AFFINITY.
+LOOP_CPU_AFFINITY = "3"
 
 # Which GPUs TensorFlow may see, applied by control.py before TF is imported.
 #   "-1"      -> CPU only (default; the TF control path is CPU-pinned anyway)
@@ -38,6 +45,10 @@ CONTROL_CUDA_VISIBLE_DEVICES = "-1"
 MOTOR = 'POLOLU'
 
 ##### Controller Settings #####
+# Two clocks: the chip-polling loop runs every POLLING_PERIOD_MS (gate/trigger
+# resolution); the controller computes in a worker thread and its result is applied
+# CONTROLLER_APPLY_WINDOW_MS after the trigger. The classic cadence is the special case
+# window == period (compute each period, apply at the next tick).
 if CONTROLLER_NAME == 'pid':
     POLLING_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'lqr':
@@ -46,8 +57,19 @@ elif CONTROLLER_NAME == 'neural-imitator':
     POLLING_PERIOD_MS = 10
 elif CONTROLLER_NAME == 'fpga':
     POLLING_PERIOD_MS = 15
+elif CONTROLLER_NAME.startswith('secloc'):
+    POLLING_PERIOD_MS = 2  # fast polling so the Secloc gate sees fresh state every 2 ms
 else:
     POLLING_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+
+# Fixed trigger-to-apply latency; should be >= the typical controller computation time.
+CONTROLLER_APPLY_WINDOW_MS = POLLING_PERIOD_MS
+
+if CONTROLLER_APPLY_WINDOW_MS % POLLING_PERIOD_MS != 0:
+    raise ValueError(
+        "CONTROLLER_APPLY_WINDOW_MS must be an integer multiple of POLLING_PERIOD_MS "
+        f"(got {CONTROLLER_APPLY_WINDOW_MS} ms and {POLLING_PERIOD_MS} ms)."
+    )
 
 TIMESTEPS_FOR_DERIVATIVE = 1  # Derivative window in control cycles. Must match firmware parameters.c (angleD on-chip, positionD here).
 

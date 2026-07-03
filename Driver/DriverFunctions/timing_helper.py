@@ -25,12 +25,15 @@ class TimingHelper:
         self.controller_steptime = 0
         self.controller_steptime_previous = 0
         self.controller_steptime_buffer = np.zeros((0,))
+        self.controller_calc_count = 0
+        self.controller_overrun_count = 0
         self.controlled_iterations = 0
         self.total_iterations = 0
 
         self.firmware_latency = 0
         self.latency_violation = 0
-        self.latency_violations = 0
+        self.firmware_latency_violations = 0
+        self.controller_latency_violations = 0
 
         # Artificial Latency
         self.additional_latency = 0.0
@@ -74,16 +77,25 @@ class TimingHelper:
 
         # Latency Violations
         if self.latency_violation == 1:
-            self.latency_violations += 1
+            self.firmware_latency_violations += 1
         elif self.time_between_measurements_chip > 1.5 * POLLING_PERIOD_MS / 1000.0:
             self.latency_violation = 1
-            self.latency_violations += np.floor(self.time_between_measurements_chip / (POLLING_PERIOD_MS / 1000.0))
+            self.firmware_latency_violations += int(
+                np.floor(self.time_between_measurements_chip / (POLLING_PERIOD_MS / 1000.0))
+            )
         elif controlEnabled and self.firmware_latency > (POLLING_PERIOD_MS / 1000.0):
             self.latency_violation = 1
-            self.latency_violations += 1
-        elif controlEnabled and self.firmware_latency < self.controller_steptime_previous:  # Heuristic, obviosuly wrong case
-            self.latency_violation = 1
-            self.latency_violations += 1
+            self.firmware_latency_violations += 1
+
+    def load_controller_timing(self, calc_time_last, calc_count, overrun_count):
+        self.controller_steptime_previous = self.controller_steptime
+        if calc_count != self.controller_calc_count:
+            self.controller_steptime = calc_time_last
+            self.controller_steptime_buffer = np.append(self.controller_steptime_buffer, self.controller_steptime)
+            self.controller_steptime_buffer = self.controller_steptime_buffer[-STATISTICS_IN_TERMINAL_AVERAGING_LENGTH:]
+            self.controller_calc_count = calc_count
+        self.controller_overrun_count = overrun_count
+        self.controller_latency_violations = overrun_count
 
 
     def add_latency(self, s):
@@ -116,12 +128,22 @@ class TimingHelper:
             self.firmware_latency_buffer = self.firmware_latency_buffer[-STATISTICS_IN_TERMINAL_AVERAGING_LENGTH:]
             self.python_latency_buffer = np.append(self.python_latency_buffer, self.python_latency)
             self.python_latency_buffer = self.python_latency_buffer[-STATISTICS_IN_TERMINAL_AVERAGING_LENGTH:]
-            self.controller_steptime_buffer = np.append(self.controller_steptime_buffer, self.controller_steptime)
-            self.controller_steptime_buffer = self.controller_steptime_buffer[-STATISTICS_IN_TERMINAL_AVERAGING_LENGTH:]
 
     def strings_for_statistics_in_terminal(self):
         if self.total_iterations > 10:
             buffer_current_length = np.min((self.total_iterations-10+1, STATISTICS_IN_TERMINAL_AVERAGING_LENGTH))
+            controller_buffer_current_length = min(
+                len(self.controller_steptime_buffer),
+                STATISTICS_IN_TERMINAL_AVERAGING_LENGTH,
+            )
+            controller_step_mean = (
+                float(self.controller_steptime_buffer[:controller_buffer_current_length].mean() * 1000)
+                if controller_buffer_current_length else 0.0
+            )
+            controller_step_std = (
+                float(self.controller_steptime_buffer[:controller_buffer_current_length].std() * 1000)
+                if controller_buffer_current_length else 0.0
+            )
             timing_string = "TIMING: delta time [μ={:.1f}ms, σ={:.2f}ms], firmware latency [μ={:.1f}ms, σ={:.2f}ms], \n         python latency [μ={:.1f}ms σ={:.2f}ms], controller step [μ={:.1f}ms σ={:.2f}ms]".format(
                 float(self.delta_time_buffer[:buffer_current_length].mean() * 1000),
                 float(self.delta_time_buffer[:buffer_current_length].std() * 1000),
@@ -132,15 +154,25 @@ class TimingHelper:
                 float(self.python_latency_buffer[:buffer_current_length].mean() * 1000),
                 float(self.python_latency_buffer[:buffer_current_length].std() * 1000),
 
-                float(self.controller_steptime_buffer[:buffer_current_length].mean() * 1000),
-                float(self.controller_steptime_buffer[:buffer_current_length].std() * 1000)
+                controller_step_mean,
+                controller_step_std
             )
 
 
 
             ###########  Latency Violations  ############
-            percentage_latency_violations = 100 * self.latency_violations / self.total_iterations if self.total_iterations > 0 else 0
-            timing_latency_string = f"         latency violations: {self.latency_violations}/{self.total_iterations} = {percentage_latency_violations:.1f}%"
+            firmware_percentage = (
+                100 * self.firmware_latency_violations / self.total_iterations
+                if self.total_iterations > 0 else 0
+            )
+            controller_percentage = (
+                100 * self.controller_latency_violations / self.controller_calc_count
+                if self.controller_calc_count > 0 else 0
+            )
+            timing_latency_string = (
+                f"         latency violations: firmware {self.firmware_latency_violations}/{self.total_iterations} = {firmware_percentage:.1f}%, "
+                f"controller overruns {self.controller_latency_violations}/{self.controller_calc_count} = {controller_percentage:.1f}%"
+            )
 
             return timing_string, timing_latency_string
         else:
@@ -151,8 +183,11 @@ class TimingHelper:
         self.firmware_latency_buffer = np.zeros((0,))
         self.python_latency_buffer = np.zeros((0,))
         self.controller_steptime_buffer = np.zeros((0,))
+        self.controller_calc_count = 0
+        self.controller_overrun_count = 0
 
-        self.latency_violations = 0
+        self.firmware_latency_violations = 0
+        self.controller_latency_violations = 0
         self.total_iterations = 0
 
     @staticmethod

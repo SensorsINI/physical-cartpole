@@ -22,13 +22,13 @@ os.chdir("Driver")
 
 from DriverFunctions.PhysicalCartPoleDriver import PhysicalCartPoleDriver
 from CartPoleSimulation.CartPole import CartPole
-from globals import POLLING_PERIOD_MS
+from globals import CONTROLLER_APPLY_WINDOW_MS
 
 print("TF threads (env):", _policy["tf_threads"])
 print("XLA Flags:", _policy["xla_flags"])
 
 CartPoleInstance = CartPole()
-CartPoleInstance.dt_controller = float(POLLING_PERIOD_MS)/1000.0
+CartPoleInstance.dt_controller = float(CONTROLLER_APPLY_WINDOW_MS) / 1000.0
 PhysicalCartPoleDriverInstance = PhysicalCartPoleDriver(CartPoleInstance)
 print("\nPhysical CartPole Driver created!\n")
 PhysicalCartPoleDriverInstance.run()

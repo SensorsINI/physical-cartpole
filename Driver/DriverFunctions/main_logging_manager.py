@@ -11,6 +11,7 @@ from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_
 
 from globals import (
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
+    CONTROLLER_APPLY_WINDOW_MS,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
     DEFAULT_ADDRESS, LIVE_PLOTTER_USE_REMOTE_SERVER, LIVE_PLOTTER_REMOTE_USERNAME, LIVE_PLOTTER_REMOTE_IP
 )
@@ -57,9 +58,10 @@ class MainLoggingManager:
             'Q_squared': lambda: driver.Q_prev ** 2,
 
             'latency': lambda: driver.th.firmware_latency,
-            'latency_violations': lambda: driver.th.latency_violations,
+            'firmware_latency_violations': lambda: driver.th.firmware_latency_violations,
+            'controller_latency_violations': lambda: driver.th.controller_latency_violations,
             'pythonLatency': lambda: driver.th.python_latency,
-            'controller_steptime': lambda: driver.th.controller_steptime_previous,
+            'controller_steptime': lambda: driver.th.controller_steptime,
             'additionalLatency': lambda: driver.th.additional_latency,
             'invalid_steps': lambda: driver.idp.invalid_steps,
             'freezme': lambda: driver.idp.freezme,
@@ -69,7 +71,10 @@ class MainLoggingManager:
         })
 
         self.data_to_save_measurement = {}
-        self.data_to_save_controller = {}
+        # 1 if a freshly computed control was applied this iteration, 0 if held
+        self.data_to_save_controller = FunctionalDict({
+            'controller_update_applied': lambda: int(driver.threaded_controller.last_applied_now),
+        })
 
         self.data_manager = DataManager(create_csv_file)
 
@@ -87,6 +92,31 @@ class MainLoggingManager:
             LIVE_PLOTTER_REMOTE_USERNAME,
             LIVE_PLOTTER_REMOTE_IP
         )
+
+    def _controller_csv_value(self, key, default=0):
+        """Read a value from the controller's controller_data_for_csv (values may be callables)."""
+        controller = getattr(self.driver, "controller", None)
+        data = getattr(controller, "controller_data_for_csv", None)
+        if data is None:
+            return default
+        try:
+            if key not in data:
+                return default
+            value = data[key]
+            return value() if callable(value) else value
+        except (KeyError, TypeError):
+            return default
+
+    def _controller_data_to_save(self):
+        data = FunctionalDict()
+        data.update(self.data_to_save_controller)
+        controller = getattr(self.driver, "controller", None)
+        controller_data = getattr(controller, "controller_data_for_csv", {})
+        for key in controller_data:
+            if key.startswith("cost_component_"):
+                continue
+            data[key] = lambda key=key: self._controller_csv_value(key, 0)
+        return data
 
     def step(self):
         self.csv_recording_step()
@@ -185,9 +215,9 @@ class MainLoggingManager:
         if self.start_recording_flag:
             self.start_recording_flag = False
             combined_keys = list(self.dict_data_to_save_basic.keys()) + list(
-                self.data_to_save_measurement.keys()) + list(self.data_to_save_controller.keys())
+                self.data_to_save_measurement.keys()) + list(self._controller_data_to_save().keys())
 
-            self.driver.CartPoleInstance.dt_controller = POLLING_PERIOD_MS / 1000
+            self.driver.CartPoleInstance.dt_controller = CONTROLLER_APPLY_WINDOW_MS / 1000
             self.driver.CartPoleInstance.dt_save = POLLING_PERIOD_MS / 1000
 
             self.data_manager.start_csv_recording(
@@ -207,7 +237,7 @@ class MainLoggingManager:
                 self.data_manager.step([
                     self.dict_data_to_save_basic,
                     self.data_to_save_measurement,
-                    self.data_to_save_controller
+                    self._controller_data_to_save()
                 ])
 
     def finish_csv_recording(self, wait_till_complete=True):
@@ -235,10 +265,10 @@ class MainLoggingManager:
             if self.driver.controlEnabled:
                 if 'mpc' in CONTROLLER_NAME:
                     mode = 'CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(
-                        CONTROLLER_NAME, POLLING_PERIOD_MS, CONTROL_SYNC, self.driver.controller.optimizer.mpc_horizon,
+                        CONTROLLER_NAME, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC, self.driver.controller.optimizer.mpc_horizon,
                         self.driver.controller.optimizer.num_rollouts, self.driver.controller.predictor.predictor_name)
                 else:
-                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, POLLING_PERIOD_MS,
+                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROLLER_APPLY_WINDOW_MS,
                                                                              CONTROL_SYNC)
             elif self.driver.firmwareControl:
                 mode = 'CONTROLLER:   Firmware'

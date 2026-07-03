@@ -14,6 +14,8 @@ from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import Exp
 
 from Driver.DriverFunctions.dancer import Dancer
 from DriverFunctions.timing_helper import TimingHelper
+from DriverFunctions.threaded_controller import ThreadedController
+from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
 from Control_Toolkit.serial_interface_helper import get_serial_port, set_ftdi_latency_timer
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
@@ -25,6 +27,8 @@ from globals import (
     CHIP,
     OPTIMIZER_NAME, CONTROLLER_NAME,
     POLLING_PERIOD_MS, CONTROL_SYNC,
+    CONTROLLER_APPLY_WINDOW_MS,
+    CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
     ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
     ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL,
     angle_deviation_update,
@@ -51,6 +55,18 @@ class PhysicalCartPoleDriver:
             self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
+
+        # Controller computation runs in a worker thread; its result is applied
+        # CONTROLLER_APPLY_WINDOW_MS after the trigger. Worker on the compute core(s),
+        # polling loop re-pinned to its own core(s) so the two never compete.
+        self.threaded_controller = ThreadedController(
+            self.controller,
+            window_s=CONTROLLER_APPLY_WINDOW_MS / 1000.0,
+            name=CONTROLLER_NAME,
+            cpu_affinity=CONTROL_CPU_AFFINITY,
+        )
+        self.threaded_controller.start()
+        set_thread_cpu_affinity(LOOP_CPU_AFFINITY, thread_label="polling loop")
 
         self.InterfaceInstance = Interface()
 
@@ -174,6 +190,7 @@ class PhysicalCartPoleDriver:
 
     def quit_experiment(self):
         CostFunctionUpdater.stop_all_watchers()  # Stop all active watchers
+        self.threaded_controller.stop()
         # when x hit during loop or other loop exit
         self.angle_position_client.close()
         self.InterfaceInstance.set_motor(0)  # turn off motor
@@ -249,17 +266,22 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.Q_ccrc = self.Q
 
         if self.controlEnabled:
-            # Active Python Control: set values from controller
-            with self.th.timer('controller_steptime', 'controller_steptime_previous'):
-                self.Q = float(self.controller.step(
-                    self.s,
-                    self.th.time_current_measurement_chip,
-                    {"target_position": self.target_position,
-                     "target_equilibrium": self.CartPoleInstance.target_equilibrium,
-                     "Q_ccrc": self.Q_prev_prev,  # Take care! The Q_ccrc is Q_prev (MPC) but the control from before the current state is Q_prev_prev (NN)
-                     }
-                ))
-                self.print_controller_status_if_available()
+            # Active Python Control: non-blocking; returns the current control,
+            # updated at the fixed apply window after each trigger.
+            self.Q = float(self.threaded_controller.tick(
+                self.s,
+                self.th.time_current_measurement_chip,
+                {"target_position": self.target_position,
+                 "target_equilibrium": self.CartPoleInstance.target_equilibrium,
+                 "Q_ccrc": self.Q_prev_prev,  # Take care! The Q_ccrc is Q_prev (MPC) but the control from before the current state is Q_prev_prev (NN)
+                 }
+            ))
+            self.th.load_controller_timing(
+                self.threaded_controller.calc_time_last,
+                self.threaded_controller.calc_count,
+                self.threaded_controller.overrun_count,
+            )
+            self.print_controller_status_if_available()
 
             if AUTOSTART:
                 self.Q = 0
@@ -310,12 +332,15 @@ class PhysicalCartPoleDriver:
             return
 
         get_controller_status = getattr(self.controller, "get_controller_status", None)
-        if get_controller_status is None:
-            return
+        controller_status = get_controller_status() if get_controller_status is not None else None
 
-        controller_status = get_controller_status()
+        status_parts = []
         if controller_status:
-            print(f"[{CONTROLLER_NAME}] {controller_status}", flush=True)
+            status_parts.append(controller_status)
+        status_parts.append(self.threaded_controller.get_status())
+
+        if status_parts:
+            print(f"[{CONTROLLER_NAME}] " + " | ".join(status_parts), flush=True)
             self._last_controller_status_print_time = self.th.time_current_measurement_chip
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
@@ -438,12 +463,14 @@ class PhysicalCartPoleDriver:
             self.controller.controller_reset()
         except NotImplementedError:
             pass
+        self.threaded_controller.reset()
         self.dancer.danceEnabled = False
         self.target_position = self.base_target_position
-        self.th.latency_violations = 0
+        self.th.reset_timing_helper_memory()
 
     def switch_on_control(self):
         self.controlEnabled = True
+        self.threaded_controller.reset()
         self.th.reset_timing_helper_memory()
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.pc_control_mode(True)

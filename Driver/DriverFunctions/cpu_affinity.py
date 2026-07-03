@@ -41,6 +41,37 @@ def is_pinned():
     return len(affinity) < total
 
 
+def set_thread_cpu_affinity(cpu_spec, thread_label="thread"):
+    """Pin the CALLING thread only (Linux). Used to separate the chip-polling loop
+    from the controller worker. Returns the applied affinity list, or None."""
+    cpu_spec = (cpu_spec or "").strip()
+    if cpu_spec.lower() in {"", "none", "off", "false"}:
+        return None
+    if not hasattr(os, "sched_setaffinity"):
+        print(f"{thread_label} CPU affinity: not supported on this platform")
+        return None
+
+    requested = parse_cpu_spec(cpu_spec)
+    try:
+        # Note: this returns/sets affinity of the calling thread, not the whole process.
+        available = os.sched_getaffinity(0)
+        all_cpus = set(range(os.cpu_count() or 0))
+        selected = requested & (all_cpus or requested)
+        if not selected:
+            print(
+                f"{thread_label} CPU affinity: requested {sorted(requested)} not available; "
+                f"keeping {sorted(available)}"
+            )
+            return None
+        os.sched_setaffinity(0, selected)
+        result = sorted(os.sched_getaffinity(0))
+    except OSError as exc:
+        print(f"{thread_label} CPU affinity: failed to apply ({exc})")
+        return None
+    print(f"{thread_label} CPU affinity: {result}")
+    return result
+
+
 def set_control_cpu_affinity(cpu_spec):
     """Pin the current process to ``cpu_spec``.
 
