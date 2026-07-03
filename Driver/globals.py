@@ -165,7 +165,7 @@ JOYSTICK_DEADZONE = 0.1  # deadzone around joystick neutral position that stick 
 JOYSTICK_POSITION_KP = 4.0
 
 ##### Serial Port #####
-SERIAL_PORT_NUMBER = 1
+SERIAL_PORT_NUMBER = 0  # index into the filtered list of real USB serial ports (ttyUSB*/ttyACM*); the Cypress USB2UART on this rig is the only one
 SERIAL_BAUD = 230400  # default 230400, in firmware. Alternatives if compiled and supported by USB serial intervace are are 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000
 
 ratio = 1.05
