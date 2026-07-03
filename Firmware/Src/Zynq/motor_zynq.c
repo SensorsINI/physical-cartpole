@@ -1,5 +1,6 @@
 #include "motor_zynq.h"
 
+#include "hardware_bridge.h"  // Board selection (ZEDBOARD/ZYBO_Z720); needed for the polarity fix below
 #include "xil_io.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,6 +34,15 @@ void Motor_Stop(void)
 
 void Motor_SetPower(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles)
 {
+#ifdef ZEDBOARD
+	// The Zedboard rig in the Sevilla lab has the motor wired with reversed
+	// polarity: a positive duty cycle drove the cart to the left, while the
+	// controller/simulator convention (and the encoder, which counts up to the
+	// right) require positive = right. Invert the command to compensate.
+	// Verified 2026-07-03 by pulsing the motor and observing cart direction and
+	// raw encoder counts; with this inversion calibration detects POLOLU again.
+	pwm_duty_cycle_in_clock_cycles = -pwm_duty_cycle_in_clock_cycles;
+#endif
 	XMotor_hls_Set_pwm_duty_cycle_in_clock_cycles(&Motor_Instance, (u32)(pwm_duty_cycle_in_clock_cycles));
 }
 
