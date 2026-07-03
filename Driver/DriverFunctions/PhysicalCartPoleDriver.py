@@ -57,11 +57,14 @@ class PhysicalCartPoleDriver:
         self.controller = self.CartPoleInstance.controller
 
         # Controller computation runs in a worker thread; its result is applied
-        # CONTROLLER_APPLY_WINDOW_MS after the trigger. Worker on the compute core(s),
-        # polling loop re-pinned to its own core(s) so the two never compete.
+        # CONTROLLER_APPLY_WINDOW_MS / POLLING_PERIOD_MS polling loops after the
+        # trigger (counted in ticks, not measured time, so the cadence is
+        # deterministic). Worker on the compute core(s), polling loop re-pinned to
+        # its own core(s) so the two never compete.
         self.threaded_controller = ThreadedController(
             self.controller,
-            window_s=CONTROLLER_APPLY_WINDOW_MS / 1000.0,
+            apply_window_polling_loops=CONTROLLER_APPLY_WINDOW_MS // POLLING_PERIOD_MS,
+            polling_period_s=POLLING_PERIOD_MS / 1000.0,
             name=CONTROLLER_NAME,
             cpu_affinity=CONTROL_CPU_AFFINITY,
         )
