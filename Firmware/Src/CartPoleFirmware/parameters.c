@@ -7,7 +7,7 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short CONTROL_LOOP_PERIOD_MS				=		8;
+unsigned short POLLING_PERIOD_MS				=		8;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 

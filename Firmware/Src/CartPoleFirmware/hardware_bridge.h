@@ -41,7 +41,7 @@
 
 // See parameters.c to set values
 extern const unsigned int UART_BAUD;
-extern unsigned short CONTROL_LOOP_PERIOD_MS;
+extern unsigned short POLLING_PERIOD_MS;
 extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #ifdef STM
@@ -92,7 +92,7 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 #include "STM/timer.h"
 
 
-#define Interruput_Init()   	TIMER1_Init(CONTROL_LOOP_PERIOD_MS)
+#define Interruput_Init()   	TIMER1_Init(POLLING_PERIOD_MS)
 #define GetTimeNow				TIMER1_getSystemTime_Us
 #define Interrupt_Set    		TIMER1_SetCallback
 #define Interrupt_Unset()	    TIMER1_SetCallback(0)
@@ -165,7 +165,7 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 #include "Zynq/timer_interrupt.h"
 
 
-#define Interruput_Init()   	TIMER1_Init(CONTROL_LOOP_PERIOD_MS)
+#define Interruput_Init()   	TIMER1_Init(POLLING_PERIOD_MS)
 #define GetTimeNow				TIMER1_getSystemTime_Us  // OK
 #define Interrupt_Set    		Interrupt_Set
 #define Interrupt_Unset()	    Interrupt_Set(0)

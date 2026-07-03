@@ -22,7 +22,7 @@ int main(void)
 	Neural_Imitator_Init();  // Doing nothing for STM, introduced for consistency with Zynq
 
 	Interruput_Init();
-	SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);			// Not needed for STM, introduced for consistency with Zynq
+	SetControlUpdatePeriod(POLLING_PERIOD_MS);			// Not needed for STM, introduced for consistency with Zynq
 	Interrupt_Set(CONTROL_Loop);
 
 	while (1)

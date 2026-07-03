@@ -124,7 +124,7 @@ void CONTROL_Init(void)
 	PCControl_Enabled			= false;
 	HardwareConfigSetFromPC = false;
     isCalibrated        = false;
-    ledPeriod           = 500/CONTROL_LOOP_PERIOD_MS;
+    ledPeriod           = 500/POLLING_PERIOD_MS;
 
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
     positionLimitLeft   = positionCentre - 2400;
@@ -193,7 +193,7 @@ int clip(int value, int min, int max) {
 
 
 
-// Called from Timer interrupt every CONTROL_LOOP_PERIOD_MS ms
+// Called from Timer interrupt every POLLING_PERIOD_MS ms
 void CONTROL_Loop(void)
 {
 
@@ -247,7 +247,7 @@ void CONTROL_BackgroundTask(void)
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 		if (time_difference_between_measurement == 0) {
 			// Should not happen in normal operation; use the configured loop period to avoid a zero-division sample.
-			time_difference_between_measurement = CONTROL_LOOP_PERIOD_MS * 1000;
+			time_difference_between_measurement = POLLING_PERIOD_MS * 1000;
 		}
 		time_accumulated_us += (unsigned long long)time_difference_between_measurement;
 
@@ -382,7 +382,7 @@ void CONTROL_BackgroundTask(void)
 				latency_violation = 0;
 			} else if (PCControl_Enabled) {
 				latency_violation = 1;
-				latency = CONTROL_LOOP_PERIOD_MS*1000;
+				latency = POLLING_PERIOD_MS*1000;
 			} else {
 				latency_violation = 0;
 				latency = 0;
@@ -663,12 +663,12 @@ void CONTROL_CalibrationStep(void)
 	const int wallMotionThreshold = 15;
 	static unsigned char	buffer[30];
 
-	int sampleTicks = 100 / CONTROL_LOOP_PERIOD_MS;
-	int initialDriveTicks = 500 / CONTROL_LOOP_PERIOD_MS;
-	int reverseDetectTimeoutTicks = 5000 / CONTROL_LOOP_PERIOD_MS;
-	int centerTimeoutTicks = 15000 / CONTROL_LOOP_PERIOD_MS;
-	int centerSettleTicks = 300 / CONTROL_LOOP_PERIOD_MS;
-	int wallTimeoutTicks = 15000 / CONTROL_LOOP_PERIOD_MS;
+	int sampleTicks = 100 / POLLING_PERIOD_MS;
+	int initialDriveTicks = 500 / POLLING_PERIOD_MS;
+	int reverseDetectTimeoutTicks = 5000 / POLLING_PERIOD_MS;
+	int centerTimeoutTicks = 15000 / POLLING_PERIOD_MS;
+	int centerSettleTicks = 300 / POLLING_PERIOD_MS;
+	int wallTimeoutTicks = 15000 / POLLING_PERIOD_MS;
 
 	if (sampleTicks < 1) sampleTicks = 1;
 	if (initialDriveTicks < 1) initialDriveTicks = 1;
@@ -816,7 +816,7 @@ void cmd_ControlMode(bool en)
 	if (en && !ControlOnChip_Enabled)
 	{
 		PCControl_Enabled = false;
-        ledPeriod           = 100/CONTROL_LOOP_PERIOD_MS;
+        ledPeriod           = 100/POLLING_PERIOD_MS;
 	}
 	else if (!en && ControlOnChip_Enabled)
 	{
@@ -824,7 +824,7 @@ void cmd_ControlMode(bool en)
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
-        ledPeriod           = 500/CONTROL_LOOP_PERIOD_MS;
+        ledPeriod           = 500/POLLING_PERIOD_MS;
 	}
 
 	ControlOnChip_Enabled = en;
@@ -839,7 +839,7 @@ void cmd_PCControlMode(bool en)
 		ControlOnChip_Enabled = false;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
-		ledPeriod = 100/CONTROL_LOOP_PERIOD_MS;
+		ledPeriod = 100/POLLING_PERIOD_MS;
 	}
 	else if (PCControl_Enabled)
 	{
@@ -847,7 +847,7 @@ void cmd_PCControlMode(bool en)
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
-		ledPeriod = 500/CONTROL_LOOP_PERIOD_MS;
+		ledPeriod = 500/POLLING_PERIOD_MS;
 	}
 
 	PCControl_Enabled = en;
@@ -859,13 +859,13 @@ void cmd_SetControlConfig(const unsigned char * config)
 {
 	disable_irq();
 
-	CONTROL_LOOP_PERIOD_MS = *((unsigned short *)&config[0]);
+	POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
     CONTROL_SYNC			= *((bool	        *)&config[2]);
     ANGLE_HANGING      = *((float          *)&config[ 3]);
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
 
-    SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);
+    SetControlUpdatePeriod(POLLING_PERIOD_MS);
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 
     HardwareConfigSetFromPC = true;
@@ -876,7 +876,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, CONTROL_LOOP_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
+	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 16);

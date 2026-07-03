@@ -125,7 +125,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         (angle_raw_stable > -500 && angle_raw_stable < 500) &&
         freezme == 0 &&
         (
-		(TIMESTEPS_FOR_DERIVATIVE * abs(current_difference - last_difference) > CONTROL_LOOP_PERIOD_MS * 2.4)
+		(TIMESTEPS_FOR_DERIVATIVE * abs(current_difference - last_difference) > POLLING_PERIOD_MS * 2.4)
 		||
 		(invalid_step > 5)
 		)
@@ -133,9 +133,9 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
     {
         // Determine the freeze period based on the angle derivative stability
         if (angleD_raw_stable > 0) {
-            freezme = (int)(45 / CONTROL_LOOP_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Accelerate through the dead angle
+            freezme = (int)(45 / POLLING_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Accelerate through the dead angle
         } else {
-            freezme = (int)(90 / CONTROL_LOOP_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Decelerate through the dead angle
+            freezme = (int)(90 / POLLING_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE;  // Decelerate through the dead angle
         }
     }
 
