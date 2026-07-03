@@ -4,8 +4,10 @@ The chip-polling loop calls :meth:`tick` every period. The gate
 (``controller.should_trigger``, cheap) is evaluated in the loop thread, and only
 while the worker is idle - so gate and computation never run concurrently. On a
 trigger the state is snapshotted, the worker computes, and the result is committed
-at the first tick with ``time >= t_trigger + window`` (zero-order hold until then;
-an overrunning computation is committed as soon as it is ready).
+``apply_window_polling_loops`` polling loops after the trigger (zero-order hold until then; an
+overrunning computation is committed at the first tick after it is ready). The
+schedule is counted in ticks, not compared against measured timestamps, so it is
+deterministic and immune to clock jitter/float rounding.
 
 The wrapper does not proxy controller attributes; the driver keeps its direct
 controller reference for everything but the per-iteration control.
@@ -19,16 +21,24 @@ from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
 
 
 class ThreadedController:
-    def __init__(self, controller, window_s, name="controller", cpu_affinity=""):
+    def __init__(self, controller, apply_window_polling_loops, polling_period_s, name="controller", cpu_affinity=""):
         """
         :param controller: a template_controller instance. Controllers without
             should_trigger/compute_step fall back to always-trigger + step().
-        :param window_s: fixed trigger-to-apply latency in seconds.
+        :param apply_window_polling_loops: trigger-to-apply latency, expressed as a
+            number of polling loops.
+        :param polling_period_s: nominal polling-loop period in seconds; only used
+            for the overrun statistic and the status string, not for scheduling.
         :param name: label used in the status string.
         :param cpu_affinity: core spec (e.g. "2") the worker thread pins itself to.
         """
         self.controller = controller
-        self.window_s = float(window_s)
+        self.apply_window_polling_loops = int(apply_window_polling_loops)
+        if self.apply_window_polling_loops < 1:
+            raise ValueError(
+                f"apply_window_polling_loops must be >= 1 (got {apply_window_polling_loops})"
+            )
+        self.apply_window_s = self.apply_window_polling_loops * float(polling_period_s)
         self.name = name
         self.cpu_affinity = cpu_affinity
 
@@ -44,7 +54,7 @@ class ThreadedController:
         self._result_Q = 0.0
         self._result_pending = False
         self._busy = False
-        self._t_apply = None
+        self._polling_loops_since_trigger = 0
         self._last_applied_now = False
         # Bumped on reset so an in-flight computation is discarded when it completes.
         self._generation = 0
@@ -89,7 +99,7 @@ class ThreadedController:
             self._result_Q = 0.0
             self._result_pending = False
             self._busy = False
-            self._t_apply = None
+            self._polling_loops_since_trigger = 0
             self._snapshot = None
             self._last_applied_now = False
         self._wake.clear()
@@ -102,8 +112,9 @@ class ThreadedController:
 
         applied_now = False
         with self._lock:
-            if self._result_pending and time is not None and self._t_apply is not None \
-                    and time >= self._t_apply:
+            if self._busy or self._result_pending:
+                self._polling_loops_since_trigger += 1
+            if self._result_pending and self._polling_loops_since_trigger >= self.apply_window_polling_loops:
                 self._applied_Q = self._result_Q
                 self._result_pending = False
                 applied_now = True
@@ -118,7 +129,7 @@ class ThreadedController:
                         time,
                         dict(updated_attributes),
                     )
-                    self._t_apply = (time + self.window_s) if time is not None else None
+                    self._polling_loops_since_trigger = 0
                     self._busy = True
                 self._wake.set()
 
@@ -179,7 +190,7 @@ class ThreadedController:
                 self._calc_time_last = dt
                 self._calc_time_sum += dt
                 self._calc_time_max = max(self._calc_time_max, dt)
-                if dt > self.window_s:
+                if dt > self.apply_window_s:
                     self._overrun_count += 1
                 if ok:
                     self._result_Q = q
@@ -224,6 +235,6 @@ class ThreadedController:
             pending = self._result_pending
         return (
             f"calc [last={last_ms:.1f}ms mean={mean_ms:.1f}ms max={max_ms:.1f}ms] "
-            f"window={self.window_s * 1000:.0f}ms overruns={overruns}/{count} "
+            f"window={self.apply_window_s * 1000:.0f}ms overruns={overruns}/{count} "
             f"(busy={int(busy)}, pending={int(pending)})"
         )
