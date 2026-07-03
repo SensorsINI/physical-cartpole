@@ -7,7 +7,7 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
 ZYNQ_BOARD = "ZEDBOARD"  # 'ZYBO_Z720' or 'ZEDBOARD'; selects the calibration of the physical cartpole attached to that board. Must match the board define in Firmware hardware_bridge.h.
-CONTROLLER_NAME = 'pid'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'; 'pid' is a safe first smoke test on the Zedboard rig (neural checkpoints were trained on the Zybo-lab cartpole)
+CONTROLLER_NAME = 'secloc-lqr-santiago'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'; 'pid' is a safe first smoke test on the Zedboard rig (neural checkpoints were trained on the Zybo-lab cartpole)
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
 ##### Real-time CPU pinning #####
