@@ -27,6 +27,7 @@ To change the controller being tested, modify the `select_controller()` function
 static const ControllerOps* select_controller(void)
 {
     return &LQR_Ops;        // Test LQR controller
+    // return &SECLOC_LQR_Ops;      // Test sparse event-triggered LQR controller
     // return &NeuralImitator_Ops;  // Test Neural Imitator
     // return &NNC_Ops;             // Test Neural Network Controller C
     // return &PID_Ops;             // Test PID controller
@@ -66,7 +67,7 @@ The program will automatically:
 
 ### Controller Implementations
 - **STM Platform**: Only `NeuralImitator_Ops` is available
-- **Zynq Platform**: All controllers are available (`NeuralImitator_Ops`, `NNC_Ops`, `LQR_Ops`, `PID_Ops`, `PIDPos_Ops`)
+- **Zynq Platform**: All controllers are available (`NeuralImitator_Ops`, `NNC_Ops`, `LQR_Ops`, `SECLOC_LQR_Ops`, `PID_Ops`, `PIDPos_Ops`)
 - Platform-specific includes ensure only available controllers are compiled
 - Automatic platform detection for display purposes
 

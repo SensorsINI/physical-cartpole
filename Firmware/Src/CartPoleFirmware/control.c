@@ -12,6 +12,7 @@
 #include "controller_api_helper.h"
 #include "neural_controller_C.h"
 #include "lqr.h"
+#include "secloc_lqr.h"
 
 
 #define OnChipController_PID 0
@@ -19,6 +20,7 @@
 #define OnChipController_PID_position 2
 #define OnChipController_LQR 3
 #define OnChipController_neural_controller_C 4
+#define OnChipController_SECLOC_LQR 5
 
 
 // The 3 variables below only matter on Zynq
@@ -317,6 +319,12 @@ void CONTROL_BackgroundTask(void)
 	            case OnChipController_neural_controller_C:
 	            {
 	                CB_RebindOnChange(&g_cb, &NNC_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
+	            case OnChipController_SECLOC_LQR:
+	            {
+	                CB_RebindOnChange(&g_cb, &SECLOC_LQR_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
 	                Q = CB_Eval(&g_cb);
 	                break;
 	            }
