@@ -7,7 +7,7 @@
 
 extern const unsigned int UART_BAUD;
 
-extern unsigned short CONTROL_LOOP_PERIOD_MS;
+extern unsigned short POLLING_PERIOD_MS;
 extern unsigned short CONTROL_SLOWDOWN;
 extern bool CONTROL_SYNC;
 extern unsigned short ANGLE_MEASUREMENT_INTERVAL_US;

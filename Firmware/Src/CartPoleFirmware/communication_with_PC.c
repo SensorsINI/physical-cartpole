@@ -260,7 +260,7 @@ void send_information_experiment_done(unsigned char * buffer, unsigned short exp
 
 void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
-		unsigned short control_period,
+		unsigned short polling_period,
 		bool controlSync,
 		float angle_hanging,
 		unsigned short angle_averageLen,
@@ -270,7 +270,7 @@ void prepare_message_to_PC_control_config(
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
 	txBuffer[ 2] = 14;
-	*((unsigned short *)&txBuffer[ 3]) = control_period;
+	*((unsigned short *)&txBuffer[ 3]) = polling_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
 	*((float          *)&txBuffer[6]) = angle_hanging;
 	*((unsigned short *)&txBuffer[10]) = angle_averageLen;

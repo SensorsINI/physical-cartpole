@@ -29,7 +29,7 @@ void send_information_experiment_done(unsigned char * buffer, unsigned short exp
 
 void prepare_message_to_PC_control_config(
 		unsigned char * txBuffer,
-		unsigned short control_period,
+		unsigned short polling_period,
 		bool controlSync,
 		float angle_hanging,
 		unsigned short angle_averageLen,

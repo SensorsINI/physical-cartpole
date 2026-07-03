@@ -117,7 +117,7 @@ void action_go_to_target_2(
         *motor_command = 0;
         Motor_Stop();
         *USE_TARGET_SWITCHES_var = USE_TARGET_SWITCHES_var_original;
-        SetControlUpdatePeriod(CONTROL_LOOP_PERIOD_MS);
+        SetControlUpdatePeriod(POLLING_PERIOD_MS);
         *run_hardware_experiment = 2;
     }
 }
