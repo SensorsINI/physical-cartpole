@@ -3,11 +3,19 @@
 The chip-polling loop calls :meth:`tick` every period. The gate
 (``controller.should_trigger``, cheap) is evaluated in the loop thread, and only
 while the worker is idle - so gate and computation never run concurrently. On a
-trigger the state is snapshotted, the worker computes, and the result is committed
-``apply_window_polling_loops`` polling loops after the trigger (zero-order hold until then; an
-overrunning computation is committed at the first tick after it is ready). The
-schedule is counted in ticks, not compared against measured timestamps, so it is
-deterministic and immune to clock jitter/float rounding.
+trigger the state is snapshotted and the worker computes in the background. On the
+DEADLINE tick - ``apply_window_polling_loops - 1`` polling loops after the trigger,
+i.e. the trigger tick itself when the window equals one polling period -
+:meth:`tick` BLOCKS until the computation is finished and returns the fresh
+control, so it leaves for the actuator in that same loop iteration. Between
+trigger and deadline the previous control is held (zero-order hold).
+
+This reproduces the latency of the classic synchronous loop (state measured at
+tick N acts on the plant one apply window later); an overrunning computation
+delays the deadline loop iteration rather than silently stretching the
+controller's update cadence. The schedule is counted in ticks, not compared
+against measured timestamps, so it is deterministic and immune to clock
+jitter/float rounding.
 
 The wrapper does not proxy controller attributes; the driver keeps its direct
 controller reference for everything but the per-iteration control.
@@ -68,6 +76,9 @@ class ThreadedController:
 
         # Worker control
         self._wake = threading.Event()
+        # Set by the worker when a computation finishes (success or failure);
+        # cleared on trigger. The deadline tick blocks on it.
+        self._compute_done = threading.Event()
         self._stop = threading.Event()
         self._thread = None
 
@@ -106,36 +117,63 @@ class ThreadedController:
 
     # ------------------------------------------------------------------ loop side
     def tick(self, s, time=None, updated_attributes=None):
-        """Called every polling-loop iteration. Returns the control to apply now."""
+        """Called every polling-loop iteration. Returns the control to apply now.
+
+        Non-blocking except on the deadline tick, where it waits for the worker to
+        finish so the fresh control is returned within the same loop iteration.
+        """
         if updated_attributes is None:
             updated_attributes = {}
 
-        applied_now = False
         with self._lock:
             if self._busy or self._result_pending:
                 self._polling_loops_since_trigger += 1
-            if self._result_pending and self._polling_loops_since_trigger >= self.apply_window_polling_loops:
-                self._applied_Q = self._result_Q
-                self._result_pending = False
-                applied_now = True
             idle = (not self._busy) and (not self._result_pending)
-            q = self._applied_Q
 
-        if idle:
-            if self._should_trigger(s, time, updated_attributes):
-                with self._lock:
-                    self._snapshot = (
-                        np.array(s, copy=True),
-                        time,
-                        dict(updated_attributes),
-                    )
-                    self._polling_loops_since_trigger = 0
-                    self._busy = True
-                self._wake.set()
+        if idle and self._should_trigger(s, time, updated_attributes):
+            with self._lock:
+                self._snapshot = (
+                    np.array(s, copy=True),
+                    time,
+                    dict(updated_attributes),
+                )
+                self._polling_loops_since_trigger = 0
+                self._busy = True
+            self._compute_done.clear()
+            self._wake.set()
+
+        applied_now = False
+        with self._lock:
+            deadline_reached = (
+                (self._busy or self._result_pending)
+                and self._polling_loops_since_trigger >= self.apply_window_polling_loops - 1
+            )
+        if deadline_reached:
+            self._wait_for_computation()
+            with self._lock:
+                if self._result_pending:
+                    self._applied_Q = self._result_Q
+                    self._result_pending = False
+                    applied_now = True
 
         with self._lock:
             self._last_applied_now = applied_now
+            q = self._applied_Q
         return q
+
+    def _wait_for_computation(self):
+        """Block until the worker finishes the current computation.
+
+        The timeout is a safety net for a dead/stuck worker; on expiry the loop
+        continues with the held control instead of freezing forever.
+        """
+        timeout_s = max(1.0, 10.0 * self.apply_window_s)
+        if not self._compute_done.wait(timeout=timeout_s):
+            print(
+                f"[{self.name}] controller computation did not finish within "
+                f"{timeout_s:.1f}s; holding previous control",
+                flush=True,
+            )
 
     def _should_trigger(self, s, time, updated_attributes):
         if self._has_split:
@@ -162,6 +200,7 @@ class ThreadedController:
                 with self._lock:
                     if gen_local == self._generation:
                         self._busy = False
+                self._compute_done.set()
                 continue
 
             s, time, updated_attributes = snapshot
@@ -185,7 +224,10 @@ class ThreadedController:
 
             with self._lock:
                 if gen_local != self._generation:
-                    continue  # reset happened while computing: discard this result
+                    # Reset happened while computing: discard this result. Do not
+                    # signal completion; the event was re-armed by a newer trigger
+                    # (or nothing is waiting).
+                    continue
                 self._calc_count += 1
                 self._calc_time_last = dt
                 self._calc_time_sum += dt
@@ -196,6 +238,7 @@ class ThreadedController:
                     self._result_Q = q
                     self._result_pending = True
                 self._busy = False
+            self._compute_done.set()
 
     # ------------------------------------------------------------------ reporting
     @property

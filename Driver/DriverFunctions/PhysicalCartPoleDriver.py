@@ -56,11 +56,13 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
 
-        # Controller computation runs in a worker thread; its result is applied
-        # CONTROLLER_APPLY_WINDOW_MS / POLLING_PERIOD_MS polling loops after the
-        # trigger (counted in ticks, not measured time, so the cadence is
-        # deterministic). Worker on the compute core(s), polling loop re-pinned to
-        # its own core(s) so the two never compete.
+        # Controller computation runs in a worker thread. The loop blocks on the
+        # deadline tick (CONTROLLER_APPLY_WINDOW_MS / POLLING_PERIOD_MS polling
+        # loops after the trigger, minus one) until the result is ready, so the
+        # control acts exactly one apply window after its measurement - same
+        # latency as the classic synchronous loop. Scheduling is counted in ticks,
+        # not measured time, so the cadence is deterministic. Worker on the compute
+        # core(s), polling loop re-pinned to its own core(s) so the two never compete.
         self.threaded_controller = ThreadedController(
             self.controller,
             apply_window_polling_loops=CONTROLLER_APPLY_WINDOW_MS // POLLING_PERIOD_MS,
@@ -269,8 +271,9 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.Q_ccrc = self.Q
 
         if self.controlEnabled:
-            # Active Python Control: non-blocking; returns the current control,
-            # updated at the fixed apply window after each trigger.
+            # Active Python Control: returns the current control. Non-blocking
+            # except on the deadline tick, where it waits for the worker so the
+            # fresh control is sent out within this same iteration.
             self.Q = float(self.threaded_controller.tick(
                 self.s,
                 self.th.time_current_measurement_chip,
