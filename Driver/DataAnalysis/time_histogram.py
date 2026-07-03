@@ -8,14 +8,20 @@ dataset = 'CP_mpc_2024-01-06_16-34-45-10ms-STM-Flush.csv'
 df_raw = pd.read_csv(dataset, comment='#')
 
 try:
-    latency_violations_vec = df_raw['latency_violations'].to_numpy()
-    latency_violations = len(latency_violations_vec[latency_violations_vec == 1])
-    samples = len(latency_violations_vec)
-    print(f"total violations percentage {100.0 * latency_violations / samples} %")
-    latency_violations_percentage = 100.0 * latency_violations / samples
-    df = df_raw.loc[df_raw.latency_violations == 0, :]
+    firmware_violations = df_raw['firmware_latency_violations'].to_numpy()
+    controller_violations = df_raw['controller_latency_violations'].to_numpy()
+    violation_mask = (
+        np.diff(firmware_violations, prepend=firmware_violations[0]) > 0
+    ) | (
+        np.diff(controller_violations, prepend=controller_violations[0]) > 0
+    )
+    excluded_violation_samples = int(np.count_nonzero(violation_mask))
+    samples = len(violation_mask)
+    print(f"total violations percentage {100.0 * excluded_violation_samples / samples} %")
+    excluded_violation_percentage = 100.0 * excluded_violation_samples / samples
+    df = df_raw.loc[~violation_mask, :]
 except KeyError:
-    latency_violations_percentage = -1000.0
+    excluded_violation_percentage = -1000.0
     df = df_raw
 
 
@@ -52,7 +58,7 @@ def annotate_with_mean_and_std(data, ax, units='ms', log_scale=True):
 fig, axs = plt.subplots(1, 4, tight_layout=True, figsize=(15, 6.0), sharex=True)
 
 
-fig.suptitle(f"Latency from file {dataset}\n latency violations not included in histograms ({latency_violations_percentage:.2f}%)")
+fig.suptitle(f"Latency from file {dataset}\n violation samples not included in histograms ({excluded_violation_percentage:.2f}%)")
 
 axs[0].hist(dt_controller, bins=100, color='blue', alpha=0.7)
 axs[0].set_title('Controller')
