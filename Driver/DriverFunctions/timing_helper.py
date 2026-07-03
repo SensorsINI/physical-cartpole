@@ -4,7 +4,7 @@ import numpy as np
 
 from CartPoleSimulation.CartPole.latency_adder import LatencyAdder
 
-from globals import CONTROL_PERIOD_MS, STATISTICS_IN_TERMINAL_AVERAGING_LENGTH
+from globals import POLLING_PERIOD_MS, STATISTICS_IN_TERMINAL_AVERAGING_LENGTH
 
 
 class TimingHelper:
@@ -34,7 +34,7 @@ class TimingHelper:
 
         # Artificial Latency
         self.additional_latency = 0.0
-        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=CONTROL_PERIOD_MS/1000.0)
+        self.LatencyAdderInstance = LatencyAdder(latency=self.additional_latency, dt_sampling=POLLING_PERIOD_MS/1000.0)
 
 
     def timer(self, attr_name, prev_attr_name=None):
@@ -75,10 +75,10 @@ class TimingHelper:
         # Latency Violations
         if self.latency_violation == 1:
             self.latency_violations += 1
-        elif self.time_between_measurements_chip > 1.5 * CONTROL_PERIOD_MS / 1000.0:
+        elif self.time_between_measurements_chip > 1.5 * POLLING_PERIOD_MS / 1000.0:
             self.latency_violation = 1
-            self.latency_violations += np.floor(self.time_between_measurements_chip / (CONTROL_PERIOD_MS / 1000.0))
-        elif controlEnabled and self.firmware_latency > (CONTROL_PERIOD_MS / 1000.0):
+            self.latency_violations += np.floor(self.time_between_measurements_chip / (POLLING_PERIOD_MS / 1000.0))
+        elif controlEnabled and self.firmware_latency > (POLLING_PERIOD_MS / 1000.0):
             self.latency_violation = 1
             self.latency_violations += 1
         elif controlEnabled and self.firmware_latency < self.controller_steptime_previous:  # Heuristic, obviosuly wrong case

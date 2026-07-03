@@ -24,7 +24,7 @@ from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdat
 from globals import (
     CHIP,
     OPTIMIZER_NAME, CONTROLLER_NAME,
-    CONTROL_PERIOD_MS, CONTROL_SYNC,
+    POLLING_PERIOD_MS, CONTROL_SYNC,
     ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
     ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL,
     angle_deviation_update,
@@ -108,7 +108,7 @@ class PhysicalCartPoleDriver:
 
         if USE_EKF:
             self.ekf = EKFCartPole(
-                CONTROL_PERIOD_MS / 1000.0,
+                POLLING_PERIOD_MS / 1000.0,
                 self.CartPoleInstance.cpe.params,
             )
             self.ekf_tuner = EKFAdaptiveTuner(self.ekf)
@@ -145,7 +145,7 @@ class PhysicalCartPoleDriver:
         self.th.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
 
         try:
             self.controller.printparams()
@@ -479,7 +479,7 @@ class PhysicalCartPoleDriver:
         ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
         self.idp.angle_deviation_finetune = 0.0
 
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS,
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
                                                   correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
@@ -535,7 +535,7 @@ class PhysicalCartPoleDriver:
         print("Done calibrating")
         print('Detected motor: {}'.format(MOTOR))
 
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=CONTROL_PERIOD_MS,
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS,
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
                                                   correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)

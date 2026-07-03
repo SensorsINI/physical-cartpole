@@ -10,7 +10,7 @@ from CartPoleSimulation.CartPole.state_utilities import (ANGLE_IDX, ANGLE_COS_ID
 
 from globals import (ANGLE_DEVIATION, ANGLE_360_DEG_IN_ADC_UNITS,
                      ANGLE_NORMALIZATION_FACTOR, POSITION_NORMALIZATION_FACTOR,
-                     CONTROL_PERIOD_MS,
+                     POLLING_PERIOD_MS,
                      TIMESTEPS_FOR_DERIVATIVE,
                      ANGLE_D_MEDIAN_LEN, POSITION_D_MEDIAN_LEN)
 
@@ -78,7 +78,7 @@ class IncomingDataProcessor:
         """
         This function tries to treat the dead angle of the potentiometer.
         It tries to detect an invalid measurement in dead angle region by unusually high angular acceleration.
-        The threshold and its dependence on CONTROL_PERIOD_MS and CONTROL_PERIOD_MS is heuristically guessed.
+        The threshold and its dependence on POLLING_PERIOD_MS and POLLING_PERIOD_MS is heuristically guessed.
         After detecting an invalid measurement
         the function freezes the derivative and dead reckon the angle for a fixed number of measurement cycles.
         It freezes for longer when the pole goes through the dead angle upwards (decelerates).
@@ -113,7 +113,7 @@ class IncomingDataProcessor:
                 and
                 (
                         TIMESTEPS_FOR_DERIVATIVE * abs(
-                            current_difference - self.last_difference) > CONTROL_PERIOD_MS * 2.4
+                            current_difference - self.last_difference) > POLLING_PERIOD_MS * 2.4
                         or
                         # This last line is for STM32, not tested nor reworked at last revision of this function
                         # Just removed the abs(self.wrap_local(kth_past_angle)) < ADC_RANGE / 20
@@ -124,10 +124,10 @@ class IncomingDataProcessor:
 
             if self.angleD_raw_stable > 0:
                 self.freezme = int(
-                    45 / CONTROL_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE  # Accelerates through the dead angle
+                    45 / POLLING_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE  # Accelerates through the dead angle
             else:
                 self.freezme = int(
-                    90 / CONTROL_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE  # Deccelerates through the dead angle
+                    90 / POLLING_PERIOD_MS) + TIMESTEPS_FOR_DERIVATIVE  # Deccelerates through the dead angle
 
         if self.freezme > 0:
             self.freezme -= 1
