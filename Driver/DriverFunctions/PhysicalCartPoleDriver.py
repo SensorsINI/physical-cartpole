@@ -59,6 +59,8 @@ class PhysicalCartPoleDriver:
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
         self.terminate_experiment = False
+        self.controller_status_print_period = 1.0
+        self._last_controller_status_print_time = -np.inf
 
         # Dance Mode
         self.dancer = Dancer()
@@ -257,6 +259,7 @@ class PhysicalCartPoleDriver:
                      "Q_ccrc": self.Q_prev_prev,  # Take care! The Q_ccrc is Q_prev (MPC) but the control from before the current state is Q_prev_prev (NN)
                      }
                 ))
+                self.print_controller_status_if_available()
 
             if AUTOSTART:
                 self.Q = 0
@@ -296,6 +299,24 @@ class PhysicalCartPoleDriver:
         self.Q_ccrc_prev = self.CartPoleInstance.Q_ccrc
 
         self.update_parameters_in_cartpole_instance()
+
+    def print_controller_status_if_available(self):
+        if self.controller is None:
+            return
+        if (
+            self.th.time_current_measurement_chip - self._last_controller_status_print_time
+            < self.controller_status_print_period
+        ):
+            return
+
+        get_controller_status = getattr(self.controller, "get_controller_status", None)
+        if get_controller_status is None:
+            return
+
+        controller_status = get_controller_status()
+        if controller_status:
+            print(f"[{CONTROLLER_NAME}] {controller_status}", flush=True)
+            self._last_controller_status_print_time = self.th.time_current_measurement_chip
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
 
