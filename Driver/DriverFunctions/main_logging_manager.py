@@ -12,6 +12,7 @@ from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_
 from globals import (
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS, LOOP_CPU_AFFINITY, CONTROL_CPU_AFFINITY,
+    USE_SECLOC,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
     DEFAULT_ADDRESS, LIVE_PLOTTER_USE_REMOTE_SERVER, LIVE_PLOTTER_REMOTE_USERNAME, LIVE_PLOTTER_REMOTE_IP
 )
@@ -137,10 +138,7 @@ class MainLoggingManager:
         # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
         if not self.starting_recording:
             if not self.recording_running:
-                if hasattr(self.driver.controller, "controller_name"):
-                    controller_name = self.driver.controller.controller_name
-                else:
-                    controller_name = ''
+                controller_name = self.driver.CartPoleInstance.controller_name
                 if hasattr(self.driver.controller, "optimizer_name") and self.driver.controller.has_optimizer:
                     optimizer_name = self.driver.controller.optimizer_name
                 else:
@@ -225,9 +223,18 @@ class MainLoggingManager:
 
             header = create_csv_header(self.driver.CartPoleInstance, mode='CPP')
             mode_lines = [
+                f"Secloc gate: {USE_SECLOC}",
                 f"IO CPU affinity: {LOOP_CPU_AFFINITY}",
                 f"Control CPU affinity: {CONTROL_CPU_AFFINITY}",
             ]
+            if USE_SECLOC:
+                secloc = self.driver.controller.secloc
+                mode_lines[1:1] = [
+                    f"Secloc log_base: {secloc.log_base}",
+                    f"Secloc ref_period: {secloc.ref_period}",
+                    f"Secloc dead_ang: {secloc.dead_ang}",
+                    f"Secloc dead_pos: {secloc.dead_pos}",
+                ]
             if "Parameters:" in header:
                 insert_at = header.index("Parameters:")
                 header[insert_at:insert_at] = mode_lines + [""]
@@ -277,13 +284,16 @@ class MainLoggingManager:
 
             # Controller
             if self.driver.controlEnabled:
-                if 'mpc' in CONTROLLER_NAME:
+                ctrl = CONTROLLER_NAME
+                if USE_SECLOC:
+                    ctrl = f"{CONTROLLER_NAME}+secloc"
+                if CONTROLLER_NAME == 'mpc':
                     mode = 'CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(
-                        CONTROLLER_NAME, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC, self.driver.controller.optimizer.mpc_horizon,
+                        ctrl, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC, self.driver.controller.optimizer.mpc_horizon,
                         self.driver.controller.optimizer.num_rollouts, self.driver.controller.predictor.predictor_name)
                 else:
-                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROLLER_APPLY_WINDOW_MS,
-                                                                             CONTROL_SYNC)
+                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(
+                        ctrl, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC)
             elif self.driver.firmwareControl:
                 mode = 'CONTROLLER:   Firmware'
             else:

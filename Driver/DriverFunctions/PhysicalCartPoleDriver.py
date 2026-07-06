@@ -27,7 +27,7 @@ from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdat
 
 from globals import (
     CHIP,
-    OPTIMIZER_NAME, CONTROLLER_NAME,
+    OPTIMIZER_NAME, CONTROLLER_NAME, USE_SECLOC,
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
     CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
@@ -55,19 +55,25 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance = CartPoleInstance
         if CONTROLLER_NAME == 'mpc':
             self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
-        self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
+        self.CartPoleInstance.set_controller(
+            controller_name=CONTROLLER_NAME, use_secloc=USE_SECLOC
+        )
         self.controller = self.CartPoleInstance.controller
 
+        control_label = (
+            f"{CONTROLLER_NAME}+secloc" if USE_SECLOC else CONTROLLER_NAME
+        )
+        self.control_label = control_label
         # IO thread: chip polling, gate, actuation. Main thread: compute_step/step.
         # tick-based apply window (see split_control_loop.py).
         self.split_control = SplitControlLoop(
             self.controller,
             apply_window_polling_loops=CONTROLLER_APPLY_WINDOW_MS // POLLING_PERIOD_MS,
             polling_period_s=POLLING_PERIOD_MS / 1000.0,
-            name=CONTROLLER_NAME,
+            name=control_label,
         )
         print(
-            f"[{CONTROLLER_NAME}] IO -> LOOP_CPU_AFFINITY={LOOP_CPU_AFFINITY!r} | "
+            f"[{control_label}] IO -> LOOP_CPU_AFFINITY={LOOP_CPU_AFFINITY!r} | "
             f"compute -> main (CONTROL_CPU_AFFINITY={CONTROL_CPU_AFFINITY!r})",
             flush=True,
         )
@@ -373,7 +379,7 @@ class PhysicalCartPoleDriver:
         status_parts.append(self.split_control.get_status())
 
         if status_parts:
-            print(f"[{CONTROLLER_NAME}] " + " | ".join(status_parts), flush=True)
+            print(f"[{self.control_label}] " + " | ".join(status_parts), flush=True)
             self._last_controller_status_print_time = self.th.time_current_measurement_chip
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
