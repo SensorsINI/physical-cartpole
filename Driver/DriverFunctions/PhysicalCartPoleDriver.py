@@ -91,6 +91,7 @@ class PhysicalCartPoleDriver:
         self.terminate_experiment = False
         self.controller_status_print_period = 1.0
         self._last_controller_status_print_time = -np.inf
+        self._cached_controller_status = None
 
         # Dance Mode
         self.dancer = Dancer()
@@ -379,7 +380,7 @@ class PhysicalCartPoleDriver:
         status_parts.append(self.split_control.get_status())
 
         if status_parts:
-            print(f"[{self.control_label}] " + " | ".join(status_parts), flush=True)
+            self._cached_controller_status = f"[{self.control_label}] " + " | ".join(status_parts)
             self._last_controller_status_print_time = self.th.time_current_measurement_chip
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
@@ -492,6 +493,7 @@ class PhysicalCartPoleDriver:
         print("\nself.controlEnabled= {0}".format(self.controlEnabled))
 
     def switch_off_control(self):
+        self._cached_controller_status = None
         self.controlEnabled = False
         self.Q = 0
         self.InterfaceInstance.set_motor(0)

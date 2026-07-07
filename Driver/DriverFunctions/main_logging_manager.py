@@ -328,4 +328,10 @@ class MainLoggingManager:
             if timing_latency_string:
                 self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency_string + CLEAR_LINE)
 
+            cached_controller_status = getattr(self.driver, "_cached_controller_status", None)
+            if cached_controller_status and self.driver.controlEnabled:
+                self.tcm.print_temporary(
+                    BACK_TO_BEGINNING + cached_controller_status + CLEAR_LINE
+                )
+
             self.tcm.print_to_terminal()
