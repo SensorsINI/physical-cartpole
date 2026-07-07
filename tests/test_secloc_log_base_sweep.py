@@ -88,10 +88,30 @@ PLOT_QUANT_WITH_NO_NOISE = (
 PLOT_QUANT_NO_NO_NOISE = (
     OUTPUT_DIR / "secloc_log_base_vs_skip_pct_quantized_no_no_noise.png"
 )
+PLOT_FLOAT_SKIP_CHANGED_WITH_NO_NOISE = (
+    OUTPUT_DIR / "secloc_log_base_vs_skip_given_changed_float_with_no_noise.png"
+)
+PLOT_FLOAT_SKIP_CHANGED_NO_NO_NOISE = (
+    OUTPUT_DIR / "secloc_log_base_vs_skip_given_changed_float_no_no_noise.png"
+)
+PLOT_QUANT_SKIP_CHANGED_WITH_NO_NOISE = (
+    OUTPUT_DIR / "secloc_log_base_vs_skip_given_changed_quantized_with_no_noise.png"
+)
+PLOT_QUANT_SKIP_CHANGED_NO_NO_NOISE = (
+    OUTPUT_DIR / "secloc_log_base_vs_skip_given_changed_quantized_no_no_noise.png"
+)
+PLOT_COUNTERFactual_QUANT_WITH_NO_NOISE = (
+    OUTPUT_DIR
+    / "secloc_log_base_vs_skip_given_changed_counterfactual_quant_with_no_noise.png"
+)
+PLOT_COUNTERFactual_QUANT_NO_NO_NOISE = (
+    OUTPUT_DIR
+    / "secloc_log_base_vs_skip_given_changed_counterfactual_quant_no_no_noise.png"
+)
 # Backward-compatible aliases
 PLOT_PATH = PLOT_FLOAT_WITH_NO_NOISE
 PLOT_QUANT_PATH = PLOT_QUANT_WITH_NO_NOISE
-SWEEP_CACHE_VERSION = 4
+SWEEP_CACHE_VERSION = 5
 REFERENCE_CLOSED_LOOP_NOISE = 1.0
 GATE_REPLAY_SWEEP_UPPER = 1.6
 
@@ -144,7 +164,162 @@ class GateSweepResult:
     skipped_pct: float
     updates: int
     total: int
+    skip_given_changed_pct: float = 0.0
+    skip_given_flat_pct: float = 0.0
 
+
+@dataclass(frozen=True)
+class GateSkipBreakdown:
+    """Decompose Secloc skips by whether gate inputs changed since the previous poll."""
+
+    log_base: float
+    total: int
+    skipped_pct: float
+    updates: int
+    flat_polls: int
+    changed_polls: int
+    skip_on_flat: int
+    skip_on_changed: int
+    update_on_flat: int
+    update_on_changed: int
+
+    @property
+    def flat_poll_pct(self) -> float:
+        return 100.0 * self.flat_polls / self.total if self.total else 0.0
+
+    @property
+    def skip_given_flat_pct(self) -> float:
+        return 100.0 * self.skip_on_flat / self.flat_polls if self.flat_polls else 0.0
+
+    @property
+    def skip_given_changed_pct(self) -> float:
+        return (
+            100.0 * self.skip_on_changed / self.changed_polls if self.changed_polls else 0.0
+        )
+
+    @property
+    def quant_plateau_skip_share_pct(self) -> float:
+        """Share of all skips that happened while gate inputs were flat (quant artifact)."""
+        skipped = self.skip_on_flat + self.skip_on_changed
+        return 100.0 * self.skip_on_flat / skipped if skipped else 0.0
+
+
+def gate_input_shifts(sample: TrajectorySample) -> tuple[float, float]:
+    """Scalars Secloc compares across polls (|θ| and |x - target|)."""
+    angle_shift = abs(float(sample.s[ANGLE_IDX]))
+    position_shift = abs(float(sample.s[POSITION_IDX]) - sample.target_position)
+    return angle_shift, position_shift
+
+
+def replay_gate_breakdown(
+    trajectory: list[TrajectorySample],
+    *,
+    log_base: float,
+    ref_period: float = DEFAULT_REF_PERIOD,
+    dead_ang: float = DEFAULT_DEAD_ANG,
+    dead_pos: float = DEFAULT_DEAD_POS,
+) -> GateSkipBreakdown:
+    gate = SeclocGate(
+        log_base=float(log_base),
+        ref_period=float(ref_period),
+        dead_ang=float(dead_ang),
+        dead_pos=float(dead_pos),
+    )
+    flat_polls = 0
+    changed_polls = 0
+    skip_on_flat = 0
+    skip_on_changed = 0
+    update_on_flat = 0
+    update_on_changed = 0
+    prev_angle_shift: float | None = None
+    prev_position_shift: float | None = None
+
+    for sample in trajectory:
+        angle_shift, position_shift = gate_input_shifts(sample)
+        input_changed = False
+        if prev_angle_shift is not None:
+            input_changed = (
+                angle_shift != prev_angle_shift or position_shift != prev_position_shift
+            )
+
+        did_update = gate.should_sample(
+            sample.s,
+            sample.target_position,
+            time=sample.time,
+        )
+
+        if prev_angle_shift is not None:
+            if input_changed:
+                changed_polls += 1
+                if did_update:
+                    update_on_changed += 1
+                else:
+                    skip_on_changed += 1
+            else:
+                flat_polls += 1
+                if did_update:
+                    update_on_flat += 1
+                else:
+                    skip_on_flat += 1
+
+        prev_angle_shift = angle_shift
+        prev_position_shift = position_shift
+
+    return GateSkipBreakdown(
+        log_base=float(log_base),
+        total=gate.total_decisions,
+        skipped_pct=gate.skipped_update_percentage,
+        updates=gate.update_decisions,
+        flat_polls=flat_polls,
+        changed_polls=changed_polls,
+        skip_on_flat=skip_on_flat,
+        skip_on_changed=skip_on_changed,
+        update_on_flat=update_on_flat,
+        update_on_changed=update_on_changed,
+    )
+
+
+def format_gate_breakdown_table(rows: list[GateSkipBreakdown]) -> str:
+    lines = [
+        "log_base  skip%  skip|flat  skip|chg  flat%  plateau-skip%",
+        "--------  -----  --------  -------  -----  -------------",
+    ]
+    for row in rows:
+        lines.append(
+            f"{row.log_base:8.3f}  {row.skipped_pct:5.1f}  "
+            f"{row.skip_given_flat_pct:8.1f}  {row.skip_given_changed_pct:7.1f}  "
+            f"{row.flat_poll_pct:5.1f}  {row.quant_plateau_skip_share_pct:13.1f}"
+        )
+    return "\n".join(lines)
+
+
+def print_quant_vs_float_breakdown(
+    *,
+    log_base: float = 1.05,
+    noise_scale: float = 1.0,
+    seed: int = 123,
+) -> None:
+    quant = record_stabilized_trajectory(
+        noise_scale=noise_scale, seed=seed, quantize_sensors=True
+    )
+    float_traj = record_stabilized_trajectory(
+        noise_scale=noise_scale, seed=seed, quantize_sensors=False
+    )
+    quant_row = replay_gate_breakdown(quant.samples, log_base=log_base)
+    float_row = replay_gate_breakdown(float_traj.samples, log_base=log_base)
+    counter_samples = quantize_trajectory_samples(float_traj.samples)
+    counter_row = replay_gate_breakdown(counter_samples, log_base=log_base)
+    print(
+        f"\nSecloc skip decomposition @ log_base={log_base:g}, σ×{noise_scale:g}, seed={seed}\n"
+        f"skip|changed = P(skip | |θ| or |x-x*| changed since last poll)\n"
+        f"skip|flat   = P(skip | both unchanged — often quant artifact)\n"
+    )
+    print("Quantized recordings (hardware-like):")
+    print(format_gate_breakdown_table([quant_row]))
+    print("\nFloat recordings (no ADC quant):")
+    print(format_gate_breakdown_table([float_row]))
+    print("\nCounterfactual (float trajectory, quant only at gate):")
+    print(format_gate_breakdown_table([counter_row]))
 
 @contextlib.contextmanager
 def measurement_noise(sigmas: dict[str, float]):
@@ -441,6 +616,25 @@ def record_stabilized_trajectory(
     )
 
 
+def quantize_trajectory_samples(
+    samples: list[TrajectorySample],
+) -> list[TrajectorySample]:
+    """Counterfactual: float PID trajectory, ADC/encoder applied only at gate input."""
+    from CartPole.sensor_quantizer import SensorQuantizer
+
+    quantizer = SensorQuantizer({"enabled": True, "source": "physical"})
+    out: list[TrajectorySample] = []
+    for sample in samples:
+        out.append(
+            TrajectorySample(
+                time=sample.time,
+                s=quantizer.quantize_measurement(sample.s, copy=True),
+                target_position=sample.target_position,
+            )
+        )
+    return out
+
+
 def measure_skip_rate(
     trajectory: list[TrajectorySample],
     *,
@@ -449,23 +643,20 @@ def measure_skip_rate(
     dead_ang: float = DEFAULT_DEAD_ANG,
     dead_pos: float = DEFAULT_DEAD_POS,
 ) -> GateSweepResult:
-    gate = SeclocGate(
-        log_base=float(log_base),
-        ref_period=float(ref_period),
-        dead_ang=float(dead_ang),
-        dead_pos=float(dead_pos),
+    breakdown = replay_gate_breakdown(
+        trajectory,
+        log_base=log_base,
+        ref_period=ref_period,
+        dead_ang=dead_ang,
+        dead_pos=dead_pos,
     )
-    for sample in trajectory:
-        gate.should_sample(
-            sample.s,
-            sample.target_position,
-            time=sample.time,
-        )
     return GateSweepResult(
-        log_base=float(log_base),
-        skipped_pct=gate.skipped_update_percentage,
-        updates=gate.update_decisions,
-        total=gate.total_decisions,
+        log_base=breakdown.log_base,
+        skipped_pct=breakdown.skipped_pct,
+        updates=breakdown.updates,
+        total=breakdown.total,
+        skip_given_changed_pct=breakdown.skip_given_changed_pct,
+        skip_given_flat_pct=breakdown.skip_given_flat_pct,
     )
 
 
@@ -513,6 +704,7 @@ def sweep_skip_curves_by_noise(
     log_bases: np.ndarray | list[float] | None = None,
     *,
     show_progress: bool = False,
+    quantize_samples: bool = False,
 ) -> dict[float, list[GateSweepResult]]:
     if log_bases is None:
         log_bases = LOG_BASE_SWEEP
@@ -523,9 +715,12 @@ def sweep_skip_curves_by_noise(
     progress = tqdm(total=total, desc="Gate replay", unit="pt", disable=not show_progress)
     try:
         for record in stable_records:
+            samples = record.samples
+            if quantize_samples:
+                samples = quantize_trajectory_samples(record.samples)
             rows: list[GateSweepResult] = []
             for log_base in log_bases:
-                rows.append(measure_skip_rate(record.samples, log_base=log_base))
+                rows.append(measure_skip_rate(samples, log_base=log_base))
                 progress.update(1)
             curves[record.noise_scale] = rows
     finally:
@@ -535,12 +730,13 @@ def sweep_skip_curves_by_noise(
 
 def format_sweep_table(results: list[GateSweepResult]) -> str:
     lines = [
-        "log_base  skipped%   updates   total",
-        "--------  ---------  -------  ------",
+        "log_base  skipped%  skip|chg%  updates   total",
+        "--------  ---------  --------  -------  ------",
     ]
     for row in results:
         lines.append(
             f"{row.log_base:8.3f}  {row.skipped_pct:8.1f}  "
+            f"{row.skip_given_changed_pct:8.1f}  "
             f"{row.updates:7d}  {row.total:6d}"
         )
     return "\n".join(lines)
@@ -564,6 +760,7 @@ class SweepDataset:
     sweep_upper: float | None
     log_bases: list[float]
     reference_closed_loop_failure: float | None = None
+    counterfactual_quant_curves: dict[float, list[GateSweepResult]] | None = None
 
 
 def sweep_cache_path(*, quantize_sensors: bool) -> Path:
@@ -589,7 +786,30 @@ def _gate_row_to_dict(row: GateSweepResult) -> dict[str, Any]:
 
 
 def _gate_row_from_dict(data: dict[str, Any]) -> GateSweepResult:
-    return GateSweepResult(**data)
+    return GateSweepResult(
+        log_base=float(data["log_base"]),
+        skipped_pct=float(data["skipped_pct"]),
+        updates=int(data["updates"]),
+        total=int(data["total"]),
+        skip_given_changed_pct=float(data.get("skip_given_changed_pct", 0.0)),
+        skip_given_flat_pct=float(data.get("skip_given_flat_pct", 0.0)),
+    )
+
+
+def _curves_to_dict(
+    curves: dict[float, list[GateSweepResult]],
+) -> dict[str, list[dict[str, Any]]]:
+    return {
+        str(noise_scale): [_gate_row_to_dict(row) for row in rows]
+        for noise_scale, rows in curves.items()
+    }
+
+
+def _curves_from_dict(payload: dict[str, list[dict[str, Any]]]) -> dict[float, list[GateSweepResult]]:
+    return {
+        float(noise_scale): [_gate_row_from_dict(row) for row in rows]
+        for noise_scale, rows in payload.items()
+    }
 
 
 def _record_to_dict(record: TrajectoryRecord) -> dict[str, Any]:
@@ -631,11 +851,12 @@ def save_sweep_dataset(dataset: SweepDataset) -> Path:
             str(key): value for key, value in dataset.failure_limits.items()
         },
         "reference_closed_loop_failure": dataset.reference_closed_loop_failure,
-        "curves": {
-            str(noise_scale): [_gate_row_to_dict(row) for row in rows]
-            for noise_scale, rows in dataset.curves.items()
-        },
+        "curves": _curves_to_dict(dataset.curves),
     }
+    if dataset.counterfactual_quant_curves is not None:
+        payload["counterfactual_quant_curves"] = _curves_to_dict(
+            dataset.counterfactual_quant_curves
+        )
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return path
 
@@ -653,10 +874,11 @@ def load_sweep_dataset(*, quantize_sensors: bool, seed: int = 123) -> SweepDatas
         return None
 
     records = [_record_from_dict(row) for row in payload["records"]]
-    curves = {
-        float(noise_scale): [_gate_row_from_dict(row) for row in rows]
-        for noise_scale, rows in payload["curves"].items()
-    }
+    curves = _curves_from_dict(payload["curves"])
+    counterfactual = payload.get("counterfactual_quant_curves")
+    counterfactual_quant_curves = (
+        None if counterfactual is None else _curves_from_dict(counterfactual)
+    )
     failure_limits = {
         float(key): (None if value is None else float(value))
         for key, value in payload.get("failure_limits", {}).items()
@@ -676,6 +898,7 @@ def load_sweep_dataset(*, quantize_sensors: bool, seed: int = 123) -> SweepDatas
         ),
         log_bases=[float(x) for x in payload["log_bases"]],
         reference_closed_loop_failure=reference_closed_loop_failure,
+        counterfactual_quant_curves=counterfactual_quant_curves,
     )
 
 
@@ -696,6 +919,12 @@ def compute_float_sweep_dataset(
         log_bases,
         show_progress=show_progress,
     )
+    counterfactual_quant_curves = sweep_skip_curves_by_noise(
+        records,
+        log_bases,
+        show_progress=show_progress,
+        quantize_samples=True,
+    )
     return SweepDataset(
         kind="float",
         seed=seed,
@@ -705,6 +934,7 @@ def compute_float_sweep_dataset(
         failure_limits={},
         sweep_upper=GATE_REPLAY_SWEEP_UPPER,
         log_bases=log_bases,
+        counterfactual_quant_curves=counterfactual_quant_curves,
     )
 
 
@@ -794,12 +1024,17 @@ def plot_noise_scales(
     return scales[::2]
 
 
+def _curve_metric(row: GateSweepResult, metric: str) -> float:
+    return float(getattr(row, metric))
+
+
 def plot_skip_vs_log_base_by_noise(
     curves: dict[float, list[GateSweepResult]],
     records: list[TrajectoryRecord],
     *,
     include_no_noise: bool = True,
     sweep_upper: float | None = None,
+    y_metric: str = "skipped_pct",
     output_path: Path = PLOT_FLOAT_WITH_NO_NOISE,
 ) -> Path:
     matplotlib = pytest.importorskip("matplotlib")
@@ -844,7 +1079,7 @@ def plot_skip_vs_log_base_by_noise(
             )
         ax.plot(
             [r.log_base for r in rows],
-            [r.skipped_pct for r in rows],
+            [_curve_metric(r, y_metric) for r in rows],
             marker="o",
             markersize=3,
             linewidth=1.5,
@@ -852,10 +1087,17 @@ def plot_skip_vs_log_base_by_noise(
         )
 
     broken = [r for r in records if not r.stable]
-    notes = [
-        "Float (non-quantized) noisy measurements.",
-        "Gate replay on recorded PID trajectories.",
-    ]
+    if y_metric == "skip_given_changed_pct":
+        notes = [
+            "skip|changed = P(skip | gate input changed",
+            "since previous poll). Isolates Secloc vs dynamics.",
+            "Float (non-quantized) PID trajectories.",
+        ]
+    else:
+        notes = [
+            "Float (non-quantized) noisy measurements.",
+            "Gate replay on recorded PID trajectories.",
+        ]
     if broken:
         r = broken[0]
         notes.append(
@@ -864,9 +1106,14 @@ def plot_skip_vs_log_base_by_noise(
         )
 
     ax.set_xlabel("Secloc log_base")
-    ax.set_ylabel("Skipped controller updates (%)")
+    if y_metric == "skip_given_changed_pct":
+        ax.set_ylabel("Skipped updates when input changed (%)")
+        title_metric = "skip|changed"
+    else:
+        ax.set_ylabel("Skipped controller updates (%)")
+        title_metric = "skip rate"
     ax.set_title(
-        "Secloc skip rate vs log_base (float sensors)\n"
+        f"Secloc {title_metric} vs log_base (float sensors)\n"
         f"PID simulation, no ADC/encoder quant, {POLL_DT_S*1e3:.0f} ms polls, "
         f"{RECORD_S:.0f} s record window"
     )
@@ -901,6 +1148,7 @@ def plot_skip_vs_log_base_quantized(
     reference_closed_loop_failure: float | None = None,
     include_no_noise: bool = True,
     output_path: Path = PLOT_QUANT_WITH_NO_NOISE,
+    y_metric: str = "skipped_pct",
 ) -> Path:
     matplotlib = pytest.importorskip("matplotlib")
     matplotlib.use("Agg")
@@ -952,7 +1200,7 @@ def plot_skip_vs_log_base_quantized(
             )
         ax.plot(
             [r.log_base for r in rows],
-            [r.skipped_pct for r in rows],
+            [_curve_metric(r, y_metric) for r in rows],
             marker="o",
             markersize=3,
             linewidth=1.5,
@@ -960,13 +1208,23 @@ def plot_skip_vs_log_base_quantized(
         )
 
     broken = [r for r in records if not r.stable]
-    notes = [
-        "Skip % = gate replay on",
-        "open-loop PID trajectories",
-        "(one recording per σ)",
-        "flat |θ| = % polls with",
-        "unchanged |θ| (quant steps)",
-    ]
+    if y_metric == "skip_given_changed_pct":
+        notes = [
+            "skip|changed = P(skip | gate input changed",
+            "since previous poll). Isolates Secloc vs dynamics.",
+            "Skip % = gate replay on open-loop",
+            "PID trajectories (one recording per σ)",
+            "flat |θ| = % polls with unchanged |θ|",
+            "(quant steps)",
+        ]
+    else:
+        notes = [
+            "Skip % = gate replay on",
+            "open-loop PID trajectories",
+            "(one recording per σ)",
+            "flat |θ| = % polls with",
+            "unchanged |θ| (quant steps)",
+        ]
     if reference_closed_loop_failure is not None:
         notes.extend(
             [
@@ -984,9 +1242,14 @@ def plot_skip_vs_log_base_quantized(
             ]
         )
     ax.set_xlabel("Secloc log_base")
-    ax.set_ylabel("Skipped controller updates (%)")
+    if y_metric == "skip_given_changed_pct":
+        ax.set_ylabel("Skipped updates when input changed (%)")
+        title_metric = "skip|changed"
+    else:
+        ax.set_ylabel("Skipped controller updates (%)")
+        title_metric = "skip rate"
     ax.set_title(
-        "Secloc skip rate vs log_base (quantized sensors)\n"
+        f"Secloc {title_metric} vs log_base (quantized sensors)\n"
         f"PID simulation, ADC/encoder quant, {POLL_DT_S*1e3:.0f} ms polls, "
         f"{RECORD_S:.0f} s record window"
     )
@@ -1019,6 +1282,102 @@ def plot_skip_vs_log_base_quantized(
     return output_path
 
 
+def plot_counterfactual_quant_skip_changed(
+    curves: dict[float, list[GateSweepResult]],
+    records: list[TrajectoryRecord],
+    *,
+    include_no_noise: bool = True,
+    sweep_upper: float | None = None,
+    output_path: Path = PLOT_COUNTERFactual_QUANT_WITH_NO_NOISE,
+) -> Path:
+    matplotlib = pytest.importorskip("matplotlib")
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if sweep_upper is None:
+        sweep_upper = GATE_REPLAY_SWEEP_UPPER
+
+    fig = plt.figure(figsize=(11, 5.5))
+    gs = GridSpec(
+        2,
+        2,
+        figure=fig,
+        width_ratios=[2.15, 0.78],
+        height_ratios=[3.4, 1.1],
+        wspace=0.05,
+        hspace=0.10,
+        left=0.07,
+        right=0.98,
+        bottom=0.10,
+        top=0.88,
+    )
+    ax = fig.add_subplot(gs[:, 0])
+    ax_leg = fig.add_subplot(gs[0, 1])
+    ax_note = fig.add_subplot(gs[1, 1])
+    ax_leg.axis("off")
+    ax_note.axis("off")
+
+    for noise_scale in plot_noise_scales(curves, include_no_noise=include_no_noise):
+        rows = curves[noise_scale]
+        if not rows:
+            continue
+        rec = next(r for r in records if r.noise_scale == noise_scale)
+        label = (
+            f"σ×{noise_scale:g} "
+            f"(σ_θ={rec.sigma_angle*1e3:.2f} mrad, "
+            f"max|θ|={rec.max_angle_rad:.2f} rad)"
+        )
+        ax.plot(
+            [r.log_base for r in rows],
+            [r.skip_given_changed_pct for r in rows],
+            marker="o",
+            markersize=3,
+            linewidth=1.5,
+            label=label,
+        )
+
+    notes = [
+        "Counterfactual: float PID trajectory,",
+        "ADC/encoder quant applied only at gate.",
+        "skip|changed isolates Secloc filtering",
+        "from quant plateaus.",
+    ]
+    ax.set_xlabel("Secloc log_base")
+    ax.set_ylabel("Skipped updates when input changed (%)")
+    ax.set_title(
+        "Secloc skip|changed vs log_base (counterfactual quant)\n"
+        f"Float trajectory + quant gate input, {POLL_DT_S*1e3:.0f} ms polls, "
+        f"{RECORD_S:.0f} s record window"
+    )
+    ax.grid(True, alpha=0.3)
+    ax.set_xlim(LOG_BASE_SWEEP_FINE[0], sweep_upper)
+    ax.set_ylim(0, 100)
+    handles, labels = ax.get_legend_handles_labels()
+    ax_leg.legend(
+        handles,
+        labels,
+        loc="upper left",
+        fontsize=6.5,
+        framealpha=0.95,
+        handletextpad=0.4,
+    )
+    ax_note.text(
+        0.0,
+        1.0,
+        "\n".join(notes),
+        transform=ax_note.transAxes,
+        fontsize=7.5,
+        va="top",
+        ha="left",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.85, pad=0.3),
+    )
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+    return output_path
+
+
 def generate_quantized_sensor_plot(
     *,
     seed: int = 123,
@@ -1034,10 +1393,13 @@ def generate_quantized_sensor_plot(
         show_progress=show_progress,
     )
     paths: list[Path] = []
-    for include_no_noise, output_path in (
-        (True, PLOT_QUANT_WITH_NO_NOISE),
-        (False, PLOT_QUANT_NO_NO_NOISE),
-    ):
+    plot_specs = (
+        (True, PLOT_QUANT_WITH_NO_NOISE, "skipped_pct"),
+        (False, PLOT_QUANT_NO_NO_NOISE, "skipped_pct"),
+        (True, PLOT_QUANT_SKIP_CHANGED_WITH_NO_NOISE, "skip_given_changed_pct"),
+        (False, PLOT_QUANT_SKIP_CHANGED_NO_NO_NOISE, "skip_given_changed_pct"),
+    )
+    for include_no_noise, output_path, y_metric in plot_specs:
         paths.append(
             plot_skip_vs_log_base_quantized(
                 dataset.curves,
@@ -1045,6 +1407,7 @@ def generate_quantized_sensor_plot(
                 sweep_upper=dataset.sweep_upper,
                 reference_closed_loop_failure=dataset.reference_closed_loop_failure,
                 include_no_noise=include_no_noise,
+                y_metric=y_metric,
                 output_path=output_path,
             )
         )
@@ -1066,19 +1429,37 @@ def generate_float_sensor_plot(
         show_progress=show_progress,
     )
     paths: list[Path] = []
-    for include_no_noise, output_path in (
-        (True, PLOT_FLOAT_WITH_NO_NOISE),
-        (False, PLOT_FLOAT_NO_NO_NOISE),
-    ):
+    plot_specs = (
+        (True, PLOT_FLOAT_WITH_NO_NOISE, "skipped_pct"),
+        (False, PLOT_FLOAT_NO_NO_NOISE, "skipped_pct"),
+        (True, PLOT_FLOAT_SKIP_CHANGED_WITH_NO_NOISE, "skip_given_changed_pct"),
+        (False, PLOT_FLOAT_SKIP_CHANGED_NO_NO_NOISE, "skip_given_changed_pct"),
+    )
+    for include_no_noise, output_path, y_metric in plot_specs:
         paths.append(
             plot_skip_vs_log_base_by_noise(
                 dataset.curves,
                 dataset.records,
                 include_no_noise=include_no_noise,
                 sweep_upper=dataset.sweep_upper,
+                y_metric=y_metric,
                 output_path=output_path,
             )
         )
+    if dataset.counterfactual_quant_curves is not None:
+        for include_no_noise, output_path in (
+            (True, PLOT_COUNTERFactual_QUANT_WITH_NO_NOISE),
+            (False, PLOT_COUNTERFactual_QUANT_NO_NO_NOISE),
+        ):
+            paths.append(
+                plot_counterfactual_quant_skip_changed(
+                    dataset.counterfactual_quant_curves,
+                    dataset.records,
+                    include_no_noise=include_no_noise,
+                    sweep_upper=dataset.sweep_upper,
+                    output_path=output_path,
+                )
+            )
     return paths
 
 
@@ -1149,6 +1530,37 @@ def test_quantized_sensors_reproduce_log_base_cliff(capsys):
     assert plateau > 25.0
 
 
+def test_gate_skip_breakdown_separates_quant_plateau(capsys):
+    """Quant skips split into flat-input (ADC steps) vs changed-input (true Secloc)."""
+    log_base = 1.05
+    quant = record_stabilized_trajectory(
+        noise_scale=1.0, seed=123, quantize_sensors=True
+    )
+    float_traj = record_stabilized_trajectory(
+        noise_scale=1.0, seed=123, quantize_sensors=False
+    )
+    quant_row = replay_gate_breakdown(quant.samples, log_base=log_base)
+    float_row = replay_gate_breakdown(float_traj.samples, log_base=log_base)
+
+    print(
+        f"\nQuant @ {log_base}: total skip {quant_row.skipped_pct:.1f}%, "
+        f"skip|flat {quant_row.skip_given_flat_pct:.1f}%, "
+        f"skip|changed {quant_row.skip_given_changed_pct:.1f}%, "
+        f"plateau-skip share {quant_row.quant_plateau_skip_share_pct:.1f}%"
+    )
+    print(
+        f"Float @ {log_base}: total skip {float_row.skipped_pct:.1f}%, "
+        f"skip|flat {float_row.skip_given_flat_pct:.1f}%, "
+        f"skip|changed {float_row.skip_given_changed_pct:.1f}%"
+    )
+
+    assert quant_row.skipped_pct > float_row.skipped_pct + 20.0
+    assert quant_row.skip_given_flat_pct > 95.0
+    assert quant_row.skip_given_changed_pct > float_row.skip_given_changed_pct + 20.0
+    assert quant_row.quant_plateau_skip_share_pct < 20.0
+    assert float_row.skip_given_changed_pct < 15.0
+
+
 def test_report_closest_log_base_to_10_percent_skip(stabilized_trajectory, capsys):
     log_bases = np.round(np.arange(1.00, 1.201, 0.002), 3)
     results = sweep_log_base(stabilized_trajectory.samples, log_bases)
@@ -1196,7 +1608,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Ignore cache and rerun the full sweep",
     )
+    parser.add_argument(
+        "--decompose",
+        action="store_true",
+        help="Print skip decomposition (skip|flat vs skip|changed) for quant vs float",
+    )
     cli_args = parser.parse_args()
+
+    if cli_args.decompose:
+        print_quant_vs_float_breakdown()
+        raise SystemExit(0)
 
     if cli_args.quant:
         outs = generate_quantized_sensor_plot(
