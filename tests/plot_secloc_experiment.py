@@ -75,6 +75,7 @@ def replay_poll_stats(
     apply_window_rows: int = 4,
     clock: np.ndarray | None = None,
     start_row: int = 0,
+    polling_period_s: float | None = None,
 ) -> tuple[list[PollStat], np.ndarray]:
     """Replay the Secloc gate over the recording.
 
@@ -97,6 +98,8 @@ def replay_poll_stats(
         dead_pos=params.dead_pos,
         poll_stats_window_s=params.poll_stats_window_s,
     )
+    if polling_period_s is not None:
+        gate.set_time_quantum(polling_period_s)
 
     poll_stats: list[PollStat] = []
     poll_rows: list[int] = []
@@ -135,7 +138,9 @@ def replay_poll_stats(
         time_difference = gate.time_difference(time)
         ang_shift = abs(angle)
         pos_shift = abs(position - target)
-        gate_evaluated = time_difference + gate.ref_period / 20 >= gate.ref_period
+        gate_evaluated = gate.logic.period_elapsed(
+            time=time, time_difference=time_difference
+        )
 
         s = np.zeros(state_len, dtype=np.float64)
         s[ANGLE_IDX] = angle
@@ -791,7 +796,6 @@ def plot_timeseries(
         ),
         y=0.995,
     )
-    fig.tight_layout(rect=(0, 0.26, 1, 1))
     hold_rows = max(1, round(ref_period / polling_period_s))
     poll_ms = polling_period_s * 1000
     valid_roll = np.isfinite(metrics.gate_skip_pct) & np.isfinite(metrics.io_skip_pct)
@@ -800,26 +804,41 @@ def plot_timeseries(
     roll_diff_std = float(roll_diff.std()) if roll_diff.size else 0.0
     if validation is None:
         validation = ValidationStats(0.0, 0.0, 0, 0, 0.0)
+    replay_ok = (
+        validation.uses_logged_gate_column
+        and validation.label_agreement_pct >= 99.5
+        and validation.calendar_match_pct >= 99.5
+        and validation.hw_unmatched <= 1
+    )
     if validation.uses_logged_gate_column:
         q = validation.hw_skip_pct / 100.0
         gray_pred = 100.0 * q / (q + hold_rows * (1.0 - q)) if q < 1.0 else 100.0
+        if replay_ok:
+            replay_text = (
+                f"Replay vs hardware gate: match ({validation.replay_skip_pct:.1f}% vs "
+                f"{validation.hw_skip_pct:.1f}% skipped).\n"
+            )
+        else:
+            replay_text = (
+                "Replay vs hardware gate.  The gate runs on the PC driver in float64 and the CSV stores the exact bits "
+                "it saw, so the replay is bit-exact: CSV parsed with round-trip float\n"
+                "precision, state kept in float64, gate timed on the reconstructed chip clock (deltaTimeMs + dropped-"
+                "packet gaps from PC-clock jumps), anchored at the first logged trigger.\n"
+                f"Result: {validation.calendar_match_pct:.2f}% of {validation.replay_decisions} replay decisions land "
+                f"on a logged hardware decision row and {validation.label_agreement_pct:.2f}% of those agree on skip "
+                f"vs update ({validation.hw_unmatched} of {validation.hw_decisions} hardware\n"
+                f"decisions unmatched, from serial packet drops the reconstructed clock cannot place exactly). "
+                f"Full-run skip rate: replay {validation.replay_skip_pct:.1f}% vs hardware "
+                f"{validation.hw_skip_pct:.1f}%. Residual wiggle between\n"
+                f"purple and black (mean {roll_diff_mean:+.1f} pp, std {roll_diff_std:.1f} pp) is rolling-window edge "
+                "effects at the few unmatched rows.\n"
+            )
         wiggle_text = (
             "Dashed black curve.  Computed directly from the logged hardware decision calendar: updates are rising "
             "edges of split_control_busy (gate fired), skips are rows with\n"
             "secloc_gate_skipped = 1 (gate evaluated, no update). No inference from the replay is involved.\n"
             "\n"
-            "Replay vs hardware gate.  The gate runs on the PC driver in float64 and the CSV stores the exact bits "
-            "it saw, so the replay is bit-exact: CSV parsed with round-trip float\n"
-            "precision, state kept in float64, gate timed on the reconstructed chip clock (deltaTimeMs + dropped-"
-            "packet gaps from PC-clock jumps), anchored at the first logged trigger.\n"
-            f"Result: {validation.calendar_match_pct:.2f}% of {validation.replay_decisions} replay decisions land "
-            f"on a logged hardware decision row and {validation.label_agreement_pct:.2f}% of those agree on skip "
-            f"vs update ({validation.hw_unmatched} of {validation.hw_decisions} hardware\n"
-            f"decisions unmatched, from serial packet drops the reconstructed clock cannot place exactly). "
-            f"Full-run skip rate: replay {validation.replay_skip_pct:.1f}% vs hardware "
-            f"{validation.hw_skip_pct:.1f}%. Residual wiggle between\n"
-            f"purple and black (mean {roll_diff_mean:+.1f} pp, std {roll_diff_std:.1f} pp) is rolling-window edge "
-            "effects at the few unmatched rows.\n"
+            f"{replay_text}"
             "\n"
             "Dotted gray (effective skip) vs dashed black.  Gray is the row average of secloc_skipped_update: the "
             "share of wall time spent coasting. One update occupies "
@@ -827,9 +846,7 @@ def plot_timeseries(
             f"one skip {poll_ms:.0f} ms (1 row), so with per-decision skip rate q the row average is "
             f"q / (q + {hold_rows}(1 \u2212 q)) \u2014 NOT q/{hold_rows}: only update decisions cost {hold_rows} rows, "
             f"skip decisions cost 1. With q = {validation.hw_skip_pct:.1f}% this gives "
-            f"{gray_pred:.1f}%,\n"
-            "matching the measured gray level. The naive \u00f7"
-            f"{hold_rows} would only hold if skips were rare (q \u2192 0)."
+            f"{gray_pred:.1f}%, matching the measured gray level."
         )
     else:
         wiggle_text = (
@@ -882,6 +899,7 @@ def plot_timeseries(
         "\n"
         f"{wiggle_text}"
     )
+    fig.tight_layout(rect=(0, 0.26, 1, 1))
     fig.text(
         0.012,
         0.008,
@@ -1006,6 +1024,7 @@ def main(argv: list[str] | None = None) -> int:
         apply_window_rows=max(1, round(update_hold_rows)),
         clock=chip_times,
         start_row=start_row,
+        polling_period_s=saving_dt,
     )
     # Map decisions back to PC wall-clock times for plotting.
     poll_stats = [
@@ -1111,12 +1130,25 @@ def main(argv: list[str] | None = None) -> int:
         row = metrics.io_row_skip_pct[np.isfinite(metrics.io_row_skip_pct)]
         print(f"Rolling coasting (row/time-weighted) %: mean={row.mean():.1f}")
     if validation.uses_logged_gate_column:
-        print(
-            f"Replay vs logged hardware gate: calendar match {validation.calendar_match_pct:.2f}%, "
-            f"label agreement {validation.label_agreement_pct:.2f}%, "
-            f"hardware decisions unmatched {validation.hw_unmatched}/{validation.hw_decisions}; "
-            f"full-run skip replay {validation.replay_skip_pct:.1f}% vs hardware {validation.hw_skip_pct:.1f}%"
-        )
+        if (
+            validation.label_agreement_pct >= 99.5
+            and validation.calendar_match_pct >= 99.5
+            and validation.hw_unmatched <= 1
+        ):
+            print(
+                f"Replay vs hardware gate: match ({validation.replay_skip_pct:.1f}% vs "
+                f"{validation.hw_skip_pct:.1f}% skipped)"
+            )
+        else:
+            print(
+                f"Replay vs logged hardware gate: calendar match "
+                f"{validation.calendar_match_pct:.2f}%, "
+                f"label agreement {validation.label_agreement_pct:.2f}%, "
+                f"hardware decisions unmatched {validation.hw_unmatched}/"
+                f"{validation.hw_decisions}; "
+                f"full-run skip replay {validation.replay_skip_pct:.1f}% vs hardware "
+                f"{validation.hw_skip_pct:.1f}%"
+            )
     print(f"Wrote {plot_3d_path}")
     print(f"Wrote {plot_ts_path}")
     return 0
