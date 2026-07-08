@@ -25,11 +25,22 @@ int freezme = 0;
 static int hw_dz_valid = 0;
 static int hw_dz_contaminated = 0;
 static int hw_dz_dwell_polls = 0;
+static int hw_dz_settling = 0;
+static int hw_dz_settling_polls = 0;
 // Longest continuous extrapolation allowed on hardware trigger. Swing-through
 // and turnaround episodes measured on hardware last <200 ms; beyond this cap
 // the pole is parked inside the gap and holding an extrapolated angle would
 // just accumulate drift.
 #define HW_DZ_MAX_EXTRAPOLATION_MS 500
+// After the rail flag clears on a downward crossing (exit onto the high end of
+// the track) the analog input still settles from the in-gap level (~8 counts)
+// up to the true reading for ~15-20 ms; those samples are below the rail
+// threshold but garbage (seen in CPP_mpc__2026-07-08_14-15-36: measured angle
+// 0.79 rad off, derivative sign flip injected into MPC). So keep extrapolating
+// after the flag clears until the measurement agrees with the extrapolated
+// angle, with a time cap in case the extrapolation itself has drifted.
+#define HW_DZ_SETTLING_TOLERANCE_ADC 100  // ~0.15 rad; > worst-case extrapolation drift over one episode
+#define HW_DZ_SETTLING_MAX_MS 100
 
 float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
 float positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
@@ -157,10 +168,27 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         // release mid-episode.
         if (hw_dz_contaminated) {
             hw_dz_dwell_polls++;
+            hw_dz_settling = 1;
+            hw_dz_settling_polls = 0;
+        } else if (hw_dz_settling) {
+            // Flag cleared but the analog reading may still be settling back
+            // from the in-gap rail level: trust the measurement again only
+            // once it re-converges to the extrapolated angle (or the cap
+            // expires). *anglePtr is still this poll's measured angle here;
+            // the freeze block below overwrites it while extrapolating.
+            hw_dz_dwell_polls++;
+            hw_dz_settling_polls++;
+            float settling_residual = fabsf(wrapLocal_float((float)(*anglePtr) - angle_raw_stable));
+            if (settling_residual <= HW_DZ_SETTLING_TOLERANCE_ADC ||
+                hw_dz_settling_polls > (int)(HW_DZ_SETTLING_MAX_MS / POLLING_PERIOD_MS))
+            {
+                hw_dz_settling = 0;
+                hw_dz_dwell_polls = 0;
+            }
         } else {
             hw_dz_dwell_polls = 0;
         }
-        if (hw_dz_contaminated &&
+        if ((hw_dz_contaminated || hw_dz_settling) &&
             kth_past_angle != -1 &&
             hw_dz_dwell_polls <= (int)(HW_DZ_MAX_EXTRAPOLATION_MS / POLLING_PERIOD_MS) &&
             freezme < TIMESTEPS_FOR_DERIVATIVE + 3)
