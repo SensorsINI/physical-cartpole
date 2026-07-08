@@ -7,9 +7,9 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
 ZYNQ_BOARD = "ZEDBOARD"  # 'ZYBO_Z720' or 'ZEDBOARD'; selects the calibration of the physical cartpole attached to that board. Must match the board define in Firmware hardware_bridge.h.
-CONTROLLER_NAME = 'pid'  # e.g. 'pid', 'lqr', 'mpc', 'neural-imitator'
-USE_SECLOC = True  # Wrap CONTROLLER_NAME with the Secloc event gate (see config_secloc.yml)
-OPTIMIZER_NAME = 'rpgd'  # Used when CONTROLLER_NAME == 'mpc'
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'lqr', 'mpc', 'neural-imitator'
+USE_SECLOC = False  # Wrap CONTROLLER_NAME with the Secloc event gate (see config_secloc.yml)
+OPTIMIZER_NAME = 'rpgd-c'  # Used when CONTROLLER_NAME == 'mpc'
 
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
@@ -23,7 +23,7 @@ OPTIMIZER_NAME = 'rpgd'  # Used when CONTROLLER_NAME == 'mpc'
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
 # Main-thread compute inherits this process mask (io-main-split architecture).
-CONTROL_CPU_AFFINITY = ""  # "" for pid / rpgd-c; "2" for TF rpgd
+CONTROL_CPU_AFFINITY = ""  # "" for rpgd-c (OpenMP); "2" for TF rpgd
 
 # Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
 # pins itself here via per-thread affinity. Full separation from compute requires
