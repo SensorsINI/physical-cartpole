@@ -336,6 +336,13 @@ def analyze_firmware(path):
          must glide it through the zone instead of flipping to the far side.
       3. angleD during episodes stays within the range seen on clean polls
          (derivative is held, not recomputed across the gap).
+      4. After an episode ends, no snap-and-reverse in the reported angle:
+         on downward crossings the analog reading settles back from the
+         in-gap level for ~15-20 ms after the rail flag clears, and a freeze
+         that releases into that ramp produces a large step against the
+         motion followed by same-sign recovery steps (seen in the 13-51-36
+         recordings: -418..-777 ADC snaps). The settling hold added to
+         treat_deadangle_with_derivative() must bridge this.
     """
     data = np.load(path, allow_pickle=False)
     angle = data["angle"].astype(np.float64)
@@ -388,6 +395,27 @@ def analyze_firmware(path):
             ok = False
         if max_boundary > boundary_limit:
             print("FAIL: half-turn flip at an episode boundary — freeze released into garbage")
+            ok = False
+
+        # Criterion 4: no settling snap after release. The first steps after an
+        # episode may contain a bounded resync correction (settling tolerance
+        # of the firmware hold, ~100 ADC, plus extrapolation drift) on top of
+        # physical motion — but not the hundreds-of-ADC snap-and-reverse left
+        # by a freeze that released into the analog settling ramp.
+        dt = float(np.median(np.diff(chip_time)))
+        phys_limit = 30.0 / (2 * np.pi) * angle_360 * dt  # generous 30 rad/s motion bound
+        release_limit = phys_limit + 150.0  # firmware settling tolerance + drift margin
+        post_window = 5
+        ends = np.where(flagged[:-1] & ~flagged[1:])[0]
+        worst_post = 0.0
+        for e in ends:
+            seg = np.abs(steps[e:e + post_window])
+            if seg.size:
+                worst_post = max(worst_post, float(seg.max()))
+        print(f"max |angle step| within {post_window} polls after release: {worst_post:.0f} "
+              f"(limit {release_limit:.0f} at dt={dt * 1e3:.1f} ms)")
+        if worst_post > release_limit:
+            print("FAIL: post-release snap — freeze released into the analog settling ramp")
             ok = False
 
         clean_d = np.abs(angleD[:-1][clean]) if np.any(clean) else np.array([0.0])
