@@ -326,6 +326,116 @@ def analyze_deadzone(path):
     print(f"Saved {out}")
 
 
+def analyze_firmware(path):
+    """Validate the firmware dead-zone handling from a streamed-state recording.
+
+    Pass criteria:
+      1. invalid_steps pulses at least once (hardware flag reaches the PC).
+      2. During flagged episodes the reported angle never jumps by more than
+         a small fraction of full scale between consecutive polls — the freeze
+         must glide it through the zone instead of flipping to the far side.
+      3. angleD during episodes stays within the range seen on clean polls
+         (derivative is held, not recomputed across the gap).
+    """
+    data = np.load(path, allow_pickle=False)
+    angle = data["angle"].astype(np.float64)
+    angleD = data["angleD"].astype(np.float64)
+    invalid = data["invalid_steps"].astype(np.int64)
+    chip_time = data["chip_time"].astype(np.float64)
+    angle_360 = float(data["meta_angle_360_adc"])
+    t = chip_time - chip_time[0]
+
+    def wrap_diff(d):
+        d = np.where(d > angle_360 / 2, d - angle_360, d)
+        d = np.where(d <= -angle_360 / 2, d + angle_360, d)
+        return d
+
+    steps = wrap_diff(np.diff(angle))
+    flagged = invalid > 0
+    n_episodes = int(np.count_nonzero(np.diff(flagged.astype(np.int8)) == 1)) + int(flagged[0])
+
+    print(f"\n=== Firmware dead-zone handling: {os.path.basename(path)} ===")
+    print(f"State messages: {len(angle)} over {t[-1]:.1f} s; "
+          f"flagged polls: {int(flagged.sum())} in ~{n_episodes} episodes")
+
+    ok = True
+    if not np.any(flagged):
+        print("FAIL: invalid_steps never pulsed — no dead-zone contact seen by firmware")
+        ok = False
+    else:
+        # Classify each step by where it sits relative to flagged polls:
+        # - inside:   both endpoints flagged -> pure extrapolation, must be smooth
+        # - boundary: exactly one endpoint flagged -> entry, or the exit resync
+        #   step where extrapolation drift is corrected; larger is legitimate,
+        #   but a flip to the far side (~angle_360/2) is not
+        # - clean:    neither endpoint flagged (with one-poll margin) -> baseline
+        inside = flagged[:-1] & flagged[1:]
+        boundary = flagged[:-1] ^ flagged[1:]
+        dilated = np.convolve(flagged.astype(np.int8), np.ones(3, dtype=np.int8), mode="same") > 0
+        clean = ~dilated[:-1] & ~dilated[1:]
+
+        max_inside = float(np.abs(steps[inside]).max()) if np.any(inside) else 0.0
+        max_boundary = float(np.abs(steps[boundary]).max()) if np.any(boundary) else 0.0
+        max_clean = float(np.abs(steps[clean]).max()) if np.any(clean) else 0.0
+        inside_limit = angle_360 / 8    # extrapolation is linear, steps stay small
+        boundary_limit = angle_360 / 3  # resync correction ok, half-turn flip not
+        print(f"max |angle step|: inside episodes {max_inside:.0f} (limit {inside_limit:.0f}), "
+              f"at boundaries {max_boundary:.0f} (limit {boundary_limit:.0f}), "
+              f"clean {max_clean:.0f} ADC units "
+              f"(flip-to-far-side would be ~{angle_360 / 2:.0f})")
+        if max_inside > inside_limit:
+            print("FAIL: angle jumped inside an episode — freeze did not hold")
+            ok = False
+        if max_boundary > boundary_limit:
+            print("FAIL: half-turn flip at an episode boundary — freeze released into garbage")
+            ok = False
+
+        clean_d = np.abs(angleD[:-1][clean]) if np.any(clean) else np.array([0.0])
+        ep_d = np.abs(angleD[flagged])
+        d_limit = max(1.5 * clean_d.max(), 1e-9)
+        print(f"max |angleD| inside episodes: {ep_d.max():.1f} (clean max: {clean_d.max():.1f})")
+        if ep_d.max() > d_limit:
+            print("FAIL: angleD spiked during an episode — derivative crossed the gap")
+            ok = False
+
+    print("FIRMWARE TEST PASSED" if ok else "FIRMWARE TEST FAILED")
+
+    fig, axes = plt.subplots(3, 1, figsize=(13, 9), sharex=True)
+    axes[0].plot(t, angle, lw=0.8)
+    for a, b in _flag_spans(t, flagged):
+        axes[0].axvspan(a, b, color="red", alpha=0.15)
+    axes[0].set_ylabel("angle [ADC units]")
+    axes[0].set_title("Streamed state during dead-zone swing (red: firmware flagged contamination)")
+    axes[1].plot(t, angleD, lw=0.8)
+    for a, b in _flag_spans(t, flagged):
+        axes[1].axvspan(a, b, color="red", alpha=0.15)
+    axes[1].set_ylabel("angleD [ADC/poll]")
+    axes[2].step(t, invalid, lw=0.8, where="post")
+    axes[2].set_ylabel("invalid_steps")
+    axes[2].set_xlabel("time [s]")
+    fig.tight_layout()
+    out = path.replace(".npz", "_analysis.png")
+    fig.savefig(out, dpi=130)
+    print(f"Saved {out}")
+    return ok
+
+
+def _flag_spans(t, flagged):
+    spans = []
+    i = 0
+    n = len(flagged)
+    while i < n:
+        if flagged[i]:
+            j = i
+            while j < n and flagged[j]:
+                j += 1
+            spans.append((t[i], t[min(j, n - 1)]))
+            i = j
+        else:
+            i += 1
+    return spans
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("files", nargs="*", help="Specific .npz recordings; defaults to everything in output/.")
@@ -344,6 +454,8 @@ def main():
             analyze_dynamic(path)
         elif name.startswith("deadzone_"):
             analyze_deadzone(path)
+        elif name.startswith("firmware_swing"):
+            analyze_firmware(path)
         else:
             print(f"Skipping unrecognized file {name}")
     return 0

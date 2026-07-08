@@ -215,6 +215,12 @@ int position_jumps_interval_counter = 0;
 int run_hardware_experiment = 0;
 int save_to_offline_buffers = 0;
 
+#ifdef ZYNQ
+// Latches hardware dead-zone contamination between angle samples (200 us)
+// until the next control poll (POLLING_PERIOD_MS) consumes it.
+static int angle_deadzone_latch = 0;
+#endif
+
 void CONTROL_BackgroundTask(void)
 {
 
@@ -244,6 +250,10 @@ void CONTROL_BackgroundTask(void)
 
 		position_short = Encoder_Read();
 		position_short = position_short - positionCentre;
+#ifdef ZYNQ
+		report_hardware_deadzone(angle_deadzone_latch);
+		angle_deadzone_latch = 0;
+#endif
 		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angle_raw_int, &angleD, &invalid_step);
         angleD_unprocessed = angleD;
 
@@ -452,6 +462,19 @@ void CONTROL_BackgroundTask(void)
 		angleSamples[angleSampIndex] = Goniometer_Read();
 		angleSampIndex = (++angleSampIndex >= ANGLE_AVERAGE_LEN ? 0 : angleSampIndex);
 
+#ifdef ZYNQ
+		{
+			// Hardware dead-zone tracking. Contaminated if any sample of the
+			// filter window is near a rail now (dz.window), or a rail contact
+			// happened since the previous angle sample (dz.age counts ~2.2 us
+			// XADC conversions, so age*2.2us < sampling interval).
+			GoniometerDeadZoneInfo dz;
+			Goniometer_ReadDeadZone(&dz);
+			if (dz.window > 0 || dz.age < (unsigned short)((ANGLE_MEASUREMENT_INTERVAL_US * 10u) / 22u)) {
+				angle_deadzone_latch = 1;
+			}
+		}
+#endif
 		lastRead = now;
 	}
 

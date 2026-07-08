@@ -176,6 +176,28 @@ Each repetition records 16384 tuples at 1000 µs (~16 s) and saves
 rail episode as CROSSING or TURNAROUND automatically from the on-track signal
 before/after the episode, so no per-maneuver bookkeeping is needed.
 
+### Step 3c — Firmware dead-zone handling (1 operator action per repetition, default 2)
+
+Validates the *firmware* side (added after the dead-zone tracking): the control
+loop reads the FPGA `dz_window`/`dz_age` registers every angle sample, latches
+contamination per poll, and on a contaminated poll (a) increments
+`invalid_steps` in the streamed state and (b) freezes/extrapolates the angle in
+`treat_deadangle_with_derivative()` instead of the old derivative-jump
+heuristic. This phase records the normal streamed state — the same numbers the
+controller sees — during a dead-zone swing:
+
+```bash
+python Driver/DataAnalysis/HardwareFilterTest/run_filter_experiment.py firmware --repetitions 2
+```
+
+**[OPERATOR]** Same maneuver as Step 3b: lift the pole a moderate amount above
+the dead-zone side, release on "GO", hands off for ~16 s. The script warns
+immediately if `invalid_steps` never pulsed (release higher, or the board runs
+old firmware — reflash).
+
+Requires the newly built `CartPoleFirmware.elf` on the board and a free serial
+port (close the GUI). Saves `output/firmware_swing_<timestamp>_rep<N>.npz`.
+
 ### Step 4 — Offline analysis (no hardware, no operator)
 
 ```bash
@@ -290,6 +312,24 @@ Units: recordings are 16-bit codes; divide by 16 for 12-bit ADC LSB.
 - `dz_age` should stay 0 throughout an episode even at recording gaps —
   hardware sees every 2.2 µs conversion, so brief rail contacts between
   recorded samples are still registered.
+
+**Firmware dead-zone handling (`firmware_swing_*`):** the analyzer prints a
+PASSED/FAILED verdict per recording. Criteria:
+
+- `invalid_steps` pulses during each dead-zone episode (this is how the
+  firmware now surfaces hardware-flagged contamination to the PC). Zero pulses
+  = fail (pole missed the zone, or old firmware on the board).
+- `max |angle step| inside episodes` stays far below the half-turn flip
+  (~2025 ADC units): while flagged, the firmware extrapolates the angle with
+  the last good derivative, so consecutive polls move smoothly. A near-2000
+  step means the freeze did not hold and the controller would have seen the
+  pole teleport to the opposite side.
+- At episode boundaries a somewhat larger step is allowed (resync after
+  extrapolation drift, limit ~1/3 turn), but not a half-turn flip.
+- `max |angleD| inside episodes` stays within ~1.5x of the clean-poll maximum:
+  the derivative is held, never computed across the gap.
+- The plot shades flagged polls red over the angle trace — visually, the angle
+  should glide straight through the shaded bands.
 
 **Controller A/B (if run):** no degradation in stabilization quality or invalid
 step count with the new default vs the old median.

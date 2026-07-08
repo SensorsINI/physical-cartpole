@@ -19,6 +19,18 @@ float angle_raw_stable = -1;
 float angleD_raw = 0, angleD_raw_stable = -1;
 int freezme = 0;
 
+// Hardware dead-zone detection (Zynq FPGA filter block). While the pole is in
+// the potentiometer gap the ADC reads rail values and the filtered angle is
+// garbage; the FPGA flags this per 2.2 us sample. hw_dz_valid stays 0 on STM.
+static int hw_dz_valid = 0;
+static int hw_dz_contaminated = 0;
+static int hw_dz_dwell_polls = 0;
+// Longest continuous extrapolation allowed on hardware trigger. Swing-through
+// and turnaround episodes measured on hardware last <200 ms; beyond this cap
+// the pole is parked inside the gap and holding an extrapolated angle would
+// just accumulate drift.
+#define HW_DZ_MAX_EXTRAPOLATION_MS 500
+
 float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
 float positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
 
@@ -53,6 +65,11 @@ void average_derivatives(float* angleDPtr, float* positionDPtr){
     *positionDPtr = positionDMedian; // Convert int back to short
 }
 
+void report_hardware_deadzone(int contaminated) {
+	hw_dz_valid = 1;
+	hw_dz_contaminated = contaminated;
+}
+
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angle_raw_Ptr, float* angleDPtr, int* invalid_stepPtr){
 		int angle = ClassicMedianFilter(angleSamples, angle_averageLen);
 
@@ -61,6 +78,12 @@ void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned s
 		*angle_raw_Ptr = angle;
 
 		int invalid_step = anomaly_detection(angleSamples, angleSampIndex, angle_averageLen);
+		// Surface hardware-detected dead-zone contamination in the invalid-step
+		// counter (otherwise always 0 on Zynq, where angle_averageLen == 1), so
+		// it shows up in PC-side recordings.
+		if (hw_dz_valid && hw_dz_contaminated) {
+			invalid_step++;
+		}
 		*invalid_stepPtr = invalid_step;
 
 		treat_deadangle_with_derivative(anglePtr, invalid_step);
@@ -120,8 +143,34 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         last_difference = current_difference;
     }
 
-    // Check conditions to handle the dead angle scenario
-    if (kth_past_angle != -1 &&
+    if (hw_dz_valid) {
+        // Hardware-triggered handling: the FPGA filter block checks every
+        // ~2.2 us XADC conversion against the rail thresholds, so this signal
+        // is exact — no jump heuristic and no assumption about where the dead
+        // zone sits. While contaminated, keep the freeze topped up so the
+        // angle is extrapolated with the last stable derivative; when the
+        // contamination ends, the freeze drains by itself: one more
+        // extrapolated step, then measured angles with the derivative held
+        // for TIMESTEPS_FOR_DERIVATIVE steps until the history is clean again.
+        // This adapts to episode length (crossings ~30-80 ms, turnarounds up
+        // to ~200 ms measured), where the old fixed 45/90 ms guess could
+        // release mid-episode.
+        if (hw_dz_contaminated) {
+            hw_dz_dwell_polls++;
+        } else {
+            hw_dz_dwell_polls = 0;
+        }
+        if (hw_dz_contaminated &&
+            kth_past_angle != -1 &&
+            hw_dz_dwell_polls <= (int)(HW_DZ_MAX_EXTRAPOLATION_MS / POLLING_PERIOD_MS) &&
+            freezme < TIMESTEPS_FOR_DERIVATIVE + 3)
+        {
+            freezme = TIMESTEPS_FOR_DERIVATIVE + 3;
+        }
+    }
+    // Heuristic fallback (STM, or Zynq firmware without the hardware flag):
+    // detect the dead zone from a derivative jump near the known location.
+    else if (kth_past_angle != -1 &&
         (angle_raw_stable > -500 && angle_raw_stable < 500) &&
         freezme == 0 &&
         (

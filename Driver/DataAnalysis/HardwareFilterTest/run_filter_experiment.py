@@ -13,6 +13,10 @@ Phases:
            during a decaying free swing released above the dead-zone side:
            early swings cross the zone, later ones naturally turn around
            inside it. One release per repetition, no precision needed.
+  firmware Records the STREAMED STATE (angle, angleD, invalid_steps) during a
+           dead-zone swing to verify the firmware consumes the hardware flags:
+           invalid_steps must pulse during zone episodes, angle must glide
+           through (extrapolated), angleD must stay spike-free.
   check    30-second sanity check of the serial commands and filter block.
   set      Only reconfigure the filter and exit (persists until board reset).
            For A/B tests with the normal control software.
@@ -22,6 +26,7 @@ Usage (from repo root, cartpole powered and firmware running):
   python Driver/DataAnalysis/HardwareFilterTest/run_filter_experiment.py static
   python Driver/DataAnalysis/HardwareFilterTest/run_filter_experiment.py dynamic --repetitions 3
   python Driver/DataAnalysis/HardwareFilterTest/run_filter_experiment.py deadzone --repetitions 4
+  python Driver/DataAnalysis/HardwareFilterTest/run_filter_experiment.py firmware --repetitions 2
   python Driver/DataAnalysis/HardwareFilterTest/run_filter_experiment.py set --window 63 --trim 0 --mode 1
 """
 
@@ -316,6 +321,80 @@ def phase_deadzone(interface, args):
     return 0
 
 
+def phase_firmware(interface, args):
+    """Validate the firmware-side use of the hardware dead-zone flags.
+
+    Unlike the other phases (which read the filter block directly), this one
+    records the normal STREAMED STATE messages, i.e. the angle after
+    process_angle()/treat_deadangle_with_derivative() — exactly what the
+    controller sees. During a dead-zone episode the firmware must extrapolate
+    the angle (no flip to the opposite side), hold the derivative, and pulse
+    invalid_steps.
+    """
+    from globals import ANGLE_360_DEG_IN_ADC_UNITS  # deferred: not needed by other phases
+
+    print("\n=== FIRMWARE: dead-zone handling in the control path ===")
+    print("Same maneuver as the 'deadzone' phase: one moderate release above the")
+    print("dead-zone side; early swings cross the zone, later ones turn around in it.\n")
+    _, window, trim, mode = DEFAULT_CONFIG
+    interface.set_angle_filter(window, trim, mode)
+
+    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    for rep in range(args.repetitions):
+        print(f"\nRepetition {rep + 1}/{args.repetitions} (recording ~{args.duration_s:.0f} s of state stream).")
+        print("  Lift the pole somewhat above the dead-zone side.")
+        input("  Press Enter, then release on GO...")
+        for count in (3, 2, 1):
+            print(f"  {count}...")
+            time.sleep(1.0)
+        print("  GO — release now!")
+
+        interface.stream_output(True)
+        angles, angleDs, invalids, chip_times = [], [], [], []
+        t_start = time.time()
+        try:
+            while time.time() - t_start < args.duration_s:
+                (angle, angleD, _position, _target, _cmd, invalid_steps,
+                 _dt, chip_time, _lat, _latv) = interface.read_state()
+                angles.append(angle)
+                angleDs.append(angleD)
+                invalids.append(invalid_steps)
+                chip_times.append(chip_time)
+        finally:
+            interface.stream_output(False)
+
+        angles = np.asarray(angles, dtype=np.float64)
+        angleDs = np.asarray(angleDs, dtype=np.float64)
+        invalids = np.asarray(invalids, dtype=np.int64)
+        chip_times = np.asarray(chip_times, dtype=np.float64)
+
+        flagged = int(np.count_nonzero(invalids))
+        print(f"  Recorded {len(angles)} state messages; polls flagged contaminated: {flagged}")
+        if flagged == 0:
+            print("  WARNING: invalid_steps never pulsed — either the pole missed the")
+            print("  dead zone (release higher) or the firmware on the board predates")
+            print("  the dead-zone handling (reflash).")
+
+        path = os.path.join(OUTPUT_DIR, f"firmware_swing_{stamp}_rep{rep + 1}.npz")
+        save_npz(path, {
+            "angle": angles,
+            "angleD": angleDs,
+            "invalid_steps": invalids,
+            "chip_time": chip_times,
+            "config": np.array([window, trim, mode], dtype=np.int32),
+        }, {
+            "phase": "firmware",
+            "duration_s": args.duration_s,
+            "timestamp": stamp,
+            "repetition": rep + 1,
+            "angle_360_adc": float(ANGLE_360_DEG_IN_ADC_UNITS),
+        })
+
+    restore_defaults(interface)
+    print("\nFirmware phase done. Run analyze_filter_experiment.py next.")
+    return 0
+
+
 def phase_set(interface, args):
     interface.set_angle_filter(args.window, args.trim, args.mode)
     print(f"Filter set: window={args.window}, trim={args.trim}, mode={MODE_NAMES[args.mode]}")
@@ -325,7 +404,7 @@ def phase_set(interface, args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("phase", choices=["check", "static", "dynamic", "deadzone", "set"])
+    parser.add_argument("phase", choices=["check", "static", "dynamic", "deadzone", "firmware", "set"])
     parser.add_argument("--port", default=None, help="Serial port, e.g. /dev/ttyUSB0. Auto-detected if omitted.")
     parser.add_argument("--baud", type=int, default=None, help=f"Baud rate (default from globals: {SERIAL_BAUD}).")
     parser.add_argument("--samples", type=int, default=None,
@@ -333,6 +412,8 @@ def parse_args():
     parser.add_argument("--interval-us", type=int, default=None,
                         help="Sampling interval in us. Default: 100 static, 500 dynamic.")
     parser.add_argument("--repetitions", type=int, default=3, help="Dynamic phase repetitions. Default: 3.")
+    parser.add_argument("--duration-s", type=float, default=16.0,
+                        help="'firmware' phase: seconds of state stream per repetition. Default: 16.")
     parser.add_argument("--window", type=int, default=63, help="'set' phase: window size (1-64).")
     parser.add_argument("--trim", type=int, default=7, help="'set' phase: samples trimmed per side.")
     parser.add_argument("--mode", type=int, default=2, help="'set' phase: 0=raw, 1=median, 2=trimmed mean.")
@@ -362,6 +443,8 @@ def main():
             return phase_set(interface, args)
         if args.phase == "deadzone":
             return phase_deadzone(interface, args)
+        if args.phase == "firmware":
+            return phase_firmware(interface, args)
         return phase_dynamic(interface, args)
     finally:
         if args.phase != "set":
