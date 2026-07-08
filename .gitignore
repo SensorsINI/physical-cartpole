@@ -24,6 +24,8 @@ eggs/
 Driver/SI_Toolkit_ASF/Experiments/*
 # Hardware filter test recordings
 /Driver/DataAnalysis/HardwareFilterTest/output/
+# Generated Secloc plots, replay figures, and sweep caches
+/tests/output/
 *.hdf*
 *.pdf
 *.prof
