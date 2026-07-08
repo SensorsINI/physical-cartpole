@@ -27,6 +27,7 @@ from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdat
 
 from globals import (
     CHIP,
+    HARDWARE_ANGLE_FILTER_OVERRIDE,
     HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     OPTIMIZER_NAME, CONTROLLER_NAME, USE_SECLOC,
     POLLING_PERIOD_MS, CONTROL_SYNC,
@@ -193,7 +194,7 @@ class PhysicalCartPoleDriver:
                 flush=True,
             )
 
-        if CHIP == 'ZYNQ':
+        if CHIP == 'ZYNQ' and HARDWARE_ANGLE_FILTER_OVERRIDE:
             self.InterfaceInstance.set_angle_filter(
                 HARDWARE_ANGLE_FILTER_WINDOW,
                 HARDWARE_ANGLE_FILTER_TRIM,
@@ -204,6 +205,11 @@ class PhysicalCartPoleDriver:
                 f"Hardware angle filter set: window={HARDWARE_ANGLE_FILTER_WINDOW}, "
                 f"trim={HARDWARE_ANGLE_FILTER_TRIM}, "
                 f"mode={filter_mode_names.get(HARDWARE_ANGLE_FILTER_MODE, HARDWARE_ANGLE_FILTER_MODE)}",
+                flush=True,
+            )
+        elif CHIP == 'ZYNQ':
+            print(
+                "Hardware angle filter: firmware boot default (trimmed mean 63/7)",
                 flush=True,
             )
 

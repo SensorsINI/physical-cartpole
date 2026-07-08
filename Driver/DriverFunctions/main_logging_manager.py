@@ -14,6 +14,7 @@ from globals import (
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS, LOOP_CPU_AFFINITY, CONTROL_CPU_AFFINITY,
     USE_SECLOC,
+    HARDWARE_ANGLE_FILTER_OVERRIDE,
     HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
     DEFAULT_ADDRESS, LIVE_PLOTTER_USE_REMOTE_SERVER, LIVE_PLOTTER_REMOTE_USERNAME, LIVE_PLOTTER_REMOTE_IP
@@ -235,12 +236,17 @@ class MainLoggingManager:
                 f"Control CPU affinity: {CONTROL_CPU_AFFINITY}",
             ]
             if CHIP == 'ZYNQ':
-                filter_mode_names = {0: 'raw', 1: 'median', 2: 'trimmed_mean'}
-                mode_lines.append(
-                    "Hardware angle filter: "
-                    f"{filter_mode_names.get(HARDWARE_ANGLE_FILTER_MODE, HARDWARE_ANGLE_FILTER_MODE)} "
-                    f"window={HARDWARE_ANGLE_FILTER_WINDOW} trim={HARDWARE_ANGLE_FILTER_TRIM}"
-                )
+                if HARDWARE_ANGLE_FILTER_OVERRIDE:
+                    filter_mode_names = {0: 'raw', 1: 'median', 2: 'trimmed_mean'}
+                    mode_lines.append(
+                        "Hardware angle filter: "
+                        f"{filter_mode_names.get(HARDWARE_ANGLE_FILTER_MODE, HARDWARE_ANGLE_FILTER_MODE)} "
+                        f"window={HARDWARE_ANGLE_FILTER_WINDOW} trim={HARDWARE_ANGLE_FILTER_TRIM}"
+                    )
+                else:
+                    mode_lines.append(
+                        "Hardware angle filter: firmware boot default (trimmed mean 63/7)"
+                    )
             if USE_SECLOC:
                 secloc = self.driver.controller.secloc
                 mode_lines[1:1] = [

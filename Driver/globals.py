@@ -12,12 +12,12 @@ USE_SECLOC = False  # Wrap CONTROLLER_NAME with the Secloc event gate (see confi
 OPTIMIZER_NAME = 'rpgd-c'  # Used when CONTROLLER_NAME == 'mpc'
 
 ##### Hardware (FPGA) angle filter #####
-# Set over serial at driver startup (ZYNQ only), overriding the firmware boot
-# default (trimmed mean 63/7). Modes match interface.py: 0=raw, 1=median, 2=trimmed mean.
-# Median 63 matches earlier mpc baseline recordings (pre-trimmed-mean default).
+# When False, leave the firmware boot default (trimmed mean 63/7 on Zynq). The 09-34
+# Secloc baseline did not call set_angle_filter(). Set True to override at startup.
+HARDWARE_ANGLE_FILTER_OVERRIDE = False
 HARDWARE_ANGLE_FILTER_WINDOW = 63
-HARDWARE_ANGLE_FILTER_TRIM = 0
-HARDWARE_ANGLE_FILTER_MODE = 1  # median
+HARDWARE_ANGLE_FILTER_TRIM = 7
+HARDWARE_ANGLE_FILTER_MODE = 2  # trimmed mean (only used when OVERRIDE is True)
 
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
