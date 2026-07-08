@@ -10,7 +10,7 @@
 --   * the hls4ml core entity `myproject`
 --       input_1_V      : 84 bits = CONTROLLER_INPUTS * BITS_PER_CONTROLLER_INPUT
 --       layer9_out_0_V : 12 bits = CONTROLLER_OUTPUTS * BITS_PER_CONTROLLER_OUTPUT
---     (FPGA/NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd)
+--     (FPGA/NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject.vhd)
 --   * the firmware (Firmware/Src/Zynq/neural_imitator.h):
 --       MLP_ACTIVATION_NEURONS      = 7
 --       MLP_PREDICTION_NEURONS      = 1

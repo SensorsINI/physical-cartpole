@@ -94,7 +94,9 @@ const ControllerOps NeuralImitator_Ops = {
 //float hls_denormalize_A[] = {1.0};
 //float hls_denormalize_B[] = {0.0};
 
-// Normalization Cartpole hpf_v2024_x3232_12_2_v1
+// Normalization for Dense-7IN-32H1-32H2-1OUT-8 (matches its normalization_vec_a/b,
+// same values as the pure-C controller in neural_controller_C.c; net deployed on the
+// FPGA as hls4ml_dense_1out_8_07_07_2026 behind CONTROLLER_AXILITE_0).
 float hls_normalize_a[] = {0.04595453,1.00000000,1.00000000,5.21186209,0.82011247,1.00000000,6.31313133
 };
 float hls_normalize_b[] = {0.02537525,0.00000000,0.00000000,0.01761615,-0.05823207,0.00000000,0.00000000

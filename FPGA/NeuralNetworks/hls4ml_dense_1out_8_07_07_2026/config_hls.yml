@@ -1,0 +1,25 @@
+board: 'digilentinc.com:zedboard:part0:1.1'
+part: 'xc7z020clg484-1'
+path_to_hls_installation: '/media/santiago/Data/tools/Xilinx/Vivado/2020.1/bin'
+
+
+path_to_models: './SI_Toolkit_ASF/Experiments/'
+net_name: 'Dense-7IN-32H1-32H2-1OUT-8'
+batch_size: 1
+
+
+PRECISION:
+  input_and_output: 'ap_fixed<12,2>'
+  activations: 'ap_fixed<12,1>'
+  weights_and_biases: 'ap_fixed<14,4>'
+  intermediate_results: 'ap_fixed<18,6>'  # Also set as "Model precision" and used for all quantizations not included above
+
+Strategy: 'Resources'  # Resources or Latency
+ReuseFactor: 32
+
+backend: 'Vivado'  # VivadoAccelerator or Vivado
+#backend: 'VivadoAccelerator'  # VivadoAccelerator or Vivado
+
+with_brunton_testing: false
+
+hls4ml_output_folder_name: 'zedboard_20260707_1' # Name for hls4ml output folder (e.g., 'v1', 'v2', 'experimental', etc.)

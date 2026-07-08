@@ -146,15 +146,23 @@ set files [list \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv"] \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv"] \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"] \
  [file normalize "${origin_dir}/../Interfaces/controller_io_parameters.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_12s_24_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_13s_24_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_13s_25_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_14s_25_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_15s_26_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_13s_12s_24_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_14s_12s_25_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_15s_12s_26_2_1.vhd"] \
  [file normalize "${origin_dir}/../Interfaces/controller_adapter_cp.vhd"] \
  [file normalize "${origin_dir}/../Interfaces/controller_axilite.vhd"] \
  [file normalize "${origin_dir}/../CustomIPs/PmodAD1/ad1_spi.v"] \
@@ -213,17 +221,17 @@ set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -233,30 +241,46 @@ set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
+
+foreach mul_file [list \
+ "myproject_mul_12s_12s_24_2_1.vhd" \
+ "myproject_mul_12s_13s_24_2_1.vhd" \
+ "myproject_mul_12s_13s_25_2_1.vhd" \
+ "myproject_mul_12s_14s_25_2_1.vhd" \
+ "myproject_mul_12s_15s_26_2_1.vhd" \
+ "myproject_mul_13s_12s_24_2_1.vhd" \
+ "myproject_mul_14s_12s_25_2_1.vhd" \
+ "myproject_mul_15s_12s_26_2_1.vhd" \
+] {
+  set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/$mul_file"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+  set_property -name "file_type" -value "VHDL" -objects $file_obj
+}
 
 set file "$origin_dir/../Interfaces/controller_adapter_cp.vhd"
 set file [file normalize $file]

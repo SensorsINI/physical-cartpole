@@ -28,7 +28,7 @@
 #define	POSITION_JUMPS_SWITCH_NUMBER	1
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
-unsigned short current_controller = OnChipController_neural_controller_C;
+unsigned short current_controller = OnChipController_NeuralImitator;
 
 bool correct_motor_dynamics = true;
 
@@ -214,7 +214,6 @@ int position_jumps_interval_counter = 0;
 
 int run_hardware_experiment = 0;
 int save_to_offline_buffers = 0;
-
 
 void CONTROL_BackgroundTask(void)
 {
@@ -458,7 +457,7 @@ void CONTROL_BackgroundTask(void)
 
 #ifdef ZYNQ
 #ifdef USE_EXTERNAL_INTERFACE
-	current_controller = OnChipController_neural_controller_C;
+	current_controller = OnChipController_NeuralImitator;
 
 	target_position = get_normed_slider_state()*2*position_jumps_target;
 
@@ -467,7 +466,7 @@ void CONTROL_BackgroundTask(void)
 		target_equilibrium = target_equilibrium_from_external_button;
 	}
 #else
-	current_controller = OnChipController_neural_controller_C;
+	current_controller = OnChipController_NeuralImitator;
 
 	if (USE_TARGET_SWITCHES)
 	{

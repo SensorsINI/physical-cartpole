@@ -1,0 +1,69 @@
+Backend: Vivado
+ClockPeriod: 5
+HLSConfig:
+  LayerName:
+    activation:
+      Precision:
+        result: ap_fixed<12,1>
+      Trace: false
+    activation_1:
+      Precision:
+        result: ap_fixed<12,1>
+      Trace: false
+    input_1:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<12,2>
+        weight: ap_fixed<14,4>
+      Trace: false
+    layers_0:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<18,6>
+        weight: ap_fixed<14,4>
+      Trace: false
+    layers_0_linear:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<18,6>
+        weight: ap_fixed<14,4>
+      Trace: false
+    layers_1:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<18,6>
+        weight: ap_fixed<14,4>
+      Trace: false
+    layers_1_linear:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<18,6>
+        weight: ap_fixed<14,4>
+      Trace: false
+    layers_2:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<18,6>
+        weight: ap_fixed<14,4>
+      Trace: false
+    layers_2_linear:
+      Precision:
+        bias: ap_fixed<14,4>
+        result: ap_fixed<12,2>
+        weight: ap_fixed<14,4>
+      Trace: false
+  Model:
+    BramFactor: 1000000000
+    Precision: ap_fixed<18,6>
+    ReuseFactor: 32
+    Strategy: Resources
+    TraceOutput: false
+IOType: io_parallel
+InputData: null
+KerasModel: !keras_model '/home/santiago/hls4ml_temp_1783445350146_983940/keras_model.h5'
+OutputDir: /home/santiago/hls4ml_temp_1783445350146_983940
+OutputPredictions: null
+Part: xc7z020clg484-1
+ProjectName: myproject
+Stamp: daAaA75e
+Version: 1.0.0
