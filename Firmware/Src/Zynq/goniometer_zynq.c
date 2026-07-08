@@ -53,14 +53,6 @@ void Goniometer_SetFilter(unsigned short window_size, unsigned short trim_count,
 	XMedian_filter_Set_filter_mode(XMedian_filter_Ptr, filter_mode);
 }
 
-void Goniometer_ReadPair16(unsigned short * filtered16, unsigned short * raw16)
-{
-	// Two back-to-back AXI-Lite reads; the filter updates every ~2.2 us
-	// (XADC rate), so the two values refer to (almost) the same instant.
-	*filtered16 = XMedian_filter_Get_filtered_o(XMedian_filter_Ptr);
-	*raw16 = XMedian_filter_Get_raw_o(XMedian_filter_Ptr);
-}
-
 void Goniometer_ReadDeadZone(GoniometerDeadZoneInfo * info)
 {
 	info->status     = (unsigned short)XMedian_filter_Get_dz_status_o(XMedian_filter_Ptr);

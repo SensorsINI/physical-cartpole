@@ -23,7 +23,6 @@
 #define CMD_RUN_HARDWARE_EXPERIMENT 0xCE
 #define CMD_TRANSFER_BUFFERS        0xD1
 #define CMD_SET_ANGLE_FILTER        0xD2
-#define CMD_GET_DEAD_ZONE           0xD3
 #define CMD_DO_NOTHING				0x00
 
 unsigned char 	crc(const unsigned char * message, unsigned int len);

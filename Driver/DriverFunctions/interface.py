@@ -26,7 +26,6 @@ CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
 CMD_TRANSFER_BUFFERS = 0xD1
 CMD_SET_ANGLE_FILTER = 0xD2
-CMD_GET_DEAD_ZONE = 0xD3
 
 # Hardware XADC filter modes; must match Firmware/Src/Zynq/goniometer_zynq.h
 # and FPGA/CustomIPs/median_filter_hls/median_functions.h.
@@ -276,64 +275,6 @@ class Interface:
         self._write_message(msg)
         reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2 * lenght, crc=False, timeout=100)
         return struct.unpack(str(lenght) + 'H', bytes(reply[3:3 + 2 * lenght]))
-
-    def collect_angle_pairs(self, length=1000, interval_us=100):
-        """Collect (filtered16, raw16) pairs from the FPGA angle filter block.
-
-        Both values are full 16-bit register reads (12-bit ADC code left-aligned,
-        i.e. multiplied by 16; the filtered value carries 4 fractional bits from
-        averaging). Motor is stopped and the control interrupt is suspended for
-        the duration of the collection. Firmware caps length at 16384.
-        """
-        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 9,
-               length % 256, length // 256,
-               interval_us % 256, interval_us // 256,
-               1]  # format 1 = paired full-16-bit filtered+raw
-        msg.append(self._crc(msg))
-        self._write_message(msg)
-        timeout = max(100.0, 2 * length * interval_us * 1e-6 + 4 * length / (self.baud / 10) + 10)
-        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 4 * length, crc=False, timeout=timeout)
-        values = struct.unpack(str(2 * length) + 'H', bytes(reply[3:3 + 4 * length]))
-        filtered = values[0::2]
-        raw = values[1::2]
-        return filtered, raw
-
-    def collect_angle_deadzone(self, length=1000, interval_us=100):
-        """Collect (filtered16, raw16, dz_window, dz_status, dz_age) tuples.
-
-        dz_window: number of near-rail samples in the hardware filter window.
-        dz_status: bit0 = latest sample at low rail, bit1 = at high rail.
-        dz_age: XADC samples (~2.2 us each) since last rail contact, saturating
-        at 0xFFFF; captures rail touches that occur between recorded samples.
-        Firmware caps length at 16384.
-        """
-        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 9,
-               length % 256, length // 256,
-               interval_us % 256, interval_us // 256,
-               2]  # format 2 = pairs + dead-zone tracking
-        msg.append(self._crc(msg))
-        self._write_message(msg)
-        timeout = max(100.0, 2 * length * interval_us * 1e-6 + 8 * length / (self.baud / 10) + 10)
-        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 8 * length, crc=False, timeout=timeout)
-        records = struct.unpack('<' + 'HHBBH' * length, bytes(reply[3:3 + 8 * length]))
-        filtered = records[0::5]
-        raw = records[1::5]
-        dz_window = records[2::5]
-        dz_status = records[3::5]
-        dz_age = records[4::5]
-        return filtered, raw, dz_window, dz_status, dz_age
-
-    def get_dead_zone(self):
-        """Snapshot of the hardware dead-zone registers.
-
-        Returns (status, window, age, low_count, high_count); the counts are
-        cumulative near-rail sample counters since firmware boot.
-        """
-        msg = [SERIAL_SOF, CMD_GET_DEAD_ZONE, 4]
-        msg.append(self._crc(msg))
-        self._write_message(msg)
-        reply = self._receive_reply(CMD_GET_DEAD_ZONE, 18, timeout=5.0, reconnect_at_timeout=False)
-        return struct.unpack('<HHHII', bytes(reply[3:17]))
 
     def set_angle_filter(self, window_size, trim_count, filter_mode):
         """Reconfigure the FPGA angle filter block at runtime (Zynq only).
