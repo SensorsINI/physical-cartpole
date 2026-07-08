@@ -37,7 +37,10 @@ def parse_cpp_header(path: Path) -> dict[str, str]:
 
 
 def load_cpp_dataframe(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path, comment="#")
+    # float_precision='round_trip' recovers the exact float64 bits the driver
+    # logged; the default parser can be off by 1 ulp, which flips Secloc gate
+    # decisions that sit exactly on the log_base threshold.
+    return pd.read_csv(path, comment="#", float_precision="round_trip")
 
 
 def skip_rate_from_csv(path: Path) -> dict:

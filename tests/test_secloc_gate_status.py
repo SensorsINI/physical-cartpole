@@ -113,3 +113,32 @@ def test_secloc_poll_stats_use_time_window():
 
     assert gate._poll_stat_percentage(lambda stat: stat.ang_unchanged) < 95.0
     assert len(gate._active_poll_stats()) <= int(5.0 / dt) + 2
+
+
+def test_peek_should_sample_does_not_mutate_gate_state():
+    gate = SeclocGate(
+        log_base=1.5,
+        ref_period=0.02,
+        dead_ang=0.001,
+        dead_pos=0.001,
+    )
+    s = create_cartpole_state()
+    s[ANGLE_IDX] = 0.02
+    s[POSITION_IDX] = 0.01
+
+    gate.logic.time_last = 0.0
+    gate.logic.ang_last_shift = 0.01
+    gate.logic.pos_last_shift = 0.01
+    before = (gate.logic.ang_last_shift, gate.logic.pos_last_shift, gate.logic.time_last)
+
+    would_update = gate.peek_would_update(s, 0.0, time=0.02, time_difference=0.02)
+    after_peek = (gate.logic.ang_last_shift, gate.logic.pos_last_shift, gate.logic.time_last)
+
+    assert would_update is True
+    assert after_peek == before
+    assert gate.last_gate_evaluated is True
+    assert gate.last_gate_would_update is True
+
+    spike = gate.should_sample(s, 0.0, time=0.02, time_difference=0.02)
+    assert spike is True
+    assert gate.logic.time_last == 0.02

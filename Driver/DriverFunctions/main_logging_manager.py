@@ -29,6 +29,10 @@ class MainLoggingManager:
 
             'time': lambda: driver.th.elapsedTime,
             'deltaTimeMs': lambda: driver.th.time_between_measurements_chip * 1000,
+            # Absolute chip timestamp (s). The Secloc gate times its ref_period on
+            # this clock; deltaTimeMs alone cannot reconstruct it because dropped
+            # serial packets are invisible in chip-side deltas.
+            'time_chip': lambda: driver.th.time_current_measurement_chip,
 
             'angle_raw': lambda: driver.idp.angle_raw,
             'angleD_raw': lambda: driver.idp.angleD_raw,
@@ -75,6 +79,7 @@ class MainLoggingManager:
         # 1 if a freshly computed control was applied this iteration, 0 if held
         self.data_to_save_controller = FunctionalDict({
             'controller_update_applied': lambda: int(driver.split_control.last_applied_now),
+            'split_control_busy': lambda: int(driver.split_control.is_busy),
         })
 
         self.data_manager = DataManager(create_csv_file)

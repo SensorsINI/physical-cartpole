@@ -108,6 +108,9 @@ class SplitControlLoop:
         if updated_attributes is None:
             updated_attributes = {}
 
+        if hasattr(self.controller, "peek_secloc_gate"):
+            self.controller.peek_secloc_gate(s, time=time, updated_attributes=updated_attributes)
+
         with self._lock:
             if self._busy or self._result_pending:
                 self._polling_loops_since_trigger += 1
@@ -225,6 +228,11 @@ class SplitControlLoop:
     def last_applied_now(self):
         with self._lock:
             return self._last_applied_now
+
+    @property
+    def is_busy(self):
+        with self._lock:
+            return self._busy or self._result_pending
 
     @property
     def applied_Q(self):
