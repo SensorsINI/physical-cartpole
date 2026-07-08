@@ -180,6 +180,19 @@ class PhysicalCartPoleDriver:
         # set_firmware_parameters(self.InterfaceInstance)
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS, timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
+        if hasattr(self.controller, 'secloc'):
+            # Chip timestamps sit on an exact POLLING_PERIOD_MS grid; with the
+            # quantum set the gate counts integer ticks instead of comparing
+            # float seconds against ref_period with a tolerance.
+            polling_period_s = POLLING_PERIOD_MS / 1000.0
+            self.controller.secloc.set_time_quantum(polling_period_s)
+            print(
+                f"Secloc gate tick quantum: {POLLING_PERIOD_MS} ms "
+                f"(ref_period {self.controller.secloc.ref_period * 1000:.0f} ms = "
+                f"{self.controller.secloc.logic.ref_period_ticks} ticks)",
+                flush=True,
+            )
+
         if CHIP == 'ZYNQ':
             self.InterfaceInstance.set_angle_filter(
                 HARDWARE_ANGLE_FILTER_WINDOW,
