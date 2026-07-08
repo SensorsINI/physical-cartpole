@@ -11,6 +11,14 @@ CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'lqr', 'mpc', 'neural-imitator'
 USE_SECLOC = False  # Wrap CONTROLLER_NAME with the Secloc event gate (see config_secloc.yml)
 OPTIMIZER_NAME = 'rpgd-c'  # Used when CONTROLLER_NAME == 'mpc'
 
+##### Hardware (FPGA) angle filter #####
+# Set over serial at driver startup (ZYNQ only), overriding the firmware boot
+# default (trimmed mean 63/7). Modes match interface.py: 0=raw, 1=median, 2=trimmed mean.
+# Median 63 matches earlier mpc baseline recordings (pre-trimmed-mean default).
+HARDWARE_ANGLE_FILTER_WINDOW = 63
+HARDWARE_ANGLE_FILTER_TRIM = 0
+HARDWARE_ANGLE_FILTER_MODE = 1  # median
+
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
 # execution. control.py applies this BEFORE TensorFlow is imported, so the TF/XLA

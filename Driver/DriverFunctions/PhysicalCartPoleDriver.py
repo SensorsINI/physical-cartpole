@@ -27,6 +27,7 @@ from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdat
 
 from globals import (
     CHIP,
+    HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     OPTIMIZER_NAME, CONTROLLER_NAME, USE_SECLOC,
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
@@ -177,6 +178,20 @@ class PhysicalCartPoleDriver:
 
         # set_firmware_parameters(self.InterfaceInstance)
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+
+        if CHIP == 'ZYNQ':
+            self.InterfaceInstance.set_angle_filter(
+                HARDWARE_ANGLE_FILTER_WINDOW,
+                HARDWARE_ANGLE_FILTER_TRIM,
+                HARDWARE_ANGLE_FILTER_MODE,
+            )
+            filter_mode_names = {0: 'raw', 1: 'median', 2: 'trimmed_mean'}
+            print(
+                f"Hardware angle filter set: window={HARDWARE_ANGLE_FILTER_WINDOW}, "
+                f"trim={HARDWARE_ANGLE_FILTER_TRIM}, "
+                f"mode={filter_mode_names.get(HARDWARE_ANGLE_FILTER_MODE, HARDWARE_ANGLE_FILTER_MODE)}",
+                flush=True,
+            )
 
         try:
             self.controller.printparams()
