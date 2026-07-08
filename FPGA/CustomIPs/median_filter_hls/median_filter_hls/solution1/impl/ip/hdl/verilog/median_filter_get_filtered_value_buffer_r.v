@@ -3,7 +3,7 @@
 // Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 // ==============================================================
 `timescale 1 ns / 1 ps
-module median_filter_buffer_r_ram (addr0, ce0, d0, we0, q0,  clk);
+module median_filter_get_filtered_value_buffer_r_ram (addr0, ce0, d0, we0, q0,  clk);
 
 parameter DWIDTH = 16;
 parameter AWIDTH = 6;
@@ -19,7 +19,7 @@ input clk;
 (* ram_style = "block" *)reg [DWIDTH-1:0] ram[0:MEM_SIZE-1];
 
 initial begin
-    $readmemh("./median_filter_buffer_r_ram.dat", ram);
+    $readmemh("./median_filter_get_filtered_value_buffer_r_ram.dat", ram);
 end
 
 
@@ -37,7 +37,7 @@ end
 endmodule
 
 `timescale 1 ns / 1 ps
-module median_filter_buffer_r(
+module median_filter_get_filtered_value_buffer_r(
     reset,
     clk,
     address0,
@@ -59,7 +59,7 @@ output[DataWidth - 1:0] q0;
 
 
 
-median_filter_buffer_r_ram median_filter_buffer_r_ram_U(
+median_filter_get_filtered_value_buffer_r_ram median_filter_get_filtered_value_buffer_r_ram_U(
     .clk( clk ),
     .addr0( address0 ),
     .ce0( ce0 ),

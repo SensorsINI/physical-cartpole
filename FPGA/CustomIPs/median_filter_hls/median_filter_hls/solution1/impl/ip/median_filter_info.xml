@@ -3,9 +3,13 @@
   <core name="" type="" target="">
     <kernel name="median_filter" language="c" vlnv="xilinx.com:hls:median_filter:1.0" attributes="" hash="" preferredWorkGroupSizeMultiple="0" workGroupSize="1" debug="false" interrupt="true">
       <port name="S_AXI_MEDIAN" mode="slave" range="0x1000" dataWidth="32" portType="addressable" base="0x00000000"/>
-      <arg name="median" addressQualifier="0" id="0" port="S_AXI_MEDIAN" size="0x4" offset="0x10" hostOffset="0x0" hostSize="0x4" type="int*"/>
-      <arg name="median" addressQualifier="0" id="1" port="S_AXI_MEDIAN" size="0x4" offset="0x18" hostOffset="0x0" hostSize="0x4" type="int*"/>
-      <arg name="window_size" addressQualifier="0" id="2" port="S_AXI_MEDIAN" size="0x4" offset="0x20" hostOffset="0x0" hostSize="0x4" type="int"/>
+      <arg name="filtered" addressQualifier="0" id="0" port="S_AXI_MEDIAN" size="0x4" offset="0x10" hostOffset="0x0" hostSize="0x4" type="int*"/>
+      <arg name="filtered" addressQualifier="0" id="1" port="S_AXI_MEDIAN" size="0x4" offset="0x18" hostOffset="0x0" hostSize="0x4" type="int*"/>
+      <arg name="raw" addressQualifier="0" id="2" port="S_AXI_MEDIAN" size="0x4" offset="0x20" hostOffset="0x0" hostSize="0x4" type="int*"/>
+      <arg name="raw" addressQualifier="0" id="3" port="S_AXI_MEDIAN" size="0x4" offset="0x28" hostOffset="0x0" hostSize="0x4" type="int*"/>
+      <arg name="window_size" addressQualifier="0" id="4" port="S_AXI_MEDIAN" size="0x4" offset="0x30" hostOffset="0x0" hostSize="0x4" type="int"/>
+      <arg name="trim_count" addressQualifier="0" id="5" port="S_AXI_MEDIAN" size="0x4" offset="0x38" hostOffset="0x0" hostSize="0x4" type="int"/>
+      <arg name="filter_mode" addressQualifier="0" id="6" port="S_AXI_MEDIAN" size="0x4" offset="0x40" hostOffset="0x0" hostSize="0x4" type="int"/>
       <compileWorkGroupSize x="1" y="1" z="1"/>
     </kernel>
   </core>

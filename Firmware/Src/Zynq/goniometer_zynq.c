@@ -12,7 +12,11 @@ void Goniometer_Init(void)
 {
 
 	XMedian_filter_Initialize(XMedian_filter_Ptr, MEDIAN_FILTER_DEVICE_ID);
-	XMedian_filter_Set_window_size(XMedian_filter_Ptr, HARDWARE_MEDIAN);
+	XMedian_filter_Set_window_size(XMedian_filter_Ptr, HARDWARE_FILTER_WINDOW_SIZE);
+	XMedian_filter_Set_trim_count(XMedian_filter_Ptr, HARDWARE_FILTER_TRIM_COUNT);
+	XMedian_filter_Set_filter_mode(XMedian_filter_Ptr, HARDWARE_FILTER_MODE_DEFAULT);
+	XMedian_filter_Set_rail_low(XMedian_filter_Ptr, HARDWARE_FILTER_RAIL_LOW);
+	XMedian_filter_Set_rail_high(XMedian_filter_Ptr, HARDWARE_FILTER_RAIL_HIGH);
 
     XAdcPs_Config* cfg = XAdcPs_LookupConfig ( XADC_DEVICE_ID ) ;
 
@@ -31,7 +35,37 @@ unsigned short Goniometer_Read(void)
 {
 	// Set conversion sequence		 
 //	unsigned short volt_raw = XAdcPs_GetAdcData(XADC_Driver_Ptr, XADCPS_CH_AUX_MAX);
-	unsigned short volt_raw = XMedian_filter_Get_median_o(XMedian_filter_Ptr);
+	unsigned short volt_raw = XMedian_filter_Get_filtered_o(XMedian_filter_Ptr);
 //	float volt_f = XSysMon_RawToExtVoltage(volt_raw);
 	return volt_raw/16;
+}
+
+unsigned short Goniometer_ReadRaw(void)
+{
+	unsigned short volt_raw = XMedian_filter_Get_raw_o(XMedian_filter_Ptr);
+	return volt_raw/16;
+}
+
+void Goniometer_SetFilter(unsigned short window_size, unsigned short trim_count, unsigned short filter_mode)
+{
+	XMedian_filter_Set_window_size(XMedian_filter_Ptr, window_size);
+	XMedian_filter_Set_trim_count(XMedian_filter_Ptr, trim_count);
+	XMedian_filter_Set_filter_mode(XMedian_filter_Ptr, filter_mode);
+}
+
+void Goniometer_ReadPair16(unsigned short * filtered16, unsigned short * raw16)
+{
+	// Two back-to-back AXI-Lite reads; the filter updates every ~2.2 us
+	// (XADC rate), so the two values refer to (almost) the same instant.
+	*filtered16 = XMedian_filter_Get_filtered_o(XMedian_filter_Ptr);
+	*raw16 = XMedian_filter_Get_raw_o(XMedian_filter_Ptr);
+}
+
+void Goniometer_ReadDeadZone(GoniometerDeadZoneInfo * info)
+{
+	info->status     = (unsigned short)XMedian_filter_Get_dz_status_o(XMedian_filter_Ptr);
+	info->window     = (unsigned short)XMedian_filter_Get_dz_window_o(XMedian_filter_Ptr);
+	info->age        = (unsigned short)XMedian_filter_Get_dz_age_o(XMedian_filter_Ptr);
+	info->low_count  = XMedian_filter_Get_dz_low_count(XMedian_filter_Ptr);
+	info->high_count = XMedian_filter_Get_dz_high_count(XMedian_filter_Ptr);
 }

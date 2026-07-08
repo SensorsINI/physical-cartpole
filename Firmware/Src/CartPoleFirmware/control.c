@@ -103,7 +103,9 @@ void 			cmd_ControlMode(bool en);
 void			cmd_PCControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
-void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
+void			cmd_CollectRawAngle(unsigned short, const unsigned short, const unsigned short);
+void			cmd_SetAngleFilter(const unsigned short, const unsigned short, const unsigned short);
+void			cmd_GetDeadZone(void);
 void			cmd_RunHardwareExperiment(void);
 void 			cmd_transfer_buffers(void);
 void			CONTROL_CalibrationStep(void);
@@ -600,7 +602,24 @@ void CONTROL_BackgroundTask(void)
 		{
 			unsigned short length 	   = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
 			unsigned short interval_us = 256 * (unsigned short)rxBuffer[6] + (unsigned short)rxBuffer[5];
-			cmd_CollectRawAngle(length, interval_us);
+			// Extended packet (pktLen 9) carries a format byte:
+			// 0 = legacy filtered/16 stream, 1 = paired full-16-bit filtered+raw,
+			// 2 = pairs + dead-zone tracking (see cmd_CollectRawAngle).
+			unsigned short format      = (rxBuffer[2] == 9) ? (unsigned short)rxBuffer[7] : 0;
+			cmd_CollectRawAngle(length, interval_us, format);
+			break;
+		}
+		case CMD_SET_ANGLE_FILTER:
+		{
+			unsigned short window_size = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
+			unsigned short trim_count  = (unsigned short)rxBuffer[5];
+			unsigned short filter_mode = (unsigned short)rxBuffer[6];
+			cmd_SetAngleFilter(window_size, trim_count, filter_mode);
+			break;
+		}
+		case CMD_GET_DEAD_ZONE:
+		{
+			cmd_GetDeadZone();
 			break;
 		}
 		default:
@@ -892,16 +911,37 @@ void cmd_GetControlConfig(void)
 }
 
 
-void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_US)
+// Dedicated buffer: the shared txBuffer is only 200 bytes, far too small for
+// the multi-kB collections requested by the PC-side analysis scripts.
+#define COLLECT_MAX_SAMPLES 16384
+static unsigned char collectBuffer[4 + 8 * COLLECT_MAX_SAMPLES];
+
+// FORMAT 0 (legacy): stream of Goniometer_Read() (filtered, divided by 16 back
+// to 12-bit), 2 bytes per sample.
+// FORMAT 1 (hardware filter test): pairs (filtered16, raw16) read back-to-back
+// from the FPGA filter block at full register width, 4 bytes per sample.
+// FORMAT 2 (dead-zone test): (filtered16, raw16, dz_window u8, dz_status u8,
+// dz_age u16), 8 bytes per sample. dz_age captures rail contacts that happen
+// between recorded samples (hardware sees every ~2.2 us XADC conversion).
+void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_US, const unsigned short FORMAT)
 {
 
 	Interrupt_Unset();
 	Motor_Stop();
 	Led_Switch(true);
 
-	txBuffer[ 0] = SERIAL_SOF;
-	txBuffer[ 1] = CMD_COLLECT_RAW_ANGLE;
-	txBuffer[ 2] = 4 + 2*MEASURE_LENGTH;
+	if (MEASURE_LENGTH > COLLECT_MAX_SAMPLES) {
+		MEASURE_LENGTH = COLLECT_MAX_SAMPLES;
+	}
+
+	unsigned short bytes_per_sample = (FORMAT == 2) ? 8 : ((FORMAT == 1) ? 4 : 2);
+	unsigned int message_length = 4 + (unsigned int)bytes_per_sample * MEASURE_LENGTH;
+
+	collectBuffer[ 0] = SERIAL_SOF;
+	collectBuffer[ 1] = CMD_COLLECT_RAW_ANGLE;
+	// Single length byte kept for backward compatibility; the PC side knows the
+	// true length and ignores this field for long messages.
+	collectBuffer[ 2] = (unsigned char)message_length;
 
 	unsigned int now = 0, lastRead = 0;
 
@@ -914,20 +954,98 @@ void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_
 		if (now < lastRead) {
 			lastRead = now;
 		}
-		// read every ca. 100us
+		// read every ca. INTERVAL_US
 		else if (now > lastRead + INTERVAL_US) {
-			// conversion takes 18us
-			*((unsigned short *)&txBuffer[ 3 + 2*i]) = Goniometer_Read();
+			if (FORMAT == 2) {
+#ifdef ZYNQ
+				GoniometerDeadZoneInfo dz;
+				Goniometer_ReadPair16(
+						(unsigned short *)&collectBuffer[3 + 8*i],
+						(unsigned short *)&collectBuffer[3 + 8*i + 2]);
+				Goniometer_ReadDeadZone(&dz);
+				collectBuffer[3 + 8*i + 4] = (unsigned char)dz.window;
+				collectBuffer[3 + 8*i + 5] = (unsigned char)dz.status;
+				*((unsigned short *)&collectBuffer[3 + 8*i + 6]) = dz.age;
+#else
+				unsigned short v = Goniometer_Read();
+				*((unsigned short *)&collectBuffer[3 + 8*i]) = v;
+				*((unsigned short *)&collectBuffer[3 + 8*i + 2]) = v;
+				collectBuffer[3 + 8*i + 4] = 0;
+				collectBuffer[3 + 8*i + 5] = 0;
+				*((unsigned short *)&collectBuffer[3 + 8*i + 6]) = 0xFFFF;
+#endif
+			} else if (FORMAT == 1) {
+#ifdef ZYNQ
+				Goniometer_ReadPair16(
+						(unsigned short *)&collectBuffer[3 + 4*i],
+						(unsigned short *)&collectBuffer[3 + 4*i + 2]);
+#else
+				// Not supported on STM: duplicate the standard reading.
+				unsigned short v = Goniometer_Read();
+				*((unsigned short *)&collectBuffer[3 + 4*i]) = v;
+				*((unsigned short *)&collectBuffer[3 + 4*i + 2]) = v;
+#endif
+			} else {
+				*((unsigned short *)&collectBuffer[3 + 2*i]) = Goniometer_Read();
+			}
 			lastRead = now;
 			i++;
 		}
 	}
 	Led_Switch(true);
 
-	//txBuffer[3 + 2*MEASURE_LENGTH] = crc(txBuffer, 3 + 2*MEASURE_LENGTH);
-
 	disable_irq();
-	Message_SendToPC(txBuffer, 4 + 2*MEASURE_LENGTH);
+	Message_SendToPC(collectBuffer, message_length);
 	Interrupt_Set(CONTROL_Loop);
+	enable_irq();
+}
+
+void cmd_SetAngleFilter(const unsigned short window_size, const unsigned short trim_count, const unsigned short filter_mode)
+{
+#ifdef ZYNQ
+	Goniometer_SetFilter(window_size, trim_count, filter_mode);
+#else
+	(void)window_size; (void)trim_count; (void)filter_mode;
+#endif
+	// Echo the command back so the PC can confirm the setting was applied.
+	txBuffer[0] = SERIAL_SOF;
+	txBuffer[1] = CMD_SET_ANGLE_FILTER;
+	txBuffer[2] = 8;
+	txBuffer[3] = (unsigned char)(window_size % 256);
+	txBuffer[4] = (unsigned char)(window_size / 256);
+	txBuffer[5] = (unsigned char)trim_count;
+	txBuffer[6] = (unsigned char)filter_mode;
+	txBuffer[7] = crc(txBuffer, 7);
+	disable_irq();
+	Message_SendToPC(txBuffer, 8);
+	enable_irq();
+}
+
+// Snapshot of the hardware dead-zone tracking registers:
+// status u16, window u16, age u16, low_count u32, high_count u32.
+void cmd_GetDeadZone(void)
+{
+	unsigned short status = 0, window = 0, age = 0xFFFF;
+	unsigned int low_count = 0, high_count = 0;
+#ifdef ZYNQ
+	GoniometerDeadZoneInfo dz;
+	Goniometer_ReadDeadZone(&dz);
+	status = dz.status;
+	window = dz.window;
+	age = dz.age;
+	low_count = dz.low_count;
+	high_count = dz.high_count;
+#endif
+	txBuffer[0] = SERIAL_SOF;
+	txBuffer[1] = CMD_GET_DEAD_ZONE;
+	txBuffer[2] = 18;
+	*((unsigned short *)&txBuffer[3])  = status;
+	*((unsigned short *)&txBuffer[5])  = window;
+	*((unsigned short *)&txBuffer[7])  = age;
+	*((unsigned int *)&txBuffer[9])    = low_count;
+	*((unsigned int *)&txBuffer[13])   = high_count;
+	txBuffer[17] = crc(txBuffer, 17);
+	disable_irq();
+	Message_SendToPC(txBuffer, 18);
 	enable_irq();
 }

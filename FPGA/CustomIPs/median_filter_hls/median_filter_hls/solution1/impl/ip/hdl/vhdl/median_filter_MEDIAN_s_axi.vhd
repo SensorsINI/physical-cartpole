@@ -8,7 +8,7 @@ use IEEE.NUMERIC_STD.all;
 
 entity median_filter_MEDIAN_s_axi is
 generic (
-    C_S_AXI_ADDR_WIDTH    : INTEGER := 6;
+    C_S_AXI_ADDR_WIDTH    : INTEGER := 8;
     C_S_AXI_DATA_WIDTH    : INTEGER := 32);
 port (
     ACLK                  :in   STD_LOGIC;
@@ -31,10 +31,30 @@ port (
     RRESP                 :out  STD_LOGIC_VECTOR(1 downto 0);
     RVALID                :out  STD_LOGIC;
     RREADY                :in   STD_LOGIC;
-    median_i              :out  STD_LOGIC_VECTOR(31 downto 0);
-    median_o              :in   STD_LOGIC_VECTOR(31 downto 0);
-    median_o_ap_vld       :in   STD_LOGIC;
-    window_size           :out  STD_LOGIC_VECTOR(31 downto 0)
+    filtered_i            :out  STD_LOGIC_VECTOR(31 downto 0);
+    filtered_o            :in   STD_LOGIC_VECTOR(31 downto 0);
+    filtered_o_ap_vld     :in   STD_LOGIC;
+    raw_i                 :out  STD_LOGIC_VECTOR(31 downto 0);
+    raw_o                 :in   STD_LOGIC_VECTOR(31 downto 0);
+    raw_o_ap_vld          :in   STD_LOGIC;
+    window_size           :out  STD_LOGIC_VECTOR(31 downto 0);
+    trim_count            :out  STD_LOGIC_VECTOR(31 downto 0);
+    filter_mode           :out  STD_LOGIC_VECTOR(31 downto 0);
+    rail_low              :out  STD_LOGIC_VECTOR(31 downto 0);
+    rail_high             :out  STD_LOGIC_VECTOR(31 downto 0);
+    dz_status_i           :out  STD_LOGIC_VECTOR(31 downto 0);
+    dz_status_o           :in   STD_LOGIC_VECTOR(31 downto 0);
+    dz_status_o_ap_vld    :in   STD_LOGIC;
+    dz_window_i           :out  STD_LOGIC_VECTOR(31 downto 0);
+    dz_window_o           :in   STD_LOGIC_VECTOR(31 downto 0);
+    dz_window_o_ap_vld    :in   STD_LOGIC;
+    dz_age_i              :out  STD_LOGIC_VECTOR(31 downto 0);
+    dz_age_o              :in   STD_LOGIC_VECTOR(31 downto 0);
+    dz_age_o_ap_vld       :in   STD_LOGIC;
+    dz_low_count          :in   STD_LOGIC_VECTOR(31 downto 0);
+    dz_low_count_ap_vld   :in   STD_LOGIC;
+    dz_high_count         :in   STD_LOGIC_VECTOR(31 downto 0);
+    dz_high_count_ap_vld  :in   STD_LOGIC
 );
 end entity median_filter_MEDIAN_s_axi;
 
@@ -43,17 +63,71 @@ end entity median_filter_MEDIAN_s_axi;
 -- 0x04 : reserved
 -- 0x08 : reserved
 -- 0x0c : reserved
--- 0x10 : Data signal of median_i
---        bit 31~0 - median_i[31:0] (Read/Write)
+-- 0x10 : Data signal of filtered_i
+--        bit 31~0 - filtered_i[31:0] (Read/Write)
 -- 0x14 : reserved
--- 0x18 : Data signal of median_o
---        bit 31~0 - median_o[31:0] (Read)
--- 0x1c : Control signal of median_o
---        bit 0  - median_o_ap_vld (Read/COR)
+-- 0x18 : Data signal of filtered_o
+--        bit 31~0 - filtered_o[31:0] (Read)
+-- 0x1c : Control signal of filtered_o
+--        bit 0  - filtered_o_ap_vld (Read/COR)
 --        others - reserved
--- 0x20 : Data signal of window_size
---        bit 31~0 - window_size[31:0] (Read/Write)
+-- 0x20 : Data signal of raw_i
+--        bit 31~0 - raw_i[31:0] (Read/Write)
 -- 0x24 : reserved
+-- 0x28 : Data signal of raw_o
+--        bit 31~0 - raw_o[31:0] (Read)
+-- 0x2c : Control signal of raw_o
+--        bit 0  - raw_o_ap_vld (Read/COR)
+--        others - reserved
+-- 0x30 : Data signal of window_size
+--        bit 31~0 - window_size[31:0] (Read/Write)
+-- 0x34 : reserved
+-- 0x38 : Data signal of trim_count
+--        bit 31~0 - trim_count[31:0] (Read/Write)
+-- 0x3c : reserved
+-- 0x40 : Data signal of filter_mode
+--        bit 31~0 - filter_mode[31:0] (Read/Write)
+-- 0x44 : reserved
+-- 0x48 : Data signal of rail_low
+--        bit 31~0 - rail_low[31:0] (Read/Write)
+-- 0x4c : reserved
+-- 0x50 : Data signal of rail_high
+--        bit 31~0 - rail_high[31:0] (Read/Write)
+-- 0x54 : reserved
+-- 0x58 : Data signal of dz_status_i
+--        bit 31~0 - dz_status_i[31:0] (Read/Write)
+-- 0x5c : reserved
+-- 0x60 : Data signal of dz_status_o
+--        bit 31~0 - dz_status_o[31:0] (Read)
+-- 0x64 : Control signal of dz_status_o
+--        bit 0  - dz_status_o_ap_vld (Read/COR)
+--        others - reserved
+-- 0x68 : Data signal of dz_window_i
+--        bit 31~0 - dz_window_i[31:0] (Read/Write)
+-- 0x6c : reserved
+-- 0x70 : Data signal of dz_window_o
+--        bit 31~0 - dz_window_o[31:0] (Read)
+-- 0x74 : Control signal of dz_window_o
+--        bit 0  - dz_window_o_ap_vld (Read/COR)
+--        others - reserved
+-- 0x78 : Data signal of dz_age_i
+--        bit 31~0 - dz_age_i[31:0] (Read/Write)
+-- 0x7c : reserved
+-- 0x80 : Data signal of dz_age_o
+--        bit 31~0 - dz_age_o[31:0] (Read)
+-- 0x84 : Control signal of dz_age_o
+--        bit 0  - dz_age_o_ap_vld (Read/COR)
+--        others - reserved
+-- 0x88 : Data signal of dz_low_count
+--        bit 31~0 - dz_low_count[31:0] (Read)
+-- 0x8c : Control signal of dz_low_count
+--        bit 0  - dz_low_count_ap_vld (Read/COR)
+--        others - reserved
+-- 0x98 : Data signal of dz_high_count
+--        bit 31~0 - dz_high_count[31:0] (Read)
+-- 0x9c : Control signal of dz_high_count
+--        bit 0  - dz_high_count_ap_vld (Read/COR)
+--        others - reserved
 -- (SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
 
 architecture behave of median_filter_MEDIAN_s_axi is
@@ -61,13 +135,41 @@ architecture behave of median_filter_MEDIAN_s_axi is
     signal wstate  : states := wrreset;
     signal rstate  : states := rdreset;
     signal wnext, rnext: states;
-    constant ADDR_MEDIAN_I_DATA_0    : INTEGER := 16#10#;
-    constant ADDR_MEDIAN_I_CTRL      : INTEGER := 16#14#;
-    constant ADDR_MEDIAN_O_DATA_0    : INTEGER := 16#18#;
-    constant ADDR_MEDIAN_O_CTRL      : INTEGER := 16#1c#;
-    constant ADDR_WINDOW_SIZE_DATA_0 : INTEGER := 16#20#;
-    constant ADDR_WINDOW_SIZE_CTRL   : INTEGER := 16#24#;
-    constant ADDR_BITS         : INTEGER := 6;
+    constant ADDR_FILTERED_I_DATA_0    : INTEGER := 16#10#;
+    constant ADDR_FILTERED_I_CTRL      : INTEGER := 16#14#;
+    constant ADDR_FILTERED_O_DATA_0    : INTEGER := 16#18#;
+    constant ADDR_FILTERED_O_CTRL      : INTEGER := 16#1c#;
+    constant ADDR_RAW_I_DATA_0         : INTEGER := 16#20#;
+    constant ADDR_RAW_I_CTRL           : INTEGER := 16#24#;
+    constant ADDR_RAW_O_DATA_0         : INTEGER := 16#28#;
+    constant ADDR_RAW_O_CTRL           : INTEGER := 16#2c#;
+    constant ADDR_WINDOW_SIZE_DATA_0   : INTEGER := 16#30#;
+    constant ADDR_WINDOW_SIZE_CTRL     : INTEGER := 16#34#;
+    constant ADDR_TRIM_COUNT_DATA_0    : INTEGER := 16#38#;
+    constant ADDR_TRIM_COUNT_CTRL      : INTEGER := 16#3c#;
+    constant ADDR_FILTER_MODE_DATA_0   : INTEGER := 16#40#;
+    constant ADDR_FILTER_MODE_CTRL     : INTEGER := 16#44#;
+    constant ADDR_RAIL_LOW_DATA_0      : INTEGER := 16#48#;
+    constant ADDR_RAIL_LOW_CTRL        : INTEGER := 16#4c#;
+    constant ADDR_RAIL_HIGH_DATA_0     : INTEGER := 16#50#;
+    constant ADDR_RAIL_HIGH_CTRL       : INTEGER := 16#54#;
+    constant ADDR_DZ_STATUS_I_DATA_0   : INTEGER := 16#58#;
+    constant ADDR_DZ_STATUS_I_CTRL     : INTEGER := 16#5c#;
+    constant ADDR_DZ_STATUS_O_DATA_0   : INTEGER := 16#60#;
+    constant ADDR_DZ_STATUS_O_CTRL     : INTEGER := 16#64#;
+    constant ADDR_DZ_WINDOW_I_DATA_0   : INTEGER := 16#68#;
+    constant ADDR_DZ_WINDOW_I_CTRL     : INTEGER := 16#6c#;
+    constant ADDR_DZ_WINDOW_O_DATA_0   : INTEGER := 16#70#;
+    constant ADDR_DZ_WINDOW_O_CTRL     : INTEGER := 16#74#;
+    constant ADDR_DZ_AGE_I_DATA_0      : INTEGER := 16#78#;
+    constant ADDR_DZ_AGE_I_CTRL        : INTEGER := 16#7c#;
+    constant ADDR_DZ_AGE_O_DATA_0      : INTEGER := 16#80#;
+    constant ADDR_DZ_AGE_O_CTRL        : INTEGER := 16#84#;
+    constant ADDR_DZ_LOW_COUNT_DATA_0  : INTEGER := 16#88#;
+    constant ADDR_DZ_LOW_COUNT_CTRL    : INTEGER := 16#8c#;
+    constant ADDR_DZ_HIGH_COUNT_DATA_0 : INTEGER := 16#98#;
+    constant ADDR_DZ_HIGH_COUNT_CTRL   : INTEGER := 16#9c#;
+    constant ADDR_BITS         : INTEGER := 8;
 
     signal waddr               : UNSIGNED(ADDR_BITS-1 downto 0);
     signal wmask               : UNSIGNED(C_S_AXI_DATA_WIDTH-1 downto 0);
@@ -81,10 +183,30 @@ architecture behave of median_filter_MEDIAN_s_axi is
     signal ARREADY_t           : STD_LOGIC;
     signal RVALID_t            : STD_LOGIC;
     -- internal registers
-    signal int_median_i        : UNSIGNED(31 downto 0) := (others => '0');
-    signal int_median_o        : UNSIGNED(31 downto 0) := (others => '0');
-    signal int_median_o_ap_vld : STD_LOGIC;
+    signal int_filtered_i      : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_filtered_o      : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_filtered_o_ap_vld : STD_LOGIC;
+    signal int_raw_i           : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_raw_o           : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_raw_o_ap_vld    : STD_LOGIC;
     signal int_window_size     : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_trim_count      : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_filter_mode     : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_rail_low        : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_rail_high       : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_status_i     : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_status_o     : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_status_o_ap_vld : STD_LOGIC;
+    signal int_dz_window_i     : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_window_o     : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_window_o_ap_vld : STD_LOGIC;
+    signal int_dz_age_i        : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_age_o        : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_age_o_ap_vld : STD_LOGIC;
+    signal int_dz_low_count    : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_low_count_ap_vld : STD_LOGIC;
+    signal int_dz_high_count   : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_dz_high_count_ap_vld : STD_LOGIC;
 
 
 begin
@@ -200,14 +322,54 @@ begin
                 if (ar_hs = '1') then
                     rdata_data <= (others => '0');
                     case (TO_INTEGER(raddr)) is
-                    when ADDR_MEDIAN_I_DATA_0 =>
-                        rdata_data <= RESIZE(int_median_i(31 downto 0), 32);
-                    when ADDR_MEDIAN_O_DATA_0 =>
-                        rdata_data <= RESIZE(int_median_o(31 downto 0), 32);
-                    when ADDR_MEDIAN_O_CTRL =>
-                        rdata_data(0) <= int_median_o_ap_vld;
+                    when ADDR_FILTERED_I_DATA_0 =>
+                        rdata_data <= RESIZE(int_filtered_i(31 downto 0), 32);
+                    when ADDR_FILTERED_O_DATA_0 =>
+                        rdata_data <= RESIZE(int_filtered_o(31 downto 0), 32);
+                    when ADDR_FILTERED_O_CTRL =>
+                        rdata_data(0) <= int_filtered_o_ap_vld;
+                    when ADDR_RAW_I_DATA_0 =>
+                        rdata_data <= RESIZE(int_raw_i(31 downto 0), 32);
+                    when ADDR_RAW_O_DATA_0 =>
+                        rdata_data <= RESIZE(int_raw_o(31 downto 0), 32);
+                    when ADDR_RAW_O_CTRL =>
+                        rdata_data(0) <= int_raw_o_ap_vld;
                     when ADDR_WINDOW_SIZE_DATA_0 =>
                         rdata_data <= RESIZE(int_window_size(31 downto 0), 32);
+                    when ADDR_TRIM_COUNT_DATA_0 =>
+                        rdata_data <= RESIZE(int_trim_count(31 downto 0), 32);
+                    when ADDR_FILTER_MODE_DATA_0 =>
+                        rdata_data <= RESIZE(int_filter_mode(31 downto 0), 32);
+                    when ADDR_RAIL_LOW_DATA_0 =>
+                        rdata_data <= RESIZE(int_rail_low(31 downto 0), 32);
+                    when ADDR_RAIL_HIGH_DATA_0 =>
+                        rdata_data <= RESIZE(int_rail_high(31 downto 0), 32);
+                    when ADDR_DZ_STATUS_I_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_status_i(31 downto 0), 32);
+                    when ADDR_DZ_STATUS_O_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_status_o(31 downto 0), 32);
+                    when ADDR_DZ_STATUS_O_CTRL =>
+                        rdata_data(0) <= int_dz_status_o_ap_vld;
+                    when ADDR_DZ_WINDOW_I_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_window_i(31 downto 0), 32);
+                    when ADDR_DZ_WINDOW_O_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_window_o(31 downto 0), 32);
+                    when ADDR_DZ_WINDOW_O_CTRL =>
+                        rdata_data(0) <= int_dz_window_o_ap_vld;
+                    when ADDR_DZ_AGE_I_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_age_i(31 downto 0), 32);
+                    when ADDR_DZ_AGE_O_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_age_o(31 downto 0), 32);
+                    when ADDR_DZ_AGE_O_CTRL =>
+                        rdata_data(0) <= int_dz_age_o_ap_vld;
+                    when ADDR_DZ_LOW_COUNT_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_low_count(31 downto 0), 32);
+                    when ADDR_DZ_LOW_COUNT_CTRL =>
+                        rdata_data(0) <= int_dz_low_count_ap_vld;
+                    when ADDR_DZ_HIGH_COUNT_DATA_0 =>
+                        rdata_data <= RESIZE(int_dz_high_count(31 downto 0), 32);
+                    when ADDR_DZ_HIGH_COUNT_CTRL =>
+                        rdata_data(0) <= int_dz_high_count_ap_vld;
                     when others =>
                         NULL;
                     end case;
@@ -217,15 +379,23 @@ begin
     end process;
 
 -- ----------------------- Register logic ----------------
-    median_i             <= STD_LOGIC_VECTOR(int_median_i);
+    filtered_i           <= STD_LOGIC_VECTOR(int_filtered_i);
+    raw_i                <= STD_LOGIC_VECTOR(int_raw_i);
     window_size          <= STD_LOGIC_VECTOR(int_window_size);
+    trim_count           <= STD_LOGIC_VECTOR(int_trim_count);
+    filter_mode          <= STD_LOGIC_VECTOR(int_filter_mode);
+    rail_low             <= STD_LOGIC_VECTOR(int_rail_low);
+    rail_high            <= STD_LOGIC_VECTOR(int_rail_high);
+    dz_status_i          <= STD_LOGIC_VECTOR(int_dz_status_i);
+    dz_window_i          <= STD_LOGIC_VECTOR(int_dz_window_i);
+    dz_age_i             <= STD_LOGIC_VECTOR(int_dz_age_i);
 
     process (ACLK)
     begin
         if (ACLK'event and ACLK = '1') then
             if (ACLK_EN = '1') then
-                if (w_hs = '1' and waddr = ADDR_MEDIAN_I_DATA_0) then
-                    int_median_i(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_median_i(31 downto 0));
+                if (w_hs = '1' and waddr = ADDR_FILTERED_I_DATA_0) then
+                    int_filtered_i(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_filtered_i(31 downto 0));
                 end if;
             end if;
         end if;
@@ -235,10 +405,10 @@ begin
     begin
         if (ACLK'event and ACLK = '1') then
             if (ARESET = '1') then
-                int_median_o <= (others => '0');
+                int_filtered_o <= (others => '0');
             elsif (ACLK_EN = '1') then
-                if (median_o_ap_vld = '1') then
-                    int_median_o <= UNSIGNED(median_o); -- clear on read
+                if (filtered_o_ap_vld = '1') then
+                    int_filtered_o <= UNSIGNED(filtered_o); -- clear on read
                 end if;
             end if;
         end if;
@@ -248,12 +418,51 @@ begin
     begin
         if (ACLK'event and ACLK = '1') then
             if (ARESET = '1') then
-                int_median_o_ap_vld <= '0';
+                int_filtered_o_ap_vld <= '0';
             elsif (ACLK_EN = '1') then
-                if (median_o_ap_vld = '1') then
-                    int_median_o_ap_vld <= '1';
-                elsif (ar_hs = '1' and raddr = ADDR_MEDIAN_O_CTRL) then
-                    int_median_o_ap_vld <= '0'; -- clear on read
+                if (filtered_o_ap_vld = '1') then
+                    int_filtered_o_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_FILTERED_O_CTRL) then
+                    int_filtered_o_ap_vld <= '0'; -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_RAW_I_DATA_0) then
+                    int_raw_i(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_raw_i(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_raw_o <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (raw_o_ap_vld = '1') then
+                    int_raw_o <= UNSIGNED(raw_o); -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_raw_o_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (raw_o_ap_vld = '1') then
+                    int_raw_o_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_RAW_O_CTRL) then
+                    int_raw_o_ap_vld <= '0'; -- clear on read
                 end if;
             end if;
         end if;
@@ -265,6 +474,223 @@ begin
             if (ACLK_EN = '1') then
                 if (w_hs = '1' and waddr = ADDR_WINDOW_SIZE_DATA_0) then
                     int_window_size(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_window_size(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_TRIM_COUNT_DATA_0) then
+                    int_trim_count(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_trim_count(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_FILTER_MODE_DATA_0) then
+                    int_filter_mode(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_filter_mode(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_RAIL_LOW_DATA_0) then
+                    int_rail_low(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_rail_low(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_RAIL_HIGH_DATA_0) then
+                    int_rail_high(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_rail_high(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_DZ_STATUS_I_DATA_0) then
+                    int_dz_status_i(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_dz_status_i(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_status_o <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (dz_status_o_ap_vld = '1') then
+                    int_dz_status_o <= UNSIGNED(dz_status_o); -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_status_o_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (dz_status_o_ap_vld = '1') then
+                    int_dz_status_o_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_DZ_STATUS_O_CTRL) then
+                    int_dz_status_o_ap_vld <= '0'; -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_DZ_WINDOW_I_DATA_0) then
+                    int_dz_window_i(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_dz_window_i(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_window_o <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (dz_window_o_ap_vld = '1') then
+                    int_dz_window_o <= UNSIGNED(dz_window_o); -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_window_o_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (dz_window_o_ap_vld = '1') then
+                    int_dz_window_o_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_DZ_WINDOW_O_CTRL) then
+                    int_dz_window_o_ap_vld <= '0'; -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_DZ_AGE_I_DATA_0) then
+                    int_dz_age_i(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_dz_age_i(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_age_o <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (dz_age_o_ap_vld = '1') then
+                    int_dz_age_o <= UNSIGNED(dz_age_o); -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_age_o_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (dz_age_o_ap_vld = '1') then
+                    int_dz_age_o_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_DZ_AGE_O_CTRL) then
+                    int_dz_age_o_ap_vld <= '0'; -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_low_count <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (dz_low_count_ap_vld = '1') then
+                    int_dz_low_count <= UNSIGNED(dz_low_count); -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_low_count_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (dz_low_count_ap_vld = '1') then
+                    int_dz_low_count_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_DZ_LOW_COUNT_CTRL) then
+                    int_dz_low_count_ap_vld <= '0'; -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_high_count <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (dz_high_count_ap_vld = '1') then
+                    int_dz_high_count <= UNSIGNED(dz_high_count); -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_dz_high_count_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (dz_high_count_ap_vld = '1') then
+                    int_dz_high_count_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_DZ_HIGH_COUNT_CTRL) then
+                    int_dz_high_count_ap_vld <= '0'; -- clear on read
                 end if;
             end if;
         end if;

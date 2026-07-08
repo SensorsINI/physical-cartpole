@@ -156,9 +156,29 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_COLLECT_RAW_ANGLE:
 							{
-								if (pktLen == 8)
+								// pktLen 8: legacy (filtered/16 stream);
+								// pktLen 9: extra format byte (see cmd_CollectRawAngle)
+								if (pktLen == 8 || pktLen == 9)
 								{
 									current_command = CMD_COLLECT_RAW_ANGLE;
+								}
+								break;
+							}
+
+							case CMD_SET_ANGLE_FILTER:
+							{
+								if (pktLen == 8)
+								{
+									current_command = CMD_SET_ANGLE_FILTER;
+								}
+								break;
+							}
+
+							case CMD_GET_DEAD_ZONE:
+							{
+								if (pktLen == 4)
+								{
+									current_command = CMD_GET_DEAD_ZONE;
 								}
 								break;
 							}

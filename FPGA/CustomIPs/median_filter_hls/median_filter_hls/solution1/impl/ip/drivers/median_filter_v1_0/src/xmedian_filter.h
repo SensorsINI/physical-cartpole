@@ -81,12 +81,40 @@ int XMedian_filter_Release(XMedian_filter *InstancePtr);
 #endif
 
 
-void XMedian_filter_Set_median_i(XMedian_filter *InstancePtr, u32 Data);
-u32 XMedian_filter_Get_median_i(XMedian_filter *InstancePtr);
-u32 XMedian_filter_Get_median_o(XMedian_filter *InstancePtr);
-u32 XMedian_filter_Get_median_o_vld(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_filtered_i(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_filtered_i(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_filtered_o(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_filtered_o_vld(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_raw_i(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_raw_i(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_raw_o(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_raw_o_vld(XMedian_filter *InstancePtr);
 void XMedian_filter_Set_window_size(XMedian_filter *InstancePtr, u32 Data);
 u32 XMedian_filter_Get_window_size(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_trim_count(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_trim_count(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_filter_mode(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_filter_mode(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_rail_low(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_rail_low(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_rail_high(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_rail_high(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_dz_status_i(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_dz_status_i(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_status_o(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_status_o_vld(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_dz_window_i(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_dz_window_i(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_window_o(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_window_o_vld(XMedian_filter *InstancePtr);
+void XMedian_filter_Set_dz_age_i(XMedian_filter *InstancePtr, u32 Data);
+u32 XMedian_filter_Get_dz_age_i(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_age_o(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_age_o_vld(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_low_count(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_low_count_vld(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_high_count(XMedian_filter *InstancePtr);
+u32 XMedian_filter_Get_dz_high_count_vld(XMedian_filter *InstancePtr);
 
 #ifdef __cplusplus
 }

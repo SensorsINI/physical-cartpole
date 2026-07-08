@@ -7,7 +7,7 @@ library ieee;
 use ieee.std_logic_1164.all; 
 use ieee.std_logic_unsigned.all;
 
-entity median_filter_buffer_r_ram is 
+entity median_filter_get_filtered_value_buffer_r_ram is 
     generic(
             MEM_TYPE    : string := "block"; 
             DWIDTH     : integer := 16; 
@@ -25,7 +25,7 @@ entity median_filter_buffer_r_ram is
 end entity; 
 
 
-architecture rtl of median_filter_buffer_r_ram is 
+architecture rtl of median_filter_get_filtered_value_buffer_r_ram is 
 
 signal addr0_tmp : std_logic_vector(AWIDTH-1 downto 0); 
 type mem_array is array (0 to MEM_SIZE-1) of std_logic_vector (DWIDTH-1 downto 0); 
@@ -69,7 +69,7 @@ end rtl;
 Library IEEE;
 use IEEE.std_logic_1164.all;
 
-entity median_filter_buffer_r is
+entity median_filter_get_filtered_value_buffer_r is
     generic (
         DataWidth : INTEGER := 16;
         AddressRange : INTEGER := 64;
@@ -84,8 +84,8 @@ entity median_filter_buffer_r is
         q0 : OUT STD_LOGIC_VECTOR(DataWidth - 1 DOWNTO 0));
 end entity;
 
-architecture arch of median_filter_buffer_r is
-    component median_filter_buffer_r_ram is
+architecture arch of median_filter_get_filtered_value_buffer_r is
+    component median_filter_get_filtered_value_buffer_r_ram is
         port (
             clk : IN STD_LOGIC;
             addr0 : IN STD_LOGIC_VECTOR;
@@ -98,7 +98,7 @@ architecture arch of median_filter_buffer_r is
 
 
 begin
-    median_filter_buffer_r_ram_U :  component median_filter_buffer_r_ram
+    median_filter_get_filtered_value_buffer_r_ram_U :  component median_filter_get_filtered_value_buffer_r_ram
     port map (
         clk => clk,
         addr0 => address0,

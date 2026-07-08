@@ -146,6 +146,20 @@ catch {set existing_apps [app list]}
 proc has_item {name lst} { return [expr {[lsearch -exact $lst $name] >= 0}] }
 set platform_ready [file exists $xpfm]
 
+# If the platform already exists, refresh it from the (possibly re-exported)
+# XSA. Without this, a rebuilt bitstream with changed IP registers leaves the
+# BSP stale: headers/libxil.a keep the old driver and app linking fails.
+# 'bsp regenerate' is required; 'platform generate' alone does not re-extract
+# driver sources from the updated hardware.
+if {$platform_ready} {
+  puts "Updating existing platform '$pname' from XSA"
+  platform read "$ws/$pname/platform.spr"
+  platform config -updatehw $xsa
+  domain active $dom
+  bsp regenerate
+  platform generate
+}
+
 foreach app $apps {
   if {[has_item $app $existing_apps]} {
     puts "Application '$app' already exists."
