@@ -33,7 +33,8 @@ void prepare_message_to_PC_control_config(
 		bool controlSync,
 		float angle_hanging,
 		unsigned short angle_averageLen,
-		bool correct_motor_dynamics
+		bool correct_motor_dynamics,
+		unsigned short timesteps_for_derivative
 		);
 
 void prepare_buffer_to_send_long(unsigned char* Buffer, unsigned char CMD, unsigned int message_length);

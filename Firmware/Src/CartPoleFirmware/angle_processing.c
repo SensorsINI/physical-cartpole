@@ -247,6 +247,25 @@ void calculate_position_difference_per_timestep(short* positionPtr, float* posit
 }
 
 
+// Runtime override from the PC (CMD_SET_CONTROL_CONFIG). Restarts the history
+// buffers because their circular indexing is modulo (TIMESTEPS_FOR_DERIVATIVE+1).
+void set_timesteps_for_derivative(unsigned short timesteps) {
+	if (timesteps < 1) {
+		timesteps = 1;
+	}
+	if (timesteps > MAX_TIMESTEPS_FOR_DERIVATIVE) {
+		timesteps = MAX_TIMESTEPS_FOR_DERIVATIVE;
+	}
+	TIMESTEPS_FOR_DERIVATIVE = timesteps;
+	angle_history_initialised = 0;
+	position_history_initialised = 0;
+	idx_for_derivative_calculation_angle = 0;
+	idx_for_derivative_calculation_position = 0;
+	last_difference = 100000.0;
+	freezme = 0;
+}
+
+
 int wrapLocal(int angle) {
     if (angle > ANGLE_360_DEG_IN_ADC_UNITS/2)
 		return angle - ANGLE_360_DEG_IN_ADC_UNITS;

@@ -111,7 +111,8 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_SET_CONTROL_CONFIG:
 							{
-								if (pktLen == 14)
+								// 16 bytes since TIMESTEPS_FOR_DERIVATIVE was appended (u16 at payload offset 10)
+								if (pktLen == 16)
 								{
 									current_command = CMD_SET_CONTROL_CONFIG;
 								}
@@ -284,17 +285,19 @@ void prepare_message_to_PC_control_config(
 		bool controlSync,
 		float angle_hanging,
 		unsigned short angle_averageLen,
-		bool correct_motor_dynamics
+		bool correct_motor_dynamics,
+		unsigned short timesteps_for_derivative
 		){
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
-	txBuffer[ 2] = 14;
+	txBuffer[ 2] = 16;
 	*((unsigned short *)&txBuffer[ 3]) = polling_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
 	*((float          *)&txBuffer[6]) = angle_hanging;
 	*((unsigned short *)&txBuffer[10]) = angle_averageLen;
-	*((bool           *)&txBuffer[ 12]) = controlSync;
-	txBuffer[13] = crc(txBuffer, 13);
+	*((bool           *)&txBuffer[12]) = correct_motor_dynamics;
+	*((unsigned short *)&txBuffer[13]) = timesteps_for_derivative;
+	txBuffer[15] = crc(txBuffer, 15);
 
 }

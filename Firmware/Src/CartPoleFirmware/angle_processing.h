@@ -8,6 +8,7 @@
 #ifndef ANGLE_PROCESSING_H_
 #define ANGLE_PROCESSING_H_
 
+void set_timesteps_for_derivative(unsigned short timesteps);
 void average_derivatives(float* angleDPtr, float* positionDPtr);
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angle_raw_Ptr, float* angleDPtr, int* invalid_stepPtr);
 

@@ -229,13 +229,17 @@ class Interface:
             'h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
-    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics):
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 14]
+    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
+                           timesteps_for_derivative=1):
+        """timesteps_for_derivative: on-chip derivative window in polling periods
+        (firmware clamps to 1..20 and restarts its history buffers)."""
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 16]
         msg += list(struct.pack('H', controlLoopPeriodMs))
         msg += list(struct.pack('?', controlSync))
         msg += list(struct.pack('f', angle_hanging))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('?', correct_motor_dynamics))
+        msg += list(struct.pack('H', timesteps_for_derivative))
         msg.append(self._crc(msg))
         self._write_message(msg)
 
@@ -243,10 +247,10 @@ class Interface:
         msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
         msg.append(self._crc(msg))
         self._write_message(msg)
-        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
-        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(
-            reply[3:12]))
-        return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics
+        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 16)
+        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
+         timesteps_for_derivative) = struct.unpack('=H?fH?H', bytes(reply[3:15]))
+        return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics, timesteps_for_derivative
 
     def set_motor(self, speed):
         msg = [SERIAL_SOF, CMD_SET_MOTOR, 8]

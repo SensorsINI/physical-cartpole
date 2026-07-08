@@ -913,6 +913,7 @@ void cmd_SetControlConfig(const unsigned char * config)
     ANGLE_HANGING      = *((float          *)&config[ 3]);
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
+    set_timesteps_for_derivative(*((unsigned short *)&config[10]));
 
     SetControlUpdatePeriod(POLLING_PERIOD_MS);
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
@@ -925,7 +926,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
+	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics, TIMESTEPS_FOR_DERIVATIVE);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 16);

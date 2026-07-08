@@ -31,6 +31,7 @@ from globals import (
     OPTIMIZER_NAME, CONTROLLER_NAME, USE_SECLOC,
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
+    TIMESTEPS_FOR_DERIVATIVE,
     CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
     ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
     ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL,
@@ -177,7 +178,7 @@ class PhysicalCartPoleDriver:
         self.th.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS, timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
         if CHIP == 'ZYNQ':
             self.InterfaceInstance.set_angle_filter(
@@ -565,7 +566,8 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS,
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
-                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+                                                  timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
         print('\nApplied measured hanging angle for this run.')
         print('ANGLE_HANGING: {:.3f} ADC reading (std {:.3f})'.format(ANGLE_HANGING, angle_hanging_std))
@@ -621,7 +623,8 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS,
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
-                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+                                                  timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
     #       gets the motor full scale and calculates the correction factors relative to that
