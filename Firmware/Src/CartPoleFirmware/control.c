@@ -409,7 +409,9 @@ void CONTROL_BackgroundTask(void)
 					time_difference_between_measurement,
 					time_accumulated_us,
 					latency,
-					latency_violation
+					latency_violation,
+					(ControlOnChip_Enabled && current_controller == OnChipController_SECLOC)
+						? secloc_controller_telemetry_flags() : 0
 					);
 
 	    	Message_SendToPC(buffer, STATE_MESSAGE_LEN);

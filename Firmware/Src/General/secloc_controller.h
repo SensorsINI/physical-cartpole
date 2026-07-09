@@ -14,4 +14,9 @@ void secloc_controller_set_config(float log_base, float ang_dead_band, float pos
 /* Read-only view of the gate state (last shifts, last_Q) for tests/telemetry. */
 const SeclocState* secloc_controller_get_state(void);
 
+/* Gate decision of the most recent SECLOC_Evaluate, packed for the state
+ * packet: bit 0 = secloc_skipped_update, bit 1 = secloc_gate_skipped
+ * (matches the Python CSV columns). */
+uint8_t secloc_controller_telemetry_flags(void);
+
 #endif /* SECLOC_CONTROLLER_H */

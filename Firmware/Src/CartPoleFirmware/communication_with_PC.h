@@ -4,8 +4,9 @@
 #include "communication_with_PC_general.h"
 #include <stdbool.h>
 
-// State packet length includes an 8-byte accumulated chip timestamp.
-#define STATE_MESSAGE_LEN 35
+// State packet length includes an 8-byte accumulated chip timestamp and 1 SecLoc telemetry byte
+// (bit 0 = skipped_update, bit 1 = gate_skipped).
+#define STATE_MESSAGE_LEN 36
 
 
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);
@@ -21,7 +22,8 @@ void prepare_message_to_PC_state(
 		unsigned long time_difference_between_measurement,
 		unsigned long long timeMeasured,
 		unsigned long latency,
-		unsigned short	latency_violation
+		unsigned short	latency_violation,
+		unsigned char secloc_flags
 		);
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection);

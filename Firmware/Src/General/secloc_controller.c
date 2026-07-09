@@ -35,6 +35,8 @@ static SeclocConfig secloc_config = {
 };
 
 static SeclocState secloc_state;
+static uint8_t secloc_last_skipped_update = 0;
+static uint8_t secloc_last_gate_skipped = 0;
 
 void secloc_controller_set_config(float log_base, float ang_dead_band, float pos_dead_band)
 {
@@ -46,6 +48,11 @@ void secloc_controller_set_config(float log_base, float ang_dead_band, float pos
 const SeclocState* secloc_controller_get_state(void)
 {
     return &secloc_state;
+}
+
+uint8_t secloc_controller_telemetry_flags(void)
+{
+    return (uint8_t)(secloc_last_skipped_update | (secloc_last_gate_skipped << 1));
 }
 
 SeclocInnerController secloc_inner_controller = SECLOC_INNER_LQR;
@@ -136,6 +143,8 @@ static float secloc_inner_evaluate(
 static void SECLOC_Init(void)
 {
     secloc_reset(&secloc_state);
+    secloc_last_skipped_update = 0;
+    secloc_last_gate_skipped = 0;
     secloc_inner_init();
 }
 
@@ -153,6 +162,11 @@ static void SECLOC_Evaluate(const float* in, float* out)
 
     if (secloc_should_sample(&secloc_state, &secloc_config, p, pd, a, ad, tp, te)) {
         secloc_state.last_Q = secloc_inner_evaluate(p, pd, a, ad, tp, te, time);
+        secloc_last_skipped_update = 0;
+        secloc_last_gate_skipped = 0;
+    } else {
+        secloc_last_skipped_update = 1;
+        secloc_last_gate_skipped = 1;
     }
 
     out[0] = secloc_state.last_Q;

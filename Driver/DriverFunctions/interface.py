@@ -32,8 +32,10 @@ CMD_SET_ANGLE_FILTER = 0xD2
 ANGLE_FILTER_MODE_RAW = 0
 ANGLE_FILTER_MODE_MEDIAN = 1
 ANGLE_FILTER_MODE_TRIMMED_MEAN = 2
-# Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp.
-STATE_MESSAGE_LEN = 35
+# Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp
+# and 1 SecLoc telemetry byte (bit 0 = skipped_update, bit 1 = gate_skipped)
+# when the on-chip SecLoc wrapper is active.
+STATE_MESSAGE_LEN = 36
 SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
 
@@ -311,10 +313,14 @@ class Interface:
         )
 
         (angle, angleD, position, target_position, command, invalid_steps, time_difference,
-         time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhBIQ2H',
-                                                                                    bytes(reply[3:message_length - 1]))
+         time_current_measurement_chip, latency, latency_violation,
+         secloc_flags) = struct.unpack(
+            '=hfhfhBIQ2HB', bytes(reply[3:message_length - 1]))
 
-        return angle, angleD, position, target_position, command, invalid_steps, time_difference / 1e6, time_current_measurement_chip / 1e6, latency / 1e5, latency_violation
+        return (angle, angleD, position, target_position, command, invalid_steps,
+                time_difference / 1e6, time_current_measurement_chip / 1e6,
+                latency / 1e5, latency_violation,
+                secloc_flags & 1, (secloc_flags >> 1) & 1)
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout

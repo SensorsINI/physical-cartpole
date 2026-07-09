@@ -91,6 +91,8 @@ class PhysicalCartPoleDriver:
 
         self.controlEnabled = AUTOSTART
         self.firmwareControl = False
+        self.secloc_skipped_update_chip = 0
+        self.secloc_gate_skipped_chip = 0
         self.terminate_experiment = False
         self.controller_status_print_period = 1.0
         self._last_controller_status_print_time = -np.inf
@@ -438,7 +440,8 @@ class PhysicalCartPoleDriver:
         # This function will block at the rate of the control loop
         (angle_raw, angleD_raw, position_raw, self.target_position_from_chip, self.command,
          invalid_steps, time_between_measurements_chip, time_current_measurement_chip,
-         firmware_latency, latency_violation_chip) = self.InterfaceInstance.read_state()
+         firmware_latency, latency_violation_chip,
+         self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip) = self.InterfaceInstance.read_state()
 
         self.th.load_timing_data_from_chip(
             time_current_measurement_chip, time_between_measurements_chip, latency_violation_chip, firmware_latency

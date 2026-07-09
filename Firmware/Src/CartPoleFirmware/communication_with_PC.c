@@ -231,7 +231,8 @@ void prepare_message_to_PC_state(
 		unsigned long time_difference_between_measurement,
 		unsigned long long time_current_measurement,
 		unsigned long latency,
-		unsigned short	latency_violation
+		unsigned short	latency_violation,
+		unsigned char secloc_flags
 		){
 
 	buffer[ 0] = SERIAL_SOF;
@@ -247,6 +248,7 @@ void prepare_message_to_PC_state(
 	memcpy(&buffer[22], &time_current_measurement, sizeof(time_current_measurement));
 	*((unsigned short *)&buffer[30]) = (unsigned short)(latency / 10);
 	*((unsigned short *)&buffer[32]) = (unsigned short)(latency_violation);
+	buffer[34] = secloc_flags;
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
 }
