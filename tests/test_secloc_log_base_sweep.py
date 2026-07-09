@@ -219,12 +219,18 @@ def replay_gate_breakdown(
     dead_ang: float = DEFAULT_DEAD_ANG,
     dead_pos: float = DEFAULT_DEAD_POS,
 ) -> GateSkipBreakdown:
+    # The gate throttle is native in control loop ticks; convert the seconds
+    # parameter kept for the callers' convenience.
+    ref_period_ticks = (
+        max(1, round(float(ref_period) / POLL_DT_S)) if float(ref_period) > 0 else 0
+    )
     gate = SeclocGate(
         log_base=float(log_base),
-        ref_period=float(ref_period),
+        ref_period_ticks=ref_period_ticks,
         dead_ang=float(dead_ang),
         dead_pos=float(dead_pos),
     )
+    gate.set_time_quantum(POLL_DT_S)
     flat_polls = 0
     changed_polls = 0
     skip_on_flat = 0

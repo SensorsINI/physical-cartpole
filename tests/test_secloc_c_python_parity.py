@@ -5,9 +5,9 @@ input sequences as the Python SeclocGate (Control_Toolkit_ASF), asserting the
 two implementations take identical update/skip decisions and keep identical
 reference state.
 
-The C gate has no timing input (ref_period = 0 semantics), so the Python gate
-is run with ref_period = 0 and time_difference = 0, which makes period_elapsed
-always true - every call is a pure log_base gate decision on both sides.
+With ref_period_ticks = 0 every call is a pure log_base gate decision on both
+sides. With ref_period_ticks > 0 both sides throttle in integer control loop
+iterations (ticks of the same 5 ms time quantum) on monotonic timestamps.
 """
 from __future__ import annotations
 
@@ -41,13 +41,16 @@ from Control_Toolkit_ASF.Controllers.secloc_gate import SeclocLogic  # noqa: E40
 LOG_BASE = float(np.float32(1.05))
 DEAD_ANG = float(np.float32(0.001))
 DEAD_POS = float(np.float32(0.001))
+TIME_QUANTUM_S = 0.005
 
 
 class CSeclocConfig(ctypes.Structure):
     _fields_ = [
         ("log_base", ctypes.c_float),
+        ("ref_period_ticks", ctypes.c_int32),
         ("ang_dead_band", ctypes.c_float),
         ("pos_dead_band", ctypes.c_float),
+        ("time_quantum_s", ctypes.c_float),
     ]
 
 
@@ -57,6 +60,8 @@ class CSeclocState(ctypes.Structure):
         ("pos_last_shift", ctypes.c_float),
         ("last_Q", ctypes.c_float),
         ("has_init", ctypes.c_uint8),
+        ("time_last", ctypes.c_float),
+        ("tick_last", ctypes.c_int32),
     ]
 
 
@@ -93,6 +98,7 @@ def secloc_lib(tmp_path_factory):
         ctypes.c_float,  # ad
         ctypes.c_float,  # tp
         ctypes.c_float,  # te
+        ctypes.c_float,  # time
     ]
     lib.secloc_should_sample.restype = ctypes.c_int
     return lib
@@ -101,27 +107,43 @@ def secloc_lib(tmp_path_factory):
 class GatePair:
     """A C gate and a Python gate stepped in lockstep."""
 
-    def __init__(self, lib):
+    def __init__(self, lib, ref_period_ticks=0):
         self.lib = lib
+        self.ref_period_ticks = ref_period_ticks
         self.config = CSeclocConfig(
-            log_base=LOG_BASE, ang_dead_band=DEAD_ANG, pos_dead_band=DEAD_POS
+            log_base=LOG_BASE,
+            ref_period_ticks=ref_period_ticks,
+            ang_dead_band=DEAD_ANG,
+            pos_dead_band=DEAD_POS,
+            time_quantum_s=TIME_QUANTUM_S if ref_period_ticks > 0 else 0.0,
         )
         self.c_state = CSeclocState()
         lib.secloc_reset(ctypes.byref(self.c_state))
 
         self.py = SeclocLogic(
-            log_base=LOG_BASE, ref_period=0.0, dead_ang=DEAD_ANG, dead_pos=DEAD_POS
+            log_base=LOG_BASE,
+            ref_period_ticks=ref_period_ticks,
+            dead_ang=DEAD_ANG,
+            dead_pos=DEAD_POS,
         )
+        if ref_period_ticks > 0:
+            self.py.set_time_quantum(TIME_QUANTUM_S)
         self.py.reset()
 
         self.s = create_cartpole_state().astype(np.float64)
+        self.time = 0.0
 
-    def step(self, angle, position, target_position, target_equilibrium):
+    def step(self, angle, position, target_position, target_equilibrium, time=None):
+        if time is None:
+            time = self.time
+            self.time += TIME_QUANTUM_S
+
         # Present the exact same float32 values to both implementations.
         angle = float(np.float32(angle))
         position = float(np.float32(position))
         target_position = float(np.float32(target_position))
         target_equilibrium = float(np.float32(target_equilibrium))
+        time = float(np.float32(time))
 
         c_decision = self.lib.secloc_should_sample(
             ctypes.byref(self.c_state),
@@ -132,6 +154,7 @@ class GatePair:
             0.0,
             target_position,
             target_equilibrium,
+            time,
         )
 
         self.s[ANGLE_IDX] = angle
@@ -139,7 +162,7 @@ class GatePair:
         py_decision = self.py.should_sample(
             self.s,
             target_position,
-            time_difference=0.0,
+            time=time,
             target_equilibrium=target_equilibrium,
         )
         return bool(c_decision), bool(py_decision)
@@ -206,6 +229,43 @@ def test_equilibrium_flip_fires_gate(secloc_lib):
     # Same physical angle, target flips down -> up: shift jumps 0.05 -> pi - 0.05.
     c_dec, py_dec = pair.step(pi - 0.05, 0.0, 0.0, 1.0)
     assert c_dec == py_dec == True  # noqa: E712
+    pair.assert_states_close()
+
+
+def test_random_trajectory_parity_with_ref_period(secloc_lib):
+    """Long randomized run with the deployed throttle (4 ticks = 20 ms):
+    decisions must match exactly."""
+    rng = np.random.default_rng(20260709)
+    pair = GatePair(secloc_lib, ref_period_ticks=4)
+
+    n_steps = 5000
+    angle = 0.0
+    position = 0.0
+    for step_idx in range(n_steps):
+        regime = (step_idx // 500) % 4
+        if regime == 0:
+            angle = 0.02 * rng.standard_normal()
+            te = 1.0
+        elif regime == 1:
+            angle = float(np.pi) * np.sin(0.01 * step_idx) + 0.1 * rng.standard_normal()
+            te = 1.0
+        elif regime == 2:
+            sign = 1.0 if rng.random() < 0.5 else -1.0
+            angle = sign * (float(np.pi) - abs(0.05 * rng.standard_normal()))
+            te = -1.0
+        else:
+            angle = float(np.pi) * np.sin(0.013 * step_idx) + 0.1 * rng.standard_normal()
+            te = -1.0
+        angle = float(np.clip(angle, -np.pi, np.pi))
+        position += 0.002 * rng.standard_normal()
+        position = float(np.clip(position, -0.198, 0.198))
+        tp = 0.0 if step_idx < n_steps // 2 else 0.05
+
+        c_dec, py_dec = pair.step(angle, position, tp, te)
+        assert c_dec == py_dec, (
+            f"step {step_idx}: C={c_dec} Python={py_dec} "
+            f"angle={angle} position={position} tp={tp} te={te}"
+        )
     pair.assert_states_close()
 
 
