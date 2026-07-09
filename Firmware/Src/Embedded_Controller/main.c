@@ -46,7 +46,7 @@
 #include "Zynq/neural_imitator.h"   /* exposes NeuralImitator_Ops */
 #include "neural_controller_C.h"
 #include "lqr.h"
-#include "secloc_lqr.h"
+#include "secloc_controller.h"
 #include "hardware_pid.h"
 
 #ifdef TIMING_TEST
@@ -62,7 +62,7 @@ static const ControllerOps* select_controller(void)
 //    return &NeuralImitator_Ops;
     return &PID_Ops;
 //    return &NNC_Ops;
-//    return &SECLOC_LQR_Ops;
+//    return &SECLOC_Ops;
 }
 
 
