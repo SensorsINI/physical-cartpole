@@ -51,16 +51,26 @@ PollStat = namedtuple("PollStat", ("time", "ang_unchanged", "pos_unchanged", "sk
 @dataclass(frozen=True)
 class GateParams:
     log_base: float
-    ref_period: float
+    ref_period: float  # seconds; new recordings store ticks, converted on load
     dead_ang: float
     dead_pos: float
     poll_stats_window_s: float
 
     @classmethod
     def from_meta(cls, meta: dict[str, str]) -> GateParams:
+        # New recordings log the throttle in control loop ticks
+        # ("Secloc ref_period_ticks"); older ones in seconds ("Secloc ref_period").
+        if "Secloc ref_period_ticks" in meta:
+            try:
+                saving_dt = float(meta["Saving"].split()[0])
+            except (KeyError, ValueError):
+                saving_dt = 0.005
+            ref_period = float(meta["Secloc ref_period_ticks"]) * saving_dt
+        else:
+            ref_period = float(meta.get("Secloc ref_period", "0.0"))
         return cls(
             log_base=float(meta.get("Secloc log_base", "1.05")),
-            ref_period=float(meta.get("Secloc ref_period", "0.0")),
+            ref_period=ref_period,
             dead_ang=float(meta.get("Secloc dead_ang", "0.0")),
             dead_pos=float(meta.get("Secloc dead_pos", "0.0")),
             poll_stats_window_s=5.0,
@@ -91,9 +101,14 @@ def replay_poll_stats(
     the log_base threshold (ADC quantization makes ratios like 21/20 = 1.05
     hit log_base exactly).
     """
+    ref_period_ticks = (
+        max(1, round(params.ref_period / polling_period_s))
+        if (params.ref_period > 0 and polling_period_s)
+        else 0
+    )
     gate = SeclocGate(
         log_base=params.log_base,
-        ref_period=params.ref_period,
+        ref_period_ticks=ref_period_ticks,
         dead_ang=params.dead_ang,
         dead_pos=params.dead_pos,
         poll_stats_window_s=params.poll_stats_window_s,
@@ -140,12 +155,9 @@ def replay_poll_stats(
         equilibrium = equilibria[row]
         time = times[row]
 
-        time_difference = gate.time_difference(time)
         ang_shift = gate.logic.angle_shift_from_target(angle, equilibrium)
         pos_shift = abs(position - target)
-        gate_evaluated = gate.logic.period_elapsed(
-            time=time, time_difference=time_difference
-        )
+        gate_evaluated = gate.logic.period_elapsed(time=time)
 
         s = np.zeros(state_len, dtype=np.float64)
         s[ANGLE_IDX] = angle
@@ -158,8 +170,7 @@ def replay_poll_stats(
             if gate_evaluated:
                 # Deadline/busy row: the driver still logs the pure-gate peek.
                 would_update = gate.peek_would_update(
-                    s, target, time=time, time_difference=time_difference,
-                    target_equilibrium=equilibrium,
+                    s, target, time=time, target_equilibrium=equilibrium,
                 )
                 if not would_update:
                     record(row, time, ang_shift, pos_shift, skipped=True)
@@ -169,8 +180,7 @@ def replay_poll_stats(
             continue
 
         spike = gate.should_sample(
-            s, target, time=time, time_difference=time_difference,
-            target_equilibrium=equilibrium,
+            s, target, time=time, target_equilibrium=equilibrium,
         )
 
         if respect_split_control_busy and spike:
@@ -207,6 +217,25 @@ def chip_clock_times(df: pd.DataFrame) -> np.ndarray | None:
     else:
         times[1:] = np.cumsum(deltas[1:])
     return times
+
+
+def is_chip_secloc_recording(meta: dict[str, str]) -> bool:
+    return meta.get("Secloc on chip", "").strip().lower() == "true"
+
+
+def chip_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | None:
+    """Gate decision calendar from on-chip SecLoc telemetry (one decision per row)."""
+    needed = {"secloc_gate_skipped", "secloc_skipped_update"}
+    if not needed <= set(df.columns):
+        return None
+    gate_skipped = df["secloc_gate_skipped"].to_numpy(dtype=np.int64)
+    skipped_update = df["secloc_skipped_update"].to_numpy(dtype=np.int64)
+    updates = np.flatnonzero(skipped_update == 0)
+    skips = np.flatnonzero(gate_skipped == 1)
+    rows = np.union1d(updates, skips)
+    labels = np.ones(len(rows), dtype=np.int8)
+    labels[np.isin(rows, updates)] = 0
+    return rows, labels
 
 
 def hardware_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | None:
@@ -631,11 +660,16 @@ def plot_timeseries(
     stab_angle_threshold: float = 0.1,
     polling_period_s: float = 0.005,
     validation: ValidationStats | None = None,
+    *,
+    chip_mode: bool = False,
+    experiment_title: str = "Physical cartpole experiment (Secloc + MPC)",
 ) -> None:
     time = df["time"].to_numpy()
     target_angle = target_angle_series(df)
-    decision_ms = ref_period * 1000.0
+    decision_ms = ref_period * 1000.0 if ref_period > 0 else polling_period_s * 1000.0
     decisions_label = "Secloc decisions"
+    hold_rows = max(1, round(ref_period / polling_period_s)) if ref_period > 0 else 1
+    inner_name = "neural controller" if chip_mode else "model-predictive controller (MPC)"
 
     fig, axes = plt.subplots(4, 1, figsize=(12, 17.5), sharex=True)
 
@@ -790,8 +824,9 @@ def plot_timeseries(
     )
     axes[3].add_artist(line_legend)
     axes[3].grid(True, alpha=0.3, zorder=1)
+    inner_short = "NC" if chip_mode else "MPC"
     axes[3].set_title(
-        f"Skipped MPC updates (% of {decisions_label}); "
+        f"Skipped {inner_short} updates (% of {decisions_label}); "
         f"stack = replay total, dashed = hardware\n"
         f"{rolling_average_caption(window_s)}",
         fontsize=10,
@@ -799,13 +834,12 @@ def plot_timeseries(
 
     fig.suptitle(
         title_with_log_base(
-            "Physical cartpole experiment (Secloc + MPC)",
+            experiment_title,
             log_base,
             window_s=window_s,
         ),
         y=0.995,
     )
-    hold_rows = max(1, round(ref_period / polling_period_s))
     poll_ms = polling_period_s * 1000
     valid_roll = np.isfinite(metrics.gate_skip_pct) & np.isfinite(metrics.io_skip_pct)
     roll_diff = metrics.gate_skip_pct[valid_roll] - metrics.io_skip_pct[valid_roll]
@@ -819,7 +853,38 @@ def plot_timeseries(
         and validation.calendar_match_pct >= 99.5
         and validation.hw_unmatched <= 1
     )
-    if validation.uses_logged_gate_column:
+    if chip_mode and validation.uses_logged_gate_column:
+        if replay_ok:
+            replay_text = (
+                f"Replay vs chip gate: match ({validation.replay_skip_pct:.1f}% vs "
+                f"{validation.hw_skip_pct:.1f}% skipped).\n"
+            )
+        else:
+            replay_text = (
+                "Replay vs chip gate.  The gate runs on the chip in float32 while the replay uses the PC's float64 "
+                "reconstruction of the same ADC readings, so decisions sitting exactly\n"
+                "on the log_base threshold can flip; serial packet drops also remove rows the chip decided on. "
+                f"Result: {validation.calendar_match_pct:.2f}% of {validation.replay_decisions} replay decisions land "
+                f"on a logged chip decision row\n"
+                f"and {validation.label_agreement_pct:.2f}% of those agree on skip vs update "
+                f"({validation.hw_unmatched} of {validation.hw_decisions} chip decisions unmatched). "
+                f"Full-run skip rate: replay {validation.replay_skip_pct:.1f}% vs chip "
+                f"{validation.hw_skip_pct:.1f}%.\n"
+            )
+        wiggle_text = (
+            "Dashed black curve.  Computed directly from the on-chip gate telemetry logged on every row: "
+            "secloc_skipped_update = 0 marks an update, secloc_gate_skipped = 1 a skip\n"
+            "(gate consulted, declined). Rows where the ref_period throttle blocked the gate after an update carry "
+            "neither flag and are not decisions. No inference from the replay is involved.\n"
+            "\n"
+            f"{replay_text}"
+            "\n"
+            "Dotted gray vs dashed black.  Gray is the plain row/time average of secloc_skipped_update: after each "
+            f"accepted update the throttle holds Q for {hold_rows} rows ({decision_ms:.0f} ms) that are\n"
+            "all flagged as held, while a skip occupies one row, so gray sits below the per-decision skip rate "
+            "(black) whenever updates are frequent."
+        )
+    elif validation.uses_logged_gate_column:
         q = validation.hw_skip_pct / 100.0
         gray_pred = 100.0 * q / (q + hold_rows * (1.0 - q)) if q < 1.0 else 100.0
         if replay_ok:
@@ -883,8 +948,12 @@ def plot_timeseries(
     explanation = (
         "HOW TO READ THIS FIGURE\n"
         "\n"
-        "Setup.  A model-predictive controller (MPC) balances a physical cartpole. To save computation, a Secloc "
-        "event gate sits in front of the MPC: at each decision it either\n"
+        "Setup.  A "
+        + inner_name
+        + " balances a physical cartpole. To save computation, a Secloc "
+        "event gate sits in front of the "
+        + ("inner controller" if chip_mode else "MPC")
+        + ": at each decision it either\n"
         "recomputes the control plan (update) or keeps the previous one (skip). It updates only when the angle distance "
         "from the active target equilibrium (|angle| for target up,\n"
         f"\u03c0 \u2212 |angle| for target down) or |position \u2212 target| changed by a factor \u2265 {log_base:g} (log_base) "
@@ -892,11 +961,16 @@ def plot_timeseries(
         "can fire. Otherwise it skips. Gray bands mark upright stabilization phases (target up, pole "
         "near vertical); the other periods are swing-up/swing-down transitions.\n"
         "\n"
-        f"Timing.  The CSV saves a row every {poll_ms:.0f} ms. After an update the rig is busy for "
-        f"{decision_ms:.0f} ms ({hold_rows} rows) and does not ask the gate again. A skip uses 1 row; an update "
-        f"uses {hold_rows} rows\n"
-        f"with the same logged flag. All percentage curves are backward-looking rolling averages over the last "
-        f"{window_s:.1f} s.\n"
+        f"Timing.  The CSV saves a row every {poll_ms:.0f} ms."
+        + (
+            f" On chip the control loop runs every tick; after an accepted update the ref_period throttle holds Q "
+            f"for {decision_ms:.0f} ms ({hold_rows} rows)\nbefore the gate is consulted again (no separate PC apply "
+            "window). "
+            if chip_mode
+            else f" After an update the rig is busy for {decision_ms:.0f} ms ({hold_rows} rows) and does not ask the "
+            f"gate again. A skip uses 1 row; an update uses {hold_rows} rows\nwith the same logged flag. "
+        )
+        + f"All percentage curves are backward-looking rolling averages over the last {window_s:.1f} s.\n"
         "\n"
         "Panel 3.  Share of decisions where the raw sensor reading was bit-identical to the previous decision "
         "(angle in blue, position in orange). During upright holds the angle\n"
@@ -973,6 +1047,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Replay gate only when split-control would be idle (matches hardware IO)",
     )
     parser.add_argument(
+        "--chip",
+        action="store_true",
+        help="On-chip SecLoc mode (no split-control busy / apply window)",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=OUTPUT_DIR,
@@ -993,6 +1072,7 @@ def main(argv: list[str] | None = None) -> int:
         raise KeyError(f"{csv_path.name}: missing secloc_skipped_update column")
 
     params = GateParams.from_meta(meta)
+    chip_mode = args.chip or is_chip_secloc_recording(meta)
     params = GateParams(
         log_base=params.log_base,
         ref_period=params.ref_period,
@@ -1008,14 +1088,25 @@ def main(argv: list[str] | None = None) -> int:
     except (KeyError, ValueError):
         saving_dt = 0.005
         update_hold_rows = 1.0
+    if chip_mode:
+        # On chip an update occupies ref_period of rows via the tick throttle
+        # (no separate PC apply window); with ref_period = 0 every row decides.
+        update_hold_rows = (
+            max(1.0, round(params.ref_period / saving_dt))
+            if params.ref_period > 0
+            else 1.0
+        )
 
-    respect_busy = args.replay_respect_busy or ("split_control_busy" in df.columns)
+    respect_busy = (
+        not chip_mode
+        and (args.replay_respect_busy or ("split_control_busy" in df.columns))
+    )
     if respect_busy and not args.replay_respect_busy:
         print("Auto-enabled replay-respect-busy (split_control_busy column present)")
 
     query_times = df["time"].to_numpy(dtype=np.float64)
     hardware_skipped = df["secloc_skipped_update"].to_numpy(dtype=np.float64)
-    hw_decisions = hardware_gate_decisions(df)
+    hw_decisions = chip_gate_decisions(df) if chip_mode else hardware_gate_decisions(df)
 
     # The hardware gate times its ref_period on the chip clock (exact 5 ms rows);
     # the CSV 'time' column is PC wall clock with ~1.5 ms/row jitter. Replay on
@@ -1110,10 +1201,18 @@ def main(argv: list[str] | None = None) -> int:
         stab_angle_threshold=args.stab_angle,
         polling_period_s=saving_dt,
         validation=validation,
+        chip_mode=chip_mode,
+        experiment_title=(
+            "Physical cartpole experiment (SecLoc + NC on chip)"
+            if chip_mode
+            else "Physical cartpole experiment (Secloc + MPC)"
+        ),
     )
 
     finite = skip_pct[np.isfinite(skip_pct)]
     print(f"Recording: {csv_path.name}")
+    if chip_mode:
+        print("Mode: on-chip SecLoc + neural controller C")
     print(f"log_base: {params.log_base}")
     print(f"Gate polls with previous sample: {len(poll_stats)}")
     print(

@@ -77,6 +77,7 @@ def format_report(result: dict) -> str:
         "Secloc gate",
         "Secloc log_base",
         "Secloc ref_period",
+        "Secloc ref_period_ticks",
         "Secloc dead_ang",
         "Secloc dead_pos",
         "IO CPU affinity",

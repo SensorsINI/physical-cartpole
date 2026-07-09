@@ -56,22 +56,36 @@ from CartPoleSimulation.CartPole.state_utilities import (  # noqa: E402
 from Control_Toolkit_ASF.Controllers.secloc_gate import SeclocGate  # noqa: E402
 from globals import ANGLE_DEVIATION, ANGLE_NORMALIZATION_FACTOR  # noqa: E402
 
+# CSV rows sit on the chip's 5 ms polling grid; the gate's ref_period throttle
+# counts integer ticks of this quantum.
+POLL_DT_S = 0.005
+
 
 @dataclass(frozen=True)
 class GateParams:
     log_base: float
-    ref_period: float
+    ref_period: float  # seconds; new recordings store ticks, converted on load
     dead_ang: float
     dead_pos: float
 
     @classmethod
     def from_meta(cls, meta: dict[str, str]) -> GateParams:
+        # New recordings log the throttle in control loop ticks
+        # ("Secloc ref_period_ticks"); older ones in seconds ("Secloc ref_period").
+        if "Secloc ref_period_ticks" in meta:
+            ref_period = float(meta["Secloc ref_period_ticks"]) * POLL_DT_S
+        else:
+            ref_period = float(meta.get("Secloc ref_period", "0.0"))
         return cls(
             log_base=float(meta.get("Secloc log_base", "1.0")),
-            ref_period=float(meta.get("Secloc ref_period", "0.0")),
+            ref_period=ref_period,
             dead_ang=float(meta.get("Secloc dead_ang", "0.0")),
             dead_pos=float(meta.get("Secloc dead_pos", "0.0")),
         )
+
+    @property
+    def ref_period_ticks(self) -> int:
+        return max(1, round(self.ref_period / POLL_DT_S)) if self.ref_period > 0 else 0
 
 
 @dataclass(frozen=True)
@@ -142,10 +156,11 @@ def replay_secloc(
 
     gate = SeclocGate(
         log_base=params.log_base,
-        ref_period=params.ref_period,
+        ref_period_ticks=params.ref_period_ticks,
         dead_ang=params.dead_ang,
         dead_pos=params.dead_pos,
     )
+    gate.set_time_quantum(POLL_DT_S)
 
     skipped = np.zeros(len(df), dtype=np.int8)
     angle_spikes = 0
