@@ -1,5 +1,9 @@
 """Plot Secloc experiment recordings: state trajectories and rolling skip breakdown.
 
+Requires current-format recordings: the "Secloc ref_period_ticks" header and the
+time_chip / secloc_skipped_update / secloc_gate_skipped columns (plus
+split_control_busy for PC-gate recordings).
+
 Usage (from repo root):
   python tests/plot_secloc_experiment.py --latest
   python tests/plot_secloc_experiment.py path/to/CPP_mpc__....csv
@@ -51,29 +55,19 @@ PollStat = namedtuple("PollStat", ("time", "ang_unchanged", "pos_unchanged", "sk
 @dataclass(frozen=True)
 class GateParams:
     log_base: float
-    ref_period: float  # seconds; new recordings store ticks, converted on load
+    ref_period_ticks: int  # gate throttle, in control loop ticks (= saving rows)
     dead_ang: float
     dead_pos: float
     poll_stats_window_s: float
 
     @classmethod
-    def from_meta(cls, meta: dict[str, str]) -> GateParams:
-        # New recordings log the throttle in control loop ticks
-        # ("Secloc ref_period_ticks"); older ones in seconds ("Secloc ref_period").
-        if "Secloc ref_period_ticks" in meta:
-            try:
-                saving_dt = float(meta["Saving"].split()[0])
-            except (KeyError, ValueError):
-                saving_dt = 0.005
-            ref_period = float(meta["Secloc ref_period_ticks"]) * saving_dt
-        else:
-            ref_period = float(meta.get("Secloc ref_period", "0.0"))
+    def from_meta(cls, meta: dict[str, str], poll_stats_window_s: float) -> GateParams:
         return cls(
-            log_base=float(meta.get("Secloc log_base", "1.05")),
-            ref_period=ref_period,
-            dead_ang=float(meta.get("Secloc dead_ang", "0.0")),
-            dead_pos=float(meta.get("Secloc dead_pos", "0.0")),
-            poll_stats_window_s=5.0,
+            log_base=float(meta["Secloc log_base"]),
+            ref_period_ticks=int(meta["Secloc ref_period_ticks"]),
+            dead_ang=float(meta["Secloc dead_ang"]),
+            dead_pos=float(meta["Secloc dead_pos"]),
+            poll_stats_window_s=poll_stats_window_s,
         )
 
 
@@ -83,9 +77,9 @@ def replay_poll_stats(
     *,
     respect_split_control_busy: bool = False,
     apply_window_rows: int = 4,
-    clock: np.ndarray | None = None,
+    clock: np.ndarray,
     start_row: int = 0,
-    polling_period_s: float | None = None,
+    polling_period_s: float,
 ) -> tuple[list[PollStat], np.ndarray]:
     """Replay the Secloc gate over the recording.
 
@@ -99,22 +93,18 @@ def replay_poll_stats(
     latency adder) and the CSV logs those exact bits, so the replay keeps the
     state in float64: casting to float32 flips decisions that sit exactly on
     the log_base threshold (ADC quantization makes ratios like 21/20 = 1.05
-    hit log_base exactly).
+    hit log_base exactly). On-chip recordings ran the gate in float32 instead;
+    there the float64 replay is an approximation whose accuracy is quantified
+    by the validation stats.
     """
-    ref_period_ticks = (
-        max(1, round(params.ref_period / polling_period_s))
-        if (params.ref_period > 0 and polling_period_s)
-        else 0
-    )
     gate = SeclocGate(
         log_base=params.log_base,
-        ref_period_ticks=ref_period_ticks,
+        ref_period_ticks=params.ref_period_ticks,
         dead_ang=params.dead_ang,
         dead_pos=params.dead_pos,
         poll_stats_window_s=params.poll_stats_window_s,
     )
-    if polling_period_s is not None:
-        gate.set_time_quantum(polling_period_s)
+    gate.set_time_quantum(polling_period_s)
 
     poll_stats: list[PollStat] = []
     poll_rows: list[int] = []
@@ -126,11 +116,8 @@ def replay_poll_stats(
     angles = df["angle"].to_numpy(dtype=np.float64)
     positions = df["position"].to_numpy(dtype=np.float64)
     targets = df["target_position"].to_numpy(dtype=np.float64)
-    if "target_equilibrium" in df.columns:
-        equilibria = df["target_equilibrium"].to_numpy(dtype=np.float64)
-    else:
-        equilibria = np.ones(len(df), dtype=np.float64)
-    times = clock if clock is not None else df["time"].to_numpy(dtype=np.float64)
+    equilibria = df["target_equilibrium"].to_numpy(dtype=np.float64)
+    times = clock
     state_len = len(create_cartpole_state())
 
     def record(row, time, ang_shift, pos_shift, skipped):
@@ -184,7 +171,10 @@ def replay_poll_stats(
         )
 
         if respect_split_control_busy and spike:
-            busy = True
+            # With a one-row apply window the deadline is the trigger row
+            # itself: the hardware applies within the same tick and the gate
+            # is polled again on the very next row, so it is never busy.
+            busy = apply_window_rows > 1
             loops_since_trigger = 0
 
         if gate_evaluated:
@@ -193,41 +183,18 @@ def replay_poll_stats(
     return poll_stats, np.array(poll_rows, dtype=np.int64)
 
 
-def chip_clock_times(df: pd.DataFrame) -> np.ndarray | None:
-    """Reconstruct the chip clock the hardware gate times its ref_period on.
-
-    Newer recordings log the chip's absolute timestamp directly (time_chip).
-    Older ones only have deltaTimeMs (chip time between *received* packets);
-    its cumulative sum misses ticks whenever a serial packet is dropped, so
-    those gaps are re-inserted where the PC wall clock jumps by >= 2 periods.
-    """
-    if "time_chip" in df.columns:
-        chip = df["time_chip"].to_numpy(dtype=np.float64)
-        return chip - chip[0]
-    if "deltaTimeMs" not in df.columns:
-        return None
-    deltas = df["deltaTimeMs"].to_numpy(dtype=np.float64) / 1000.0
-    period = float(np.median(deltas))
-    times = np.zeros(len(deltas), dtype=np.float64)
-    if "time" in df.columns:
-        pc = df["time"].to_numpy(dtype=np.float64)
-        pc_steps = np.diff(pc)
-        missed = np.maximum(np.rint(pc_steps / period).astype(np.int64) - 1, 0)
-        times[1:] = np.cumsum(deltas[1:] + missed * period)
-    else:
-        times[1:] = np.cumsum(deltas[1:])
-    return times
+def chip_clock_times(df: pd.DataFrame) -> np.ndarray:
+    """Chip clock (time_chip) the hardware gate times its ref_period on."""
+    chip = df["time_chip"].to_numpy(dtype=np.float64)
+    return chip - chip[0]
 
 
 def is_chip_secloc_recording(meta: dict[str, str]) -> bool:
     return meta.get("Secloc on chip", "").strip().lower() == "true"
 
 
-def chip_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | None:
+def chip_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     """Gate decision calendar from on-chip SecLoc telemetry (one decision per row)."""
-    needed = {"secloc_gate_skipped", "secloc_skipped_update"}
-    if not needed <= set(df.columns):
-        return None
     gate_skipped = df["secloc_gate_skipped"].to_numpy(dtype=np.int64)
     skipped_update = df["secloc_skipped_update"].to_numpy(dtype=np.int64)
     updates = np.flatnonzero(skipped_update == 0)
@@ -238,16 +205,13 @@ def chip_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | Non
     return rows, labels
 
 
-def hardware_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray] | None:
+def hardware_gate_decisions(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     """True hardware gate decision calendar from logged columns.
 
     Returns (row_indices, skipped_labels). Updates are rising edges of
     split_control_busy (the gate fired and triggered compute); skips are rows
     with secloc_gate_skipped == 1 (gate evaluated, decided not to update).
     """
-    needed = {"split_control_busy", "secloc_gate_skipped"}
-    if not needed <= set(df.columns):
-        return None
     busy = df["split_control_busy"].to_numpy(dtype=np.int64)
     gate_skipped = df["secloc_gate_skipped"].to_numpy(dtype=np.int64)
     triggers = np.flatnonzero((busy[1:] == 1) & (busy[:-1] == 0)) + 1
@@ -272,14 +236,37 @@ class RollingSkipMetrics:
     io_row_skip_pct: np.ndarray
 
 
+def _windowed_pcts(
+    event_times: np.ndarray,
+    query_times: np.ndarray,
+    window_s: float,
+    values: list[np.ndarray],
+) -> list[np.ndarray]:
+    """Backward-looking rolling percentages of events in [t - window_s, t].
+
+    event_times must be non-decreasing (recordings are chronological).
+    NaN where the window contains no events.
+    """
+    lo = np.searchsorted(event_times, query_times - window_s, side="left")
+    hi = np.searchsorted(event_times, query_times, side="right")
+    counts = hi - lo
+    valid = counts > 0
+    pcts = []
+    for value in values:
+        cum = np.concatenate(([0.0], np.cumsum(value, dtype=np.float64)))
+        pct = np.full(len(query_times), np.nan, dtype=np.float64)
+        pct[valid] = 100.0 * (cum[hi] - cum[lo])[valid] / counts[valid]
+        pcts.append(pct)
+    return pcts
+
+
 def rolling_poll_metrics(
     poll_stats: list[PollStat],
     query_times: np.ndarray,
     window_s: float,
-    hardware_skipped: np.ndarray | None = None,
-    update_hold_rows: float = 1.0,
-    hw_decision_times: np.ndarray | None = None,
-    hw_decision_skipped: np.ndarray | None = None,
+    hardware_skipped: np.ndarray,
+    hw_decision_times: np.ndarray,
+    hw_decision_skipped: np.ndarray,
 ) -> RollingSkipMetrics:
     n = len(query_times)
     nan = np.full(n, np.nan, dtype=np.float64)
@@ -287,83 +274,50 @@ def rolling_poll_metrics(
         return RollingSkipMetrics(*([nan] * 11))
 
     stat_times = np.array([stat.time for stat in poll_stats])
-    ang_flat = np.full(n, np.nan, dtype=np.float64)
-    pos_flat = np.full(n, np.nan, dtype=np.float64)
-    skip_ang_flat = np.full(n, np.nan, dtype=np.float64)
-    skip_pos_flat = np.full(n, np.nan, dtype=np.float64)
-    gate_skip = np.full(n, np.nan, dtype=np.float64)
-    skip_or = np.full(n, np.nan, dtype=np.float64)
-    skip_and = np.full(n, np.nan, dtype=np.float64)
-    skip_only_ang = np.full(n, np.nan, dtype=np.float64)
-    skip_only_pos = np.full(n, np.nan, dtype=np.float64)
+    ang_unchanged = np.array([s.ang_unchanged for s in poll_stats], dtype=bool)
+    pos_unchanged = np.array([s.pos_unchanged for s in poll_stats], dtype=bool)
+    skipped = np.array([s.skipped for s in poll_stats], dtype=bool)
 
-    for idx, query_time in enumerate(query_times):
-        cutoff = query_time - window_s
-        mask = (stat_times >= cutoff) & (stat_times <= query_time)
-        if not np.any(mask):
-            continue
-        active = [poll_stats[i] for i in np.nonzero(mask)[0]]
-        count = len(active)
-        ang_flat[idx] = 100.0 * sum(stat.ang_unchanged for stat in active) / count
-        pos_flat[idx] = 100.0 * sum(stat.pos_unchanged for stat in active) / count
-        skip_ang_flat[idx] = 100.0 * sum(
-            stat.ang_unchanged and stat.skipped for stat in active
-        ) / count
-        skip_pos_flat[idx] = 100.0 * sum(
-            stat.pos_unchanged and stat.skipped for stat in active
-        ) / count
-        gate_skip[idx] = 100.0 * sum(stat.skipped for stat in active) / count
-        skip_or[idx] = 100.0 * sum(
-            (not stat.ang_unchanged or not stat.pos_unchanged) and stat.skipped
-            for stat in active
-        ) / count
-        skip_and[idx] = 100.0 * sum(
-            (not stat.ang_unchanged and not stat.pos_unchanged) and stat.skipped
-            for stat in active
-        ) / count
-        skip_only_ang[idx] = 100.0 * sum(
-            (not stat.ang_unchanged) and stat.pos_unchanged and stat.skipped
-            for stat in active
-        ) / count
-        skip_only_pos[idx] = 100.0 * sum(
-            stat.ang_unchanged and (not stat.pos_unchanged) and stat.skipped
-            for stat in active
-        ) / count
+    (
+        ang_flat,
+        pos_flat,
+        skip_ang_flat,
+        skip_pos_flat,
+        gate_skip,
+        skip_or,
+        skip_and,
+        skip_only_ang,
+        skip_only_pos,
+    ) = _windowed_pcts(
+        stat_times,
+        query_times,
+        window_s,
+        [
+            ang_unchanged,
+            pos_unchanged,
+            ang_unchanged & skipped,
+            pos_unchanged & skipped,
+            skipped,
+            (~ang_unchanged | ~pos_unchanged) & skipped,
+            (~ang_unchanged & ~pos_unchanged) & skipped,
+            ~ang_unchanged & pos_unchanged & skipped,
+            ang_unchanged & ~pos_unchanged & skipped,
+        ],
+    )
 
-    # The CSV logs the last gate decision every save row. After each update the
-    # gate is not re-polled for the apply window (update_hold_rows rows), so an
-    # update decision occupies update_hold_rows rows while a skip decision
-    # occupies one. Convert row counts back to decision counts so the hardware
-    # percentage is comparable with the replay gate-poll percentages.
-    # io_row_skip is the raw row (time-weighted) average: the fraction of wall
-    # time the controller was coasting on a held plan.
-    io_skip = np.full(n, np.nan, dtype=np.float64)
-    io_row_skip = np.full(n, np.nan, dtype=np.float64)
-    if hw_decision_times is not None and hw_decision_skipped is not None:
-        hw_skipped_f = hw_decision_skipped.astype(np.float64)
-        for idx, query_time in enumerate(query_times):
-            cutoff = query_time - window_s
-            mask = (hw_decision_times >= cutoff) & (hw_decision_times <= query_time)
-            if np.any(mask):
-                io_skip[idx] = 100.0 * hw_skipped_f[mask].mean()
-    elif hardware_skipped is not None:
-        skipped = hardware_skipped.astype(np.float64)
-        for idx, query_time in enumerate(query_times):
-            cutoff = query_time - window_s
-            mask = (query_times >= cutoff) & (query_times <= query_time)
-            if np.any(mask):
-                n_skip_rows = skipped[mask].sum()
-                n_update_rows = mask.sum() - n_skip_rows
-                n_update_decisions = n_update_rows / update_hold_rows
-                io_skip[idx] = 100.0 * n_skip_rows / (n_skip_rows + n_update_decisions)
-                io_row_skip[idx] = 100.0 * n_skip_rows / mask.sum()
-    if hardware_skipped is not None:
-        skipped = hardware_skipped.astype(np.float64)
-        for idx, query_time in enumerate(query_times):
-            cutoff = query_time - window_s
-            mask = (query_times >= cutoff) & (query_times <= query_time)
-            if np.any(mask):
-                io_row_skip[idx] = 100.0 * skipped[mask].mean()
+    # io_skip is the per-decision skip rate over the logged hardware decision
+    # calendar; io_row_skip is the raw row (time-weighted) average of the
+    # secloc_skipped_update flag: the fraction of wall time the controller was
+    # coasting on a held plan.
+    (io_skip,) = _windowed_pcts(
+        hw_decision_times,
+        query_times,
+        window_s,
+        [hw_decision_skipped.astype(np.float64)],
+    )
+    (io_row_skip,) = _windowed_pcts(
+        query_times, query_times, window_s, [hardware_skipped.astype(np.float64)]
+    )
 
     return RollingSkipMetrics(
         ang_flat_pct=ang_flat,
@@ -380,36 +334,9 @@ def rolling_poll_metrics(
     )
 
 
-def rolling_skip_both_changed_pct(
-    poll_stats: list[PollStat],
-    query_times: np.ndarray,
-    window_s: float,
-) -> np.ndarray:
-    return rolling_poll_metrics(poll_stats, query_times, window_s).skip_and_changed_pct
-
-
 def target_angle_series(df: pd.DataFrame) -> np.ndarray:
     equilibrium = df["target_equilibrium"].to_numpy(dtype=np.float64)
     return np.where(equilibrium >= 0, 0.0, np.pi)
-
-
-def angle_error_to_target(df: pd.DataFrame) -> np.ndarray:
-    angle = df["angle"].to_numpy(dtype=np.float64)
-    equilibrium = df["target_equilibrium"].to_numpy(dtype=np.float64)
-    err_upright = np.abs(angle)
-    err_inverted = np.minimum(np.abs(angle - np.pi), np.abs(angle + np.pi))
-    return np.where(equilibrium > 0, err_upright, err_inverted)
-
-
-def stabilization_mask(
-    df: pd.DataFrame,
-    *,
-    err_threshold: float = 0.15,
-    speed_threshold: float = 0.3,
-) -> np.ndarray:
-    err = angle_error_to_target(df)
-    speed = np.abs(df["angleD"].to_numpy(dtype=np.float64))
-    return (err < err_threshold) & (speed < speed_threshold)
 
 
 def find_stabilization_intervals(
@@ -557,42 +484,26 @@ def plot_3d(
     plt.close(fig)
 
 
-def decode_hardware_decisions(
-    times: np.ndarray, skip_rows: np.ndarray, update_hold_rows: int
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return (decision_times, skipped) decoded from logged CSV rows."""
-    changes = np.flatnonzero(np.diff(skip_rows)) + 1
-    runs = np.split(skip_rows, changes)
-    decision_times: list[float] = []
-    skipped: list[int] = []
-    idx = 0
-    for run in runs:
-        if run[0] == 1:
-            for k in range(len(run)):
-                decision_times.append(float(times[idx + k]))
-                skipped.append(1)
-        else:
-            for k in range(0, len(run), update_hold_rows):
-                decision_times.append(float(times[idx + k]))
-                skipped.append(0)
-        idx += len(run)
-    return np.array(decision_times), np.array(skipped, dtype=np.int8)
-
-
 @dataclass(frozen=True)
 class ValidationStats:
     replay_skip_pct: float
     hw_skip_pct: float
     replay_decisions: int
     hw_decisions: int
-    replay_unpaired_pct: float
-    uses_logged_gate_column: bool = False
-    calendar_match_pct: float = float("nan")
-    label_agreement_pct: float = float("nan")
-    hw_unmatched: int = 0
+    calendar_match_pct: float
+    label_agreement_pct: float
+    hw_unmatched: int
+
+    @property
+    def replay_matches_hardware(self) -> bool:
+        return (
+            self.label_agreement_pct >= 99.5
+            and self.calendar_match_pct >= 99.5
+            and self.hw_unmatched <= 1
+        )
 
 
-def compute_validation_stats_logged(
+def compute_validation_stats(
     poll_rows: np.ndarray,
     poll_skipped: np.ndarray,
     hw_rows: np.ndarray,
@@ -615,37 +526,9 @@ def compute_validation_stats_logged(
         hw_skip_pct=100.0 * hw_skipped.mean() if len(hw_skipped) else 0.0,
         replay_decisions=len(poll_skipped),
         hw_decisions=len(hw_skipped),
-        replay_unpaired_pct=100.0 * (~on_hw).mean() if len(on_hw) else 0.0,
-        uses_logged_gate_column=True,
         calendar_match_pct=100.0 * on_hw.mean() if len(on_hw) else 0.0,
         label_agreement_pct=100.0 * agree.mean() if len(agree) else 0.0,
         hw_unmatched=hw_unmatched,
-    )
-
-
-def compute_validation_stats(
-    poll_stats: list[PollStat],
-    times: np.ndarray,
-    skip_rows: np.ndarray,
-    update_hold_rows: float,
-    pair_tolerance_s: float = 0.0025,
-) -> ValidationStats:
-    replay_skipped = np.array([int(s.skipped) for s in poll_stats], dtype=np.int8)
-    replay_times = np.array([s.time for s in poll_stats])
-    hw_times, hw_skipped = decode_hardware_decisions(
-        times, skip_rows, max(1, round(update_hold_rows))
-    )
-    unpaired = 0
-    for rt in replay_times:
-        if np.min(np.abs(hw_times - rt)) > pair_tolerance_s:
-            unpaired += 1
-    return ValidationStats(
-        replay_skip_pct=100.0 * replay_skipped.mean() if len(replay_skipped) else 0.0,
-        hw_skip_pct=100.0 * hw_skipped.mean() if len(hw_skipped) else 0.0,
-        replay_decisions=len(replay_skipped),
-        hw_decisions=len(hw_skipped),
-        replay_unpaired_pct=100.0 * unpaired / max(len(replay_times), 1),
-        uses_logged_gate_column=False,
     )
 
 
@@ -655,20 +538,22 @@ def plot_timeseries(
     window_s: float,
     log_base: float,
     output_path: Path,
-    stab_intervals: list[tuple[float, float]] | None = None,
-    ref_period: float = 0.02,
-    stab_angle_threshold: float = 0.1,
-    polling_period_s: float = 0.005,
-    validation: ValidationStats | None = None,
+    stab_intervals: list[tuple[float, float]],
+    update_hold_rows: float,
+    stab_angle_threshold: float,
+    polling_period_s: float,
+    validation: ValidationStats,
     *,
-    chip_mode: bool = False,
-    experiment_title: str = "Physical cartpole experiment (Secloc + MPC)",
+    chip_mode: bool,
+    experiment_title: str,
 ) -> None:
     time = df["time"].to_numpy()
     target_angle = target_angle_series(df)
-    decision_ms = ref_period * 1000.0 if ref_period > 0 else polling_period_s * 1000.0
+    # Rows one update decision occupies: the ref_period throttle on chip, the
+    # split-control apply window (header "Controller update") on the PC.
+    hold_rows = max(1, round(update_hold_rows))
+    decision_ms = hold_rows * polling_period_s * 1000.0
     decisions_label = "Secloc decisions"
-    hold_rows = max(1, round(ref_period / polling_period_s)) if ref_period > 0 else 1
     inner_name = "neural controller" if chip_mode else "model-predictive controller (MPC)"
 
     fig, axes = plt.subplots(4, 1, figsize=(12, 17.5), sharex=True)
@@ -770,18 +655,13 @@ def plot_timeseries(
         zorder=3,
     )
     io_valid = np.isfinite(metrics.io_skip_pct)
-    hw_gate_label = (
-        "hardware gate (logged secloc_gate_skipped, % of gate evaluations)"
-        if validation and validation.uses_logged_gate_column
-        else "skipped on hardware (logged, % of gate decisions)"
-    )
     axes[3].plot(
         time[io_valid],
         metrics.io_skip_pct[io_valid],
         color="black",
         linewidth=1.4,
         linestyle="--",
-        label=hw_gate_label,
+        label="hardware gate (logged secloc_gate_skipped, % of gate evaluations)",
         zorder=4,
     )
     row_valid = np.isfinite(metrics.io_row_skip_pct)
@@ -845,15 +725,8 @@ def plot_timeseries(
     roll_diff = metrics.gate_skip_pct[valid_roll] - metrics.io_skip_pct[valid_roll]
     roll_diff_mean = float(roll_diff.mean()) if roll_diff.size else 0.0
     roll_diff_std = float(roll_diff.std()) if roll_diff.size else 0.0
-    if validation is None:
-        validation = ValidationStats(0.0, 0.0, 0, 0, 0.0)
-    replay_ok = (
-        validation.uses_logged_gate_column
-        and validation.label_agreement_pct >= 99.5
-        and validation.calendar_match_pct >= 99.5
-        and validation.hw_unmatched <= 1
-    )
-    if chip_mode and validation.uses_logged_gate_column:
+    replay_ok = validation.replay_matches_hardware
+    if chip_mode:
         if replay_ok:
             replay_text = (
                 f"Replay vs chip gate: match ({validation.replay_skip_pct:.1f}% vs "
@@ -871,20 +744,32 @@ def plot_timeseries(
                 f"Full-run skip rate: replay {validation.replay_skip_pct:.1f}% vs chip "
                 f"{validation.hw_skip_pct:.1f}%.\n"
             )
+        q = validation.hw_skip_pct / 100.0
+        gray_denom = q + hold_rows * (1.0 - q)
+        gray_pred = (
+            100.0 * (q + (hold_rows - 1.0) * (1.0 - q)) / gray_denom
+            if gray_denom > 0
+            else 0.0
+        )
         wiggle_text = (
             "Dashed black curve.  Computed directly from the on-chip gate telemetry logged on every row: "
             "secloc_skipped_update = 0 marks an update, secloc_gate_skipped = 1 a skip\n"
-            "(gate consulted, declined). Rows where the ref_period throttle blocked the gate after an update carry "
-            "neither flag and are not decisions. No inference from the replay is involved.\n"
+            "(gate consulted, declined). Rows where the ref_period throttle blocked the gate after an update are "
+            "flagged secloc_skipped_update = 1 but carry no gate flag and are not\n"
+            "decisions. No inference from the replay is involved.\n"
             "\n"
             f"{replay_text}"
             "\n"
-            "Dotted gray vs dashed black.  Gray is the plain row/time average of secloc_skipped_update: after each "
-            f"accepted update the throttle holds Q for {hold_rows} rows ({decision_ms:.0f} ms) that are\n"
-            "all flagged as held, while a skip occupies one row, so gray sits below the per-decision skip rate "
-            "(black) whenever updates are frequent."
+            "Dotted gray vs dashed black.  Gray is the plain row/time average of secloc_skipped_update: the share "
+            "of rows on which Q was held. An update contributes one fresh row followed by\n"
+            f"{hold_rows - 1} held throttle rows ({decision_ms:.0f} ms per update in total); a skip contributes one "
+            f"held row. With per-decision skip rate q the row average is (q + {hold_rows - 1}(1 \u2212 q)) / "
+            f"(q + {hold_rows}(1 \u2212 q));\n"
+            f"with q = {validation.hw_skip_pct:.1f}% this gives {gray_pred:.1f}%, matching the measured gray level. "
+            "Gray sits above the per-decision skip rate (black) whenever updates are\n"
+            "frequent, because every update also produces held throttle rows."
         )
-    elif validation.uses_logged_gate_column:
+    else:
         q = validation.hw_skip_pct / 100.0
         gray_pred = 100.0 * q / (q + hold_rows * (1.0 - q)) if q < 1.0 else 100.0
         if replay_ok:
@@ -896,8 +781,8 @@ def plot_timeseries(
             replay_text = (
                 "Replay vs hardware gate.  The gate runs on the PC driver in float64 and the CSV stores the exact bits "
                 "it saw, so the replay is bit-exact: CSV parsed with round-trip float\n"
-                "precision, state kept in float64, gate timed on the reconstructed chip clock (deltaTimeMs + dropped-"
-                "packet gaps from PC-clock jumps), anchored at the first logged trigger.\n"
+                "precision, state kept in float64, gate timed on the logged chip clock (time_chip), anchored at the "
+                "first logged trigger.\n"
                 f"Result: {validation.calendar_match_pct:.2f}% of {validation.replay_decisions} replay decisions land "
                 f"on a logged hardware decision row and {validation.label_agreement_pct:.2f}% of those agree on skip "
                 f"vs update ({validation.hw_unmatched} of {validation.hw_decisions} hardware\n"
@@ -921,29 +806,6 @@ def plot_timeseries(
             f"q / (q + {hold_rows}(1 \u2212 q)) \u2014 NOT q/{hold_rows}: only update decisions cost {hold_rows} rows, "
             f"skip decisions cost 1. With q = {validation.hw_skip_pct:.1f}% this gives "
             f"{gray_pred:.1f}%, matching the measured gray level."
-        )
-    else:
-        wiggle_text = (
-            "Why purple and dashed black wiggle apart.  Both use the same rolling window, but they count decisions at "
-            "different instants. Example: after an update at 0 ms the rig is busy until\n"
-            f"{decision_ms:.0f} ms and makes no new decision; the replay still evaluates the gate on later rows and may "
-            f"record a decision at e.g. 10 ms where the log has none. About {validation.replay_unpaired_pct:.0f}% of "
-            "replay decision times have no hardware\n"
-            f"decision within {poll_ms / 2:.1f} ms (often exactly one {poll_ms:.0f} ms row off). That shifts which "
-            f"decisions fall inside each {window_s:.1f} s window, so the two curves need not track point by point.\n"
-            "\n"
-            "Does replay show more skips?  No. Over the full recording: replay "
-            f"{validation.replay_skip_pct:.1f}% skipped ({validation.replay_decisions} decisions), hardware "
-            f"{validation.hw_skip_pct:.1f}% skipped ({validation.hw_decisions} decisions). Extra replay checks can "
-            "record either skip or update;\n"
-            "they do not mostly add skips. The wiggle (mean "
-            f"{roll_diff_mean:+.1f} pp, std {roll_diff_std:.1f} pp here) is from mismatched decision calendars, not "
-            "from replay systematically skipping more.\n"
-            "\n"
-            "Compute saving.  The dotted gray line is the plain time average of the logged flag: the share of wall time "
-            "the controller coasted on a held plan. It is lower than the\n"
-            "decision-based curves because every update occupies "
-            f"{decision_ms:.0f} ms of wall time while a skip occupies only {poll_ms:.0f} ms."
         )
     explanation = (
         "HOW TO READ THIS FIGURE\n"
@@ -1042,11 +904,6 @@ def main(argv: list[str] | None = None) -> int:
         help="|angle| threshold (rad) for upright-hold shading (default 0.1)",
     )
     parser.add_argument(
-        "--replay-respect-busy",
-        action="store_true",
-        help="Replay gate only when split-control would be idle (matches hardware IO)",
-    )
-    parser.add_argument(
         "--chip",
         action="store_true",
         help="On-chip SecLoc mode (no split-control busy / apply window)",
@@ -1068,63 +925,62 @@ def main(argv: list[str] | None = None) -> int:
     df = df.copy()
     df["time"] = df["time"] - df["time"].iloc[0]
 
-    if "secloc_skipped_update" not in df.columns:
-        raise KeyError(f"{csv_path.name}: missing secloc_skipped_update column")
-
-    params = GateParams.from_meta(meta)
     chip_mode = args.chip or is_chip_secloc_recording(meta)
-    params = GateParams(
-        log_base=params.log_base,
-        ref_period=params.ref_period,
-        dead_ang=params.dead_ang,
-        dead_pos=params.dead_pos,
-        poll_stats_window_s=args.window_s,
-    )
 
-    try:
-        controller_dt = float(meta["Controller update"].split()[0])
-        saving_dt = float(meta["Saving"].split()[0])
-        update_hold_rows = max(1.0, controller_dt / saving_dt)
-    except (KeyError, ValueError):
-        saving_dt = 0.005
-        update_hold_rows = 1.0
+    required_columns = [
+        "time",
+        "time_chip",
+        "angle",
+        "position",
+        "target_position",
+        "target_equilibrium",
+        "secloc_skipped_update",
+        "secloc_gate_skipped",
+    ]
+    required_meta = [
+        "Secloc log_base",
+        "Secloc ref_period_ticks",
+        "Secloc dead_ang",
+        "Secloc dead_pos",
+        "Saving",
+    ]
+    if not chip_mode:
+        required_columns.append("split_control_busy")
+        required_meta.append("Controller update")
+    missing = [column for column in required_columns if column not in df.columns] + [
+        f"header '{key}'" for key in required_meta if key not in meta
+    ]
+    if missing:
+        raise KeyError(f"{csv_path.name}: missing {missing} (old recording?)")
+
+    params = GateParams.from_meta(meta, poll_stats_window_s=args.window_s)
+    saving_dt = float(meta["Saving"].split()[0])
     if chip_mode:
-        # On chip an update occupies ref_period of rows via the tick throttle
-        # (no separate PC apply window); with ref_period = 0 every row decides.
-        update_hold_rows = (
-            max(1.0, round(params.ref_period / saving_dt))
-            if params.ref_period > 0
-            else 1.0
-        )
-
-    respect_busy = (
-        not chip_mode
-        and (args.replay_respect_busy or ("split_control_busy" in df.columns))
-    )
-    if respect_busy and not args.replay_respect_busy:
-        print("Auto-enabled replay-respect-busy (split_control_busy column present)")
+        # On chip an update occupies ref_period_ticks of rows via the tick
+        # throttle (no separate PC apply window); 0 means every row decides.
+        update_hold_rows = max(1.0, float(params.ref_period_ticks))
+    else:
+        controller_dt = float(meta["Controller update"].split()[0])
+        update_hold_rows = max(1.0, controller_dt / saving_dt)
 
     query_times = df["time"].to_numpy(dtype=np.float64)
     hardware_skipped = df["secloc_skipped_update"].to_numpy(dtype=np.float64)
-    hw_decisions = chip_gate_decisions(df) if chip_mode else hardware_gate_decisions(df)
+    hw_rows, hw_labels = (
+        chip_gate_decisions(df) if chip_mode else hardware_gate_decisions(df)
+    )
 
     # The hardware gate times its ref_period on the chip clock (exact 5 ms rows);
     # the CSV 'time' column is PC wall clock with ~1.5 ms/row jitter. Replay on
     # the chip clock, anchored at the first logged hardware trigger so the gate's
     # internal (last-shift, last-time) state starts identically.
-    chip_times = chip_clock_times(df) if hw_decisions is not None else None
-    start_row = 0
-    if hw_decisions is not None:
-        hw_rows_all, hw_labels_all = hw_decisions
-        trigger_rows = hw_rows_all[hw_labels_all == 0]
-        if len(trigger_rows):
-            start_row = int(trigger_rows[0])
+    trigger_rows = hw_rows[hw_labels == 0]
+    start_row = int(trigger_rows[0]) if len(trigger_rows) else 0
     poll_stats_chip, poll_rows = replay_poll_stats(
         df,
         params,
-        respect_split_control_busy=respect_busy,
+        respect_split_control_busy=not chip_mode,
         apply_window_rows=max(1, round(update_hold_rows)),
-        clock=chip_times,
+        clock=chip_clock_times(df),
         start_row=start_row,
         polling_period_s=saving_dt,
     )
@@ -1139,38 +995,20 @@ def main(argv: list[str] | None = None) -> int:
         for s, row in zip(poll_stats_chip, poll_rows)
     ]
 
-    if hw_decisions is not None:
-        hw_rows, hw_labels = hw_decisions
-        hw_decision_times = query_times[hw_rows]
-        metrics = rolling_poll_metrics(
-            poll_stats,
-            query_times,
-            params.poll_stats_window_s,
-            hardware_skipped=hardware_skipped,
-            update_hold_rows=update_hold_rows,
-            hw_decision_times=hw_decision_times,
-            hw_decision_skipped=hw_labels,
-        )
-        replay_labels = np.array([int(s.skipped) for s in poll_stats], dtype=np.int8)
-        # Compare only from the replay anchor onwards.
-        in_range = hw_rows >= start_row
-        validation = compute_validation_stats_logged(
-            poll_rows, replay_labels, hw_rows[in_range], hw_labels[in_range]
-        )
-    else:
-        metrics = rolling_poll_metrics(
-            poll_stats,
-            query_times,
-            params.poll_stats_window_s,
-            hardware_skipped=hardware_skipped,
-            update_hold_rows=update_hold_rows,
-        )
-        validation = compute_validation_stats(
-            poll_stats,
-            query_times,
-            hardware_skipped.astype(int),
-            update_hold_rows,
-        )
+    metrics = rolling_poll_metrics(
+        poll_stats,
+        query_times,
+        params.poll_stats_window_s,
+        hardware_skipped=hardware_skipped,
+        hw_decision_times=query_times[hw_rows],
+        hw_decision_skipped=hw_labels,
+    )
+    replay_labels = np.array([int(s.skipped) for s in poll_stats], dtype=np.int8)
+    # Compare only from the replay anchor onwards.
+    in_range = hw_rows >= start_row
+    validation = compute_validation_stats(
+        poll_rows, replay_labels, hw_rows[in_range], hw_labels[in_range]
+    )
     skip_pct = metrics.skip_and_changed_pct
     stab_intervals = find_stabilization_intervals(
         df, angle_threshold=args.stab_angle
@@ -1197,7 +1035,7 @@ def main(argv: list[str] | None = None) -> int:
         params.log_base,
         plot_ts_path,
         stab_intervals=stab_intervals,
-        ref_period=params.ref_period,
+        update_hold_rows=update_hold_rows,
         stab_angle_threshold=args.stab_angle,
         polling_period_s=saving_dt,
         validation=validation,
@@ -1239,26 +1077,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Rolling logged IO skip %: mean={io.mean():.1f}")
         row = metrics.io_row_skip_pct[np.isfinite(metrics.io_row_skip_pct)]
         print(f"Rolling coasting (row/time-weighted) %: mean={row.mean():.1f}")
-    if validation.uses_logged_gate_column:
-        if (
-            validation.label_agreement_pct >= 99.5
-            and validation.calendar_match_pct >= 99.5
-            and validation.hw_unmatched <= 1
-        ):
-            print(
-                f"Replay vs hardware gate: match ({validation.replay_skip_pct:.1f}% vs "
-                f"{validation.hw_skip_pct:.1f}% skipped)"
-            )
-        else:
-            print(
-                f"Replay vs logged hardware gate: calendar match "
-                f"{validation.calendar_match_pct:.2f}%, "
-                f"label agreement {validation.label_agreement_pct:.2f}%, "
-                f"hardware decisions unmatched {validation.hw_unmatched}/"
-                f"{validation.hw_decisions}; "
-                f"full-run skip replay {validation.replay_skip_pct:.1f}% vs hardware "
-                f"{validation.hw_skip_pct:.1f}%"
-            )
+    if validation.replay_matches_hardware:
+        print(
+            f"Replay vs hardware gate: match ({validation.replay_skip_pct:.1f}% vs "
+            f"{validation.hw_skip_pct:.1f}% skipped)"
+        )
+    else:
+        print(
+            f"Replay vs logged hardware gate: calendar match "
+            f"{validation.calendar_match_pct:.2f}%, "
+            f"label agreement {validation.label_agreement_pct:.2f}%, "
+            f"hardware decisions unmatched {validation.hw_unmatched}/"
+            f"{validation.hw_decisions}; "
+            f"full-run skip replay {validation.replay_skip_pct:.1f}% vs hardware "
+            f"{validation.hw_skip_pct:.1f}%"
+        )
     print(f"Wrote {plot_3d_path}")
     print(f"Wrote {plot_ts_path}")
     return 0
