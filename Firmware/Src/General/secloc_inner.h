@@ -3,7 +3,8 @@
 
 /*
  * Select which controller SecLoc wraps on Zynq.
- * Change secloc_inner_controller before building, or call secloc_set_inner_controller().
+ * Default: SECLOC_DEFAULT_INNER_CONTROLLER in secloc_defaults.h (override at
+ * runtime with secloc_set_inner_controller() if needed).
  */
 
 typedef enum {

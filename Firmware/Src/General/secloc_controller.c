@@ -67,7 +67,7 @@ uint8_t secloc_controller_telemetry_flags(void)
     return (uint8_t)(secloc_last_skipped_update | (secloc_last_gate_skipped << 1));
 }
 
-SeclocInnerController secloc_inner_controller = SECLOC_INNER_LQR;
+SeclocInnerController secloc_inner_controller = SECLOC_DEFAULT_INNER_CONTROLLER;
 
 void secloc_set_inner_controller(SeclocInnerController inner)
 {

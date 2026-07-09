@@ -22,13 +22,16 @@
 #define OnChipController_neural_controller_C 4
 #define OnChipController_SECLOC 5
 
+/* Boot on-chip controller when the chip runs standalone (edit here). */
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_SECLOC
+
 
 // The 3 variables below only matter on Zynq
 #define	CONTROLLERS_SWITCH_NUMBER		0
 #define	POSITION_JUMPS_SWITCH_NUMBER	1
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
-unsigned short current_controller = OnChipController_neural_controller_C;
+unsigned short current_controller = ON_CHIP_BOOT_CONTROLLER;
 
 bool correct_motor_dynamics = true;
 
@@ -461,8 +464,6 @@ void CONTROL_BackgroundTask(void)
 
 #ifdef ZYNQ
 #ifdef USE_EXTERNAL_INTERFACE
-	current_controller = OnChipController_neural_controller_C;
-
 	target_position = get_normed_slider_state()*2*position_jumps_target;
 
 	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
@@ -470,8 +471,6 @@ void CONTROL_BackgroundTask(void)
 		target_equilibrium = target_equilibrium_from_external_button;
 	}
 #else
-	current_controller = OnChipController_neural_controller_C;
-
 	if (USE_TARGET_SWITCHES)
 	{
 		if(Switch_GetState(POSITION_JUMPS_SWITCH_NUMBER)){

@@ -1,12 +1,17 @@
 #ifndef SECLOC_DEFAULTS_H
 #define SECLOC_DEFAULTS_H
 
+#include "secloc_inner.h"
+
 /*
  * Default SecLoc gate profile for on-chip control.
  * Keep in sync with Driver/CartPoleSimulation/Control_Toolkit_ASF/config_secloc.yml
- * profile "default". When the PC driver is connected it overwrites these values
- * on the chip (CMD_SET_SECLOC_CONFIG) with the current yaml contents, so the
+ * profile "default". When the PC driver is connected it overwrites gate values
+ * on the chip (CMD_SET_SECLOC_CONFIG) with the current yaml contents, so these
  * defaults only matter when the chip runs standalone.
+ *
+ * Inner controller: mirrors globals.CONTROLLER_NAME on the PC (e.g. neural-imitator
+ * -> SECLOC_INNER_NNC). Change here to swap the wrapped controller on Zynq.
  */
 #define SECLOC_DEFAULT_LOG_BASE         1.05f
 /* Throttle in control loop iterations (POLLING_PERIOD_MS each): after an
@@ -15,6 +20,9 @@
 #define SECLOC_DEFAULT_REF_PERIOD_TICKS 4
 #define SECLOC_DEFAULT_DEAD_ANG         0.001f
 #define SECLOC_DEFAULT_DEAD_POS         0.001f
+
+/* Wrapped inner controller when OnChipController_SECLOC is active. */
+#define SECLOC_DEFAULT_INNER_CONTROLLER SECLOC_INNER_NNC
 
 /* Tick size of the gate's ref_period throttle. Must equal the control loop
  * period; control.c overrides it from POLLING_PERIOD_MS at init and whenever

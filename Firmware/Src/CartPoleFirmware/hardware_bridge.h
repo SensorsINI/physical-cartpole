@@ -21,6 +21,10 @@
 
 
 //configuration for Zynq
+// Optional: enable when the rig uses the PMOD ADC slider + external equilibrium
+// button (external_interface.c) instead of the on-board DIP switches for targets.
+// Does not change which controller runs; only how target_position / target_equilibrium
+// are set in CONTROL_BackgroundTask.
 //#define USE_EXTERNAL_INTERFACE
 
 
