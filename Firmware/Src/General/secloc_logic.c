@@ -25,9 +25,32 @@ float secloc_angle_shift_from_target(float a, float te)
     return shift;
 }
 
-static int secloc_tick_from_time(float time, float time_quantum_s)
+int32_t secloc_tick_from_time(float time, float time_quantum_s)
 {
-    return (int)(time / time_quantum_s + 0.5f);
+    return (int32_t)(time / time_quantum_s + 0.5f);
+}
+
+int secloc_gate_evaluated_tick(
+    const SeclocState* state,
+    const SeclocConfig* config,
+    int32_t tick
+)
+{
+    if (config->ref_period_ticks <= 0) {
+        return 1;
+    }
+
+    /* tick < 0 means the caller has no tick source (time_quantum_s <= 0 in
+     * the time-based API); the throttle is bypassed then. */
+    if (tick < 0) {
+        return 1;
+    }
+
+    if (state->tick_last < 0) {
+        return 1;
+    }
+
+    return (tick - state->tick_last >= config->ref_period_ticks) ? 1 : 0;
 }
 
 int secloc_gate_evaluated(
@@ -36,42 +59,28 @@ int secloc_gate_evaluated(
     float time
 )
 {
-    if (config->ref_period_ticks <= 0) {
-        return 1;
-    }
+    int32_t tick = -1;
 
     /* ref_period_ticks > 0 requires time_quantum_s > 0 (the Python gate raises
      * in this case); callers wire the quantum from the control loop period. */
-    if (config->time_quantum_s <= 0.0f) {
-        return 1;
+    if (config->time_quantum_s > 0.0f) {
+        tick = secloc_tick_from_time(time, config->time_quantum_s);
     }
 
-    if (state->tick_last < 0) {
-        return 1;
-    }
-
-    {
-        int tick = secloc_tick_from_time(time, config->time_quantum_s);
-        return (tick - state->tick_last >= config->ref_period_ticks) ? 1 : 0;
-    }
+    return secloc_gate_evaluated_tick(state, config, tick);
 }
 
-int secloc_should_sample(
+int secloc_should_sample_tick(
     SeclocState* state,
     const SeclocConfig* config,
     float p,
-    float pd,
     float a,
-    float ad,
     float tp,
     float te,
-    float time
+    int32_t tick
 )
 {
-    (void)pd;
-    (void)ad;
-
-    if (!secloc_gate_evaluated(state, config, time)) {
+    if (!secloc_gate_evaluated_tick(state, config, tick)) {
         return 0;
     }
 
@@ -116,12 +125,38 @@ int secloc_should_sample(
     }
 
     if (ang_spike || pos_spike) {
-        state->time_last = time;
-        if (config->time_quantum_s > 0.0f) {
-            state->tick_last = secloc_tick_from_time(time, config->time_quantum_s);
+        if (tick >= 0) {
+            state->tick_last = tick;
         }
         return 1;
     }
 
     return 0;
+}
+
+int secloc_should_sample(
+    SeclocState* state,
+    const SeclocConfig* config,
+    float p,
+    float pd,
+    float a,
+    float ad,
+    float tp,
+    float te,
+    float time
+)
+{
+    (void)pd;
+    (void)ad;
+
+    int32_t tick = -1;
+    if (config->time_quantum_s > 0.0f) {
+        tick = secloc_tick_from_time(time, config->time_quantum_s);
+    }
+
+    int fired = secloc_should_sample_tick(state, config, p, a, tp, te, tick);
+    if (fired) {
+        state->time_last = time;
+    }
+    return fired;
 }

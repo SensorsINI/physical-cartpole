@@ -46,6 +46,32 @@ void secloc_reset(SeclocState* state);
 /* Angle distance from the active target equilibrium (te > 0: up, te < 0: down). */
 float secloc_angle_shift_from_target(float a, float te);
 
+/* Throttle tick index for a given time; only meaningful for
+ * time_quantum_s > 0. Exposed so callers that precompute the tick (PL/HLS
+ * frontend, firmware link) use the exact same rounding as the gate. */
+int32_t secloc_tick_from_time(float time, float time_quantum_s);
+
+/* Tick-based core API. Used directly by callers that already computed the
+ * throttle tick (the HLS PL frontend compiles this very file; the firmware PL
+ * link mirrors it). tick < 0 means "no tick available": the throttle is
+ * bypassed and tick_last is not refreshed on update, exactly like the
+ * time-based API behaves with time_quantum_s <= 0. */
+int secloc_gate_evaluated_tick(
+    const SeclocState* state,
+    const SeclocConfig* config,
+    int32_t tick
+);
+
+int secloc_should_sample_tick(
+    SeclocState* state,
+    const SeclocConfig* config,
+    float p,
+    float a,
+    float tp,
+    float te,
+    int32_t tick
+);
+
 /* 1 when the ref_period throttle allows a gate decision at this time (i.e. the
  * gate is actually consulted); 0 when the call would be throttled. Read-only. */
 int secloc_gate_evaluated(
