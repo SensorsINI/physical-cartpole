@@ -134,6 +134,10 @@ def replay_secloc(
     angles = select_angle_series(df, input_mode)
     positions = df["position"].to_numpy(dtype=np.float64)
     targets = df["target_position"].to_numpy(dtype=np.float64)
+    if "target_equilibrium" in df.columns:
+        equilibria = df["target_equilibrium"].to_numpy(dtype=np.float64)
+    else:
+        equilibria = np.ones(len(df), dtype=np.float64)
     times = df["time"].to_numpy(dtype=np.float64)
 
     gate = SeclocGate(
@@ -147,8 +151,8 @@ def replay_secloc(
     angle_spikes = 0
     position_spikes = 0
 
-    for idx, (angle, position, target, time) in enumerate(
-        zip(angles, positions, targets, times)
+    for idx, (angle, position, target, equilibrium, time) in enumerate(
+        zip(angles, positions, targets, equilibria, times)
     ):
         s = create_cartpole_state()
         s[ANGLE_IDX] = angle
@@ -158,7 +162,9 @@ def replay_secloc(
 
         ang_before = gate.ang_last_shift
         pos_before = gate.pos_last_shift
-        did_update = gate.should_sample(s, target, time=time)
+        did_update = gate.should_sample(
+            s, target, time=time, target_equilibrium=equilibrium
+        )
         skipped[idx] = int(not did_update)
 
         if did_update:

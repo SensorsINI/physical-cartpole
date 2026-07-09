@@ -1523,10 +1523,15 @@ def test_quantized_sensors_reproduce_log_base_cliff(capsys):
         f"1.05 -> {quant_at_105.skipped_pct:.1f}%"
     )
 
+    # Thresholds recalibrated for the independent-axis gate: quantized-angle
+    # plateaus no longer block position from firing, so the cliff above
+    # log_base 1.0 is real but much smaller than with the old angle-first gate
+    # (measured: 1.00 -> 1.0%, 1.002 -> 5.7%, 1.05 -> 7.5%).
     assert float_at_105.skipped_pct < 20.0
     assert quant_at_1.skipped_pct < 2.0
-    assert quant_at_1002.skipped_pct > 30.0
-    assert quant_at_105.skipped_pct > 30.0
+    assert quant_at_1002.skipped_pct > quant_at_1.skipped_pct + 3.0
+    assert quant_at_105.skipped_pct >= quant_at_1002.skipped_pct
+    assert quant_at_105.skipped_pct > 4.0
     assert plateau > 25.0
 
 
@@ -1554,10 +1559,13 @@ def test_gate_skip_breakdown_separates_quant_plateau(capsys):
         f"skip|changed {float_row.skip_given_changed_pct:.1f}%"
     )
 
-    assert quant_row.skipped_pct > float_row.skipped_pct + 20.0
+    # Thresholds recalibrated for the independent-axis gate (measured:
+    # quant total 7.5% vs float 1.5%, skip|flat 100%, skip|changed 5.7% vs 1.5%,
+    # plateau-skip share 25%).
+    assert quant_row.skipped_pct > float_row.skipped_pct + 4.0
     assert quant_row.skip_given_flat_pct > 95.0
-    assert quant_row.skip_given_changed_pct > float_row.skip_given_changed_pct + 20.0
-    assert quant_row.quant_plateau_skip_share_pct < 20.0
+    assert quant_row.skip_given_changed_pct > float_row.skip_given_changed_pct + 2.0
+    assert quant_row.quant_plateau_skip_share_pct < 40.0
     assert float_row.skip_given_changed_pct < 15.0
 
 

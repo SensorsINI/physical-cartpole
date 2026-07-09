@@ -65,8 +65,10 @@ def test_secloc_status_counts_both_changed_skips():
     )
 
     # Small steps on both axes stay below log_base threshold -> skipped with both changed.
+    # (The first poll fires both axes and sets the references; it is not recorded in
+    # the poll stats. All subsequent ratios stay < log_base on both axes.)
     angles = [0.01 + 0.0001 * i for i in range(12)]
-    positions = [0.0 + 0.0001 * i for i in range(12)]
+    positions = [0.01 + 0.0001 * i for i in range(12)]
     s = create_cartpole_state()
     time = 0.0
     dt = 0.025

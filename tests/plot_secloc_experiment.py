@@ -111,6 +111,10 @@ def replay_poll_stats(
     angles = df["angle"].to_numpy(dtype=np.float64)
     positions = df["position"].to_numpy(dtype=np.float64)
     targets = df["target_position"].to_numpy(dtype=np.float64)
+    if "target_equilibrium" in df.columns:
+        equilibria = df["target_equilibrium"].to_numpy(dtype=np.float64)
+    else:
+        equilibria = np.ones(len(df), dtype=np.float64)
     times = clock if clock is not None else df["time"].to_numpy(dtype=np.float64)
     state_len = len(create_cartpole_state())
 
@@ -133,10 +137,11 @@ def replay_poll_stats(
         angle = angles[row]
         position = positions[row]
         target = targets[row]
+        equilibrium = equilibria[row]
         time = times[row]
 
         time_difference = gate.time_difference(time)
-        ang_shift = abs(angle)
+        ang_shift = gate.logic.angle_shift_from_target(angle, equilibrium)
         pos_shift = abs(position - target)
         gate_evaluated = gate.logic.period_elapsed(
             time=time, time_difference=time_difference
@@ -153,7 +158,8 @@ def replay_poll_stats(
             if gate_evaluated:
                 # Deadline/busy row: the driver still logs the pure-gate peek.
                 would_update = gate.peek_would_update(
-                    s, target, time=time, time_difference=time_difference
+                    s, target, time=time, time_difference=time_difference,
+                    target_equilibrium=equilibrium,
                 )
                 if not would_update:
                     record(row, time, ang_shift, pos_shift, skipped=True)
@@ -162,7 +168,10 @@ def replay_poll_stats(
                 loops_since_trigger = 0
             continue
 
-        spike = gate.should_sample(s, target, time=time, time_difference=time_difference)
+        spike = gate.should_sample(
+            s, target, time=time, time_difference=time_difference,
+            target_equilibrium=equilibrium,
+        )
 
         if respect_split_control_busy and spike:
             busy = True
@@ -876,9 +885,11 @@ def plot_timeseries(
         "\n"
         "Setup.  A model-predictive controller (MPC) balances a physical cartpole. To save computation, a Secloc "
         "event gate sits in front of the MPC: at each decision it either\n"
-        "recomputes the control plan (update) or keeps the previous one (skip). It updates only when |angle| or "
-        f"|position \u2212 target| changed by a factor \u2265 {log_base:g} (log_base)\n"
-        "since the last update; otherwise it skips. Gray bands mark upright stabilization phases (target up, pole "
+        "recomputes the control plan (update) or keeps the previous one (skip). It updates only when the angle distance "
+        "from the active target equilibrium (|angle| for target up,\n"
+        f"\u03c0 \u2212 |angle| for target down) or |position \u2212 target| changed by a factor \u2265 {log_base:g} (log_base) "
+        "since the last update; the two checks are independent and either\n"
+        "can fire. Otherwise it skips. Gray bands mark upright stabilization phases (target up, pole "
         "near vertical); the other periods are swing-up/swing-down transitions.\n"
         "\n"
         f"Timing.  The CSV saves a row every {poll_ms:.0f} ms. After an update the rig is busy for "
