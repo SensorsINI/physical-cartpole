@@ -9,6 +9,7 @@
 typedef enum {
     SECLOC_INNER_LQR = 0,
     SECLOC_INNER_PID = 1,
+    SECLOC_INNER_NNC = 2,  /* pure-C neural imitator (NNC_Ops, NC_C/network.c) */
 } SeclocInnerController;
 
 extern SeclocInnerController secloc_inner_controller;
