@@ -1,4 +1,4 @@
-#include "secloc.h"
+#include "secloc_logic.h"
 
 #define SECLOC_PI_F 3.14159265358979323846f
 

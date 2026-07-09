@@ -10,7 +10,7 @@
 #include <math.h>
 
 #include "secloc_controller.h"
-#include "secloc.h"
+#include "secloc_logic.h"
 #include "secloc_defaults.h"
 #include "lqr.h"
 #include "hardware_pid.h"

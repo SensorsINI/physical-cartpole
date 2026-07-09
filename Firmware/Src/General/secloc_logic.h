@@ -1,13 +1,18 @@
-#ifndef SECLOC_H
-#define SECLOC_H
+#ifndef SECLOC_LOGIC_H
+#define SECLOC_LOGIC_H
 
 #include <stdint.h>
 
 /*
  * Sparse Event-Based Closed-Loop Control (SecLoc) gate.
  *
+ * Pure decision logic; Python counterpart is
+ * Control_Toolkit_ASF/Controllers/secloc_logic.py (CartPoleSimulation), kept
+ * in lockstep by tests/test_secloc_c_python_parity.py. Keep this file free of
+ * firmware and controller dependencies so it stays compilable standalone.
+ *
  * Decides whether a fresh controller computation is due, or whether the
- * previous control value should be held. Matches the Python SeclocGate logic:
+ * previous control value should be held. Matches the Python SeclocLogic:
  *   - optional ref_period throttle: after an accepted update the gate is not
  *     consulted again until ref_period_ticks control loop iterations (ticks of
  *     time_quantum_s) have elapsed; 0 and 1 both mean the gate is consulted
@@ -62,4 +67,4 @@ int secloc_should_sample(
     float time
 );
 
-#endif /* SECLOC_H */
+#endif /* SECLOC_LOGIC_H */

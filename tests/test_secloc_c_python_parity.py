@@ -1,7 +1,7 @@
 """C vs Python parity tests for the Secloc gate.
 
-Compiles Firmware/Src/General/secloc.c on the PC and drives it with the same
-input sequences as the Python SeclocGate (Control_Toolkit_ASF), asserting the
+Compiles Firmware/Src/General/secloc_logic.c on the PC and drives it with the
+same input sequences as the Python SeclocLogic (Control_Toolkit_ASF), asserting the
 two implementations take identical update/skip decisions and keep identical
 reference state.
 
@@ -34,7 +34,7 @@ from CartPoleSimulation.CartPole.state_utilities import (  # noqa: E402
     POSITION_IDX,
     create_cartpole_state,
 )
-from Control_Toolkit_ASF.Controllers.secloc_gate import SeclocLogic  # noqa: E402
+from Control_Toolkit_ASF.Controllers.secloc_logic import SeclocLogic  # noqa: E402
 
 # float32-representable so the C (float) and Python (double) threshold constants
 # are the same number.
@@ -77,7 +77,7 @@ def secloc_lib(tmp_path_factory):
             "-std=c99",
             "-o",
             str(library),
-            str(FIRMWARE_GENERAL / "secloc.c"),
+            str(FIRMWARE_GENERAL / "secloc_logic.c"),
             "-I",
             str(FIRMWARE_GENERAL),
             "-lm",
