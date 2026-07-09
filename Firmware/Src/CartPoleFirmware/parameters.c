@@ -7,12 +7,12 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short POLLING_PERIOD_MS				=		8;
+unsigned short POLLING_PERIOD_MS				=		5;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
 // Calculating derivatives and dead angle detection
-unsigned short TIMESTEPS_FOR_DERIVATIVE				=		1;  // 20 at most. Boot default; the driver overrides it at startup via CMD_SET_CONTROL_CONFIG to keep the derivative window at ~20 ms for any polling period (short windows amplify ADC quantization noise).
+unsigned short TIMESTEPS_FOR_DERIVATIVE				=		4;  // 20 at most. 4 x 5 ms = 20 ms derivative window; matches Driver/globals.py (driver may still override via CMD_SET_CONTROL_CONFIG).
 // TIMESTEPS_FOR_DERIVATIVE: How many timesteps are taken for derivative (position and angle) calculation
 // and dead angle detection.
 // Too small value makes the effect of sensor quantization severe.
