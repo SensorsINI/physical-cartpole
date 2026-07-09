@@ -54,7 +54,7 @@ bool USE_TARGET_SWITCHES							=		false;					// Needs to be always false for STM
 // taken from the lab's working setup / Zedboard branch commit ff081abf).
 float MOTOR_CORRECTION[3] 							=		{0.5846884, 0.0223145, 0.0224489}; // Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
 
-float ANGLE_HANGING_POLOLU 							=		1075;  // Value from sensor when pendulum is at stable equilibrium point
+float ANGLE_HANGING_POLOLU 							=		1068;  // Value from sensor when pendulum is at stable equilibrium point
 float ANGLE_HANGING_ORIGINAL						=		1075;  // Value from sensor when pendulum is at stable equilibrium point
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4302;  // Must match Driver/globals.py ZYNQ value; mismatch shifts on-chip angle zero
