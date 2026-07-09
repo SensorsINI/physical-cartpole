@@ -17,6 +17,7 @@ from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import Exp
 from Driver.DriverFunctions.dancer import Dancer
 from DriverFunctions.timing_helper import TimingHelper
 from DriverFunctions.split_control_loop import SplitControlLoop
+from DriverFunctions.chip_secloc_stats import ChipSeclocStatistics
 from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
 from Control_Toolkit.serial_interface_helper import get_serial_port, set_ftdi_latency_timer
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
@@ -98,6 +99,9 @@ class PhysicalCartPoleDriver:
         # mirrored to the chip at startup and whenever the yaml changes.
         self.chip_secloc_config = None
         self._chip_secloc_sent = None
+        # Rolling statistics over the on-chip gate telemetry, for the terminal
+        # status line during firmware control.
+        self.chip_secloc_stats = ChipSeclocStatistics()
         self.terminate_experiment = False
         self.controller_status_print_period = 1.0
         self._last_controller_status_print_time = -np.inf
@@ -396,6 +400,15 @@ class PhysicalCartPoleDriver:
         else:
             if self.firmwareControl:
                 self.Q = self.command / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+                self.chip_secloc_stats.record_telemetry(
+                    self.secloc_skipped_update_chip,
+                    self.secloc_gate_skipped_chip,
+                    self.s,
+                    self.target_position,
+                    time=self.th.time_current_measurement_chip,
+                    target_equilibrium=self.CartPoleInstance.target_equilibrium,
+                )
+                self.print_controller_status_if_available()
 
         self.Q = self.joystick.action(self.s[POSITION_IDX], self.Q, self.controlEnabled)
 
@@ -442,16 +455,23 @@ class PhysicalCartPoleDriver:
         ):
             return
 
-        get_controller_status = getattr(self.controller, "get_controller_status", None)
-        controller_status = get_controller_status() if get_controller_status is not None else None
+        if self.firmwareControl:
+            # On-chip SecLoc: chip_secloc_stats aggregates the gate telemetry
+            # flags streamed with every state packet.
+            label = "secloc@chip"
+            status_parts = [self.chip_secloc_stats.get_status()]
+        else:
+            label = self.control_label
+            get_controller_status = getattr(self.controller, "get_controller_status", None)
+            controller_status = get_controller_status() if get_controller_status is not None else None
 
-        status_parts = []
-        if controller_status:
-            status_parts.append(controller_status)
-        status_parts.append(self.split_control.get_status())
+            status_parts = []
+            if controller_status:
+                status_parts.append(controller_status)
+            status_parts.append(self.split_control.get_status())
 
         if status_parts:
-            self._cached_controller_status = f"[{self.control_label}] " + " | ".join(status_parts)
+            self._cached_controller_status = f"[{label}] " + " | ".join(status_parts)
             self._last_controller_status_print_time = self.th.time_current_measurement_chip
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
@@ -592,6 +612,10 @@ class PhysicalCartPoleDriver:
         self.firmwareControl = not self.firmwareControl
         if self.firmwareControl and self.controlEnabled:
             self.switch_off_control()
+        if self.firmwareControl:
+            self.chip_secloc_stats.reset_statistics()
+        else:
+            self._cached_controller_status = None
         print("\nFirmware Control", self.firmwareControl)
         self.InterfaceInstance.control_mode(self.firmwareControl)
 
