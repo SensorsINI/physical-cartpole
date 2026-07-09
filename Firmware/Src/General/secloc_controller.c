@@ -11,6 +11,7 @@
 
 #include "secloc_controller.h"
 #include "secloc.h"
+#include "secloc_defaults.h"
 #include "lqr.h"
 #include "hardware_pid.h"
 #include "neural_controller_C.h"
@@ -26,23 +27,34 @@ static const ControllerSpec SECLOC_Spec = {
     .names     = SECLOC_InputNames
 };
 
-/* Defaults match the deployed Python gate profile (config_secloc.yml,
- * physical_mpc) except ref_period, which the C gate does not implement. */
 static SeclocConfig secloc_config = {
-    .log_base       = 1.05f,
-    .ang_dead_band  = 0.001f,
-    .pos_dead_band  = 0.001f,
+    .log_base         = SECLOC_DEFAULT_LOG_BASE,
+    .ref_period_ticks = SECLOC_DEFAULT_REF_PERIOD_TICKS,
+    .ang_dead_band    = SECLOC_DEFAULT_DEAD_ANG,
+    .pos_dead_band    = SECLOC_DEFAULT_DEAD_POS,
+    .time_quantum_s   = SECLOC_DEFAULT_TIME_QUANTUM_S,
 };
 
 static SeclocState secloc_state;
 static uint8_t secloc_last_skipped_update = 0;
 static uint8_t secloc_last_gate_skipped = 0;
 
-void secloc_controller_set_config(float log_base, float ang_dead_band, float pos_dead_band)
+void secloc_controller_set_config(
+    float log_base,
+    int32_t ref_period_ticks,
+    float ang_dead_band,
+    float pos_dead_band
+)
 {
-    secloc_config.log_base      = log_base;
-    secloc_config.ang_dead_band = ang_dead_band;
-    secloc_config.pos_dead_band = pos_dead_band;
+    secloc_config.log_base         = log_base;
+    secloc_config.ref_period_ticks = ref_period_ticks;
+    secloc_config.ang_dead_band    = ang_dead_band;
+    secloc_config.pos_dead_band    = pos_dead_band;
+}
+
+void secloc_controller_set_time_quantum(float time_quantum_s)
+{
+    secloc_config.time_quantum_s = time_quantum_s;
 }
 
 const SeclocState* secloc_controller_get_state(void)
@@ -160,13 +172,18 @@ static void SECLOC_Evaluate(const float* in, float* out)
     const float te = in[5];
     const float time = in[6];
 
-    if (secloc_should_sample(&secloc_state, &secloc_config, p, pd, a, ad, tp, te)) {
+    /* Matches the Python CSV semantics: gate_skipped is only set when the gate
+     * was actually consulted (ref_period elapsed) and declined; rows where the
+     * throttle blocked the call hold Q but are not gate decisions. */
+    int gate_evaluated = secloc_gate_evaluated(&secloc_state, &secloc_config, time);
+
+    if (secloc_should_sample(&secloc_state, &secloc_config, p, pd, a, ad, tp, te, time)) {
         secloc_state.last_Q = secloc_inner_evaluate(p, pd, a, ad, tp, te, time);
         secloc_last_skipped_update = 0;
         secloc_last_gate_skipped = 0;
     } else {
         secloc_last_skipped_update = 1;
-        secloc_last_gate_skipped = 1;
+        secloc_last_gate_skipped = gate_evaluated ? 1 : 0;
     }
 
     out[0] = secloc_state.last_Q;

@@ -8,6 +8,8 @@ void secloc_reset(SeclocState* state)
     state->pos_last_shift = 0.0001f;
     state->last_Q = 0.0f;
     state->has_init = 1;
+    state->time_last = 0.0f;
+    state->tick_last = -1;
 }
 
 float secloc_angle_shift_from_target(float a, float te)
@@ -23,6 +25,37 @@ float secloc_angle_shift_from_target(float a, float te)
     return shift;
 }
 
+static int secloc_tick_from_time(float time, float time_quantum_s)
+{
+    return (int)(time / time_quantum_s + 0.5f);
+}
+
+int secloc_gate_evaluated(
+    const SeclocState* state,
+    const SeclocConfig* config,
+    float time
+)
+{
+    if (config->ref_period_ticks <= 0) {
+        return 1;
+    }
+
+    /* ref_period_ticks > 0 requires time_quantum_s > 0 (the Python gate raises
+     * in this case); callers wire the quantum from the control loop period. */
+    if (config->time_quantum_s <= 0.0f) {
+        return 1;
+    }
+
+    if (state->tick_last < 0) {
+        return 1;
+    }
+
+    {
+        int tick = secloc_tick_from_time(time, config->time_quantum_s);
+        return (tick - state->tick_last >= config->ref_period_ticks) ? 1 : 0;
+    }
+}
+
 int secloc_should_sample(
     SeclocState* state,
     const SeclocConfig* config,
@@ -31,11 +64,16 @@ int secloc_should_sample(
     float a,
     float ad,
     float tp,
-    float te
+    float te,
+    float time
 )
 {
     (void)pd;
     (void)ad;
+
+    if (!secloc_gate_evaluated(state, config, time)) {
+        return 0;
+    }
 
     float ang_shift = secloc_angle_shift_from_target(a, te);
     float pos_shift = p - tp;
@@ -77,5 +115,13 @@ int secloc_should_sample(
         state->pos_last_shift = pos_shift;
     }
 
-    return (ang_spike || pos_spike) ? 1 : 0;
+    if (ang_spike || pos_spike) {
+        state->time_last = time;
+        if (config->time_quantum_s > 0.0f) {
+            state->tick_last = secloc_tick_from_time(time, config->time_quantum_s);
+        }
+        return 1;
+    }
+
+    return 0;
 }

@@ -154,6 +154,7 @@ void CONTROL_Init(void)
     correct_motor_dynamics = (current_controller == OnChipController_PID) ? false : true;
 
     CB_Init(&g_cb);
+    secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
 }
 
 void CONTROL_ToggleState(void)
@@ -887,6 +888,7 @@ void cmd_SetControlConfig(const unsigned char * config)
 
     SetControlUpdatePeriod(POLLING_PERIOD_MS);
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+    secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
 
     HardwareConfigSetFromPC = true;
 

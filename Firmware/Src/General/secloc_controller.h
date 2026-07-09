@@ -7,9 +7,21 @@
 
 extern const ControllerOps SECLOC_Ops;
 
-/* Override the gate parameters baked into secloc_controller.c (defaults:
- * log_base 1.05, dead bands 0). Call before or after SECLOC_Ops.init. */
-void secloc_controller_set_config(float log_base, float ang_dead_band, float pos_dead_band);
+/* Override the gate parameters baked into secloc_defaults.h. Call any time;
+ * the PC driver pushes its config_secloc.yml values through this at startup
+ * and whenever the yaml changes (CMD_SET_SECLOC_CONFIG). ref_period_ticks is
+ * the throttle in control loop iterations (0 or 1 = gate checked every
+ * iteration). */
+void secloc_controller_set_config(
+    float log_base,
+    int32_t ref_period_ticks,
+    float ang_dead_band,
+    float pos_dead_band
+);
+
+/* Tick size of the ref_period throttle; must equal the control loop period.
+ * control.c wires this from POLLING_PERIOD_MS. */
+void secloc_controller_set_time_quantum(float time_quantum_s);
 
 /* Read-only view of the gate state (last shifts, last_Q) for tests/telemetry. */
 const SeclocState* secloc_controller_get_state(void);
