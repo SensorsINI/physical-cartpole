@@ -103,6 +103,7 @@ void 			cmd_ControlMode(bool en);
 void			cmd_PCControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
+void			cmd_SetSeclocConfig(const unsigned char * config);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
 void			cmd_SetAngleFilter(const unsigned short, const unsigned short, const unsigned short);
 void			cmd_RunHardwareExperiment(void);
@@ -615,6 +616,11 @@ void CONTROL_BackgroundTask(void)
 			cmd_SetAngleFilter(window_size, trim_count, filter_mode);
 			break;
 		}
+		case CMD_SET_SECLOC_CONFIG:
+		{
+			cmd_SetSeclocConfig(&rxBuffer[3]);
+			break;
+		}
 		default:
 		{
 			break;
@@ -891,6 +897,21 @@ void cmd_SetControlConfig(const unsigned char * config)
     secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
 
     HardwareConfigSetFromPC = true;
+
+	enable_irq();
+}
+
+
+void cmd_SetSeclocConfig(const unsigned char * config)
+{
+	disable_irq();
+
+	float   log_base         = *((float   *)&config[ 0]);
+	int32_t ref_period_ticks = *((int32_t *)&config[ 4]);
+	float   dead_ang         = *((float   *)&config[ 8]);
+	float   dead_pos         = *((float   *)&config[12]);
+
+	secloc_controller_set_config(log_base, ref_period_ticks, dead_ang, dead_pos);
 
 	enable_irq();
 }

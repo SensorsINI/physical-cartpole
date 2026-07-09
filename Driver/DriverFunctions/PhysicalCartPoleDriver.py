@@ -24,6 +24,7 @@ from Driver.DriverFunctions.keyboard_controller import KeyboardController
 from Driver.DriverFunctions.DVS.angle_pos_client import AnglePositionClient
 
 from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdater
+from Control_Toolkit_ASF.Controllers.secloc_gate import SeclocGate
 
 from globals import (
     CHIP,
@@ -93,6 +94,10 @@ class PhysicalCartPoleDriver:
         self.firmwareControl = False
         self.secloc_skipped_update_chip = 0
         self.secloc_gate_skipped_chip = 0
+        # PC-side view of the SecLoc parameters on the chip (config_secloc.yml);
+        # mirrored to the chip at startup and whenever the yaml changes.
+        self.chip_secloc_config = None
+        self._chip_secloc_sent = None
         self.terminate_experiment = False
         self.controller_status_print_period = 1.0
         self._last_controller_status_print_time = -np.inf
@@ -184,17 +189,23 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS, timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
         if hasattr(self.controller, 'secloc'):
-            # Chip timestamps sit on an exact POLLING_PERIOD_MS grid; with the
-            # quantum set the gate counts integer ticks instead of comparing
-            # float seconds against ref_period with a tolerance.
+            # Chip timestamps sit on an exact POLLING_PERIOD_MS grid; the gate's
+            # ref_period throttle counts integer ticks of this quantum.
             polling_period_s = POLLING_PERIOD_MS / 1000.0
             self.controller.secloc.set_time_quantum(polling_period_s)
             print(
                 f"Secloc gate tick quantum: {POLLING_PERIOD_MS} ms "
-                f"(ref_period {self.controller.secloc.ref_period * 1000:.0f} ms = "
-                f"{self.controller.secloc.logic.ref_period_ticks} ticks)",
+                f"(ref_period_ticks {self.controller.secloc.ref_period_ticks} = "
+                f"{self.controller.secloc.ref_period_ticks * POLLING_PERIOD_MS:.0f} ms)",
                 flush=True,
             )
+
+        # Mirror the SecLoc gate profile onto the chip so on-chip SecLoc runs
+        # with the same parameters as the Python gate; the watcher re-sends the
+        # values whenever config_secloc.yml changes during operation.
+        self.chip_secloc_config = SeclocGate.from_config_file('default')
+        self.chip_secloc_config.start_config_watcher('default')
+        self._sync_chip_secloc_config()
 
         if CHIP == 'ZYNQ' and HARDWARE_ANGLE_FILTER_OVERRIDE:
             self.InterfaceInstance.set_angle_filter(
@@ -273,9 +284,34 @@ class PhysicalCartPoleDriver:
         self.mlm.live_plotter_sender.close()
         self.mlm.finish_csv_recording()
 
+    def _sync_chip_secloc_config(self):
+        """Send the SecLoc gate parameters to the chip if they changed.
+
+        Runs every io_step (cheap tuple compare); the actual serial write only
+        happens at startup and after config_secloc.yml was edited on disk.
+        """
+        self.chip_secloc_config.update_from_config_file_if_needed()
+        values = (
+            float(self.chip_secloc_config.log_base),
+            int(self.chip_secloc_config.ref_period_ticks),
+            float(self.chip_secloc_config.dead_ang),
+            float(self.chip_secloc_config.dead_pos),
+        )
+        if values == self._chip_secloc_sent:
+            return
+        self.InterfaceInstance.set_secloc_config(*values)
+        self._chip_secloc_sent = values
+        print(
+            f"Chip SecLoc config sent: log_base={values[0]:g}, "
+            f"ref_period_ticks={values[1]}, dead_ang={values[2]:g}, dead_pos={values[3]:g}",
+            flush=True,
+        )
+
     def io_step(self):
 
         self.keyboard_controller.keyboard_input()
+
+        self._sync_chip_secloc_config()
 
         self.load_data_from_chip()
         self.check_calibration_status()
@@ -358,10 +394,8 @@ class PhysicalCartPoleDriver:
             if AUTOSTART:
                 self.Q = 0
         else:
-            pass
-            # Observing Firmware Control: set values from firmware for logging
-            # self.actualMotorCmd = self.command
-            # self.Q = self.command / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
+            if self.firmwareControl:
+                self.Q = self.command / MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES
 
         self.Q = self.joystick.action(self.s[POSITION_IDX], self.Q, self.controlEnabled)
 

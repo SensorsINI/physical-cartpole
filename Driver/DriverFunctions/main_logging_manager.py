@@ -119,6 +119,12 @@ class MainLoggingManager:
     def _controller_data_to_save(self):
         data = FunctionalDict()
         data.update(self.data_to_save_controller)
+        if self.driver.firmwareControl:
+            # On-chip SecLoc telemetry parsed from the state packet; the PC
+            # controller is idle so its csv dict is not consulted.
+            data['secloc_skipped_update'] = lambda: int(self.driver.secloc_skipped_update_chip)
+            data['secloc_gate_skipped'] = lambda: int(self.driver.secloc_gate_skipped_chip)
+            return data
         controller = getattr(self.driver, "controller", None)
         controller_data = getattr(controller, "controller_data_for_csv", {})
         for key in controller_data:
@@ -226,7 +232,10 @@ class MainLoggingManager:
             combined_keys = list(self.dict_data_to_save_basic.keys()) + list(
                 self.data_to_save_measurement.keys()) + list(self._controller_data_to_save().keys())
 
-            self.driver.CartPoleInstance.dt_controller = CONTROLLER_APPLY_WINDOW_MS / 1000
+            self.driver.CartPoleInstance.dt_controller = (
+                POLLING_PERIOD_MS / 1000 if self.driver.firmwareControl
+                else CONTROLLER_APPLY_WINDOW_MS / 1000
+            )
             self.driver.CartPoleInstance.dt_save = POLLING_PERIOD_MS / 1000
 
             header = create_csv_header(self.driver.CartPoleInstance, mode='CPP')
@@ -247,11 +256,24 @@ class MainLoggingManager:
                     mode_lines.append(
                         "Hardware angle filter: firmware boot default (trimmed mean 63/7)"
                     )
-            if USE_SECLOC:
+            if self.driver.firmwareControl:
+                # The driver mirrors config_secloc.yml onto the chip
+                # (CMD_SET_SECLOC_CONFIG), so the PC-side view is authoritative
+                # for what the chip gate is running.
+                chip_gate = self.driver.chip_secloc_config
+                mode_lines[0] = "Secloc on chip: True"
+                mode_lines[1:1] = [
+                    "On-chip controller: secloc+neural_controller_C",
+                    f"Secloc log_base: {chip_gate.log_base:g}",
+                    f"Secloc ref_period_ticks: {chip_gate.ref_period_ticks}",
+                    f"Secloc dead_ang: {chip_gate.dead_ang:g}",
+                    f"Secloc dead_pos: {chip_gate.dead_pos:g}",
+                ]
+            elif USE_SECLOC:
                 secloc = self.driver.controller.secloc
                 mode_lines[1:1] = [
                     f"Secloc log_base: {secloc.log_base}",
-                    f"Secloc ref_period: {secloc.ref_period}",
+                    f"Secloc ref_period_ticks: {secloc.ref_period_ticks}",
                     f"Secloc dead_ang: {secloc.dead_ang}",
                     f"Secloc dead_pos: {secloc.dead_pos}",
                 ]

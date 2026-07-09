@@ -60,7 +60,7 @@ MOTOR = 'POLOLU'
 # CONTROLLER_APPLY_WINDOW_MS after the trigger. The classic cadence is the special case
 # window == period (compute each period, apply at the next tick).
 if USE_SECLOC and CONTROLLER_NAME in ('mpc', 'neural-imitator'):
-    # Fast IO for Secloc gate; ref_period in config_secloc.yml limits update rate to 20 ms.
+    # Fast IO for Secloc gate; ref_period_ticks in config_secloc.yml limits update rate (4 ticks = 20 ms).
     POLLING_PERIOD_MS = 5
     CONTROLLER_APPLY_WINDOW_MS = 20  # 4 IO loops; neural forward pass is << 20 ms
 elif CONTROLLER_NAME == 'pid':

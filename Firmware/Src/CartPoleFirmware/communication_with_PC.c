@@ -173,6 +173,16 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
+							case CMD_SET_SECLOC_CONFIG:
+							{
+								// float log_base, int32 ref_period_ticks, float dead_ang, float dead_pos
+								if (pktLen == 20)
+								{
+									current_command = CMD_SET_SECLOC_CONFIG;
+								}
+								break;
+							}
+
 							default:
 							{
 								break;

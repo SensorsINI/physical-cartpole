@@ -26,6 +26,7 @@ CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
 CMD_TRANSFER_BUFFERS = 0xD1
 CMD_SET_ANGLE_FILTER = 0xD2
+CMD_SET_SECLOC_CONFIG = 0xD3
 
 # Hardware XADC filter modes; must match Firmware/Src/Zynq/goniometer_zynq.h
 # and FPGA/CustomIPs/median_filter_hls/median_functions.h.
@@ -268,6 +269,16 @@ class Interface:
     def set_target_equilibrium(self, target_equilibrium):
         msg = [SERIAL_SOF, CMD_SET_TARGET_EQUILIBRIUM, 8]
         msg += list(struct.pack('f', target_equilibrium))
+        msg.append(self._crc(msg))
+        self._write_message(msg)
+
+    def set_secloc_config(self, log_base, ref_period_ticks, dead_ang, dead_pos):
+        """Overwrite the on-chip SecLoc gate parameters (see secloc_defaults.h).
+
+        ref_period_ticks is an integer number of control loop iterations
+        (POLLING_PERIOD_MS each) between accepted gate updates."""
+        msg = [SERIAL_SOF, CMD_SET_SECLOC_CONFIG, 20]
+        msg += list(struct.pack('=fi2f', log_base, int(ref_period_ticks), dead_ang, dead_pos))
         msg.append(self._crc(msg))
         self._write_message(msg)
 
