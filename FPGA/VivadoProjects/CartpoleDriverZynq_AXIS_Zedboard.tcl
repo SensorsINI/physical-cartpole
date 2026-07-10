@@ -164,7 +164,7 @@ set files [list \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_14s_12s_25_2_1.vhd"] \
  [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_15s_12s_26_2_1.vhd"] \
  [file normalize "${origin_dir}/../Interfaces/controller_adapter_cp.vhd"] \
- [file normalize "${origin_dir}/../Interfaces/controller_axilite.vhd"] \
+ [file normalize "${origin_dir}/../Interfaces/controller_axis.vhd"] \
  [file normalize "${origin_dir}/../CustomIPs/PmodAD1/ad1_spi.v"] \
  [file normalize "${origin_dir}/../CustomIPs/PmodAD1/PmodAD1_AXI.v"] \
 ]
@@ -287,7 +287,7 @@ set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../Interfaces/controller_axilite.vhd"
+set file "$origin_dir/../Interfaces/controller_axis.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -350,7 +350,7 @@ set obj [get_filesets utils_1]
 proc cr_bd_cartpole_driver_design { parentCell } {
 # The design that will be created by this Tcl proc contains the following 
 # module references:
-# PmodAD1_AXI, edgedrnn_wrapper, controller_axilite
+# PmodAD1_AXI, edgedrnn_wrapper, controller_axis
 
 
 
@@ -377,6 +377,9 @@ proc cr_bd_cartpole_driver_design { parentCell } {
   xilinx.com:hls:motor_hls:1.0\
   xilinx.com:hls:quadrature_encoder:1.0\
   xilinx.com:ip:xadc_wiz:3.3\
+  xilinx.com:hls:secloc_shell:1.0\
+  xilinx.com:hls:secloc_gate:1.0\
+  xilinx.com:hls:nn_marshal:1.0\
   xilinx.com:ip:xlconstant:1.1\
   xilinx.com:ip:axi_uartlite:2.0\
   xilinx.com:ip:axi_datamover:5.1\
@@ -409,7 +412,7 @@ proc cr_bd_cartpole_driver_design { parentCell } {
      set list_check_mods "\ 
   PmodAD1_AXI\
   edgedrnn_wrapper\
-  controller_axilite\
+  controller_axis\
   "
 
    set list_mods_missing ""
@@ -434,10 +437,12 @@ proc cr_bd_cartpole_driver_design { parentCell } {
   }
 
   
-# NOTE: The former HLS4ML hierarchy (axi_dma_0 + axi_mem_intercon + mlp_axis_interface)
-# was replaced by a single AXI4-Lite module reference (controller_axilite) named
-# CONTROLLER_AXILITE_0 inside HARDWARE_ACCEL. The firmware auto-detects it through
-# XPAR_HARDWARE_ACCEL_CONTROLLER_AXILITE_0_BASEADDR (see Firmware hw_platform_config.h).
+# NOTE: The former fused SecLoc frontend (secloc_frontend_hls) was split into three
+# stream-connected HLS IPs: secloc_shell (AXI-Lite), secloc_gate (SecLoc + ZOH),
+# nn_marshal (per-network normalize/denormalize). They feed the unchanged hls4ml
+# network through controller_axis (CONTROLLER_AXIS_0). Firmware auto-detects the
+# shell through XPAR_HARDWARE_ACCEL_SECLOC_SHELL_0_S_AXI_CTRL_BASEADDR
+# (see Firmware hw_platform_config.h / secloc_frontend_link.c).
 
 # Hierarchical cell: EdgeDRNN
 proc create_hier_cell_EdgeDRNN { parentCell nameHier } {
@@ -701,13 +706,23 @@ proc create_hier_cell_HARDWARE_ACCEL { parentCell nameHier } {
   # Create instance: EdgeDRNN
   create_hier_cell_EdgeDRNN $hier_obj EdgeDRNN
 
-  # Create instance: CONTROLLER_AXILITE_0 (hls4ml controller behind an AXI4-Lite shell)
-  set block_name controller_axilite
-  set block_cell_name CONTROLLER_AXILITE_0
-  if { [catch {set CONTROLLER_AXILITE_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+  # Create instance: SECLOC_SHELL_0 (AXI-Lite register shell towards the PS)
+  set SECLOC_SHELL_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:secloc_shell:1.0 SECLOC_SHELL_0 ]
+
+  # Create instance: SECLOC_GATE_0 (SecLoc gate + zero-order hold, AXIS only)
+  set SECLOC_GATE_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:secloc_gate:1.0 SECLOC_GATE_0 ]
+
+  # Create instance: NN_MARSHAL_0 (per-network normalize/denormalize, AXIS only)
+  set NN_MARSHAL_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:nn_marshal:1.0 NN_MARSHAL_0 ]
+
+  # Create instance: CONTROLLER_AXIS_0 (AXIS <-> ap_ctrl bridge in front of the
+  # unchanged hls4ml network, controller_axis.vhd -> controller_adapter_cp -> myproject)
+  set block_name controller_axis
+  set block_cell_name CONTROLLER_AXIS_0
+  if { [catch {set CONTROLLER_AXIS_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
-   } elseif { $CONTROLLER_AXILITE_0 eq "" } {
+   } elseif { $CONTROLLER_AXIS_0 eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
@@ -726,13 +741,19 @@ proc create_hier_cell_HARDWARE_ACCEL { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_mem_intercon_1_M00_AXI [get_bd_intf_pins M00_AXI] [get_bd_intf_pins EdgeDRNN/M00_AXI]
   connect_bd_intf_net -intf_net axi_mem_intercon_2_M00_AXI [get_bd_intf_pins M00_AXI1] [get_bd_intf_pins EdgeDRNN/M00_AXI1]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins S00_AXI] [get_bd_intf_pins ps7_0_axi_periph/S00_AXI]
-  connect_bd_intf_net -intf_net ps7_0_axi_periph_M00_AXI [get_bd_intf_pins CONTROLLER_AXILITE_0/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M00_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M00_AXI [get_bd_intf_pins SECLOC_SHELL_0/s_axi_CTRL] [get_bd_intf_pins ps7_0_axi_periph/M00_AXI]
+  connect_bd_intf_net -intf_net secloc_shell_0_gate_req [get_bd_intf_pins SECLOC_SHELL_0/gate_req] [get_bd_intf_pins SECLOC_GATE_0/req_in]
+  connect_bd_intf_net -intf_net secloc_gate_0_resp_out [get_bd_intf_pins SECLOC_GATE_0/resp_out] [get_bd_intf_pins SECLOC_SHELL_0/gate_resp]
+  connect_bd_intf_net -intf_net secloc_gate_0_marshal_req [get_bd_intf_pins SECLOC_GATE_0/marshal_req] [get_bd_intf_pins NN_MARSHAL_0/gate_req]
+  connect_bd_intf_net -intf_net nn_marshal_0_gate_resp [get_bd_intf_pins NN_MARSHAL_0/gate_resp] [get_bd_intf_pins SECLOC_GATE_0/marshal_resp]
+  connect_bd_intf_net -intf_net nn_marshal_0_nn_req [get_bd_intf_pins NN_MARSHAL_0/nn_req] [get_bd_intf_pins CONTROLLER_AXIS_0/S_AXIS]
+  connect_bd_intf_net -intf_net controller_axis_0_m_axis [get_bd_intf_pins CONTROLLER_AXIS_0/M_AXIS] [get_bd_intf_pins NN_MARSHAL_0/nn_resp]
   connect_bd_intf_net -intf_net s_axi_1 [get_bd_intf_pins EdgeDRNN/s_axi] [get_bd_intf_pins ps7_0_axi_periph/M02_AXI]
 
   # Create port connections
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins ACLK] [get_bd_pins EdgeDRNN/m_axi_mm2s_aclk] [get_bd_pins CONTROLLER_AXILITE_0/S_AXI_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_25M/slowest_sync_clk]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins ACLK] [get_bd_pins EdgeDRNN/m_axi_mm2s_aclk] [get_bd_pins SECLOC_SHELL_0/ap_clk] [get_bd_pins SECLOC_GATE_0/ap_clk] [get_bd_pins NN_MARSHAL_0/ap_clk] [get_bd_pins CONTROLLER_AXIS_0/AXIS_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_25M/slowest_sync_clk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins ext_reset_in] [get_bd_pins rst_ps7_0_25M/ext_reset_in]
-  connect_bd_net -net rst_ps7_0_100M_peripheral_aresetn [get_bd_pins EdgeDRNN/m_axi_mm2s_aresetn] [get_bd_pins CONTROLLER_AXILITE_0/S_AXI_ARESETN] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_25M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_100M_peripheral_aresetn [get_bd_pins EdgeDRNN/m_axi_mm2s_aresetn] [get_bd_pins SECLOC_SHELL_0/ap_rst_n] [get_bd_pins SECLOC_GATE_0/ap_rst_n] [get_bd_pins NN_MARSHAL_0/ap_rst_n] [get_bd_pins CONTROLLER_AXIS_0/AXI_ARESETN] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_25M/peripheral_aresetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1534,7 +1555,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   assign_bd_address -offset 0x81210000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs RGB_LED_GPIO/S_AXI/Reg] -force
   assign_bd_address -offset 0x81220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs SWITCHES_AND_LEDS_GPIO/S_AXI/Reg] -force
   assign_bd_address -offset 0x83C40000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs UART_IP/S_AXI/Reg] -force
-  assign_bd_address -offset 0x40410000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/CONTROLLER_AXILITE_0/S_AXI/reg0] -force
+  assign_bd_address -offset 0x40410000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/SECLOC_SHELL_0/s_axi_CTRL/Reg] -force
   assign_bd_address -offset 0x40400000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/EdgeDRNN/axi_dma_1/S_AXI_LITE/Reg] -force
   assign_bd_address -offset 0x82C00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs UART_LITE_IP/axi_uartlite_0/S_AXI/Reg] -force
   assign_bd_address -offset 0x40000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/EdgeDRNN/edgedrnn_wrapper_0/s_axi/reg0] -force

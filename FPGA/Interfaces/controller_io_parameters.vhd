@@ -11,6 +11,7 @@
 --       input_1_V      : 84 bits = CONTROLLER_INPUTS * BITS_PER_CONTROLLER_INPUT
 --       layer9_out_0_V : 12 bits = CONTROLLER_OUTPUTS * BITS_PER_CONTROLLER_OUTPUT
 --     (FPGA/NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject.vhd)
+--   * the marshal IP compile-time nn_marshal_config.h in the same network folder
 --   * the firmware (Firmware/Src/Zynq/neural_imitator.h):
 --       MLP_ACTIVATION_NEURONS      = 7
 --       MLP_PREDICTION_NEURONS      = 1

@@ -1,10 +1,32 @@
-# Rebuild the full Zedboard design after the median_filter HLS IP was
-# regenerated: refresh the IP catalog, upgrade the IP instance inside the block
-# design (Vivado otherwise keeps using the cached/locked old revision), then
-# run synthesis + implementation to bitstream.
+# Rebuild the full Zedboard design after HLS IP regeneration: refresh the IP
+# catalog, upgrade stale IP instances inside the block design, then run
+# synthesis + implementation to bitstream.
 #
 # Usage (from this directory):
 #   vivado -mode batch -source refresh_ip_and_build.tcl
+
+set upgrade_patterns {
+    *median_filter*
+    *secloc_shell*
+    *secloc_gate*
+    *nn_marshal*
+}
+
+proc upgrade_bd_ips {patterns} {
+    set matched {}
+    foreach pat $patterns {
+        foreach ip [get_ips -quiet -filter "NAME =~ $pat"] {
+            lappend matched $ip
+        }
+    }
+    set matched [lsort -unique $matched]
+    if {[llength $matched] > 0} {
+        puts "Upgrading IP(s): $matched"
+        if {[catch {upgrade_ip $matched} err]} {
+            puts "upgrade_ip: $err (may already be current)"
+        }
+    }
+}
 
 open_project CartpoleDriverZynq_AXIS_Zedboard/CartpoleDriverZynq_AXIS_Zedboard.xpr
 
@@ -13,13 +35,7 @@ update_ip_catalog -rebuild
 set bd_file [get_files -quiet *.bd]
 if {$bd_file ne ""} {
     open_bd_design $bd_file
-    set stale_ips [get_ips -quiet -filter {NAME =~ "*median_filter*"}]
-    if {[llength $stale_ips] > 0} {
-        puts "Upgrading IP(s): $stale_ips"
-        if {[catch {upgrade_ip $stale_ips} err]} {
-            puts "upgrade_ip: $err (may already be current)"
-        }
-    }
+    upgrade_bd_ips $upgrade_patterns
     save_bd_design
     catch {generate_target all $bd_file}
 }
