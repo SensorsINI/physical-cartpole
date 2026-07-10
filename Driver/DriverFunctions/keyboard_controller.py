@@ -81,7 +81,8 @@ class KeyboardController:
             '.': (lambda: None, "Key not assigned"),
             ',': (lambda: None, "Key not assigned"),
             '/': (lambda: None, "Key not assigned"),
-            '5': (lambda: None, "Key not assigned"),
+            '5': (self.driver.print_secloc_info,
+                  "Print on-chip SecLoc backend info (SW/PL, shadow mismatches, PL NN counters)"),
 
             ##### Exit ######
             chr(27): (self.driver.start_experiment_termination, "ESC: Start experiment termination")  # ESC

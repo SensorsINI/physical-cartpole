@@ -107,6 +107,7 @@ void			cmd_PCControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
 void			cmd_SetSeclocConfig(const unsigned char * config);
+void			cmd_GetSeclocInfo(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
 void			cmd_SetAngleFilter(const unsigned short, const unsigned short, const unsigned short);
 void			cmd_RunHardwareExperiment(void);
@@ -620,6 +621,11 @@ void CONTROL_BackgroundTask(void)
 			cmd_SetSeclocConfig(&rxBuffer[3]);
 			break;
 		}
+		case CMD_GET_SECLOC_INFO:
+		{
+			cmd_GetSeclocInfo();
+			break;
+		}
 		default:
 		{
 			break;
@@ -912,6 +918,22 @@ void cmd_SetSeclocConfig(const unsigned char * config)
 
 	secloc_controller_set_config(log_base, ref_period_ticks, dead_ang, dead_pos);
 
+	enable_irq();
+}
+
+
+void cmd_GetSeclocInfo(void)
+{
+	prepare_message_to_PC_secloc_info(
+		txBuffer,
+		(unsigned char)secloc_get_backend(),
+		(unsigned char)(secloc_pl_backend_available() ? 1 : 0),
+		(unsigned int)secloc_shadow_mismatch_count(),
+		(unsigned int)secloc_pl_update_count(),
+		(unsigned int)secloc_pl_nn_wait_cycles());
+
+	disable_irq();
+	Message_SendToPC(txBuffer, 18);
 	enable_irq();
 }
 

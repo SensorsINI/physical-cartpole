@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 // State packet length includes an 8-byte accumulated chip timestamp and 1 SecLoc telemetry byte
-// (bit 0 = skipped_update, bit 1 = gate_skipped).
+// (bit 0 = skipped_update, bit 1 = gate_skipped, bit 2 = step computed by the PL backend).
 #define STATE_MESSAGE_LEN 36
 
 
@@ -24,6 +24,18 @@ void prepare_message_to_PC_state(
 		unsigned long latency,
 		unsigned short	latency_violation,
 		unsigned char secloc_flags
+		);
+
+/* Reply to CMD_GET_SECLOC_INFO: SecLoc execution backend diagnostics.
+ * backend: 0 = SW, 1 = PL, 2 = PL shadow (effective value; SW when no PL
+ * hardware answered the boot probe). */
+void prepare_message_to_PC_secloc_info(
+		unsigned char * buffer,
+		unsigned char backend,
+		unsigned char pl_available,
+		unsigned int shadow_mismatch_count,
+		unsigned int pl_update_count,
+		unsigned int pl_nn_wait_cycles
 		);
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection);

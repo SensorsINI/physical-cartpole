@@ -183,6 +183,15 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
+							case CMD_GET_SECLOC_INFO:
+							{
+								if (pktLen == 4)
+								{
+									current_command = CMD_GET_SECLOC_INFO;
+								}
+								break;
+							}
+
 							default:
 							{
 								break;
@@ -261,6 +270,26 @@ void prepare_message_to_PC_state(
 	buffer[34] = secloc_flags;
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
+}
+
+void prepare_message_to_PC_secloc_info(
+		unsigned char * buffer,
+		unsigned char backend,
+		unsigned char pl_available,
+		unsigned int shadow_mismatch_count,
+		unsigned int pl_update_count,
+		unsigned int pl_nn_wait_cycles
+		){
+
+	buffer[ 0] = SERIAL_SOF;
+	buffer[ 1] = CMD_GET_SECLOC_INFO;
+	buffer[ 2] = 18;
+	buffer[ 3] = backend;
+	buffer[ 4] = pl_available;
+	*((unsigned int *)&buffer[ 5]) = shadow_mismatch_count;
+	*((unsigned int *)&buffer[ 9]) = pl_update_count;
+	*((unsigned int *)&buffer[13]) = pl_nn_wait_cycles;
+	buffer[17] = crc(buffer, 17);
 }
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection){

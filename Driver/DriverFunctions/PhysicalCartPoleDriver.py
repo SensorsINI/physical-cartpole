@@ -95,6 +95,7 @@ class PhysicalCartPoleDriver:
         self.firmwareControl = False
         self.secloc_skipped_update_chip = 0
         self.secloc_gate_skipped_chip = 0
+        self.secloc_pl_used_chip = 0
         # PC-side view of the SecLoc parameters on the chip (config_secloc.yml);
         # mirrored to the chip at startup and whenever the yaml changes.
         self.chip_secloc_config = None
@@ -311,6 +312,25 @@ class PhysicalCartPoleDriver:
             flush=True,
         )
 
+    def print_secloc_info(self):
+        """Query and print the on-chip SecLoc execution backend diagnostics
+        (CMD_GET_SECLOC_INFO): which backend computes the control signal,
+        whether the FPGA SecLoc frontend was detected, SW/PL shadow-mode
+        mismatches, and the PL-side NN evaluation counters."""
+        try:
+            info = self.InterfaceInstance.get_secloc_info()
+        except Exception as e:
+            print(f"\nSecLoc info query failed: {e}", flush=True)
+            return
+        pl = 'detected' if info['pl_available'] else 'not detected'
+        print(
+            f"\nSecLoc on-chip info: backend={info['backend']}, PL frontend {pl}, "
+            f"shadow mismatches={info['shadow_mismatches']}, "
+            f"PL NN evaluations={info['pl_update_count']}, "
+            f"last NN wait={info['pl_nn_wait_cycles']} PL cycles",
+            flush=True,
+        )
+
     def io_step(self):
 
         self.keyboard_controller.keyboard_input()
@@ -457,8 +477,10 @@ class PhysicalCartPoleDriver:
 
         if self.firmwareControl:
             # On-chip SecLoc: chip_secloc_stats aggregates the gate telemetry
-            # flags streamed with every state packet.
-            label = "secloc@chip"
+            # flags streamed with every state packet. The PL/SW tag reflects
+            # bit 2 of the telemetry byte: whether the last step was computed
+            # by the FPGA SecLoc frontend or the CPU fallback.
+            label = "secloc@chip:PL" if self.secloc_pl_used_chip else "secloc@chip:SW"
             status_parts = [self.chip_secloc_stats.get_status()]
         else:
             label = self.control_label
@@ -495,7 +517,8 @@ class PhysicalCartPoleDriver:
         (angle_raw, angleD_raw, position_raw, self.target_position_from_chip, self.command,
          invalid_steps, time_between_measurements_chip, time_current_measurement_chip,
          firmware_latency, latency_violation_chip,
-         self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip) = self.InterfaceInstance.read_state()
+         self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip,
+         self.secloc_pl_used_chip) = self.InterfaceInstance.read_state()
 
         self.th.load_timing_data_from_chip(
             time_current_measurement_chip, time_between_measurements_chip, latency_violation_chip, firmware_latency
