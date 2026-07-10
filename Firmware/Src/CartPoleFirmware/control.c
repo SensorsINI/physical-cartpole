@@ -13,6 +13,7 @@
 #include "neural_controller_C.h"
 #include "lqr.h"
 #include "secloc_controller.h"
+#include "secloc_controller_pl.h"
 
 
 #define OnChipController_PID 0

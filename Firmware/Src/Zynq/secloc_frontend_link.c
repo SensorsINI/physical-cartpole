@@ -7,10 +7,10 @@
 #include <string.h>
 
 #include "xil_io.h"
-/* Resolves via the flattened Vitis src tree (src/secloc_controller.h ->
- * Firmware/Src/General/secloc_controller.h), same as ../controller_api.h
+/* Resolves via the flattened Vitis src tree (src/secloc_controller_pl.h ->
+ * Firmware/Src/General/secloc_controller_pl.h), same as ../controller_api.h
  * in neural_imitator.c. */
-#include "../secloc_controller.h"
+#include "../secloc_controller_pl.h"
 
 /* Register map: mirrors the Vitis-generated xsecloc_shell_hw.h
  * (FPGA/CustomIPs/secloc_shell_hls/.../drivers/secloc_shell_v1_0/src).
@@ -143,7 +143,7 @@ int SeclocFrontendLink_PlainEvaluate(const float nn_inputs[7], float* Q)
     return 1;
 }
 
-/* ---- SecLoc PL backend ops (secloc_controller.h) ----------------------- */
+/* ---- SecLoc PL backend ops (secloc_controller_pl.h) -------------------- */
 
 static int sfe_backend_evaluate(
     float p, float pd, float a, float ad, float tp, float te,

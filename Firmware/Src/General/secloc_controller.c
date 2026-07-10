@@ -5,11 +5,17 @@
  *   On gate spike: run inner controller (LQR, PID or the pure-C neural imitator,
  *   see secloc_inner_controller).
  *   Otherwise: hold previous Q.
+ *
+ * This file is the SW (PS) implementation plus the shared config/state/
+ * telemetry. Everything specific to the optional PL backend lives in
+ * secloc_controller_pl.c; the two halves talk through
+ * secloc_controller_internal.h.
  */
 
 #include <math.h>
 
 #include "secloc_controller.h"
+#include "secloc_controller_internal.h"
 #include "secloc_logic.h"
 #include "secloc_defaults.h"
 #include "lqr.h"
@@ -40,52 +46,9 @@ static uint8_t secloc_last_skipped_update = 0;
 static uint8_t secloc_last_gate_skipped = 0;
 static uint8_t secloc_last_pl_used = 0;
 
-static const SeclocPlBackendOps* secloc_pl = 0;
-static SeclocBackend secloc_backend = SECLOC_DEFAULT_BACKEND;
-static uint32_t secloc_shadow_mismatches = 0;
-
-void secloc_register_pl_backend(const SeclocPlBackendOps* ops)
+const SeclocConfig* secloc_controller_config(void)
 {
-    secloc_pl = ops;
-    if (secloc_pl) {
-        secloc_pl->set_params(
-            secloc_config.log_base,
-            secloc_config.ref_period_ticks,
-            secloc_config.ang_dead_band,
-            secloc_config.pos_dead_band
-        );
-        secloc_pl->reset_gate();
-    }
-}
-
-int secloc_pl_backend_available(void)
-{
-    return secloc_pl != 0;
-}
-
-void secloc_set_backend(SeclocBackend backend)
-{
-    secloc_backend = backend;
-}
-
-SeclocBackend secloc_get_backend(void)
-{
-    return (secloc_pl == 0) ? SECLOC_BACKEND_SW : secloc_backend;
-}
-
-uint32_t secloc_shadow_mismatch_count(void)
-{
-    return secloc_shadow_mismatches;
-}
-
-uint32_t secloc_pl_update_count(void)
-{
-    return (secloc_pl && secloc_pl->update_count) ? secloc_pl->update_count() : 0u;
-}
-
-uint32_t secloc_pl_nn_wait_cycles(void)
-{
-    return (secloc_pl && secloc_pl->nn_wait_cycles) ? secloc_pl->nn_wait_cycles() : 0u;
+    return &secloc_config;
 }
 
 void secloc_controller_set_config(
@@ -100,9 +63,7 @@ void secloc_controller_set_config(
     secloc_config.ang_dead_band    = ang_dead_band;
     secloc_config.pos_dead_band    = pos_dead_band;
 
-    if (secloc_pl) {
-        secloc_pl->set_params(log_base, ref_period_ticks, ang_dead_band, pos_dead_band);
-    }
+    secloc_pl_notify_config(&secloc_config);
 }
 
 void secloc_controller_set_time_quantum(float time_quantum_s)
@@ -213,62 +174,11 @@ static void SECLOC_Init(void)
     secloc_last_skipped_update = 0;
     secloc_last_gate_skipped = 0;
     secloc_last_pl_used = 0;
-    secloc_shadow_mismatches = 0;
-    if (secloc_pl) {
-        secloc_pl->set_params(
-            secloc_config.log_base,
-            secloc_config.ref_period_ticks,
-            secloc_config.ang_dead_band,
-            secloc_config.pos_dead_band
-        );
-        secloc_pl->reset_gate();
-    }
+    secloc_pl_notify_init(&secloc_config);
     secloc_inner_init();
 }
 
 static void SECLOC_Release(void) { }
-
-/* PL path: the whole SecLoc step (gate + NN + ZOH) runs in the PL; the CPU
- * only marshals raw floats. Returns 0 on transport failure, in which case the
- * caller runs the SW path for this step. */
-static int secloc_evaluate_pl(
-    float p, float pd, float a, float ad, float tp, float te, float time,
-    float* out
-)
-{
-    int32_t tick = -1;
-    float q = 0.0f;
-    uint8_t fired = 0;
-    uint8_t gate_evaluated = 0;
-
-    if (secloc_config.time_quantum_s > 0.0f) {
-        tick = secloc_tick_from_time(time, secloc_config.time_quantum_s);
-    }
-
-    if (!secloc_pl->evaluate(p, pd, a, ad, tp, te, tick, &q, &fired, &gate_evaluated)) {
-        return 0;
-    }
-
-    if (secloc_backend == SECLOC_BACKEND_PL_SHADOW) {
-        /* Step the SW gate on the same inputs (no inner controller run) and
-         * count decision disagreements; both sides execute the same float32
-         * gate code, so any mismatch flags a real integration bug. */
-        int sw_fired = secloc_should_sample(
-            &secloc_state, &secloc_config, p, pd, a, ad, tp, te, time);
-        if ((sw_fired != 0) != (fired != 0)) {
-            secloc_shadow_mismatches++;
-        }
-    }
-
-    /* Keep the SW-visible held Q coherent (telemetry, backend switches). */
-    secloc_state.last_Q = q;
-    secloc_last_skipped_update = fired ? 0 : 1;
-    secloc_last_gate_skipped = (uint8_t)((!fired && gate_evaluated) ? 1 : 0);
-    secloc_last_pl_used = 1;
-
-    out[0] = q;
-    return 1;
-}
 
 static void SECLOC_Evaluate(const float* in, float* out)
 {
@@ -280,8 +190,24 @@ static void SECLOC_Evaluate(const float* in, float* out)
     const float te = in[5];
     const float time = in[6];
 
-    if (secloc_pl && secloc_backend != SECLOC_BACKEND_SW) {
-        if (secloc_evaluate_pl(p, pd, a, ad, tp, te, time, out)) {
+    if (secloc_pl_active()) {
+        /* PL path: the whole SecLoc step (gate + NN + ZOH) runs in the PL;
+         * the CPU only marshals raw floats. On transport failure the SW path
+         * below runs for this step. */
+        float q = 0.0f;
+        uint8_t fired = 0;
+        uint8_t gate_evaluated = 0;
+
+        if (secloc_pl_step(&secloc_state, &secloc_config,
+                           p, pd, a, ad, tp, te, time,
+                           &q, &fired, &gate_evaluated)) {
+            /* Keep the SW-visible held Q coherent (telemetry, backend switches). */
+            secloc_state.last_Q = q;
+            secloc_last_skipped_update = fired ? 0 : 1;
+            secloc_last_gate_skipped = (uint8_t)((!fired && gate_evaluated) ? 1 : 0);
+            secloc_last_pl_used = 1;
+
+            out[0] = secloc_state.last_Q;
             return;
         }
     }
