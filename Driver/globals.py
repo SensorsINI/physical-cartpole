@@ -110,7 +110,7 @@ elif CHIP == 'ZYNQ' and ZYNQ_BOARD == 'ZEDBOARD':
     MOTOR_CORRECTION_ORIGINAL = (0.5846884, 0.0223145, 0.0224489)
     MOTOR_CORRECTION_POLOLU = (0.5846884, 0.0223145, 0.0224489)
     ANGLE_360_DEG_IN_ADC_UNITS = 4302
-    ANGLE_HANGING_POLOLU = 1068  # Value from sensor when pendulum is at stable equilibrium point
+    ANGLE_HANGING_POLOLU = 158.143  # Value from sensor when pendulum is at stable equilibrium point
     ANGLE_HANGING_ORIGINAL = 1075  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4649
 elif CHIP == 'ZYNQ':
