@@ -29,4 +29,14 @@
  * the PC reconfigures the loop period. */
 #define SECLOC_DEFAULT_TIME_QUANTUM_S 0.005f
 
+/* Execution backend when the PL SecLoc chain is present (Zynq bitstreams
+ * with secloc_shell + secloc_gate + nn_marshal; ignored elsewhere - the SW
+ * path is the only option then).
+ *   SECLOC_BACKEND_SW        - gate + inner controller on the CPU
+ *   SECLOC_BACKEND_PL        - gate + NN fused in the PL
+ *   SECLOC_BACKEND_PL_SHADOW - control from the PL, SW gate stepped in
+ *                              parallel and decisions compared
+ * (secloc_shadow_mismatch_count). */
+#define SECLOC_DEFAULT_BACKEND SECLOC_BACKEND_PL_SHADOW
+
 #endif /* SECLOC_DEFAULTS_H */

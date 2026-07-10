@@ -38,6 +38,55 @@ static SeclocConfig secloc_config = {
 static SeclocState secloc_state;
 static uint8_t secloc_last_skipped_update = 0;
 static uint8_t secloc_last_gate_skipped = 0;
+static uint8_t secloc_last_pl_used = 0;
+
+static const SeclocPlBackendOps* secloc_pl = 0;
+static SeclocBackend secloc_backend = SECLOC_DEFAULT_BACKEND;
+static uint32_t secloc_shadow_mismatches = 0;
+
+void secloc_register_pl_backend(const SeclocPlBackendOps* ops)
+{
+    secloc_pl = ops;
+    if (secloc_pl) {
+        secloc_pl->set_params(
+            secloc_config.log_base,
+            secloc_config.ref_period_ticks,
+            secloc_config.ang_dead_band,
+            secloc_config.pos_dead_band
+        );
+        secloc_pl->reset_gate();
+    }
+}
+
+int secloc_pl_backend_available(void)
+{
+    return secloc_pl != 0;
+}
+
+void secloc_set_backend(SeclocBackend backend)
+{
+    secloc_backend = backend;
+}
+
+SeclocBackend secloc_get_backend(void)
+{
+    return (secloc_pl == 0) ? SECLOC_BACKEND_SW : secloc_backend;
+}
+
+uint32_t secloc_shadow_mismatch_count(void)
+{
+    return secloc_shadow_mismatches;
+}
+
+uint32_t secloc_pl_update_count(void)
+{
+    return (secloc_pl && secloc_pl->update_count) ? secloc_pl->update_count() : 0u;
+}
+
+uint32_t secloc_pl_nn_wait_cycles(void)
+{
+    return (secloc_pl && secloc_pl->nn_wait_cycles) ? secloc_pl->nn_wait_cycles() : 0u;
+}
 
 void secloc_controller_set_config(
     float log_base,
@@ -50,6 +99,10 @@ void secloc_controller_set_config(
     secloc_config.ref_period_ticks = ref_period_ticks;
     secloc_config.ang_dead_band    = ang_dead_band;
     secloc_config.pos_dead_band    = pos_dead_band;
+
+    if (secloc_pl) {
+        secloc_pl->set_params(log_base, ref_period_ticks, ang_dead_band, pos_dead_band);
+    }
 }
 
 void secloc_controller_set_time_quantum(float time_quantum_s)
@@ -64,7 +117,9 @@ const SeclocState* secloc_controller_get_state(void)
 
 uint8_t secloc_controller_telemetry_flags(void)
 {
-    return (uint8_t)(secloc_last_skipped_update | (secloc_last_gate_skipped << 1));
+    return (uint8_t)(secloc_last_skipped_update
+                     | (secloc_last_gate_skipped << 1)
+                     | (secloc_last_pl_used << 2));
 }
 
 SeclocInnerController secloc_inner_controller = SECLOC_DEFAULT_INNER_CONTROLLER;
@@ -157,10 +212,63 @@ static void SECLOC_Init(void)
     secloc_reset(&secloc_state);
     secloc_last_skipped_update = 0;
     secloc_last_gate_skipped = 0;
+    secloc_last_pl_used = 0;
+    secloc_shadow_mismatches = 0;
+    if (secloc_pl) {
+        secloc_pl->set_params(
+            secloc_config.log_base,
+            secloc_config.ref_period_ticks,
+            secloc_config.ang_dead_band,
+            secloc_config.pos_dead_band
+        );
+        secloc_pl->reset_gate();
+    }
     secloc_inner_init();
 }
 
 static void SECLOC_Release(void) { }
+
+/* PL path: the whole SecLoc step (gate + NN + ZOH) runs in the PL; the CPU
+ * only marshals raw floats. Returns 0 on transport failure, in which case the
+ * caller runs the SW path for this step. */
+static int secloc_evaluate_pl(
+    float p, float pd, float a, float ad, float tp, float te, float time,
+    float* out
+)
+{
+    int32_t tick = -1;
+    float q = 0.0f;
+    uint8_t fired = 0;
+    uint8_t gate_evaluated = 0;
+
+    if (secloc_config.time_quantum_s > 0.0f) {
+        tick = secloc_tick_from_time(time, secloc_config.time_quantum_s);
+    }
+
+    if (!secloc_pl->evaluate(p, pd, a, ad, tp, te, tick, &q, &fired, &gate_evaluated)) {
+        return 0;
+    }
+
+    if (secloc_backend == SECLOC_BACKEND_PL_SHADOW) {
+        /* Step the SW gate on the same inputs (no inner controller run) and
+         * count decision disagreements; both sides execute the same float32
+         * gate code, so any mismatch flags a real integration bug. */
+        int sw_fired = secloc_should_sample(
+            &secloc_state, &secloc_config, p, pd, a, ad, tp, te, time);
+        if ((sw_fired != 0) != (fired != 0)) {
+            secloc_shadow_mismatches++;
+        }
+    }
+
+    /* Keep the SW-visible held Q coherent (telemetry, backend switches). */
+    secloc_state.last_Q = q;
+    secloc_last_skipped_update = fired ? 0 : 1;
+    secloc_last_gate_skipped = (uint8_t)((!fired && gate_evaluated) ? 1 : 0);
+    secloc_last_pl_used = 1;
+
+    out[0] = q;
+    return 1;
+}
 
 static void SECLOC_Evaluate(const float* in, float* out)
 {
@@ -171,6 +279,14 @@ static void SECLOC_Evaluate(const float* in, float* out)
     const float tp = in[4];
     const float te = in[5];
     const float time = in[6];
+
+    if (secloc_pl && secloc_backend != SECLOC_BACKEND_SW) {
+        if (secloc_evaluate_pl(p, pd, a, ad, tp, te, time, out)) {
+            return;
+        }
+    }
+
+    secloc_last_pl_used = 0;
 
     /* Matches the Python CSV semantics: gate_skipped is only set when the gate
      * was actually consulted (ref_period elapsed) and declined; rows where the
