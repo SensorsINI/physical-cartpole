@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="secloc_gate" xd:componentRef="secloc_gate" xd:initiationInterval="x" xd:clockPeriod="10.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="req_in.data" xd:originalName="req_in" xd:direction="in" xd:interfaceRef="req_in" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="req_in.keep" xd:originalName="req_in" xd:direction="in" xd:interfaceRef="req_in" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="req_in.strb" xd:originalName="req_in" xd:direction="in" xd:interfaceRef="req_in" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="req_in.last" xd:originalName="req_in" xd:direction="in" xd:interfaceRef="req_in" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="resp_out.data" xd:originalName="resp_out" xd:direction="out" xd:interfaceRef="resp_out" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="resp_out.keep" xd:originalName="resp_out" xd:direction="out" xd:interfaceRef="resp_out" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="resp_out.strb" xd:originalName="resp_out" xd:direction="out" xd:interfaceRef="resp_out" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="resp_out.last" xd:originalName="resp_out" xd:direction="out" xd:interfaceRef="resp_out" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="marshal_req.data" xd:originalName="marshal_req" xd:direction="out" xd:interfaceRef="marshal_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="marshal_req.keep" xd:originalName="marshal_req" xd:direction="out" xd:interfaceRef="marshal_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="marshal_req.strb" xd:originalName="marshal_req" xd:direction="out" xd:interfaceRef="marshal_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="marshal_req.last" xd:originalName="marshal_req" xd:direction="out" xd:interfaceRef="marshal_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="marshal_resp.data" xd:originalName="marshal_resp" xd:direction="in" xd:interfaceRef="marshal_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="marshal_resp.keep" xd:originalName="marshal_resp" xd:direction="in" xd:interfaceRef="marshal_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="marshal_resp.strb" xd:originalName="marshal_resp" xd:direction="in" xd:interfaceRef="marshal_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="marshal_resp.last" xd:originalName="marshal_resp" xd:direction="in" xd:interfaceRef="marshal_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:latencyEstimates xd:best-case="undef" xd:worst-case="undef" xd:average-case="undef"/>
+  <xd:resourceEstimates xd:LUT="2766" xd:FF="1555" xd:BRAM="2" xd:DSP="2"/>
+</xd:acceleratorMap>
