@@ -72,6 +72,8 @@ usage_statistics_webtalk*
 /FPGA/CustomIPs/**/script.tcl
 /FPGA/CustomIPs/**/*.protoinst
 
+.pytest_cache/
+
 /Firmware/VitisProjects/*
 /Firmware/*.str
 /Firmware/xrc.log
