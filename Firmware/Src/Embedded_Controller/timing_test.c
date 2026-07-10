@@ -20,6 +20,7 @@
 #include "neural_controller_C.h"
 #include "lqr.h"
 #include "secloc_controller.h"
+#include "secloc_lqr.h"
 #include "hardware_pid.h"
 
 #ifdef TIMING_TEST

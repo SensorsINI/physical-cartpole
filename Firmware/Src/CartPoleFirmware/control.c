@@ -14,6 +14,7 @@
 #include "lqr.h"
 #include "secloc_controller.h"
 #include "secloc_controller_pl.h"
+#include "secloc_lqr.h"
 
 
 #define OnChipController_PID 0
@@ -22,6 +23,7 @@
 #define OnChipController_LQR 3
 #define OnChipController_neural_controller_C 4
 #define OnChipController_SECLOC 5
+#define OnChipController_SECLOC_LQR 6
 
 /* Boot on-chip controller when the chip runs standalone (edit here). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_SECLOC
@@ -333,6 +335,12 @@ void CONTROL_BackgroundTask(void)
 	            case OnChipController_SECLOC:
 	            {
 	                CB_RebindOnChange(&g_cb, &SECLOC_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
+	            case OnChipController_SECLOC_LQR:
+	            {
+	                CB_RebindOnChange(&g_cb, &SECLOC_LQR_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
 	                Q = CB_Eval(&g_cb);
 	                break;
 	            }

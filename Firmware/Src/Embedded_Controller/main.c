@@ -47,6 +47,7 @@
 #include "neural_controller_C.h"
 #include "lqr.h"
 #include "secloc_controller.h"
+#include "secloc_lqr.h"
 #include "hardware_pid.h"
 
 #ifdef TIMING_TEST
@@ -63,6 +64,7 @@ static const ControllerOps* select_controller(void)
     return &PID_Ops;
 //    return &NNC_Ops;
 //    return &SECLOC_Ops;
+//    return &SECLOC_LQR_Ops;
 }
 
 
