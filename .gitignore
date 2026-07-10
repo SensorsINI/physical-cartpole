@@ -34,6 +34,11 @@ Driver/SI_Toolkit_ASF/Experiments/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
 !/FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_Zedboard.tcl
 !/FPGA/VivadoProjects/refresh_ip_and_build.tcl
+!/FPGA/VivadoProjects/build_zedboard_bitstream.tcl
+!/FPGA/VivadoProjects/swap_nn_and_build.tcl
+!/FPGA/VivadoProjects/swap_nn_and_build.sh
+!/FPGA/VivadoProjects/rebuild_secloc_three_block.tcl
+!/FPGA/VivadoProjects/build_and_export_xsa.tcl
 !/FPGA/VivadoProjects/board_files/
 
 # Xilinx tool journals/logs (dropped wherever the tool is launched from)
@@ -71,6 +76,16 @@ usage_statistics_webtalk*
 /FPGA/CustomIPs/**/directives.tcl
 /FPGA/CustomIPs/**/script.tcl
 /FPGA/CustomIPs/**/*.protoinst
+# HLS csim binaries staged next to the sources (secloc_shell_hls/run_tb.sh)
+/FPGA/CustomIPs/**/*.o
+/FPGA/CustomIPs/**/a.out
+# Vivado IP-packaging staging inside committed HLS impl/ip trees
+/FPGA/CustomIPs/**/impl/ip/tmp.srcs/
+/FPGA/CustomIPs/**/impl/ip/tmp.xpr
+/FPGA/CustomIPs/**/impl/ip/tmp.cache/
+/FPGA/CustomIPs/**/impl/ip/tmp.hw/
+# Packaged zip duplicate of impl/ip (Vivado uses the directory)
+/FPGA/CustomIPs/**/impl/ip/*.zip
 
 .pytest_cache/
 
