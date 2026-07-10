@@ -7,10 +7,10 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
 ZYNQ_BOARD = "ZEDBOARD"  # 'ZYBO_Z720' or 'ZEDBOARD'; selects the calibration of the physical cartpole attached to that board. Must match the board define in Firmware hardware_bridge.h.
-# Physical run profile: mpc + rpgd-c (C/OpenMP) gated by Secloc (default gate in config_secloc.yml).
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'lqr', 'mpc', 'neural-imitator'
+# Physical run profile: neural-imitator (Python/TF) + Secloc, same gate as mpc (log_base 1.05).
+CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'neural-imitator'
 USE_SECLOC = True
-OPTIMIZER_NAME = 'rpgd-c'  # Used when CONTROLLER_NAME == 'mpc' ('rpgd' for TF baseline)
+OPTIMIZER_NAME = 'rpgd-c'  # Used when CONTROLLER_NAME == 'mpc'
 
 ##### Hardware (FPGA) angle filter #####
 # When False, leave the firmware boot default (trimmed mean 63/7 on Zynq). The 09-34
@@ -32,7 +32,7 @@ HARDWARE_ANGLE_FILTER_MODE = 2  # trimmed mean (only used when OVERRIDE is True)
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
 # Main-thread compute inherits this process mask (io-main-split architecture).
-CONTROL_CPU_AFFINITY = ""  # "" for rpgd-c (OpenMP); "2" for TF rpgd; IO thread on LOOP_CPU_AFFINITY
+CONTROL_CPU_AFFINITY = ""  # neural-imitator TF on CPU; IO thread pinned separately on LOOP_CPU_AFFINITY
 
 # Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
 # pins itself here via per-thread affinity. Full separation from compute requires
@@ -62,7 +62,7 @@ MOTOR = 'POLOLU'
 if USE_SECLOC and CONTROLLER_NAME in ('mpc', 'neural-imitator'):
     # Fast IO for Secloc gate; ref_period_ticks in config_secloc.yml limits update rate (4 ticks = 20 ms).
     POLLING_PERIOD_MS = 5
-    CONTROLLER_APPLY_WINDOW_MS = 5  # 4 IO loops; neural forward pass is << 20 ms
+    CONTROLLER_APPLY_WINDOW_MS = 20  # 4 IO loops; neural forward pass is << 20 ms
 elif CONTROLLER_NAME == 'pid':
     POLLING_PERIOD_MS = 5
 elif CONTROLLER_NAME == 'lqr':
