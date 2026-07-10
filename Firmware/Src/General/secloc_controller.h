@@ -8,7 +8,7 @@
 /*
  * SecLoc controller core: gate config/state, inner controller dispatch and
  * the SW (PS) evaluate path. The optional PL backend (registration, backend
- * selection, shadow-mismatch counter) is a separate module; see
+ * selection, fault/mismatch counters) is a separate module; see
  * secloc_controller_pl.h. This keeps secloc_controller.c free of platform
  * includes and of any PL knowledge beyond the internal hook points.
  */
@@ -37,7 +37,9 @@ const SeclocState* secloc_controller_get_state(void);
 /* Gate decision of the most recent SECLOC_Evaluate, packed for the state
  * packet: bit 0 = secloc_skipped_update, bit 1 = secloc_gate_skipped
  * (matches the Python CSV columns), bit 2 = the step was computed by the PL
- * backend (secloc_shell + gate + marshal chain in the FPGA fabric). */
+ * backend (secloc_shell + gate + marshal chain in the FPGA fabric), bit 3 =
+ * a PL backend was selected but the PL block was absent or the transaction
+ * failed (the step output zero force; no SW fallback was run). */
 uint8_t secloc_controller_telemetry_flags(void);
 
 #endif /* SECLOC_CONTROLLER_H */

@@ -2,11 +2,18 @@
  * PL backend module of the SecLoc controller.
  *
  * Owns the registered SeclocPlBackendOps, the backend selection and the
- * PL-side counters (shadow mismatches, diagnostics passthrough).
+ * PL-side counters (shadow mismatches, faults, diagnostics passthrough).
  * Platform-independent: all MMIO lives in the code that registers the ops
  * (Firmware/Src/Zynq/secloc_frontend_link.c). On platforms without a PL
  * SecLoc chain this file compiles to inert code holding a NULL pointer and
- * the SW path is used unconditionally.
+ * the backend stays SECLOC_BACKEND_SW.
+ *
+ * No fallback policy: the backend setting is a request, never silently
+ * degraded. When a PL backend is requested and the PL block is absent or a
+ * transaction fails, the step is a fault: the controller outputs zero force
+ * and flags it, instead of papering over the failure with the SW
+ * implementation. A dead cart is obvious even without a PC attached; the
+ * telemetry flag and fault counter explain why once one is connected.
  */
 
 #include "secloc_controller_pl.h"
@@ -15,8 +22,12 @@
 #include "secloc_logic.h"
 
 static const SeclocPlBackendOps* secloc_pl = 0;
+/* The requested backend, applied from boot. Deliberately NOT gated on a PL
+ * backend having registered: requesting PL without the hardware makes every
+ * step fault (zero force) rather than silently running SW. */
 static SeclocBackend secloc_backend = SECLOC_DEFAULT_BACKEND;
 static uint32_t secloc_shadow_mismatches = 0;
+static uint32_t secloc_pl_faults = 0;
 
 static void secloc_pl_push_config(const SeclocConfig* config)
 {
@@ -49,12 +60,17 @@ void secloc_set_backend(SeclocBackend backend)
 
 SeclocBackend secloc_get_backend(void)
 {
-    return (secloc_pl == 0) ? SECLOC_BACKEND_SW : secloc_backend;
+    return secloc_backend;
 }
 
 uint32_t secloc_shadow_mismatch_count(void)
 {
     return secloc_shadow_mismatches;
+}
+
+uint32_t secloc_pl_fault_count(void)
+{
+    return secloc_pl_faults;
 }
 
 uint32_t secloc_pl_update_count(void)
@@ -71,7 +87,7 @@ uint32_t secloc_pl_nn_wait_cycles(void)
 
 int secloc_pl_active(void)
 {
-    return secloc_pl != 0 && secloc_backend != SECLOC_BACKEND_SW;
+    return secloc_backend != SECLOC_BACKEND_SW;
 }
 
 int secloc_pl_step(
@@ -83,11 +99,19 @@ int secloc_pl_step(
 {
     int32_t tick = -1;
 
+    /* PL backend requested but the PL block never registered (bitstream
+     * without the IP, failed boot probe): every step is a fault. */
+    if (secloc_pl == 0) {
+        secloc_pl_faults++;
+        return 0;
+    }
+
     if (config->time_quantum_s > 0.0f) {
         tick = secloc_tick_from_time(time, config->time_quantum_s);
     }
 
     if (!secloc_pl->evaluate(p, pd, a, ad, tp, te, tick, Q, fired, gate_evaluated)) {
+        secloc_pl_faults++;
         return 0;
     }
 
@@ -115,6 +139,7 @@ void secloc_pl_notify_config(const SeclocConfig* config)
 void secloc_pl_notify_init(const SeclocConfig* config)
 {
     secloc_shadow_mismatches = 0;
+    secloc_pl_faults = 0;
     if (secloc_pl) {
         secloc_pl_push_config(config);
         secloc_pl->reset_gate();

@@ -931,10 +931,11 @@ void cmd_GetSeclocInfo(void)
 		(unsigned char)(secloc_pl_backend_available() ? 1 : 0),
 		(unsigned int)secloc_shadow_mismatch_count(),
 		(unsigned int)secloc_pl_update_count(),
-		(unsigned int)secloc_pl_nn_wait_cycles());
+		(unsigned int)secloc_pl_nn_wait_cycles(),
+		(unsigned int)secloc_pl_fault_count());
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 18);
+	Message_SendToPC(txBuffer, 22);
 	enable_irq();
 }
 

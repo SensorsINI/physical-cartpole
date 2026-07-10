@@ -96,6 +96,11 @@ class PhysicalCartPoleDriver:
         self.secloc_skipped_update_chip = 0
         self.secloc_gate_skipped_chip = 0
         self.secloc_pl_used_chip = 0
+        # PL fault flag (telemetry bit 3): a PL backend was selected but the PL
+        # block is absent or the transaction failed; the chip outputs zero
+        # force instead of falling back to SW.
+        self.secloc_pl_fault_chip = 0
+        self._secloc_pl_fault_warned = False
         # PC-side view of the SecLoc parameters on the chip (config_secloc.yml);
         # mirrored to the chip at startup and whenever the yaml changes.
         self.chip_secloc_config = None
@@ -327,7 +332,8 @@ class PhysicalCartPoleDriver:
             f"\nSecLoc on-chip info: backend={info['backend']}, PL frontend {pl}, "
             f"shadow mismatches={info['shadow_mismatches']}, "
             f"PL NN evaluations={info['pl_update_count']}, "
-            f"last NN wait={info['pl_nn_wait_cycles']} PL cycles",
+            f"last NN wait={info['pl_nn_wait_cycles']} PL cycles, "
+            f"PL faults={info['pl_faults']}",
             flush=True,
         )
 
@@ -478,9 +484,16 @@ class PhysicalCartPoleDriver:
         if self.firmwareControl:
             # On-chip SecLoc: chip_secloc_stats aggregates the gate telemetry
             # flags streamed with every state packet. The PL/SW tag reflects
-            # bit 2 of the telemetry byte: whether the last step was computed
-            # by the FPGA SecLoc frontend or the CPU fallback.
-            label = "secloc@chip:PL" if self.secloc_pl_used_chip else "secloc@chip:SW"
+            # bit 2 of the telemetry byte (which backend computed the last
+            # step); PL-FAULT (bit 3) means the PL block is absent or the
+            # transaction failed and the chip outputs zero force rather than
+            # falling back to SW.
+            if self.secloc_pl_fault_chip:
+                label = "secloc@chip:PL-FAULT"
+            elif self.secloc_pl_used_chip:
+                label = "secloc@chip:PL"
+            else:
+                label = "secloc@chip:SW"
             status_parts = [self.chip_secloc_stats.get_status()]
         else:
             label = self.control_label
@@ -518,7 +531,16 @@ class PhysicalCartPoleDriver:
          invalid_steps, time_between_measurements_chip, time_current_measurement_chip,
          firmware_latency, latency_violation_chip,
          self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip,
-         self.secloc_pl_used_chip) = self.InterfaceInstance.read_state()
+         self.secloc_pl_used_chip, self.secloc_pl_fault_chip) = self.InterfaceInstance.read_state()
+
+        if self.secloc_pl_fault_chip and not self._secloc_pl_fault_warned:
+            self._secloc_pl_fault_warned = True
+            print(
+                "\nWARNING: on-chip SecLoc PL backend fault - the PL block is absent or "
+                "the PL transaction failed; the chip is outputting ZERO control "
+                "(no SW fallback). Check CMD_GET_SECLOC_INFO ('5' key) for the fault count.",
+                flush=True,
+            )
 
         self.th.load_timing_data_from_chip(
             time_current_measurement_chip, time_between_measurements_chip, latency_violation_chip, firmware_latency

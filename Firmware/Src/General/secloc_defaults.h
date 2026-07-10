@@ -29,9 +29,13 @@
  * the PC reconfigures the loop period. */
 #define SECLOC_DEFAULT_TIME_QUANTUM_S 0.005f
 
-/* Execution backend when the PL SecLoc chain is present (Zynq bitstreams
- * with secloc_shell + secloc_gate + nn_marshal; ignored elsewhere - the SW
- * path is the only option then).
+/* Requested execution backend, applied from boot. This is a request, not a
+ * capability probe: selecting a PL backend on a chip where the PL SecLoc
+ * chain (secloc_shell + secloc_gate + nn_marshal) is absent or broken makes
+ * every step a fault - the controller outputs ZERO force (dead cart, obvious
+ * even standalone) and counts it (secloc_pl_fault_count, telemetry flag
+ * bit 3). There is no fallback to the SW path. Set SECLOC_BACKEND_SW here
+ * for builds that must run without the PL chain.
  *   SECLOC_BACKEND_SW        - gate + inner controller on the CPU
  *   SECLOC_BACKEND_PL        - gate + NN fused in the PL
  *   SECLOC_BACKEND_PL_SHADOW - control from the PL, SW gate stepped in

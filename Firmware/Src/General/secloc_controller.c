@@ -9,7 +9,10 @@
  * This file is the SW (PS) implementation plus the shared config/state/
  * telemetry. Everything specific to the optional PL backend lives in
  * secloc_controller_pl.c; the two halves talk through
- * secloc_controller_internal.h.
+ * secloc_controller_internal.h. When a PL backend is selected the SW path is
+ * never used as a stand-in: a missing PL block or a failing PL step outputs
+ * zero force and raises the pl_fault telemetry flag instead (see
+ * secloc_controller_pl.h).
  */
 
 #include <math.h>
@@ -45,6 +48,7 @@ static SeclocState secloc_state;
 static uint8_t secloc_last_skipped_update = 0;
 static uint8_t secloc_last_gate_skipped = 0;
 static uint8_t secloc_last_pl_used = 0;
+static uint8_t secloc_last_pl_fault = 0;
 
 const SeclocConfig* secloc_controller_config(void)
 {
@@ -80,7 +84,8 @@ uint8_t secloc_controller_telemetry_flags(void)
 {
     return (uint8_t)(secloc_last_skipped_update
                      | (secloc_last_gate_skipped << 1)
-                     | (secloc_last_pl_used << 2));
+                     | (secloc_last_pl_used << 2)
+                     | (secloc_last_pl_fault << 3));
 }
 
 SeclocInnerController secloc_inner_controller = SECLOC_DEFAULT_INNER_CONTROLLER;
@@ -174,6 +179,7 @@ static void SECLOC_Init(void)
     secloc_last_skipped_update = 0;
     secloc_last_gate_skipped = 0;
     secloc_last_pl_used = 0;
+    secloc_last_pl_fault = 0;
     secloc_pl_notify_init(&secloc_config);
     secloc_inner_init();
 }
@@ -191,9 +197,11 @@ static void SECLOC_Evaluate(const float* in, float* out)
     const float time = in[6];
 
     if (secloc_pl_active()) {
-        /* PL path: the whole SecLoc step (gate + NN + ZOH) runs in the PL;
-         * the CPU only marshals raw floats. On transport failure the SW path
-         * below runs for this step. */
+        /* PL backend selected: the PL owns the control signal. On a PL fault
+         * (block absent or transaction failed) the step outputs ZERO force
+         * and is flagged; the SW path below is deliberately NOT run, so a
+         * missing or broken PL shows as a dead cart instead of being
+         * silently masked by the CPU implementation. */
         float q = 0.0f;
         uint8_t fired = 0;
         uint8_t gate_evaluated = 0;
@@ -206,13 +214,21 @@ static void SECLOC_Evaluate(const float* in, float* out)
             secloc_last_skipped_update = fired ? 0 : 1;
             secloc_last_gate_skipped = (uint8_t)((!fired && gate_evaluated) ? 1 : 0);
             secloc_last_pl_used = 1;
-
-            out[0] = secloc_state.last_Q;
-            return;
+            secloc_last_pl_fault = 0;
+        } else {
+            secloc_state.last_Q = 0.0f;
+            secloc_last_skipped_update = 1;
+            secloc_last_gate_skipped = 0;
+            secloc_last_pl_used = 0;
+            secloc_last_pl_fault = 1;
         }
+
+        out[0] = secloc_state.last_Q;
+        return;
     }
 
     secloc_last_pl_used = 0;
+    secloc_last_pl_fault = 0;
 
     /* Matches the Python CSV semantics: gate_skipped is only set when the gate
      * was actually consulted (ref_period elapsed) and declined; rows where the

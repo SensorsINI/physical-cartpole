@@ -278,18 +278,20 @@ void prepare_message_to_PC_secloc_info(
 		unsigned char pl_available,
 		unsigned int shadow_mismatch_count,
 		unsigned int pl_update_count,
-		unsigned int pl_nn_wait_cycles
+		unsigned int pl_nn_wait_cycles,
+		unsigned int pl_fault_count
 		){
 
 	buffer[ 0] = SERIAL_SOF;
 	buffer[ 1] = CMD_GET_SECLOC_INFO;
-	buffer[ 2] = 18;
+	buffer[ 2] = 22;
 	buffer[ 3] = backend;
 	buffer[ 4] = pl_available;
 	*((unsigned int *)&buffer[ 5]) = shadow_mismatch_count;
 	*((unsigned int *)&buffer[ 9]) = pl_update_count;
 	*((unsigned int *)&buffer[13]) = pl_nn_wait_cycles;
-	buffer[17] = crc(buffer, 17);
+	*((unsigned int *)&buffer[17]) = pl_fault_count;
+	buffer[21] = crc(buffer, 21);
 }
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection){

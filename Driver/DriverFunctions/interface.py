@@ -38,7 +38,9 @@ ANGLE_FILTER_MODE_MEDIAN = 1
 ANGLE_FILTER_MODE_TRIMMED_MEAN = 2
 # Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp
 # and 1 SecLoc telemetry byte (bit 0 = skipped_update, bit 1 = gate_skipped,
-# bit 2 = step computed by the PL backend) when the on-chip SecLoc wrapper is active.
+# bit 2 = step computed by the PL backend, bit 3 = PL fault: PL backend selected but
+# the PL block is absent or the transaction failed; the step output zero force,
+# no SW fallback) when the on-chip SecLoc wrapper is active.
 STATE_MESSAGE_LEN = 36
 SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
@@ -289,27 +291,34 @@ class Interface:
         """Query the on-chip SecLoc execution backend diagnostics.
 
         Returns a dict with:
-          backend            - 'SW', 'PL' or 'PL-shadow' (effective; 'SW' when
-                               the FPGA SecLoc frontend was not detected)
+          backend            - 'SW', 'PL' or 'PL-shadow'; the requested backend,
+                               never silently degraded: a PL backend without the
+                               FPGA SecLoc frontend faults every step (zero
+                               force) instead of falling back to SW
           pl_available       - True when the PL frontend answered the boot probe
           shadow_mismatches  - SW/PL gate decision disagreements in shadow mode
                                (expected 0)
           pl_update_count    - NN evaluations in the PL since the last gate reset
           pl_nn_wait_cycles  - PL clock cycles the frontend waited for the
                                network on the most recent computed step
+          pl_faults          - steps where a PL backend was selected but the PL
+                               block was absent or the transaction failed (each
+                               output zero force; no SW computation was
+                               substituted; expected 0)
         """
         msg = [SERIAL_SOF, CMD_GET_SECLOC_INFO, 4]
         msg.append(self._crc(msg))
         self._write_message(msg)
-        reply = self._receive_reply(CMD_GET_SECLOC_INFO, 18, timeout=2.0, reconnect_at_timeout=False)
+        reply = self._receive_reply(CMD_GET_SECLOC_INFO, 22, timeout=2.0, reconnect_at_timeout=False)
         (backend, pl_available, shadow_mismatches,
-         pl_update_count, pl_nn_wait_cycles) = struct.unpack('=BB3I', bytes(reply[3:17]))
+         pl_update_count, pl_nn_wait_cycles, pl_faults) = struct.unpack('=BB4I', bytes(reply[3:21]))
         return {
             'backend': SECLOC_BACKEND_NAMES.get(backend, f'unknown({backend})'),
             'pl_available': bool(pl_available),
             'shadow_mismatches': shadow_mismatches,
             'pl_update_count': pl_update_count,
             'pl_nn_wait_cycles': pl_nn_wait_cycles,
+            'pl_faults': pl_faults,
         }
 
     def collect_raw_angle(self, lenght=100, interval_us=100):
@@ -361,7 +370,8 @@ class Interface:
         return (angle, angleD, position, target_position, command, invalid_steps,
                 time_difference / 1e6, time_current_measurement_chip / 1e6,
                 latency / 1e5, latency_violation,
-                secloc_flags & 1, (secloc_flags >> 1) & 1, (secloc_flags >> 2) & 1)
+                secloc_flags & 1, (secloc_flags >> 1) & 1, (secloc_flags >> 2) & 1,
+                (secloc_flags >> 3) & 1)
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout

@@ -85,4 +85,4 @@ def test_read_state_reconnects_when_input_buffer_flush_fails(monkeypatch):
     assert broken_device.closed
     assert replacement_device.writes
     assert replacement_device.writes[0][1] == interface_module.CMD_STREAM_ON
-    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0)
+    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0)

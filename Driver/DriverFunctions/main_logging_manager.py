@@ -125,6 +125,7 @@ class MainLoggingManager:
             data['secloc_skipped_update'] = lambda: int(self.driver.secloc_skipped_update_chip)
             data['secloc_gate_skipped'] = lambda: int(self.driver.secloc_gate_skipped_chip)
             data['secloc_pl_used'] = lambda: int(self.driver.secloc_pl_used_chip)
+            data['secloc_pl_fault'] = lambda: int(self.driver.secloc_pl_fault_chip)
             return data
         controller = getattr(self.driver, "controller", None)
         controller_data = getattr(controller, "controller_data_for_csv", {})
