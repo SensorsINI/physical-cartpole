@@ -31,12 +31,16 @@ Driver/SI_Toolkit_ASF/Experiments/*
 
 /FPGA/VivadoProjects/*
 !/FPGA/VivadoProjects/CartpoleDriverZynq.tcl
+!/FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl
 
 # Vitis HLS build artifacts
+/FPGA/CustomIPs/**/csim/
 /FPGA/CustomIPs/vitis_hls.log
 /FPGA/CustomIPs/**/.autopilot/
 /FPGA/CustomIPs/**/.debug/
-/FPGA/CustomIPs/**/impl/
+# Keep packaged IP (Vivado block designs reference xilinx.com:hls:*:1.0)
+/FPGA/CustomIPs/**/impl/*
+!/FPGA/CustomIPs/**/impl/ip/
 /FPGA/CustomIPs/**/syn/
 /FPGA/CustomIPs/**/.apc/
 /FPGA/CustomIPs/**/.settings/

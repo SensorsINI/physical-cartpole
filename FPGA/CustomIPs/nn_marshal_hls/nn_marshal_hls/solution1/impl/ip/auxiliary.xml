@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="nn_marshal" xd:componentRef="nn_marshal" xd:initiationInterval="x" xd:clockPeriod="10.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="gate_req.data" xd:originalName="gate_req" xd:direction="in" xd:interfaceRef="gate_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="gate_req.keep" xd:originalName="gate_req" xd:direction="in" xd:interfaceRef="gate_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="gate_req.strb" xd:originalName="gate_req" xd:direction="in" xd:interfaceRef="gate_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="gate_req.last" xd:originalName="gate_req" xd:direction="in" xd:interfaceRef="gate_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="gate_resp.data" xd:originalName="gate_resp" xd:direction="out" xd:interfaceRef="gate_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="gate_resp.keep" xd:originalName="gate_resp" xd:direction="out" xd:interfaceRef="gate_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="gate_resp.strb" xd:originalName="gate_resp" xd:direction="out" xd:interfaceRef="gate_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="gate_resp.last" xd:originalName="gate_resp" xd:direction="out" xd:interfaceRef="gate_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="nn_req.data" xd:originalName="nn_req" xd:direction="out" xd:interfaceRef="nn_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="nn_req.keep" xd:originalName="nn_req" xd:direction="out" xd:interfaceRef="nn_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="nn_req.strb" xd:originalName="nn_req" xd:direction="out" xd:interfaceRef="nn_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="nn_req.last" xd:originalName="nn_req" xd:direction="out" xd:interfaceRef="nn_req" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:arg xd:name="nn_resp.data" xd:originalName="nn_resp" xd:direction="in" xd:interfaceRef="nn_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="32"/>
+  <xd:arg xd:name="nn_resp.keep" xd:originalName="nn_resp" xd:direction="in" xd:interfaceRef="nn_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="nn_resp.strb" xd:originalName="nn_resp" xd:direction="in" xd:interfaceRef="nn_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
+  <xd:arg xd:name="nn_resp.last" xd:originalName="nn_resp" xd:direction="in" xd:interfaceRef="nn_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
+  <xd:latencyEstimates xd:best-case="undef" xd:worst-case="undef" xd:average-case="undef"/>
+  <xd:resourceEstimates xd:LUT="2381" xd:FF="1330" xd:BRAM="0" xd:DSP="8"/>
+</xd:acceleratorMap>
