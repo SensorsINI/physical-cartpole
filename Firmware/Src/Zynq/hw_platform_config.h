@@ -34,6 +34,26 @@
     #define HW_HAS_CONTROLLER_AXILITE       0
 #endif
 
+/* SecLoc shell (HLS IP): AXI-Lite register interface for the three-block
+ * SecLoc chain (shell + gate + marshal in front of the hls4ml network).
+ * Register map: FPGA/CustomIPs/secloc_shell_hls (Vitis-generated
+ * xsecloc_shell_hw.h, mirrored in secloc_frontend_link.c). */
+#if defined(XPAR_HARDWARE_ACCEL_SECLOC_SHELL_0_S_AXI_CTRL_BASEADDR)
+    #define HW_SECLOC_FRONTEND_BASEADDR XPAR_HARDWARE_ACCEL_SECLOC_SHELL_0_S_AXI_CTRL_BASEADDR
+    #define HW_HAS_SECLOC_FRONTEND      1
+#elif defined(XPAR_XSECLOC_SHELL_0_S_AXI_CTRL_BASEADDR)
+    #define HW_SECLOC_FRONTEND_BASEADDR XPAR_XSECLOC_SHELL_0_S_AXI_CTRL_BASEADDR
+    #define HW_HAS_SECLOC_FRONTEND      1
+#elif defined(XPAR_HARDWARE_ACCEL_SECLOC_FRONTEND_0_S_AXI_CTRL_BASEADDR)
+    #define HW_SECLOC_FRONTEND_BASEADDR XPAR_HARDWARE_ACCEL_SECLOC_FRONTEND_0_S_AXI_CTRL_BASEADDR
+    #define HW_HAS_SECLOC_FRONTEND      1
+#elif defined(XPAR_XSECLOC_FRONTEND_0_S_AXI_CTRL_BASEADDR)
+    #define HW_SECLOC_FRONTEND_BASEADDR XPAR_XSECLOC_FRONTEND_0_S_AXI_CTRL_BASEADDR
+    #define HW_HAS_SECLOC_FRONTEND      1
+#else
+    #define HW_HAS_SECLOC_FRONTEND      0
+#endif
+
 /* HLS4ML AXI-Stream DMA Interface */
 #ifdef XPAR_HARDWARE_ACCEL_CONTROLLER_AXI_DMA_0_DEVICE_ID
     #define HW_HLS4ML_DMA_DEVICE_ID     XPAR_HARDWARE_ACCEL_CONTROLLER_AXI_DMA_0_DEVICE_ID
@@ -73,8 +93,9 @@
  * Feature Flags - Which accelerators are present?
  * ======================================================================== */
 
-/* HLS4ML is available if ANY of its interfaces are present */
-#if HW_HAS_CONTROLLER_AXI || HW_HAS_CONTROLLER_AXILITE || HW_HAS_HLS4ML_DMA
+/* HLS4ML is available if ANY of its interfaces are present (the SecLoc
+ * frontend reaches the network over its internal AXIS link) */
+#if HW_HAS_CONTROLLER_AXI || HW_HAS_CONTROLLER_AXILITE || HW_HAS_HLS4ML_DMA || HW_HAS_SECLOC_FRONTEND
     #define HW_HAS_HLS4ML               1
 #else
     #define HW_HAS_HLS4ML               0

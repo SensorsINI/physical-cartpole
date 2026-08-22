@@ -17,9 +17,31 @@
     #define HLS4ML_INTERFACE 1  /* AXI-Stream */
 #elif HW_HAS_CONTROLLER_AXILITE
     #define HLS4ML_INTERFACE 0  /* AXI-Lite */
+#elif HW_HAS_SECLOC_FRONTEND
+    /* The network sits behind the SecLoc frontend IP (internal AXIS link);
+     * neural_imitator.c talks to secloc_frontend_link.c directly and this
+     * module compiles to stubs. */
+    #define HLS4ML_INTERFACE 3
 #else
     #error "No HLS4ML interface hardware detected! Check hw_platform_config.h"
 #endif
+
+#if HLS4ML_INTERFACE == 3
+
+u32 HLS4ML_Network_Init(void) { return XST_SUCCESS; }
+
+void HLS4ML_Network_Evaluate(UINTPTR NetworkInputBuffAddr,
+                             u32     network_input_length_in_bytes,
+                             UINTPTR NetworkOutputBuffAddr,
+                             u32     network_output_length_in_bytes)
+{
+    (void)NetworkInputBuffAddr;
+    (void)network_input_length_in_bytes;
+    (void)NetworkOutputBuffAddr;
+    (void)network_output_length_in_bytes;
+}
+
+#else /* direct interfaces */
 
 /* Configuration parameters for selected interface */
 #if HLS4ML_INTERFACE == 0  /* AXI-Lite */
@@ -97,3 +119,5 @@ void HLS4ML_Network_Evaluate(UINTPTR NetworkInputBuffAddr,
     HWAccelLink_Evaluate((const void*)NetworkInputBuffAddr, network_input_length_in_bytes,
                          (void*)NetworkOutputBuffAddr,      network_output_length_in_bytes);
 }
+
+#endif /* HLS4ML_INTERFACE == 3 */

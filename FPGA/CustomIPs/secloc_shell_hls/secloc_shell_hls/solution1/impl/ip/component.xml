@@ -1,0 +1,2098 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<spirit:component xmlns:xilinx="http://www.xilinx.com" xmlns:spirit="http://www.spiritconsortium.org/XMLSchema/SPIRIT/1685-2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <spirit:vendor>xilinx.com</spirit:vendor>
+  <spirit:library>hls</spirit:library>
+  <spirit:name>secloc_shell</spirit:name>
+  <spirit:version>1.0</spirit:version>
+  <spirit:busInterfaces>
+    <spirit:busInterface>
+      <spirit:name>s_axi_CTRL</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="aximm" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="aximm_rtl" spirit:version="1.0"/>
+      <spirit:slave>
+        <spirit:memoryMapRef spirit:memoryMapRef="s_axi_CTRL"/>
+      </spirit:slave>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWADDR</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_AWADDR</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_AWVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>AWREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_AWREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WDATA</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_WDATA</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WSTRB</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_WSTRB</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_WVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>WREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_WREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>BRESP</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_BRESP</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>BVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_BVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>BREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_BREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARADDR</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_ARADDR</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_ARVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>ARREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_ARREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RDATA</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_RDATA</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RRESP</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_RRESP</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_RVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>s_axi_CTRL_RREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>ADDR_WIDTH</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.S_AXI_CTRL.ADDR_WIDTH">8</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>DATA_WIDTH</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.S_AXI_CTRL.DATA_WIDTH">32</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>PROTOCOL</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.S_AXI_CTRL.PROTOCOL">AXI4LITE</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>READ_WRITE_MODE</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.S_AXI_CTRL.READ_WRITE_MODE">READ_WRITE</spirit:value>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+    <spirit:busInterface>
+      <spirit:name>ap_clk</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="clock" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="clock_rtl" spirit:version="1.0"/>
+      <spirit:slave/>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>CLK</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>ap_clk</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>ASSOCIATED_BUSIF</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.AP_CLK.ASSOCIATED_BUSIF">s_axi_CTRL:gate_req:gate_resp</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>ASSOCIATED_RESET</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.AP_CLK.ASSOCIATED_RESET">ap_rst_n</spirit:value>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+    <spirit:busInterface>
+      <spirit:name>ap_rst_n</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset_rtl" spirit:version="1.0"/>
+      <spirit:slave/>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>RST</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>ap_rst_n</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>POLARITY</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.AP_RST_N.POLARITY">ACTIVE_LOW</spirit:value>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+    <spirit:busInterface>
+      <spirit:name>interrupt</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="interrupt" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="interrupt_rtl" spirit:version="1.0"/>
+      <spirit:master/>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>INTERRUPT</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>interrupt</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>SENSITIVITY</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.INTERRUPT.SENSITIVITY">LEVEL_HIGH</spirit:value>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+    <spirit:busInterface>
+      <spirit:name>gate_req</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="axis" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="axis_rtl" spirit:version="1.0"/>
+      <spirit:master/>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_req_TVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_req_TREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TDATA</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_req_TDATA</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TLAST</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_req_TLAST</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TKEEP</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_req_TKEEP</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TSTRB</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_req_TSTRB</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>TDATA_NUM_BYTES</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.GATE_REQ.TDATA_NUM_BYTES">4</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>TUSER_WIDTH</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.GATE_REQ.TUSER_WIDTH">0</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>LAYERED_METADATA</spirit:name>
+          <spirit:value spirit:resolve="generated" spirit:id="BUSIFPARAM_VALUE.GATE_REQ.LAYERED_METADATA"/>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+    <spirit:busInterface>
+      <spirit:name>gate_resp</spirit:name>
+      <spirit:busType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="axis" spirit:version="1.0"/>
+      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="interface" spirit:name="axis_rtl" spirit:version="1.0"/>
+      <spirit:slave/>
+      <spirit:portMaps>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TVALID</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_resp_TVALID</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TREADY</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_resp_TREADY</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TDATA</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_resp_TDATA</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TLAST</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_resp_TLAST</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TKEEP</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_resp_TKEEP</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+        <spirit:portMap>
+          <spirit:logicalPort>
+            <spirit:name>TSTRB</spirit:name>
+          </spirit:logicalPort>
+          <spirit:physicalPort>
+            <spirit:name>gate_resp_TSTRB</spirit:name>
+          </spirit:physicalPort>
+        </spirit:portMap>
+      </spirit:portMaps>
+      <spirit:parameters>
+        <spirit:parameter>
+          <spirit:name>TDATA_NUM_BYTES</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.GATE_RESP.TDATA_NUM_BYTES">4</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>TUSER_WIDTH</spirit:name>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.GATE_RESP.TUSER_WIDTH">0</spirit:value>
+        </spirit:parameter>
+        <spirit:parameter>
+          <spirit:name>LAYERED_METADATA</spirit:name>
+          <spirit:value spirit:resolve="generated" spirit:id="BUSIFPARAM_VALUE.GATE_RESP.LAYERED_METADATA"/>
+        </spirit:parameter>
+      </spirit:parameters>
+    </spirit:busInterface>
+  </spirit:busInterfaces>
+  <spirit:memoryMaps>
+    <spirit:memoryMap>
+      <spirit:name>s_axi_CTRL</spirit:name>
+      <spirit:addressBlock>
+        <spirit:name>Reg</spirit:name>
+        <spirit:baseAddress spirit:format="long">0</spirit:baseAddress>
+        <spirit:range spirit:format="long" spirit:resolve="generated">65536</spirit:range>
+        <spirit:width spirit:format="long">32</spirit:width>
+        <spirit:usage>register</spirit:usage>
+        <spirit:access>read-write</spirit:access>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>OFFSET_BASE_PARAM</spirit:name>
+            <spirit:value spirit:id="ADDRBLOCKPARAM_VALUE.S_AXI_CTRL.REG.OFFSET_BASE_PARAM">C_S_AXI_CTRL_BASEADDR</spirit:value>
+          </spirit:parameter>
+          <spirit:parameter>
+            <spirit:name>OFFSET_HIGH_PARAM</spirit:name>
+            <spirit:value spirit:id="ADDRBLOCKPARAM_VALUE.S_AXI_CTRL.REG.OFFSET_HIGH_PARAM">C_S_AXI_CTRL_HIGHADDR</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+        <spirit:register>
+          <spirit:name>CTRL</spirit:name>
+          <spirit:displayName>CTRL</spirit:displayName>
+          <spirit:description>Control signals</spirit:description>
+          <spirit:addressOffset>0</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-write</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>AP_START</spirit:name>
+            <spirit:description>Control signal Register for &apos;ap_start&apos;.</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-write</spirit:access>
+            <spirit:modifiedWriteValue>modify</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>AP_DONE</spirit:name>
+            <spirit:description>Control signal Register for &apos;ap_done&apos;.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>AP_IDLE</spirit:name>
+            <spirit:description>Control signal Register for &apos;ap_idle&apos;.</spirit:description>
+            <spirit:bitOffset>2</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>AP_READY</spirit:name>
+            <spirit:description>Control signal Register for &apos;ap_ready&apos;.</spirit:description>
+            <spirit:bitOffset>3</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED_1</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>4</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">3</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>AUTO_RESTART</spirit:name>
+            <spirit:description>Control signal Register for &apos;auto_restart&apos;.</spirit:description>
+            <spirit:bitOffset>7</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-write</spirit:access>
+            <spirit:modifiedWriteValue>modify</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED_2</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>8</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">24</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>GIER</spirit:name>
+          <spirit:displayName>GIER</spirit:displayName>
+          <spirit:description>Global Interrupt Enable Register</spirit:description>
+          <spirit:addressOffset>4</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-write</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>Enable</spirit:name>
+            <spirit:description>Master enable for the device interrupt output to the system interrupt controller: 0 = Disabled, 1 = Enabled</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-write</spirit:access>
+            <spirit:modifiedWriteValue>modify</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">31</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>IP_IER</spirit:name>
+          <spirit:displayName>IP_IER</spirit:displayName>
+          <spirit:description>IP Interrupt Enable Register</spirit:description>
+          <spirit:addressOffset>8</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-write</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>CHAN0_INT_EN</spirit:name>
+            <spirit:description>Enable Channel 0 (ap_done) Interrupt.  0 = Disabled, 1 = Enabled.</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-write</spirit:access>
+            <spirit:modifiedWriteValue>modify</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>CHAN1_INT_EN</spirit:name>
+            <spirit:description>Enable Channel 1 (ap_ready) Interrupt.  0 = Disabled, 1 = Enabled.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-write</spirit:access>
+            <spirit:modifiedWriteValue>modify</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>2</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">30</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>IP_ISR</spirit:name>
+          <spirit:displayName>IP_ISR</spirit:displayName>
+          <spirit:description>IP Interrupt Status Register</spirit:description>
+          <spirit:addressOffset>12</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-write</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>CHAN0_INT_ST</spirit:name>
+            <spirit:description>Channel 0 (ap_done) Interrupt Status. 0 = No Channel 0 input interrupt, 1 = Channel 0 input interrup</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:modifiedWriteValue>oneToToggle</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>CHAN1_INT_ST</spirit:name>
+            <spirit:description>Channel 1 (ap_ready) Interrupt Status. 0 = No Channel 1 input interrupt, 1 = Channel 1 input interrup</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:modifiedWriteValue>oneToToggle</spirit:modifiedWriteValue>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>2</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">30</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>angleD</spirit:name>
+          <spirit:displayName>angleD</spirit:displayName>
+          <spirit:description>Data signal of angleD</spirit:description>
+          <spirit:addressOffset>16</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>angleD</spirit:name>
+            <spirit:description>Bit 31 to 0 of angleD</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>angle_cos</spirit:name>
+          <spirit:displayName>angle_cos</spirit:displayName>
+          <spirit:description>Data signal of angle_cos</spirit:description>
+          <spirit:addressOffset>24</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>angle_cos</spirit:name>
+            <spirit:description>Bit 31 to 0 of angle_cos</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>angle_sin</spirit:name>
+          <spirit:displayName>angle_sin</spirit:displayName>
+          <spirit:description>Data signal of angle_sin</spirit:description>
+          <spirit:addressOffset>32</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>angle_sin</spirit:name>
+            <spirit:description>Bit 31 to 0 of angle_sin</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>position</spirit:name>
+          <spirit:displayName>position</spirit:displayName>
+          <spirit:description>Data signal of position</spirit:description>
+          <spirit:addressOffset>40</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>position</spirit:name>
+            <spirit:description>Bit 31 to 0 of position</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>positionD</spirit:name>
+          <spirit:displayName>positionD</spirit:displayName>
+          <spirit:description>Data signal of positionD</spirit:description>
+          <spirit:addressOffset>48</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>positionD</spirit:name>
+            <spirit:description>Bit 31 to 0 of positionD</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>target_equilibrium</spirit:name>
+          <spirit:displayName>target_equilibrium</spirit:displayName>
+          <spirit:description>Data signal of target_equilibrium</spirit:description>
+          <spirit:addressOffset>56</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>target_equilibrium</spirit:name>
+            <spirit:description>Bit 31 to 0 of target_equilibrium</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>target_position</spirit:name>
+          <spirit:displayName>target_position</spirit:displayName>
+          <spirit:description>Data signal of target_position</spirit:description>
+          <spirit:addressOffset>64</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>target_position</spirit:name>
+            <spirit:description>Bit 31 to 0 of target_position</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>angle</spirit:name>
+          <spirit:displayName>angle</spirit:displayName>
+          <spirit:description>Data signal of angle</spirit:description>
+          <spirit:addressOffset>72</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>angle</spirit:name>
+            <spirit:description>Bit 31 to 0 of angle</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>tick</spirit:name>
+          <spirit:displayName>tick</spirit:displayName>
+          <spirit:description>Data signal of tick</spirit:description>
+          <spirit:addressOffset>80</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>tick</spirit:name>
+            <spirit:description>Bit 31 to 0 of tick</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>log_base</spirit:name>
+          <spirit:displayName>log_base</spirit:displayName>
+          <spirit:description>Data signal of log_base</spirit:description>
+          <spirit:addressOffset>88</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>log_base</spirit:name>
+            <spirit:description>Bit 31 to 0 of log_base</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>ref_period_ticks</spirit:name>
+          <spirit:displayName>ref_period_ticks</spirit:displayName>
+          <spirit:description>Data signal of ref_period_ticks</spirit:description>
+          <spirit:addressOffset>96</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>ref_period_ticks</spirit:name>
+            <spirit:description>Bit 31 to 0 of ref_period_ticks</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>dead_ang</spirit:name>
+          <spirit:displayName>dead_ang</spirit:displayName>
+          <spirit:description>Data signal of dead_ang</spirit:description>
+          <spirit:addressOffset>104</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>dead_ang</spirit:name>
+            <spirit:description>Bit 31 to 0 of dead_ang</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>dead_pos</spirit:name>
+          <spirit:displayName>dead_pos</spirit:displayName>
+          <spirit:description>Data signal of dead_pos</spirit:description>
+          <spirit:addressOffset>112</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>dead_pos</spirit:name>
+            <spirit:description>Bit 31 to 0 of dead_pos</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>control_flags</spirit:name>
+          <spirit:displayName>control_flags</spirit:displayName>
+          <spirit:description>Data signal of control_flags</spirit:description>
+          <spirit:addressOffset>120</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>write-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>control_flags</spirit:name>
+            <spirit:description>Bit 31 to 0 of control_flags</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>write-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>Q</spirit:name>
+          <spirit:displayName>Q</spirit:displayName>
+          <spirit:description>Data signal of Q</spirit:description>
+          <spirit:addressOffset>128</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>Q</spirit:name>
+            <spirit:description>Bit 31 to 0 of Q</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>Q_ctrl</spirit:name>
+          <spirit:displayName>Q_ctrl</spirit:displayName>
+          <spirit:description>Control signal of Q</spirit:description>
+          <spirit:addressOffset>132</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>Q_ap_vld</spirit:name>
+            <spirit:description>Control signal Q_ap_vld</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">31</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>status</spirit:name>
+          <spirit:displayName>status</spirit:displayName>
+          <spirit:description>Data signal of status</spirit:description>
+          <spirit:addressOffset>144</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>status</spirit:name>
+            <spirit:description>Bit 31 to 0 of status</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>status_ctrl</spirit:name>
+          <spirit:displayName>status_ctrl</spirit:displayName>
+          <spirit:description>Control signal of status</spirit:description>
+          <spirit:addressOffset>148</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>status_ap_vld</spirit:name>
+            <spirit:description>Control signal status_ap_vld</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">31</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>update_count</spirit:name>
+          <spirit:displayName>update_count</spirit:displayName>
+          <spirit:description>Data signal of update_count</spirit:description>
+          <spirit:addressOffset>160</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>update_count</spirit:name>
+            <spirit:description>Bit 31 to 0 of update_count</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>update_count_ctrl</spirit:name>
+          <spirit:displayName>update_count_ctrl</spirit:displayName>
+          <spirit:description>Control signal of update_count</spirit:description>
+          <spirit:addressOffset>164</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>update_count_ap_vld</spirit:name>
+            <spirit:description>Control signal update_count_ap_vld</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">31</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>nn_wait_cycles</spirit:name>
+          <spirit:displayName>nn_wait_cycles</spirit:displayName>
+          <spirit:description>Data signal of nn_wait_cycles</spirit:description>
+          <spirit:addressOffset>176</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>nn_wait_cycles</spirit:name>
+            <spirit:description>Bit 31 to 0 of nn_wait_cycles</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">32</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+        <spirit:register>
+          <spirit:name>nn_wait_cycles_ctrl</spirit:name>
+          <spirit:displayName>nn_wait_cycles_ctrl</spirit:displayName>
+          <spirit:description>Control signal of nn_wait_cycles</spirit:description>
+          <spirit:addressOffset>180</spirit:addressOffset>
+          <spirit:size spirit:format="long">32</spirit:size>
+          <spirit:access>read-only</spirit:access>
+          <spirit:reset>
+            <spirit:value spirit:format="long">0</spirit:value>
+          </spirit:reset>
+          <spirit:field>
+            <spirit:name>nn_wait_cycles_ap_vld</spirit:name>
+            <spirit:description>Control signal nn_wait_cycles_ap_vld</spirit:description>
+            <spirit:bitOffset>0</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">1</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+          <spirit:field>
+            <spirit:name>RESERVED</spirit:name>
+            <spirit:description>Reserved.  0s on read.</spirit:description>
+            <spirit:bitOffset>1</spirit:bitOffset>
+            <spirit:bitWidth spirit:format="long">31</spirit:bitWidth>
+            <spirit:access>read-only</spirit:access>
+            <spirit:writeValueConstraint>
+              <spirit:minimum>0</spirit:minimum>
+              <spirit:maximum>0</spirit:maximum>
+            </spirit:writeValueConstraint>
+            <spirit:readAction>modify</spirit:readAction>
+            <spirit:testable spirit:testConstraint="unconstrained">false</spirit:testable>
+          </spirit:field>
+        </spirit:register>
+      </spirit:addressBlock>
+    </spirit:memoryMap>
+  </spirit:memoryMaps>
+  <spirit:model>
+    <spirit:views>
+      <spirit:view>
+        <spirit:name>xilinx_verilogsynthesis</spirit:name>
+        <spirit:displayName>Verilog Synthesis</spirit:displayName>
+        <spirit:envIdentifier>verilogSource:vivado.xilinx.com:synthesis</spirit:envIdentifier>
+        <spirit:language>verilog</spirit:language>
+        <spirit:modelName>secloc_shell</spirit:modelName>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_verilogsynthesis_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>b530142b</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_verilogbehavioralsimulation</spirit:name>
+        <spirit:displayName>Verilog Simulation</spirit:displayName>
+        <spirit:envIdentifier>verilogSource:vivado.xilinx.com:simulation</spirit:envIdentifier>
+        <spirit:language>verilog</spirit:language>
+        <spirit:modelName>secloc_shell</spirit:modelName>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_verilogbehavioralsimulation_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>abfb4c19</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_vhdlsynthesis</spirit:name>
+        <spirit:displayName>VHDL Synthesis</spirit:displayName>
+        <spirit:envIdentifier>vhdlSource:vivado.xilinx.com:synthesis</spirit:envIdentifier>
+        <spirit:language>vhdl</spirit:language>
+        <spirit:modelName>secloc_shell</spirit:modelName>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_vhdlsynthesis_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>0d18b266</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_vhdlbehavioralsimulation</spirit:name>
+        <spirit:displayName>VHDL Simulation</spirit:displayName>
+        <spirit:envIdentifier>vhdlSource:vivado.xilinx.com:simulation</spirit:envIdentifier>
+        <spirit:language>vhdl</spirit:language>
+        <spirit:modelName>secloc_shell</spirit:modelName>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_vhdlbehavioralsimulation_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>765585ce</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_softwaredriver</spirit:name>
+        <spirit:displayName>Software Driver</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:sw.driver</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_softwaredriver_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>873cf7db</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_documentation</spirit:name>
+        <spirit:displayName>Documentation</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:docs.all</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_documentation_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_miscfiles</spirit:name>
+        <spirit:displayName>Miscellaneous</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:misc.files</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_miscfiles_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>0f05e113</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_block_diagram</spirit:name>
+        <spirit:displayName>Block Diagram</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:block.diagram</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_block_diagram_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>5691daea</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_xpgui</spirit:name>
+        <spirit:displayName>UI Layout</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:xgui.ui</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_xpgui_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>a80ebe2b</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_utilityxitfiles</spirit:name>
+        <spirit:displayName>Utility XIT/TTCL</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:xit.util</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_utilityxitfiles_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>0f05e113</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
+    </spirit:views>
+    <spirit:ports>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_AWADDR</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_S_AXI_CTRL_ADDR_WIDTH&apos;)) - 1)">7</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_AWVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_AWREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_WDATA</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_S_AXI_CTRL_DATA_WIDTH&apos;)) - 1)">31</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_WSTRB</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.C_S_AXI_CTRL_DATA_WIDTH&apos;)) div 8) - 1)">3</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_WVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_WREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_BRESP</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">1</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_BVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_BREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_ARADDR</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_S_AXI_CTRL_ADDR_WIDTH&apos;)) - 1)">7</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_ARVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_ARREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_RDATA</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_S_AXI_CTRL_DATA_WIDTH&apos;)) - 1)">31</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_RRESP</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">1</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_RVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>s_axi_CTRL_RREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>ap_clk</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>ap_rst_n</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>interrupt</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_req_TVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_req_TREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_req_TDATA</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">31</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_req_TLAST</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">0</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_req_TKEEP</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">3</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_req_TSTRB</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">3</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_resp_TVALID</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_resp_TREADY</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_resp_TDATA</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">31</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_resp_TLAST</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">0</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+          <spirit:driver>
+            <spirit:defaultValue spirit:format="long">0</spirit:defaultValue>
+          </spirit:driver>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_resp_TKEEP</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">3</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+          <spirit:driver>
+            <spirit:defaultValue spirit:format="long">15</spirit:defaultValue>
+          </spirit:driver>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gate_resp_TSTRB</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">3</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>std_logic_vector</spirit:typeName>
+              <spirit:viewNameRef>xilinx_verilogsynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_verilogbehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+          <spirit:driver>
+            <spirit:defaultValue spirit:format="long">15</spirit:defaultValue>
+          </spirit:driver>
+        </spirit:wire>
+      </spirit:port>
+    </spirit:ports>
+    <spirit:modelParameters>
+      <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="integer">
+        <spirit:name>C_S_AXI_CTRL_ADDR_WIDTH</spirit:name>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_S_AXI_CTRL_ADDR_WIDTH">8</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>C_S_AXI_CTRL_DATA_WIDTH</spirit:name>
+        <spirit:value spirit:format="long" spirit:id="MODELPARAM_VALUE.C_S_AXI_CTRL_DATA_WIDTH">32</spirit:value>
+      </spirit:modelParameter>
+    </spirit:modelParameters>
+  </spirit:model>
+  <spirit:fileSets>
+    <spirit:fileSet>
+      <spirit:name>xilinx_verilogsynthesis_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>constraints/secloc_shell_ooc.xdc</spirit:name>
+        <spirit:userFileType>xdc</spirit:userFileType>
+        <spirit:userFileType>USED_IN_out_of_context</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/regslice_core.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell_CTRL_s_axi.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell_write_request_packet.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell_write_request_packet_words_V.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_verilogbehavioralsimulation_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>hdl/verilog/regslice_core.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell_CTRL_s_axi.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell_write_request_packet.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell_write_request_packet_words_V.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/verilog/secloc_shell.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_vhdlsynthesis_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>constraints/secloc_shell_ooc.xdc</spirit:name>
+        <spirit:userFileType>xdc</spirit:userFileType>
+        <spirit:userFileType>USED_IN_out_of_context</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/regslice_core.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell_CTRL_s_axi.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell_write_request_packet.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell_write_request_packet_words_V.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>CHECKSUM_d4925eda</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_vhdlbehavioralsimulation_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/regslice_core.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell_CTRL_s_axi.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell_write_request_packet.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell_write_request_packet_words_V.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>hdl/vhdl/secloc_shell.vhd</spirit:name>
+        <spirit:fileType>vhdlSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_softwaredriver_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/data/secloc_shell.mdd</spirit:name>
+        <spirit:userFileType>driver_mdd</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/data/secloc_shell.tcl</spirit:name>
+        <spirit:userFileType>driver_tcl</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/src/Makefile</spirit:name>
+        <spirit:userFileType>driver_src</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/src/xsecloc_shell.c</spirit:name>
+        <spirit:userFileType>driver_src</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/src/xsecloc_shell.h</spirit:name>
+        <spirit:userFileType>driver_src</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/src/xsecloc_shell_hw.h</spirit:name>
+        <spirit:userFileType>driver_src</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/src/xsecloc_shell_linux.c</spirit:name>
+        <spirit:userFileType>driver_src</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>drivers/secloc_shell_v1_0/src/xsecloc_shell_sinit.c</spirit:name>
+        <spirit:userFileType>driver_src</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_documentation_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>doc/ReleaseNotes.txt</spirit:name>
+        <spirit:userFileType>text</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_miscfiles_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>misc/logo.png</spirit:name>
+        <spirit:userFileType>image</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_block_diagram_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>bd/bd.tcl</spirit:name>
+        <spirit:fileType>tclSource</spirit:fileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>xgui/secloc_shell_v1_0.tcl</spirit:name>
+        <spirit:fileType>tclSource</spirit:fileType>
+        <spirit:userFileType>CHECKSUM_a80ebe2b</spirit:userFileType>
+        <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_utilityxitfiles_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>misc/logo.png</spirit:name>
+        <spirit:userFileType>image</spirit:userFileType>
+        <spirit:userFileType>LOGO</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
+  </spirit:fileSets>
+  <spirit:description>An IP generated by Vivado HLS</spirit:description>
+  <spirit:parameters>
+    <spirit:parameter>
+      <spirit:name>Component_Name</spirit:name>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">secloc_shell_v1_0</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>clk_period</spirit:name>
+      <spirit:value spirit:id="PARAM_VALUE.clk_period" spirit:order="2">10</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>machine</spirit:name>
+      <spirit:value spirit:id="PARAM_VALUE.machine" spirit:order="3">64</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>combinational</spirit:name>
+      <spirit:value spirit:id="PARAM_VALUE.combinational" spirit:order="4">0</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>latency</spirit:name>
+      <spirit:value spirit:id="PARAM_VALUE.latency" spirit:order="5">29</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>II</spirit:name>
+      <spirit:value spirit:id="PARAM_VALUE.II" spirit:order="6">x</spirit:value>
+    </spirit:parameter>
+  </spirit:parameters>
+  <spirit:vendorExtensions>
+    <xilinx:coreExtensions>
+      <xilinx:supportedFamilies>
+        <xilinx:family xilinx:lifeCycle="Pre-Production">zynq</xilinx:family>
+      </xilinx:supportedFamilies>
+      <xilinx:taxonomies>
+        <xilinx:taxonomy>/VIVADO_HLS_IP</xilinx:taxonomy>
+      </xilinx:taxonomies>
+      <xilinx:displayName>Secloc_shell</xilinx:displayName>
+      <xilinx:definitionSource>HLS</xilinx:definitionSource>
+      <xilinx:coreRevision>2007101122</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2026-07-10T09:22:33Z</xilinx:coreCreationDateTime>
+      <xilinx:sdxKernelAttributes>
+        <xilinx:sdx_kernel>true</xilinx:sdx_kernel>
+        <xilinx:sdx_kernel_type>hls</xilinx:sdx_kernel_type>
+      </xilinx:sdxKernelAttributes>
+    </xilinx:coreExtensions>
+    <xilinx:packagingInfo>
+      <xilinx:xilinxVersion>2020.1</xilinx:xilinxVersion>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="587badde"/>
+      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="0c423f8d"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="7d942114"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="6e2f7b9e"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="4395c73a"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="7d16316d"/>
+    </xilinx:packagingInfo>
+  </spirit:vendorExtensions>
+</spirit:component>

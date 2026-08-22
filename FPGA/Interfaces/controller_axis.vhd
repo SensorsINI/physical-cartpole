@@ -41,6 +41,10 @@ entity controller_axis is
         M_AXIS_TVALID : out std_logic;
         M_AXIS_TDATA  : out std_logic_vector(AXI_DATA_WIDTH - 1 downto 0);
         M_AXIS_TLAST  : out std_logic;
+        -- Constant all-ones side channels for slaves that expect them
+        -- (e.g. the Vitis HLS axis port of the SecLoc frontend IP).
+        M_AXIS_TKEEP  : out std_logic_vector(AXI_DATA_WIDTH/8 - 1 downto 0);
+        M_AXIS_TSTRB  : out std_logic_vector(AXI_DATA_WIDTH/8 - 1 downto 0);
         M_AXIS_TREADY : in  std_logic
     );
 end entity controller_axis;
@@ -75,6 +79,8 @@ begin
 
     ap_rst        <= not AXI_ARESETN;
     S_AXIS_TREADY <= ap_idle;
+    M_AXIS_TKEEP  <= (others => '1');
+    M_AXIS_TSTRB  <= (others => '1');
 
     -- State machine
     b_sync : process(AXIS_ACLK, AXI_ARESETN)
