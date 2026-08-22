@@ -1,21 +1,19 @@
-"""Controller running in a worker thread, its output applied on a fixed clock.
+"""IO thread + main-thread compute scheduling for physical cartpole control.
 
-The chip-polling loop calls :meth:`tick` every period. The gate
-(``controller.should_trigger``, cheap) is evaluated in the loop thread, and only
-while the worker is idle - so gate and computation never run concurrently. On a
-trigger the state is snapshotted and the worker computes in the background. On the
+Thread roles:
+  - IO thread (driver ``_io_loop``): calls :meth:`tick` every polling period.
+    Evaluates the Secloc gate (``should_trigger``) when idle, snapshots state,
+    applies control (ZOH or fresh on deadline), never runs compute.
+  - Main thread: :meth:`run_compute_loop` runs ``compute_step`` / ``step``.f
+
+On a trigger the state is snapshotted and main computes in the background. On the
 DEADLINE tick - ``apply_window_polling_loops - 1`` polling loops after the trigger,
 i.e. the trigger tick itself when the window equals one polling period -
 :meth:`tick` BLOCKS until the computation is finished and returns the fresh
 control, so it leaves for the actuator in that same loop iteration. Between
 trigger and deadline the previous control is held (zero-order hold).
 
-This reproduces the latency of the classic synchronous loop (state measured at
-tick N acts on the plant one apply window later); an overrunning computation
-delays the deadline loop iteration rather than silently stretching the
-controller's update cadence. The schedule is counted in ticks, not compared
-against measured timestamps, so it is deterministic and immune to clock
-jitter/float rounding.
+Scheduling is counted in ticks, not measured timestamps, so it is deterministic.
 
 The wrapper does not proxy controller attributes; the driver keeps its direct
 controller reference for everything but the per-iteration control.
@@ -25,11 +23,9 @@ import time as _time
 
 import numpy as np
 
-from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
 
-
-class ThreadedController:
-    def __init__(self, controller, apply_window_polling_loops, polling_period_s, name="controller", cpu_affinity=""):
+class SplitControlLoop:
+    def __init__(self, controller, apply_window_polling_loops, polling_period_s, name="controller"):
         """
         :param controller: a template_controller instance. Controllers without
             should_trigger/compute_step fall back to always-trigger + step().
@@ -38,7 +34,6 @@ class ThreadedController:
         :param polling_period_s: nominal polling-loop period in seconds; only used
             for the overrun statistic and the status string, not for scheduling.
         :param name: label used in the status string.
-        :param cpu_affinity: core spec (e.g. "2") the worker thread pins itself to.
         """
         self.controller = controller
         self.apply_window_polling_loops = int(apply_window_polling_loops)
@@ -48,14 +43,12 @@ class ThreadedController:
             )
         self.apply_window_s = self.apply_window_polling_loops * float(polling_period_s)
         self.name = name
-        self.cpu_affinity = cpu_affinity
 
         self._has_split = (
             hasattr(controller, "should_trigger")
             and hasattr(controller, "compute_step")
         )
 
-        # Shared state (guarded by _lock)
         self._lock = threading.Lock()
         self._applied_Q = 0.0
         self._snapshot = None
@@ -64,40 +57,26 @@ class ThreadedController:
         self._busy = False
         self._polling_loops_since_trigger = 0
         self._last_applied_now = False
-        # Bumped on reset so an in-flight computation is discarded when it completes.
         self._generation = 0
 
-        # Statistics
         self._calc_count = 0
         self._calc_time_sum = 0.0
         self._calc_time_max = 0.0
         self._calc_time_last = 0.0
         self._overrun_count = 0
 
-        # Worker control
         self._wake = threading.Event()
-        # Set by the worker when a computation finishes (success or failure);
-        # cleared on trigger. The deadline tick blocks on it.
         self._compute_done = threading.Event()
         self._stop = threading.Event()
-        self._thread = None
 
-    # ------------------------------------------------------------------ lifecycle
-    def start(self):
-        if self._thread is not None and self._thread.is_alive():
-            return
-        self._stop.clear()
-        self._thread = threading.Thread(
-            target=self._run_loop, name=f"{self.name}_controller_worker", daemon=True
-        )
-        self._thread.start()
-
-    def stop(self, join_timeout=2.0):
+    def stop(self):
+        """Signal :meth:`run_compute_loop` to exit. Safe to call from any thread."""
         self._stop.set()
         self._wake.set()
-        if self._thread is not None:
-            self._thread.join(timeout=join_timeout)
-        self._thread = None
+
+    def prepare_for_run(self):
+        """Clear stop flag before starting a new experiment."""
+        self._stop.clear()
 
     def reset(self):
         """Drop any in-flight/pending computation and clear the held output.
@@ -109,17 +88,21 @@ class ThreadedController:
             self._applied_Q = 0.0
             self._result_Q = 0.0
             self._result_pending = False
+            was_busy = self._busy
             self._busy = False
             self._polling_loops_since_trigger = 0
             self._snapshot = None
             self._last_applied_now = False
         self._wake.clear()
+        if was_busy:
+            # Unblock IO waiting on deadline if main is mid-compute (result will be discarded).
+            self._compute_done.set()
 
-    # ------------------------------------------------------------------ loop side
+    # ------------------------------------------------------------------ IO thread
     def tick(self, s, time=None, updated_attributes=None):
-        """Called every polling-loop iteration. Returns the control to apply now.
+        """Called every polling-loop iteration on the IO thread. Returns Q to apply.
 
-        Non-blocking except on the deadline tick, where it waits for the worker to
+        Non-blocking except on the deadline tick, where it waits for main to
         finish so the fresh control is returned within the same loop iteration.
         """
         if updated_attributes is None:
@@ -162,11 +145,6 @@ class ThreadedController:
         return q
 
     def _wait_for_computation(self):
-        """Block until the worker finishes the current computation.
-
-        The timeout is a safety net for a dead/stuck worker; on expiry the loop
-        continues with the held control instead of freezing forever.
-        """
         timeout_s = max(1.0, 10.0 * self.apply_window_s)
         if not self._compute_done.wait(timeout=timeout_s):
             print(
@@ -184,9 +162,9 @@ class ThreadedController:
             )
         return True
 
-    # ------------------------------------------------------------------ worker
-    def _run_loop(self):
-        set_thread_cpu_affinity(self.cpu_affinity, thread_label=f"{self.name} worker")
+    # ------------------------------------------------------------------ main thread
+    def run_compute_loop(self):
+        """Main thread only. Blocks until :meth:`stop` is called."""
         while not self._stop.is_set():
             self._wake.wait()
             self._wake.clear()
@@ -216,29 +194,31 @@ class ThreadedController:
                     )
                 q = float(q)
                 ok = True
-            except Exception as exc:  # keep the loop alive; hold previous control
+            except Exception as exc:
                 print(f"[{self.name}] controller computation failed: {exc}", flush=True)
                 ok = False
                 q = None
             dt = _time.time() - t0
 
+            discard = False
             with self._lock:
                 if gen_local != self._generation:
-                    # Reset happened while computing: discard this result. Do not
-                    # signal completion; the event was re-armed by a newer trigger
-                    # (or nothing is waiting).
-                    continue
-                self._calc_count += 1
-                self._calc_time_last = dt
-                self._calc_time_sum += dt
-                self._calc_time_max = max(self._calc_time_max, dt)
-                if dt > self.apply_window_s:
-                    self._overrun_count += 1
-                if ok:
-                    self._result_Q = q
-                    self._result_pending = True
-                self._busy = False
+                    self._busy = False
+                    discard = True
+                else:
+                    self._calc_count += 1
+                    self._calc_time_last = dt
+                    self._calc_time_sum += dt
+                    self._calc_time_max = max(self._calc_time_max, dt)
+                    if dt > self.apply_window_s:
+                        self._overrun_count += 1
+                    if ok:
+                        self._result_Q = q
+                        self._result_pending = True
+                    self._busy = False
             self._compute_done.set()
+            if discard:
+                continue
 
     # ------------------------------------------------------------------ reporting
     @property
@@ -253,7 +233,6 @@ class ThreadedController:
 
     @property
     def calc_time_last(self):
-        """Duration of the most recently completed computation, in seconds."""
         with self._lock:
             return self._calc_time_last
 

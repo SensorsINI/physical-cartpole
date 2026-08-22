@@ -6,6 +6,7 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
+ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardware_bridge.h
 CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
@@ -20,13 +21,13 @@ OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi';
 #                which a single-core pin would throttle.
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
-# The controller worker thread (and the TF/XLA pools) stay on this pin, so e.g. rpgd
-# keeps its dedicated core.
-CONTROL_CPU_AFFINITY = "2"
+# Main-thread compute inherits this process mask (io-main-split architecture).
+CONTROL_CPU_AFFINITY = "2"  # "2" for rpgd (TF); "" for rpgd-c (OpenMP on main)
 
-# Core(s) for the chip-polling loop: the main thread re-pins itself (per-thread
-# affinity) to these after the controller worker is created, so the loop never competes
-# with the controller computation. "" leaves the main thread on CONTROL_CPU_AFFINITY.
+# Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
+# pins itself here via per-thread affinity. Full separation from compute requires
+# CONTROL_CPU_AFFINITY="" so OpenMP can use other cores; with rpgd pinned to "2"
+# the IO thread may remain on core 2 if the process mask allows only that core.
 LOOP_CPU_AFFINITY = "3"
 
 # Which GPUs TensorFlow may see, applied by control.py before TF is imported.
@@ -44,8 +45,8 @@ CONTROL_CUDA_VISIBLE_DEVICES = "-1"
 MOTOR = 'POLOLU'
 
 ##### Controller Settings #####
-# Two clocks: the chip-polling loop runs every POLLING_PERIOD_MS (gate/trigger
-# resolution); the controller computes in a worker thread and its result is applied
+# Two clocks: the chip IO thread runs every POLLING_PERIOD_MS (gate/trigger
+# resolution); main thread computes and the result is applied
 # CONTROLLER_APPLY_WINDOW_MS after the trigger. The classic cadence is the special case
 # window == period (compute each period, apply at the next tick).
 if CONTROLLER_NAME == 'pid':

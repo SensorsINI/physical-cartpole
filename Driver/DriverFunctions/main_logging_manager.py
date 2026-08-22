@@ -11,7 +11,7 @@ from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_
 
 from globals import (
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
-    CONTROLLER_APPLY_WINDOW_MS,
+    CONTROLLER_APPLY_WINDOW_MS, LOOP_CPU_AFFINITY, CONTROL_CPU_AFFINITY,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
     DEFAULT_ADDRESS, LIVE_PLOTTER_USE_REMOTE_SERVER, LIVE_PLOTTER_REMOTE_USERNAME, LIVE_PLOTTER_REMOTE_IP
 )
@@ -73,7 +73,7 @@ class MainLoggingManager:
         self.data_to_save_measurement = {}
         # 1 if a freshly computed control was applied this iteration, 0 if held
         self.data_to_save_controller = FunctionalDict({
-            'controller_update_applied': lambda: int(driver.threaded_controller.last_applied_now),
+            'controller_update_applied': lambda: int(driver.split_control.last_applied_now),
         })
 
         self.data_manager = DataManager(create_csv_file)
@@ -145,9 +145,12 @@ class MainLoggingManager:
                     optimizer_name = self.driver.controller.optimizer_name
                 else:
                     optimizer_name = ''
-                self.csv_name = create_csv_file_name(controller_name=controller_name,
-                                                     controller=self.driver.controller,
-                                                     optimizer_name=optimizer_name, prefix='CPP')
+                self.csv_name = create_csv_file_name(
+                    controller_name=controller_name,
+                    controller=self.driver.controller,
+                    optimizer_name=optimizer_name,
+                    prefix='CPP',
+                )
                 if time_limited_recording:
                     self.recording_length = TIME_LIMITED_RECORDING_LENGTH
                 else:
@@ -220,11 +223,22 @@ class MainLoggingManager:
             self.driver.CartPoleInstance.dt_controller = CONTROLLER_APPLY_WINDOW_MS / 1000
             self.driver.CartPoleInstance.dt_save = POLLING_PERIOD_MS / 1000
 
+            header = create_csv_header(self.driver.CartPoleInstance, mode='CPP')
+            mode_lines = [
+                f"IO CPU affinity: {LOOP_CPU_AFFINITY}",
+                f"Control CPU affinity: {CONTROL_CPU_AFFINITY}",
+            ]
+            if "Parameters:" in header:
+                insert_at = header.index("Parameters:")
+                header[insert_at:insert_at] = mode_lines + [""]
+            else:
+                header.extend(mode_lines)
+
             self.data_manager.start_csv_recording(
                 self.csv_name,
                 combined_keys,
                 create_csv_title(mode='CPP'),
-                create_csv_header(self.driver.CartPoleInstance, mode='CPP'),
+                header,
                 PATH_TO_EXPERIMENT_RECORDINGS,
                 mode='online',
                 wait_till_complete=False,

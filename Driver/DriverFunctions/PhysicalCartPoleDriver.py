@@ -1,4 +1,6 @@
 # TODO: You can easily switch between controllers in runtime using get_available_controller_names function
+import threading
+
 import numpy as np
 
 from CartPoleSimulation.CartPole.state_utilities import (create_cartpole_state,
@@ -14,7 +16,7 @@ from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import Exp
 
 from Driver.DriverFunctions.dancer import Dancer
 from DriverFunctions.timing_helper import TimingHelper
-from DriverFunctions.threaded_controller import ThreadedController
+from DriverFunctions.split_control_loop import SplitControlLoop
 from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
 from Control_Toolkit.serial_interface_helper import get_serial_port, set_ftdi_latency_timer
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
@@ -56,22 +58,23 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
         self.controller = self.CartPoleInstance.controller
 
-        # Controller computation runs in a worker thread. The loop blocks on the
-        # deadline tick (CONTROLLER_APPLY_WINDOW_MS / POLLING_PERIOD_MS polling
-        # loops after the trigger, minus one) until the result is ready, so the
-        # control acts exactly one apply window after its measurement - same
-        # latency as the classic synchronous loop. Scheduling is counted in ticks,
-        # not measured time, so the cadence is deterministic. Worker on the compute
-        # core(s), polling loop re-pinned to its own core(s) so the two never compete.
-        self.threaded_controller = ThreadedController(
+        # IO thread: chip polling, gate, actuation. Main thread: compute_step/step.
+        # tick-based apply window (see split_control_loop.py).
+        self.split_control = SplitControlLoop(
             self.controller,
             apply_window_polling_loops=CONTROLLER_APPLY_WINDOW_MS // POLLING_PERIOD_MS,
             polling_period_s=POLLING_PERIOD_MS / 1000.0,
             name=CONTROLLER_NAME,
-            cpu_affinity=CONTROL_CPU_AFFINITY,
         )
-        self.threaded_controller.start()
-        set_thread_cpu_affinity(LOOP_CPU_AFFINITY, thread_label="polling loop")
+        print(
+            f"[{CONTROLLER_NAME}] IO -> LOOP_CPU_AFFINITY={LOOP_CPU_AFFINITY!r} | "
+            f"compute -> main (CONTROL_CPU_AFFINITY={CONTROL_CPU_AFFINITY!r})",
+            flush=True,
+        )
+
+        self._io_stop = threading.Event()
+        self._io_thread = None
+        self.on_io_step = None
 
         self.InterfaceInstance = Interface()
 
@@ -190,22 +193,44 @@ class PhysicalCartPoleDriver:
 
 
     def run_experiment(self):
+        self.split_control.prepare_for_run()
+        self._io_stop.clear()
+        self._io_thread = threading.Thread(
+            target=self._io_loop, name="chip_io", daemon=True
+        )
+        self._io_thread.start()
+        try:
+            self.split_control.run_compute_loop()
+        finally:
+            self._io_stop.set()
+            if self._io_thread is not None:
+                self._io_thread.join(timeout=2.0)
+            self._io_thread = None
 
-        while not self.terminate_experiment:
-            self.experiment_sequence()
+    def _io_loop(self):
+        set_thread_cpu_affinity(LOOP_CPU_AFFINITY, thread_label="chip io")
+        try:
+            while not self.terminate_experiment and not self._io_stop.is_set():
+                self.io_step()
+        finally:
+            # Main is parked in run_compute_loop(); unblock it on IO exit (e.g. ESC).
+            self.split_control.stop()
 
     def quit_experiment(self):
-        CostFunctionUpdater.stop_all_watchers()  # Stop all active watchers
-        self.threaded_controller.stop()
-        # when x hit during loop or other loop exit
+        CostFunctionUpdater.stop_all_watchers()
+        self.split_control.stop()
+        self._io_stop.set()
+        if self._io_thread is not None and self._io_thread.is_alive():
+            self._io_thread.join(timeout=2.0)
+        self._io_thread = None
         self.angle_position_client.close()
-        self.InterfaceInstance.set_motor(0)  # turn off motor
+        self.InterfaceInstance.set_motor(0)
         self.InterfaceInstance.close()
         self.joystick.quit()
         self.mlm.live_plotter_sender.close()
         self.mlm.finish_csv_recording()
 
-    def experiment_sequence(self):
+    def io_step(self):
 
         self.keyboard_controller.keyboard_input()
 
@@ -272,21 +297,18 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.Q_ccrc = self.Q
 
         if self.controlEnabled:
-            # Active Python Control: returns the current control. Non-blocking
-            # except on the deadline tick, where it waits for the worker so the
-            # fresh control is sent out within this same iteration.
-            self.Q = float(self.threaded_controller.tick(
+            self.Q = float(self.split_control.tick(
                 self.s,
                 self.th.time_current_measurement_chip,
                 {"target_position": self.target_position,
                  "target_equilibrium": self.CartPoleInstance.target_equilibrium,
-                 "Q_ccrc": self.Q_prev_prev,  # Take care! The Q_ccrc is Q_prev (MPC) but the control from before the current state is Q_prev_prev (NN)
+                 "Q_ccrc": self.Q_prev_prev,
                  }
             ))
             self.th.load_controller_timing(
-                self.threaded_controller.calc_time_last,
-                self.threaded_controller.calc_count,
-                self.threaded_controller.overrun_count,
+                self.split_control.calc_time_last,
+                self.split_control.calc_count,
+                self.split_control.overrun_count,
             )
             self.print_controller_status_if_available()
 
@@ -331,6 +353,11 @@ class PhysicalCartPoleDriver:
 
         self.th.python_latency = self.th.time_since(self.InterfaceInstance.start)
 
+        if self.on_io_step is not None:
+            self.on_io_step()
+
+    experiment_sequence = io_step  # legacy alias
+
     def print_controller_status_if_available(self):
         if self.controller is None:
             return
@@ -346,7 +373,7 @@ class PhysicalCartPoleDriver:
         status_parts = []
         if controller_status:
             status_parts.append(controller_status)
-        status_parts.append(self.threaded_controller.get_status())
+        status_parts.append(self.split_control.get_status())
 
         if status_parts:
             print(f"[{CONTROLLER_NAME}] " + " | ".join(status_parts), flush=True)
@@ -470,14 +497,14 @@ class PhysicalCartPoleDriver:
             self.controller.controller_reset()
         except NotImplementedError:
             pass
-        self.threaded_controller.reset()
+        self.split_control.reset()
         self.dancer.danceEnabled = False
         self.target_position = self.base_target_position
         self.th.reset_timing_helper_memory()
 
     def switch_on_control(self):
         self.controlEnabled = True
-        self.threaded_controller.reset()
+        self.split_control.reset()
         self.th.reset_timing_helper_memory()
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.pc_control_mode(True)
