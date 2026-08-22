@@ -216,7 +216,7 @@ class IncomingDataProcessor:
         time_measurement_start = time.time()
         print('Started angle measurement.')
         for _ in trange(number_of_measurements):
-            (angle, _, _, _, _, _, _, _, _, _,) = InterfaceInstance.read_state()
+            (angle, *_) = InterfaceInstance.read_state()
             measured_angles.append(float(angle))
         time_measurement = time.time() - time_measurement_start
 

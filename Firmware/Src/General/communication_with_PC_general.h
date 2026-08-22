@@ -22,6 +22,9 @@
 #define CMD_SET_TARGET_EQUILIBRIUM  0xCD
 #define CMD_RUN_HARDWARE_EXPERIMENT 0xCE
 #define CMD_TRANSFER_BUFFERS        0xD1
+#define CMD_SET_ANGLE_FILTER        0xD2
+#define CMD_SET_SECLOC_CONFIG       0xD3
+#define CMD_GET_SECLOC_INFO         0xD4
 #define CMD_DO_NOTHING				0x00
 
 unsigned char 	crc(const unsigned char * message, unsigned int len);

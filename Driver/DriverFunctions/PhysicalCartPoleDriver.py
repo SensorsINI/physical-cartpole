@@ -17,7 +17,9 @@ from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import Exp
 from Driver.DriverFunctions.dancer import Dancer
 from DriverFunctions.timing_helper import TimingHelper
 from DriverFunctions.split_control_loop import SplitControlLoop
+from DriverFunctions.chip_secloc_stats import ChipSeclocStatistics
 from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
+from Control_Toolkit_ASF.Controllers.secloc_gate import SeclocGate
 from Control_Toolkit.serial_interface_helper import get_serial_port, set_ftdi_latency_timer
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
@@ -27,9 +29,12 @@ from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdat
 
 from globals import (
     CHIP,
-    OPTIMIZER_NAME, CONTROLLER_NAME,
+    OPTIMIZER_NAME, CONTROLLER_NAME, USE_SECLOC,
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
+    TIMESTEPS_FOR_DERIVATIVE,
+    HARDWARE_ANGLE_FILTER_OVERRIDE,
+    HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
     ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
     ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL,
@@ -55,7 +60,9 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance = CartPoleInstance
         if CONTROLLER_NAME == 'mpc':
             self.CartPoleInstance.set_optimizer(optimizer_name=OPTIMIZER_NAME)
-        self.CartPoleInstance.set_controller(controller_name=CONTROLLER_NAME)
+        self.CartPoleInstance.set_controller(
+            controller_name=CONTROLLER_NAME, use_secloc=USE_SECLOC
+        )
         self.controller = self.CartPoleInstance.controller
 
         # IO thread: chip polling, gate, actuation. Main thread: compute_step/step.
@@ -64,10 +71,10 @@ class PhysicalCartPoleDriver:
             self.controller,
             apply_window_polling_loops=CONTROLLER_APPLY_WINDOW_MS // POLLING_PERIOD_MS,
             polling_period_s=POLLING_PERIOD_MS / 1000.0,
-            name=CONTROLLER_NAME,
+            name=f"{CONTROLLER_NAME}+secloc" if USE_SECLOC else CONTROLLER_NAME,
         )
         print(
-            f"[{CONTROLLER_NAME}] IO -> LOOP_CPU_AFFINITY={LOOP_CPU_AFFINITY!r} | "
+            f"[{CONTROLLER_NAME}{'+secloc' if USE_SECLOC else ''}] IO -> LOOP_CPU_AFFINITY={LOOP_CPU_AFFINITY!r} | "
             f"compute -> main (CONTROL_CPU_AFFINITY={CONTROL_CPU_AFFINITY!r})",
             flush=True,
         )
@@ -98,6 +105,14 @@ class PhysicalCartPoleDriver:
         self.actualMotorCmd = 0
         self.actualMotorCmd_prev = None
         self.command = 0
+        self.secloc_skipped_update_chip = 0
+        self.secloc_gate_skipped_chip = 0
+        self.secloc_pl_used_chip = 0
+        self.secloc_pl_fault_chip = 0
+        self._secloc_pl_fault_warned = False
+        self.chip_secloc_config = None
+        self._chip_secloc_sent = None
+        self.chip_secloc_stats = ChipSeclocStatistics()
 
         # State
         self.s = create_cartpole_state()
@@ -170,7 +185,24 @@ class PhysicalCartPoleDriver:
         self.th.sleep(1)
 
         # set_firmware_parameters(self.InterfaceInstance)
-        self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC, angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH, correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+        self.InterfaceInstance.set_config_control(
+            controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC,
+            angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
+            correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+            timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE,
+        )
+        if hasattr(self.controller, 'secloc'):
+            polling_period_s = POLLING_PERIOD_MS / 1000.0
+            self.controller.secloc.set_time_quantum(polling_period_s)
+        self.chip_secloc_config = SeclocGate.from_config_file('default')
+        self.chip_secloc_config.start_config_watcher('default')
+        self._sync_chip_secloc_config()
+        if HARDWARE_ANGLE_FILTER_OVERRIDE:
+            self.InterfaceInstance.set_angle_filter(
+                HARDWARE_ANGLE_FILTER_WINDOW,
+                HARDWARE_ANGLE_FILTER_TRIM,
+                HARDWARE_ANGLE_FILTER_MODE,
+            )
 
         try:
             self.controller.printparams()
@@ -230,10 +262,26 @@ class PhysicalCartPoleDriver:
         self.mlm.live_plotter_sender.close()
         self.mlm.finish_csv_recording()
 
+    def _sync_chip_secloc_config(self):
+        if self.chip_secloc_config is None:
+            return
+        self.chip_secloc_config.update_from_config_file_if_needed()
+        values = (
+            float(self.chip_secloc_config.log_base),
+            int(self.chip_secloc_config.ref_period_ticks),
+            float(self.chip_secloc_config.dead_ang),
+            float(self.chip_secloc_config.dead_pos),
+        )
+        if values == self._chip_secloc_sent:
+            return
+        self.InterfaceInstance.set_secloc_config(*values)
+        self._chip_secloc_sent = values
+
     def io_step(self):
 
         self.keyboard_controller.keyboard_input()
 
+        self._sync_chip_secloc_config()
         self.load_data_from_chip()
         self.check_calibration_status()
 
@@ -397,7 +445,17 @@ class PhysicalCartPoleDriver:
         # This function will block at the rate of the control loop
         (angle_raw, angleD_raw, position_raw, self.target_position_from_chip, self.command,
          invalid_steps, time_between_measurements_chip, time_current_measurement_chip,
-         firmware_latency, latency_violation_chip) = self.InterfaceInstance.read_state()
+         firmware_latency, latency_violation_chip,
+         self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip,
+         self.secloc_pl_used_chip, self.secloc_pl_fault_chip) = self.InterfaceInstance.read_state()
+        if self.secloc_pl_fault_chip and not self._secloc_pl_fault_warned:
+            self._secloc_pl_fault_warned = True
+            print("SecLoc PL fault: selected PL backend but the PL chain is absent or failed (zero force).", flush=True)
+        if self.firmwareControl:
+            self.chip_secloc_stats.record_telemetry(
+                self.secloc_skipped_update_chip,
+                self.secloc_gate_skipped_chip,
+            )
 
         self.th.load_timing_data_from_chip(
             time_current_measurement_chip, time_between_measurements_chip, latency_violation_chip, firmware_latency
@@ -543,7 +601,8 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS,
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
-                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+                                                  timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
         print('\nApplied measured hanging angle for this run.')
         print('ANGLE_HANGING: {:.3f} ADC reading (std {:.3f})'.format(ANGLE_HANGING, angle_hanging_std))
@@ -599,7 +658,8 @@ class PhysicalCartPoleDriver:
         self.InterfaceInstance.set_config_control(controlLoopPeriodMs=POLLING_PERIOD_MS,
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
-                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS)
+                                                  correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+                                                  timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
     #       gets the motor full scale and calculates the correction factors relative to that

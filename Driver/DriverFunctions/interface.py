@@ -25,8 +25,23 @@ CMD_STATE = 0xCC
 CMD_SET_TARGET_EQUILIBRIUM = 0xCD
 CMD_RUN_HARDWARE_EXPERIMENT = 0xCE
 CMD_TRANSFER_BUFFERS = 0xD1
-# Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp.
-STATE_MESSAGE_LEN = 35
+CMD_SET_ANGLE_FILTER = 0xD2
+CMD_SET_SECLOC_CONFIG = 0xD3
+CMD_GET_SECLOC_INFO = 0xD4
+
+SECLOC_BACKEND_NAMES = {0: 'SW', 1: 'PL', 2: 'PL-shadow'}
+
+# Hardware XADC filter modes; must match Firmware/Src/Zynq/goniometer_zynq.h
+# and FPGA/CustomIPs/median_filter_hls/median_functions.h.
+ANGLE_FILTER_MODE_RAW = 0
+ANGLE_FILTER_MODE_MEDIAN = 1
+ANGLE_FILTER_MODE_TRIMMED_MEAN = 2
+# Must match firmware STATE_MESSAGE_LEN; CMD_STATE carries an 8-byte chip timestamp
+# and 1 SecLoc telemetry byte (bit 0 = skipped_update, bit 1 = gate_skipped,
+# bit 2 = step computed by the PL backend, bit 3 = PL fault: PL backend selected but
+# the PL block is absent or the transaction failed; the step output zero force,
+# no SW fallback) when the on-chip SecLoc wrapper is active.
+STATE_MESSAGE_LEN = 36
 SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
 
@@ -221,13 +236,17 @@ class Interface:
             'h7f', bytes(reply[3:27]))
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
-    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics):
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 14]
+    def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
+                           timesteps_for_derivative=1):
+        """timesteps_for_derivative: on-chip derivative window in polling periods
+        (firmware clamps to 1..20 and restarts its history buffers)."""
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 16]
         msg += list(struct.pack('H', controlLoopPeriodMs))
         msg += list(struct.pack('?', controlSync))
         msg += list(struct.pack('f', angle_hanging))
         msg += list(struct.pack('H', avgLen))
         msg += list(struct.pack('?', correct_motor_dynamics))
+        msg += list(struct.pack('H', timesteps_for_derivative))
         msg.append(self._crc(msg))
         self._write_message(msg)
 
@@ -235,10 +254,10 @@ class Interface:
         msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
         msg.append(self._crc(msg))
         self._write_message(msg)
-        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 14)
-        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics) = struct.unpack('H?fH', bytes(
-            reply[3:12]))
-        return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics
+        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 16)
+        (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
+         timesteps_for_derivative) = struct.unpack('=H?fH?H', bytes(reply[3:15]))
+        return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics, timesteps_for_derivative
 
     def set_motor(self, speed):
         msg = [SERIAL_SOF, CMD_SET_MOTOR, 8]
@@ -258,12 +277,75 @@ class Interface:
         msg.append(self._crc(msg))
         self._write_message(msg)
 
+    def set_secloc_config(self, log_base, ref_period_ticks, dead_ang, dead_pos):
+        """Overwrite the on-chip SecLoc gate parameters (see secloc_defaults.h).
+
+        ref_period_ticks is an integer number of control loop iterations
+        (POLLING_PERIOD_MS each) between accepted gate updates."""
+        msg = [SERIAL_SOF, CMD_SET_SECLOC_CONFIG, 20]
+        msg += list(struct.pack('=fi2f', log_base, int(ref_period_ticks), dead_ang, dead_pos))
+        msg.append(self._crc(msg))
+        self._write_message(msg)
+
+    def get_secloc_info(self):
+        """Query the on-chip SecLoc execution backend diagnostics.
+
+        Returns a dict with:
+          backend            - 'SW', 'PL' or 'PL-shadow'; the requested backend,
+                               never silently degraded: a PL backend without the
+                               FPGA SecLoc frontend faults every step (zero
+                               force) instead of falling back to SW
+          pl_available       - True when the PL frontend answered the boot probe
+          shadow_mismatches  - SW/PL gate decision disagreements in shadow mode
+                               (expected 0)
+          pl_update_count    - NN evaluations in the PL since the last gate reset
+          pl_nn_wait_cycles  - PL clock cycles the frontend waited for the
+                               network on the most recent computed step
+          pl_faults          - steps where a PL backend was selected but the PL
+                               block was absent or the transaction failed (each
+                               output zero force; no SW computation was
+                               substituted; expected 0)
+        """
+        msg = [SERIAL_SOF, CMD_GET_SECLOC_INFO, 4]
+        msg.append(self._crc(msg))
+        self._write_message(msg)
+        reply = self._receive_reply(CMD_GET_SECLOC_INFO, 22, timeout=2.0, reconnect_at_timeout=False)
+        (backend, pl_available, shadow_mismatches,
+         pl_update_count, pl_nn_wait_cycles, pl_faults) = struct.unpack('=BB4I', bytes(reply[3:21]))
+        return {
+            'backend': SECLOC_BACKEND_NAMES.get(backend, f'unknown({backend})'),
+            'pl_available': bool(pl_available),
+            'shadow_mismatches': shadow_mismatches,
+            'pl_update_count': pl_update_count,
+            'pl_nn_wait_cycles': pl_nn_wait_cycles,
+            'pl_faults': pl_faults,
+        }
+
     def collect_raw_angle(self, lenght=100, interval_us=100):
         msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8, lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
         msg.append(self._crc(msg))
         self._write_message(msg)
         reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2 * lenght, crc=False, timeout=100)
         return struct.unpack(str(lenght) + 'H', bytes(reply[3:3 + 2 * lenght]))
+
+    def set_angle_filter(self, window_size, trim_count, filter_mode):
+        """Reconfigure the FPGA angle filter block at runtime (Zynq only).
+
+        filter_mode: 0 = raw passthrough, 1 = median, 2 = trimmed mean
+        (trim_count = 0 gives a pure average). window_size is capped at 64 in
+        hardware. The firmware echoes the packet back as confirmation.
+        """
+        msg = [SERIAL_SOF, CMD_SET_ANGLE_FILTER, 8,
+               window_size % 256, window_size // 256,
+               trim_count, filter_mode]
+        msg.append(self._crc(msg))
+        self._write_message(msg)
+        reply = self._receive_reply(CMD_SET_ANGLE_FILTER, 8, timeout=5.0, reconnect_at_timeout=False)
+        (echoed_window, echoed_trim, echoed_mode) = struct.unpack('HBB', bytes(reply[3:7]))
+        if (echoed_window, echoed_trim, echoed_mode) != (window_size, trim_count, filter_mode):
+            raise RuntimeError(
+                f"Filter config echo mismatch: sent {(window_size, trim_count, filter_mode)}, "
+                f"got {(echoed_window, echoed_trim, echoed_mode)}")
 
     def read_state(self):
         if not self.calibration_in_progress:
@@ -281,10 +363,15 @@ class Interface:
         )
 
         (angle, angleD, position, target_position, command, invalid_steps, time_difference,
-         time_current_measurement_chip, latency, latency_violation) = struct.unpack('=hfhfhBIQ2H',
-                                                                                    bytes(reply[3:message_length - 1]))
+         time_current_measurement_chip, latency, latency_violation,
+         secloc_flags) = struct.unpack(
+            '=hfhfhBIQ2HB', bytes(reply[3:message_length - 1]))
 
-        return angle, angleD, position, target_position, command, invalid_steps, time_difference / 1e6, time_current_measurement_chip / 1e6, latency / 1e5, latency_violation
+        return (angle, angleD, position, target_position, command, invalid_steps,
+                time_difference / 1e6, time_current_measurement_chip / 1e6,
+                latency / 1e5, latency_violation,
+                secloc_flags & 1, (secloc_flags >> 1) & 1, (secloc_flags >> 2) & 1,
+                (secloc_flags >> 3) & 1)
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         self.device.timeout = timeout

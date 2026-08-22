@@ -10,8 +10,12 @@ from SI_Toolkit.General.data_manager import DataManager
 from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_csv_file, create_csv_header, create_csv_title
 
 from globals import (
+    CHIP,
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS, LOOP_CPU_AFFINITY, CONTROL_CPU_AFFINITY,
+    USE_SECLOC,
+    HARDWARE_ANGLE_FILTER_OVERRIDE,
+    HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
     DEFAULT_ADDRESS, LIVE_PLOTTER_USE_REMOTE_SERVER, LIVE_PLOTTER_REMOTE_USERNAME, LIVE_PLOTTER_REMOTE_IP
 )
@@ -28,6 +32,10 @@ class MainLoggingManager:
 
             'time': lambda: driver.th.elapsedTime,
             'deltaTimeMs': lambda: driver.th.time_between_measurements_chip * 1000,
+            # Absolute chip timestamp (s). The Secloc gate times its ref_period on
+            # this clock; deltaTimeMs alone cannot reconstruct it because dropped
+            # serial packets are invisible in chip-side deltas.
+            'time_chip': lambda: driver.th.time_current_measurement_chip,
 
             'angle_raw': lambda: driver.idp.angle_raw,
             'angleD_raw': lambda: driver.idp.angleD_raw,
@@ -74,6 +82,7 @@ class MainLoggingManager:
         # 1 if a freshly computed control was applied this iteration, 0 if held
         self.data_to_save_controller = FunctionalDict({
             'controller_update_applied': lambda: int(driver.split_control.last_applied_now),
+            'split_control_busy': lambda: int(driver.split_control.is_busy),
         })
 
         self.data_manager = DataManager(create_csv_file)
@@ -110,6 +119,14 @@ class MainLoggingManager:
     def _controller_data_to_save(self):
         data = FunctionalDict()
         data.update(self.data_to_save_controller)
+        if self.driver.firmwareControl:
+            # On-chip SecLoc telemetry parsed from the state packet; the PC
+            # controller is idle so its csv dict is not consulted.
+            data['secloc_skipped_update'] = lambda: int(self.driver.secloc_skipped_update_chip)
+            data['secloc_gate_skipped'] = lambda: int(self.driver.secloc_gate_skipped_chip)
+            data['secloc_pl_used'] = lambda: int(self.driver.secloc_pl_used_chip)
+            data['secloc_pl_fault'] = lambda: int(self.driver.secloc_pl_fault_chip)
+            return data
         controller = getattr(self.driver, "controller", None)
         controller_data = getattr(controller, "controller_data_for_csv", {})
         for key in controller_data:
@@ -137,10 +154,7 @@ class MainLoggingManager:
         # (Exclude situation when recording is just being initialized, it may take more than one control iteration)
         if not self.starting_recording:
             if not self.recording_running:
-                if hasattr(self.driver.controller, "controller_name"):
-                    controller_name = self.driver.controller.controller_name
-                else:
-                    controller_name = ''
+                controller_name = self.driver.CartPoleInstance.controller_name
                 if hasattr(self.driver.controller, "optimizer_name") and self.driver.controller.has_optimizer:
                     optimizer_name = self.driver.controller.optimizer_name
                 else:
@@ -220,14 +234,51 @@ class MainLoggingManager:
             combined_keys = list(self.dict_data_to_save_basic.keys()) + list(
                 self.data_to_save_measurement.keys()) + list(self._controller_data_to_save().keys())
 
-            self.driver.CartPoleInstance.dt_controller = CONTROLLER_APPLY_WINDOW_MS / 1000
+            self.driver.CartPoleInstance.dt_controller = (
+                POLLING_PERIOD_MS / 1000 if self.driver.firmwareControl
+                else CONTROLLER_APPLY_WINDOW_MS / 1000
+            )
             self.driver.CartPoleInstance.dt_save = POLLING_PERIOD_MS / 1000
 
             header = create_csv_header(self.driver.CartPoleInstance, mode='CPP')
             mode_lines = [
+                f"Secloc gate: {USE_SECLOC}",
                 f"IO CPU affinity: {LOOP_CPU_AFFINITY}",
                 f"Control CPU affinity: {CONTROL_CPU_AFFINITY}",
             ]
+            if CHIP == 'ZYNQ':
+                if HARDWARE_ANGLE_FILTER_OVERRIDE:
+                    filter_mode_names = {0: 'raw', 1: 'median', 2: 'trimmed_mean'}
+                    mode_lines.append(
+                        "Hardware angle filter: "
+                        f"{filter_mode_names.get(HARDWARE_ANGLE_FILTER_MODE, HARDWARE_ANGLE_FILTER_MODE)} "
+                        f"window={HARDWARE_ANGLE_FILTER_WINDOW} trim={HARDWARE_ANGLE_FILTER_TRIM}"
+                    )
+                else:
+                    mode_lines.append(
+                        "Hardware angle filter: firmware boot default (trimmed mean 63/7)"
+                    )
+            if self.driver.firmwareControl:
+                # The driver mirrors config_secloc.yml onto the chip
+                # (CMD_SET_SECLOC_CONFIG), so the PC-side view is authoritative
+                # for what the chip gate is running.
+                chip_gate = self.driver.chip_secloc_config
+                mode_lines[0] = "Secloc on chip: True"
+                mode_lines[1:1] = [
+                    "On-chip controller: secloc+neural_controller_C",
+                    f"Secloc log_base: {chip_gate.log_base:g}",
+                    f"Secloc ref_period_ticks: {chip_gate.ref_period_ticks}",
+                    f"Secloc dead_ang: {chip_gate.dead_ang:g}",
+                    f"Secloc dead_pos: {chip_gate.dead_pos:g}",
+                ]
+            elif USE_SECLOC:
+                secloc = self.driver.controller.secloc
+                mode_lines[1:1] = [
+                    f"Secloc log_base: {secloc.log_base}",
+                    f"Secloc ref_period_ticks: {secloc.ref_period_ticks}",
+                    f"Secloc dead_ang: {secloc.dead_ang}",
+                    f"Secloc dead_pos: {secloc.dead_pos}",
+                ]
             if "Parameters:" in header:
                 insert_at = header.index("Parameters:")
                 header[insert_at:insert_at] = mode_lines + [""]
@@ -277,13 +328,16 @@ class MainLoggingManager:
 
             # Controller
             if self.driver.controlEnabled:
-                if 'mpc' in CONTROLLER_NAME:
+                ctrl = CONTROLLER_NAME
+                if USE_SECLOC:
+                    ctrl = f"{CONTROLLER_NAME}+secloc"
+                if CONTROLLER_NAME == 'mpc':
                     mode = 'CONTROLLER:   {} (Period={}ms, Synch={}, Horizon={}, Rollouts={}, Predictor={})'.format(
-                        CONTROLLER_NAME, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC, self.driver.controller.optimizer.mpc_horizon,
+                        ctrl, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC, self.driver.controller.optimizer.mpc_horizon,
                         self.driver.controller.optimizer.num_rollouts, self.driver.controller.predictor.predictor_name)
                 else:
-                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(CONTROLLER_NAME, CONTROLLER_APPLY_WINDOW_MS,
-                                                                             CONTROL_SYNC)
+                    mode = 'CONTROLLER:   {} (Period={}ms, Synch={})'.format(
+                        ctrl, CONTROLLER_APPLY_WINDOW_MS, CONTROL_SYNC)
             elif self.driver.firmwareControl:
                 mode = 'CONTROLLER:   Firmware'
             else:
@@ -317,5 +371,11 @@ class MainLoggingManager:
 
             if timing_latency_string:
                 self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency_string + CLEAR_LINE)
+
+            cached_controller_status = getattr(self.driver, "_cached_controller_status", None)
+            if cached_controller_status and (self.driver.controlEnabled or self.driver.firmwareControl):
+                self.tcm.print_temporary(
+                    BACK_TO_BEGINNING + cached_controller_status + CLEAR_LINE
+                )
 
             self.tcm.print_to_terminal()

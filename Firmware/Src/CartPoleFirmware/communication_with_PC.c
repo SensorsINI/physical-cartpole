@@ -111,7 +111,8 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_SET_CONTROL_CONFIG:
 							{
-								if (pktLen == 14)
+								// 16 bytes since TIMESTEPS_FOR_DERIVATIVE was appended (u16 at payload offset 10)
+								if (pktLen == 16)
 								{
 									current_command = CMD_SET_CONTROL_CONFIG;
 								}
@@ -159,6 +160,34 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								if (pktLen == 8)
 								{
 									current_command = CMD_COLLECT_RAW_ANGLE;
+								}
+								break;
+							}
+
+							case CMD_SET_ANGLE_FILTER:
+							{
+								if (pktLen == 8)
+								{
+									current_command = CMD_SET_ANGLE_FILTER;
+								}
+								break;
+							}
+
+							case CMD_SET_SECLOC_CONFIG:
+							{
+								// float log_base, int32 ref_period_ticks, float dead_ang, float dead_pos
+								if (pktLen == 20)
+								{
+									current_command = CMD_SET_SECLOC_CONFIG;
+								}
+								break;
+							}
+
+							case CMD_GET_SECLOC_INFO:
+							{
+								if (pktLen == 4)
+								{
+									current_command = CMD_GET_SECLOC_INFO;
 								}
 								break;
 							}
@@ -221,7 +250,8 @@ void prepare_message_to_PC_state(
 		unsigned long time_difference_between_measurement,
 		unsigned long long time_current_measurement,
 		unsigned long latency,
-		unsigned short	latency_violation
+		unsigned short	latency_violation,
+		unsigned char secloc_flags
 		){
 
 	buffer[ 0] = SERIAL_SOF;
@@ -237,8 +267,31 @@ void prepare_message_to_PC_state(
 	memcpy(&buffer[22], &time_current_measurement, sizeof(time_current_measurement));
 	*((unsigned short *)&buffer[30]) = (unsigned short)(latency / 10);
 	*((unsigned short *)&buffer[32]) = (unsigned short)(latency_violation);
+	buffer[34] = secloc_flags;
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
+}
+
+void prepare_message_to_PC_secloc_info(
+		unsigned char * buffer,
+		unsigned char backend,
+		unsigned char pl_available,
+		unsigned int shadow_mismatch_count,
+		unsigned int pl_update_count,
+		unsigned int pl_nn_wait_cycles,
+		unsigned int pl_fault_count
+		){
+
+	buffer[ 0] = SERIAL_SOF;
+	buffer[ 1] = CMD_GET_SECLOC_INFO;
+	buffer[ 2] = 22;
+	buffer[ 3] = backend;
+	buffer[ 4] = pl_available;
+	*((unsigned int *)&buffer[ 5]) = shadow_mismatch_count;
+	*((unsigned int *)&buffer[ 9]) = pl_update_count;
+	*((unsigned int *)&buffer[13]) = pl_nn_wait_cycles;
+	*((unsigned int *)&buffer[17]) = pl_fault_count;
+	buffer[21] = crc(buffer, 21);
 }
 
 void prepare_message_to_PC_calibration(unsigned char * buffer, int encoderDirection){
@@ -264,17 +317,19 @@ void prepare_message_to_PC_control_config(
 		bool controlSync,
 		float angle_hanging,
 		unsigned short angle_averageLen,
-		bool correct_motor_dynamics
+		bool correct_motor_dynamics,
+		unsigned short timesteps_for_derivative
 		){
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
-	txBuffer[ 2] = 14;
+	txBuffer[ 2] = 16;
 	*((unsigned short *)&txBuffer[ 3]) = polling_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
 	*((float          *)&txBuffer[6]) = angle_hanging;
 	*((unsigned short *)&txBuffer[10]) = angle_averageLen;
-	*((bool           *)&txBuffer[ 12]) = controlSync;
-	txBuffer[13] = crc(txBuffer, 13);
+	*((bool           *)&txBuffer[12]) = correct_motor_dynamics;
+	*((unsigned short *)&txBuffer[13]) = timesteps_for_derivative;
+	txBuffer[15] = crc(txBuffer, 15);
 
 }

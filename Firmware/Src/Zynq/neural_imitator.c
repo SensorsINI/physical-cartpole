@@ -23,6 +23,15 @@
 #include "HLS4ML/HLS4ML_Network.h"
 #endif
 
+#include "secloc_frontend_link.h"
+
+/* The hls4ml network is reachable only through the SecLoc frontend IP: raw
+ * floats go to the frontend (normalization happens in the PL) instead of the
+ * normalize + fixed-point marshalling done here for the direct interfaces. */
+#if HW_HAS_SECLOC_FRONTEND && !(HW_HAS_CONTROLLER_AXI || HW_HAS_HLS4ML_DMA || HW_HAS_CONTROLLER_AXILITE)
+#define HLS4ML_VIA_SECLOC_FRONTEND
+#endif
+
 #if HW_HAS_DIFFLG
 #define DIFFLG
 #endif
@@ -94,7 +103,9 @@ const ControllerOps NeuralImitator_Ops = {
 //float hls_denormalize_A[] = {1.0};
 //float hls_denormalize_B[] = {0.0};
 
-// Normalization Cartpole hpf_v2024_x3232_12_2_v1
+// Normalization for Dense-7IN-32H1-32H2-1OUT-8 (matches its normalization_vec_a/b,
+// same values as the pure-C controller in neural_controller_C.c; net deployed on the
+// FPGA as hls4ml_dense_1out_8_07_07_2026 behind CONTROLLER_AXILITE_0).
 float hls_normalize_a[] = {0.04595453,1.00000000,1.00000000,5.21186209,0.82011247,1.00000000,6.31313133
 };
 float hls_normalize_b[] = {0.02537525,0.00000000,0.00000000,0.01761615,-0.05823207,0.00000000,0.00000000
@@ -140,6 +151,13 @@ void Neural_Imitator_Init()
 
 #ifdef HLS4ML
 	HLS4ML_Network_Init();
+#endif
+
+#if HW_HAS_SECLOC_FRONTEND
+	SeclocFrontendLink_Init();
+	/* Makes the PL SecLoc path available; whether it is used follows
+	 * SECLOC_DEFAULT_BACKEND / secloc_set_backend. */
+	SeclocFrontendLink_RegisterSeclocBackend();
 #endif
 
 #ifdef EdgeDRNN
@@ -200,7 +218,24 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             break;
 
         case NETWORK_HLS4ML:
-    #ifdef HLS4ML
+    #if defined(HLS4ML_VIA_SECLOC_FRONTEND)
+            {
+                // MLP accelerator behind the SecLoc frontend: send raw floats,
+                // the PL normalizes/quantizes; gate bypassed (force-compute).
+                float nn_in[MLP_ACTIVATION_NEURONS];
+                float nn_q = 0.0f;
+
+                for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++) {
+                    nn_in[neuron_idx] = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
+                }
+
+                (void)SeclocFrontendLink_PlainEvaluate(nn_in, &nn_q);
+
+                for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
+                    *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = nn_q;
+                }
+            }
+    #elif defined(HLS4ML)
             {
                 // Use MLP accelerator
 

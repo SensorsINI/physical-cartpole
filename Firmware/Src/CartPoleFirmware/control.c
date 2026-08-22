@@ -12,6 +12,9 @@
 #include "controller_api_helper.h"
 #include "neural_controller_C.h"
 #include "lqr.h"
+#include "secloc_controller.h"
+#include "secloc_controller_pl.h"
+#include "secloc_lqr.h"
 
 
 #define OnChipController_PID 0
@@ -19,6 +22,11 @@
 #define OnChipController_PID_position 2
 #define OnChipController_LQR 3
 #define OnChipController_neural_controller_C 4
+#define OnChipController_SECLOC 5
+#define OnChipController_SECLOC_LQR 6
+
+/* Boot on-chip controller when the chip runs standalone (edit here). */
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_C
 
 
 // The 3 variables below only matter on Zynq
@@ -26,7 +34,7 @@
 #define	POSITION_JUMPS_SWITCH_NUMBER	1
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
-unsigned short current_controller = OnChipController_neural_controller_C;
+unsigned short current_controller = ON_CHIP_BOOT_CONTROLLER;
 
 bool correct_motor_dynamics = true;
 
@@ -101,7 +109,10 @@ void 			cmd_ControlMode(bool en);
 void			cmd_PCControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config);
 void 			cmd_GetControlConfig(void);
+void			cmd_SetSeclocConfig(const unsigned char * config);
+void			cmd_GetSeclocInfo(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
+void			cmd_SetAngleFilter(const unsigned short, const unsigned short, const unsigned short);
 void			cmd_RunHardwareExperiment(void);
 void 			cmd_transfer_buffers(void);
 void			CONTROL_CalibrationStep(void);
@@ -151,6 +162,7 @@ void CONTROL_Init(void)
     correct_motor_dynamics = (current_controller == OnChipController_PID) ? false : true;
 
     CB_Init(&g_cb);
+    secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
 }
 
 void CONTROL_ToggleState(void)
@@ -320,6 +332,18 @@ void CONTROL_BackgroundTask(void)
 	                Q = CB_Eval(&g_cb);
 	                break;
 	            }
+	            case OnChipController_SECLOC:
+	            {
+	                CB_RebindOnChange(&g_cb, &SECLOC_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
+	            case OnChipController_SECLOC_LQR:
+	            {
+	                CB_RebindOnChange(&g_cb, &SECLOC_LQR_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
 				default:
 				{
 					Q = 0.0;
@@ -400,7 +424,9 @@ void CONTROL_BackgroundTask(void)
 					time_difference_between_measurement,
 					time_accumulated_us,
 					latency,
-					latency_violation
+					latency_violation,
+					(ControlOnChip_Enabled && current_controller == OnChipController_SECLOC)
+						? secloc_controller_telemetry_flags() : 0
 					);
 
 	    	Message_SendToPC(buffer, STATE_MESSAGE_LEN);
@@ -448,8 +474,6 @@ void CONTROL_BackgroundTask(void)
 
 #ifdef ZYNQ
 #ifdef USE_EXTERNAL_INTERFACE
-	current_controller = OnChipController_neural_controller_C;
-
 	target_position = get_normed_slider_state()*2*position_jumps_target;
 
 	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
@@ -457,8 +481,6 @@ void CONTROL_BackgroundTask(void)
 		target_equilibrium = target_equilibrium_from_external_button;
 	}
 #else
-	current_controller = OnChipController_neural_controller_C;
-
 	if (USE_TARGET_SWITCHES)
 	{
 		if(Switch_GetState(POSITION_JUMPS_SWITCH_NUMBER)){
@@ -593,6 +615,24 @@ void CONTROL_BackgroundTask(void)
 			unsigned short length 	   = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
 			unsigned short interval_us = 256 * (unsigned short)rxBuffer[6] + (unsigned short)rxBuffer[5];
 			cmd_CollectRawAngle(length, interval_us);
+			break;
+		}
+		case CMD_SET_ANGLE_FILTER:
+		{
+			unsigned short window_size = 256 * (unsigned short)rxBuffer[4] + (unsigned short)rxBuffer[3];
+			unsigned short trim_count  = (unsigned short)rxBuffer[5];
+			unsigned short filter_mode = (unsigned short)rxBuffer[6];
+			cmd_SetAngleFilter(window_size, trim_count, filter_mode);
+			break;
+		}
+		case CMD_SET_SECLOC_CONFIG:
+		{
+			cmd_SetSeclocConfig(&rxBuffer[3]);
+			break;
+		}
+		case CMD_GET_SECLOC_INFO:
+		{
+			cmd_GetSeclocInfo();
 			break;
 		}
 		default:
@@ -864,9 +904,11 @@ void cmd_SetControlConfig(const unsigned char * config)
     ANGLE_HANGING      = *((float          *)&config[ 3]);
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
+    set_timesteps_for_derivative(*((unsigned short *)&config[10]));
 
     SetControlUpdatePeriod(POLLING_PERIOD_MS);
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+    secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
 
     HardwareConfigSetFromPC = true;
 
@@ -874,9 +916,41 @@ void cmd_SetControlConfig(const unsigned char * config)
 }
 
 
+void cmd_SetSeclocConfig(const unsigned char * config)
+{
+	disable_irq();
+
+	float   log_base         = *((float   *)&config[ 0]);
+	int32_t ref_period_ticks = *((int32_t *)&config[ 4]);
+	float   dead_ang         = *((float   *)&config[ 8]);
+	float   dead_pos         = *((float   *)&config[12]);
+
+	secloc_controller_set_config(log_base, ref_period_ticks, dead_ang, dead_pos);
+
+	enable_irq();
+}
+
+
+void cmd_GetSeclocInfo(void)
+{
+	prepare_message_to_PC_secloc_info(
+		txBuffer,
+		(unsigned char)secloc_get_backend(),
+		(unsigned char)(secloc_pl_backend_available() ? 1 : 0),
+		(unsigned int)secloc_shadow_mismatch_count(),
+		(unsigned int)secloc_pl_update_count(),
+		(unsigned int)secloc_pl_nn_wait_cycles(),
+		(unsigned int)secloc_pl_fault_count());
+
+	disable_irq();
+	Message_SendToPC(txBuffer, 22);
+	enable_irq();
+}
+
+
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics);
+	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics, TIMESTEPS_FOR_DERIVATIVE);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 16);
@@ -906,9 +980,8 @@ void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_
 		if (now < lastRead) {
 			lastRead = now;
 		}
-		// read every ca. 100us
+		// read every ca. INTERVAL_US
 		else if (now > lastRead + INTERVAL_US) {
-			// conversion takes 18us
 			*((unsigned short *)&txBuffer[ 3 + 2*i]) = Goniometer_Read();
 			lastRead = now;
 			i++;
@@ -916,10 +989,29 @@ void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_
 	}
 	Led_Switch(true);
 
-	//txBuffer[3 + 2*MEASURE_LENGTH] = crc(txBuffer, 3 + 2*MEASURE_LENGTH);
-
 	disable_irq();
 	Message_SendToPC(txBuffer, 4 + 2*MEASURE_LENGTH);
 	Interrupt_Set(CONTROL_Loop);
+	enable_irq();
+}
+
+void cmd_SetAngleFilter(const unsigned short window_size, const unsigned short trim_count, const unsigned short filter_mode)
+{
+#ifdef ZYNQ
+	Goniometer_SetFilter(window_size, trim_count, filter_mode);
+#else
+	(void)window_size; (void)trim_count; (void)filter_mode;
+#endif
+	// Echo the command back so the PC can confirm the setting was applied.
+	txBuffer[0] = SERIAL_SOF;
+	txBuffer[1] = CMD_SET_ANGLE_FILTER;
+	txBuffer[2] = 8;
+	txBuffer[3] = (unsigned char)(window_size % 256);
+	txBuffer[4] = (unsigned char)(window_size / 256);
+	txBuffer[5] = (unsigned char)trim_count;
+	txBuffer[6] = (unsigned char)filter_mode;
+	txBuffer[7] = crc(txBuffer, 7);
+	disable_irq();
+	Message_SendToPC(txBuffer, 8);
 	enable_irq();
 }

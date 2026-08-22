@@ -8,7 +8,15 @@ from CartPole.cartpole_parameters import TrackHalfLength
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
 ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardware_bridge.h
 CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
+USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
+
+##### Hardware (FPGA) angle filter #####
+# When False, leave the firmware boot default. Set True to override at startup.
+HARDWARE_ANGLE_FILTER_OVERRIDE = False
+HARDWARE_ANGLE_FILTER_WINDOW = 63
+HARDWARE_ANGLE_FILTER_TRIM = 7
+HARDWARE_ANGLE_FILTER_MODE = 2  # trimmed mean (only used when OVERRIDE is True)
 
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
@@ -62,8 +70,11 @@ elif CONTROLLER_NAME.startswith('secloc'):
 else:
     POLLING_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
 
-# Fixed trigger-to-apply latency; should be >= the typical controller computation time.
-CONTROLLER_APPLY_WINDOW_MS = POLLING_PERIOD_MS
+if USE_SECLOC and CONTROLLER_NAME in ('mpc', 'neural-imitator'):
+    POLLING_PERIOD_MS = 5
+    CONTROLLER_APPLY_WINDOW_MS = 20
+else:
+    CONTROLLER_APPLY_WINDOW_MS = POLLING_PERIOD_MS
 
 if CONTROLLER_APPLY_WINDOW_MS % POLLING_PERIOD_MS != 0:
     raise ValueError(

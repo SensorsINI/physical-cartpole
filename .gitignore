@@ -22,6 +22,9 @@ eggs/
 *.egg-info/
 *.egg
 Driver/SI_Toolkit_ASF/Experiments/*
+/Driver/DataAnalysis/HardwareFilterTest/output/
+/tests/output/
+.pytest_cache/
 *.hdf*
 *.pdf
 *.prof
