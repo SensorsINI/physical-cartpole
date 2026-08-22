@@ -1,9 +1,10 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(".", "Driver")))
-sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
-sys.path.insert(2, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation", "SI_Toolkit", "src")))
+sys.path.insert(0, os.path.abspath("."))  # repo root, for 'from Driver.DriverFunctions...' imports
+sys.path.insert(1, os.path.abspath(os.path.join(".", "Driver")))
+sys.path.insert(2, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation")))
+sys.path.insert(3, os.path.abspath(os.path.join(".", "Driver", "CartPoleSimulation", "SI_Toolkit", "src")))
 
 
 # Pinning is driven solely by globals.CONTROL_CPU_AFFINITY: set it for single-threaded
