@@ -9,6 +9,24 @@ CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values
 ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardware_bridge.h
 CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development
+# Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
+# on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
+# older firmware is never poked with an unknown 0xD3 command.
+USE_CHIP_SECLOC = False
+
+
+def should_push_chip_secloc_config(use_secloc=None, use_chip_secloc=None):
+    """True when the driver may send CMD_SET_SECLOC_CONFIG.
+
+    A normal Development home run has both flags False.
+    """
+    if use_secloc is None:
+        use_secloc = USE_SECLOC
+    if use_chip_secloc is None:
+        use_chip_secloc = USE_CHIP_SECLOC
+    return bool(use_secloc or use_chip_secloc)
+
+
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
 ##### Hardware (FPGA) angle filter #####

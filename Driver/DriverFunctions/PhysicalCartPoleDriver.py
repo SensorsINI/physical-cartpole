@@ -30,6 +30,7 @@ from Control_Toolkit.Cost_Functions.CostFunctionUpdater import CostFunctionUpdat
 from globals import (
     CHIP,
     OPTIMIZER_NAME, CONTROLLER_NAME, USE_SECLOC,
+    should_push_chip_secloc_config,
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
     TIMESTEPS_FOR_DERIVATIVE,
@@ -194,9 +195,10 @@ class PhysicalCartPoleDriver:
         if hasattr(self.controller, 'secloc'):
             polling_period_s = POLLING_PERIOD_MS / 1000.0
             self.controller.secloc.set_time_quantum(polling_period_s)
-        self.chip_secloc_config = SeclocGate.from_config_file('default')
-        self.chip_secloc_config.start_config_watcher('default')
-        self._sync_chip_secloc_config()
+        if should_push_chip_secloc_config():
+            self.chip_secloc_config = SeclocGate.from_config_file('default')
+            self.chip_secloc_config.start_config_watcher('default')
+            self._sync_chip_secloc_config()
         if HARDWARE_ANGLE_FILTER_OVERRIDE:
             self.InterfaceInstance.set_angle_filter(
                 HARDWARE_ANGLE_FILTER_WINDOW,
@@ -263,7 +265,7 @@ class PhysicalCartPoleDriver:
         self.mlm.finish_csv_recording()
 
     def _sync_chip_secloc_config(self):
-        if self.chip_secloc_config is None:
+        if not should_push_chip_secloc_config() or self.chip_secloc_config is None:
             return
         self.chip_secloc_config.update_from_config_file_if_needed()
         values = (

@@ -25,11 +25,12 @@
 
 #include "secloc_frontend_link.h"
 
-/* The hls4ml network is reachable only through the SecLoc frontend IP: raw
- * floats go to the frontend (normalization happens in the PL) instead of the
- * normalize + fixed-point marshalling done here for the direct interfaces. */
-#if HW_HAS_SECLOC_FRONTEND && !(HW_HAS_CONTROLLER_AXI || HW_HAS_HLS4ML_DMA || HW_HAS_CONTROLLER_AXILITE)
-#define HLS4ML_VIA_SECLOC_FRONTEND
+/* When the SecLoc frontend (shell + gate + nn_marshal) is in the bitstream,
+ * prefer it for HLS4ML: raw floats, PL normalize, gate bypassed (force-compute).
+ * SecLoc is still only the controller if boot / USE_SECLOC selects it.
+ * If the frontend is compiled in but absent at runtime, fall back to DMA/AXI. */
+#if HW_HAS_SECLOC_FRONTEND
+#define HLS4ML_MAY_USE_SECLOC_FRONTEND
 #endif
 
 #if HW_HAS_DIFFLG
@@ -218,10 +219,10 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
             break;
 
         case NETWORK_HLS4ML:
-    #if defined(HLS4ML_VIA_SECLOC_FRONTEND)
-            {
-                // MLP accelerator behind the SecLoc frontend: send raw floats,
-                // the PL normalizes/quantizes; gate bypassed (force-compute).
+    #if defined(HLS4ML_MAY_USE_SECLOC_FRONTEND)
+            if (SeclocFrontendLink_Present()) {
+                // MLP behind shell/gate/marshal: raw floats, PL normalizes;
+                // gate bypassed (force-compute). Not "SecLoc as controller".
                 float nn_in[MLP_ACTIVATION_NEURONS];
                 float nn_q = 0.0f;
 
@@ -234,10 +235,12 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                 for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
                     *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = nn_q;
                 }
+                break;
             }
-    #elif defined(HLS4ML)
+    #endif
+    #ifdef HLS4ML
             {
-                // Use MLP accelerator
+                // Direct DMA/AXI path: software normalize + fixed-point.
 
                 for (int neuron_idx = 0; neuron_idx < MLP_ACTIVATION_NEURONS; neuron_idx++) {
                     actv_floating_point = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);

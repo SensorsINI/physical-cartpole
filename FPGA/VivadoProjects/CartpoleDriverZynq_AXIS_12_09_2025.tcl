@@ -4,9 +4,13 @@
 # Filter/normalisation notes (Development default Zybo path):
 # - Rebuild against FPGA/CustomIPs/median_filter_hls/.../impl/ip to pick up the
 #   trimmed-mean + dead-zone median_filter:1.0 (same VLNV as this BD).
-# - nn_marshal HLS lives in FPGA/CustomIPs/nn_marshal_hls for FPGA-side
-#   normalize/denormalize. It is not instantiated here: the SecLoc three-block
-#   chain that uses it is Zedboard-optional, not the Zybo default control path.
+# - HLS4ML default path is PS AXI-Lite -> secloc_shell -> secloc_gate ->
+#   nn_marshal -> controller_axis -> hls4ml_dense_1out_8_07_07_2026.
+#   Firmware uses PlainEvaluate (FORCE_COMPUTE) so the gate is bypassed:
+#   PL normalize is on, SecLoc is not the default controller.
+# - The old DMA + mlp_axis_interface + long_pole hierarchy is left in this
+#   script as create_hier_cell_HLS4ML but is not instantiated (one myproject
+#   entity; DMA fallback is firmware-only for already-flashed bitstreams).
 #
 # CartpoleDriverZynq_12_09_2025.tcl: Tcl script for re-creating project 'CartpoleDriverZynq_AXI_Stream'
 #
@@ -152,16 +156,25 @@ set files [list \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/sigmoid_lut.sv"] \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/tanh_lut.sv"] \
  [file normalize "${origin_dir}/../../Driver/CartPoleSimulation/SI_Toolkit/src/SI_Toolkit/Functions/Pytorch/EdgeDRNN/hdl/edgedrnn_wrapper.v"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/Interfaces/mlp_top_pkg.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"] \
- [file normalize "${origin_dir}/../NeuralNetworks/Interfaces/hls4ml_axis/hls4ml_axis_interface_1out.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"] \
+ [file normalize "${origin_dir}/../Interfaces/controller_io_parameters.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_12s_24_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_13s_24_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_13s_25_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_14s_25_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_12s_15s_26_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_13s_12s_24_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_14s_12s_25_2_1.vhd"] \
+ [file normalize "${origin_dir}/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject_mul_15s_12s_26_2_1.vhd"] \
+ [file normalize "${origin_dir}/../Interfaces/controller_adapter_cp.vhd"] \
+ [file normalize "${origin_dir}/../Interfaces/controller_axis.vhd"] \
  [file normalize "${origin_dir}/../CustomIPs/PmodAD1/ad1_spi.v"] \
  [file normalize "${origin_dir}/../CustomIPs/PmodAD1/PmodAD1_AXI.v"] \
 ]
@@ -218,52 +231,73 @@ set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/dense_latency_ap_fixed_12_1_5_3_0_ap_fixed_18_6_5_3_0_config8_0_0.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/Interfaces/mlp_top_pkg.vhd"
+set file "$origin_dir/../Interfaces/controller_io_parameters.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/myproject.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/myproject.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/linear_ap_fixed_18_6_5_3_0_ap_fixed_12_2_5_3_0_linear_config9_s.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config4_s_tanh_table1.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/hls4ml_long_pole_21_08_2024/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"
+set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/tanh_ap_fixed_18_6_5_3_0_ap_fixed_12_1_5_3_0_tanh_config7_s.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
-set file "$origin_dir/../NeuralNetworks/Interfaces/hls4ml_axis/hls4ml_axis_interface_1out.vhd"
+foreach mul_file [list \
+ "myproject_mul_12s_12s_24_2_1.vhd" \
+ "myproject_mul_12s_13s_24_2_1.vhd" \
+ "myproject_mul_12s_13s_25_2_1.vhd" \
+ "myproject_mul_12s_14s_25_2_1.vhd" \
+ "myproject_mul_12s_15s_26_2_1.vhd" \
+ "myproject_mul_13s_12s_24_2_1.vhd" \
+ "myproject_mul_14s_12s_25_2_1.vhd" \
+ "myproject_mul_15s_12s_26_2_1.vhd" \
+] {
+  set file "$origin_dir/../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026/$mul_file"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+  set_property -name "file_type" -value "VHDL" -objects $file_obj
+}
+
+set file "$origin_dir/../Interfaces/controller_adapter_cp.vhd"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "VHDL" -objects $file_obj
+
+set file "$origin_dir/../Interfaces/controller_axis.vhd"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
@@ -326,7 +360,7 @@ set obj [get_filesets utils_1]
 proc cr_bd_cartpole_driver_design { parentCell } {
 # The design that will be created by this Tcl proc contains the following 
 # module references:
-# PmodAD1_AXI, edgedrnn_wrapper, mlp_axis_interface
+# PmodAD1_AXI, edgedrnn_wrapper, controller_axis
 
 
 
@@ -350,10 +384,12 @@ proc cr_bd_cartpole_driver_design { parentCell } {
   xilinx.com:ip:processing_system7:5.5\
   xilinx.com:ip:proc_sys_reset:5.0\
   xilinx.com:hls:median_filter:1.0\
-
   xilinx.com:hls:motor_hls:1.0\
   xilinx.com:hls:quadrature_encoder:1.0\
   xilinx.com:ip:xadc_wiz:3.3\
+  xilinx.com:hls:secloc_shell:1.0\
+  xilinx.com:hls:secloc_gate:1.0\
+  xilinx.com:hls:nn_marshal:1.0\
   xilinx.com:ip:xlconstant:1.1\
   xilinx.com:ip:axi_uartlite:2.0\
   xilinx.com:ip:axi_datamover:5.1\
@@ -386,7 +422,7 @@ proc cr_bd_cartpole_driver_design { parentCell } {
      set list_check_mods "\ 
   PmodAD1_AXI\
   edgedrnn_wrapper\
-  mlp_axis_interface\
+  controller_axis\
   "
 
    set list_mods_missing ""
@@ -411,7 +447,9 @@ proc cr_bd_cartpole_driver_design { parentCell } {
   }
 
   
-# Hierarchical cell: HLS4ML
+# Hierarchical cell: HLS4ML (DMA + mlp_axis_interface). Not instantiated on
+# the default Zybo path (replaced by the nn_marshal chain below). Kept so a
+# DMA rebuild can be restored; that also needs the long_pole + mlp sources.
 proc create_hier_cell_HLS4ML { parentCell nameHier } {
 
   variable script_folder
@@ -748,8 +786,6 @@ proc create_hier_cell_HARDWARE_ACCEL { parentCell nameHier } {
 
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M00_AXI1
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M00_AXI2
-
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S00_AXI
 
 
@@ -760,8 +796,26 @@ proc create_hier_cell_HARDWARE_ACCEL { parentCell nameHier } {
   # Create instance: EdgeDRNN
   create_hier_cell_EdgeDRNN $hier_obj EdgeDRNN
 
-  # Create instance: HLS4ML
-  create_hier_cell_HLS4ML $hier_obj HLS4ML
+  # Create instance: SECLOC_SHELL_0 (AXI-Lite register shell towards the PS)
+  set SECLOC_SHELL_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:secloc_shell:1.0 SECLOC_SHELL_0 ]
+
+  # Create instance: SECLOC_GATE_0 (SecLoc gate + zero-order hold, AXIS only)
+  set SECLOC_GATE_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:secloc_gate:1.0 SECLOC_GATE_0 ]
+
+  # Create instance: NN_MARSHAL_0 (per-network normalize/denormalize, AXIS only)
+  set NN_MARSHAL_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:nn_marshal:1.0 NN_MARSHAL_0 ]
+
+  # Create instance: CONTROLLER_AXIS_0 (AXIS <-> ap_ctrl bridge in front of the
+  # hls4ml network, controller_axis.vhd -> controller_adapter_cp -> myproject)
+  set block_name controller_axis
+  set block_cell_name CONTROLLER_AXIS_0
+  if { [catch {set CONTROLLER_AXIS_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $CONTROLLER_AXIS_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
 
   # Create instance: ps7_0_axi_periph, and set properties
   set ps7_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps7_0_axi_periph ]
@@ -776,15 +830,20 @@ proc create_hier_cell_HARDWARE_ACCEL { parentCell nameHier } {
   connect_bd_intf_net -intf_net S_AXI_LITE_1 [get_bd_intf_pins EdgeDRNN/S_AXI_LITE] [get_bd_intf_pins ps7_0_axi_periph/M01_AXI]
   connect_bd_intf_net -intf_net axi_mem_intercon_1_M00_AXI [get_bd_intf_pins M00_AXI] [get_bd_intf_pins EdgeDRNN/M00_AXI]
   connect_bd_intf_net -intf_net axi_mem_intercon_2_M00_AXI [get_bd_intf_pins M00_AXI1] [get_bd_intf_pins EdgeDRNN/M00_AXI1]
-  connect_bd_intf_net -intf_net axi_mem_intercon_M00_AXI [get_bd_intf_pins M00_AXI2] [get_bd_intf_pins HLS4ML/M00_AXI]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins S00_AXI] [get_bd_intf_pins ps7_0_axi_periph/S00_AXI]
-  connect_bd_intf_net -intf_net ps7_0_axi_periph_M00_AXI [get_bd_intf_pins HLS4ML/S_AXI_LITE] [get_bd_intf_pins ps7_0_axi_periph/M00_AXI]
+  connect_bd_intf_net -intf_net ps7_0_axi_periph_M00_AXI [get_bd_intf_pins SECLOC_SHELL_0/s_axi_CTRL] [get_bd_intf_pins ps7_0_axi_periph/M00_AXI]
+  connect_bd_intf_net -intf_net secloc_shell_0_gate_req [get_bd_intf_pins SECLOC_SHELL_0/gate_req] [get_bd_intf_pins SECLOC_GATE_0/req_in]
+  connect_bd_intf_net -intf_net secloc_gate_0_resp_out [get_bd_intf_pins SECLOC_GATE_0/resp_out] [get_bd_intf_pins SECLOC_SHELL_0/gate_resp]
+  connect_bd_intf_net -intf_net secloc_gate_0_marshal_req [get_bd_intf_pins SECLOC_GATE_0/marshal_req] [get_bd_intf_pins NN_MARSHAL_0/gate_req]
+  connect_bd_intf_net -intf_net nn_marshal_0_gate_resp [get_bd_intf_pins NN_MARSHAL_0/gate_resp] [get_bd_intf_pins SECLOC_GATE_0/marshal_resp]
+  connect_bd_intf_net -intf_net nn_marshal_0_nn_req [get_bd_intf_pins NN_MARSHAL_0/nn_req] [get_bd_intf_pins CONTROLLER_AXIS_0/S_AXIS]
+  connect_bd_intf_net -intf_net controller_axis_0_m_axis [get_bd_intf_pins CONTROLLER_AXIS_0/M_AXIS] [get_bd_intf_pins NN_MARSHAL_0/nn_resp]
   connect_bd_intf_net -intf_net s_axi_1 [get_bd_intf_pins EdgeDRNN/s_axi] [get_bd_intf_pins ps7_0_axi_periph/M02_AXI]
 
   # Create port connections
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins ACLK] [get_bd_pins EdgeDRNN/m_axi_mm2s_aclk] [get_bd_pins HLS4ML/m_axi_mm2s_aclk] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_25M/slowest_sync_clk]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins ACLK] [get_bd_pins EdgeDRNN/m_axi_mm2s_aclk] [get_bd_pins SECLOC_SHELL_0/ap_clk] [get_bd_pins SECLOC_GATE_0/ap_clk] [get_bd_pins NN_MARSHAL_0/ap_clk] [get_bd_pins CONTROLLER_AXIS_0/AXIS_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_25M/slowest_sync_clk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins ext_reset_in] [get_bd_pins rst_ps7_0_25M/ext_reset_in]
-  connect_bd_net -net rst_ps7_0_100M_peripheral_aresetn [get_bd_pins EdgeDRNN/m_axi_mm2s_aresetn] [get_bd_pins HLS4ML/ARESETN] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_25M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_100M_peripheral_aresetn [get_bd_pins EdgeDRNN/m_axi_mm2s_aresetn] [get_bd_pins SECLOC_SHELL_0/ap_rst_n] [get_bd_pins SECLOC_GATE_0/ap_rst_n] [get_bd_pins NN_MARSHAL_0/ap_rst_n] [get_bd_pins CONTROLLER_AXIS_0/AXI_ARESETN] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_25M/peripheral_aresetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1522,7 +1581,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
    CONFIG.PCW_USE_M_AXI_GP1 {1} \
    CONFIG.PCW_USE_S_AXI_GP0 {0} \
    CONFIG.PCW_USE_S_AXI_GP1 {0} \
-   CONFIG.PCW_USE_S_AXI_HP0 {1} \
+   CONFIG.PCW_USE_S_AXI_HP0 {0} \
    CONFIG.PCW_USE_S_AXI_HP1 {1} \
    CONFIG.PCW_USE_S_AXI_HP2 {1} \
  ] $processing_system7_0
@@ -1549,7 +1608,6 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_interconnect_0_M09_AXI [get_bd_intf_pins SWITCHES_AND_LEDS_GPIO/S_AXI] [get_bd_intf_pins axi_interconnect_0/M09_AXI]
   connect_bd_intf_net -intf_net axi_mem_intercon_1_M00_AXI [get_bd_intf_pins HARDWARE_ACCEL/M00_AXI] [get_bd_intf_pins processing_system7_0/S_AXI_HP1]
   connect_bd_intf_net -intf_net axi_mem_intercon_2_M00_AXI [get_bd_intf_pins HARDWARE_ACCEL/M00_AXI1] [get_bd_intf_pins processing_system7_0/S_AXI_HP2]
-  connect_bd_intf_net -intf_net axi_mem_intercon_M00_AXI [get_bd_intf_pins HARDWARE_ACCEL/M00_AXI2] [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
   connect_bd_intf_net -intf_net axi_uartlite_0_UART [get_bd_intf_ports uart_rtl] [get_bd_intf_pins UART_LITE_IP/uart_rtl]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR_0] [get_bd_intf_pins processing_system7_0/DDR]
   connect_bd_intf_net -intf_net processing_system7_0_FIXED_IO [get_bd_intf_ports FIXED_IO_0] [get_bd_intf_pins processing_system7_0/FIXED_IO]
@@ -1572,7 +1630,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   connect_bd_net -net motor_hls_0_direction_output_1 [get_bd_ports Direction_1] [get_bd_pins CartPoleInterface/Direction_1]
   connect_bd_net -net motor_hls_0_direction_output_2 [get_bd_ports Direction_2] [get_bd_pins CartPoleInterface/Direction_2]
   connect_bd_net -net motor_hls_0_pwm_out [get_bd_ports PWM] [get_bd_pins CartPoleInterface/PWM]
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins HARDWARE_ACCEL/ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP2_ACLK]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins HARDWARE_ACCEL/ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP2_ACLK]
   connect_bd_net -net processing_system7_0_FCLK_CLK1 [get_bd_pins CartPoleInterface/s_axi_aclk] [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/s_axi_aclk] [get_bd_pins PmodAD1/S_AXI_ACLK] [get_bd_pins RGB_LED_GPIO/s_axi_aclk] [get_bd_pins SWITCHES_AND_LEDS_GPIO/s_axi_aclk] [get_bd_pins UART_IP/s_axi_aclk] [get_bd_pins UART_LITE_IP/s_axi_aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/M07_ACLK] [get_bd_pins axi_interconnect_0/M08_ACLK] [get_bd_pins axi_interconnect_0/M09_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK1] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins HARDWARE_ACCEL/ext_reset_in] [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins rst_ps7_0_100M/ext_reset_in]
   connect_bd_net -net rst_ps7_0_100M_1_peripheral_aresetn [get_bd_pins CartPoleInterface/ap_rst_n] [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/s_axi_aresetn] [get_bd_pins PmodAD1/S_AXI_ARESETN] [get_bd_pins RGB_LED_GPIO/s_axi_aresetn] [get_bd_pins SWITCHES_AND_LEDS_GPIO/s_axi_aresetn] [get_bd_pins UART_IP/s_axi_aresetn] [get_bd_pins UART_LITE_IP/s_axi_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/M08_ARESETN] [get_bd_pins axi_interconnect_0/M09_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
@@ -1587,7 +1645,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   assign_bd_address -offset 0x81210000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs RGB_LED_GPIO/S_AXI/Reg] -force
   assign_bd_address -offset 0x81220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs SWITCHES_AND_LEDS_GPIO/S_AXI/Reg] -force
   assign_bd_address -offset 0x83C40000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs UART_IP/S_AXI/Reg] -force
-  assign_bd_address -offset 0x40410000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/HLS4ML/axi_dma_0/S_AXI_LITE/Reg] -force
+  assign_bd_address -offset 0x40410000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/SECLOC_SHELL_0/s_axi_CTRL/Reg] -force
   assign_bd_address -offset 0x40400000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/EdgeDRNN/axi_dma_1/S_AXI_LITE/Reg] -force
   assign_bd_address -offset 0x82C00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs UART_LITE_IP/axi_uartlite_0/S_AXI/Reg] -force
   assign_bd_address -offset 0x40000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/EdgeDRNN/edgedrnn_wrapper_0/s_axi/reg0] -force
@@ -1598,8 +1656,6 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   assign_bd_address -offset 0x00000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces HARDWARE_ACCEL/EdgeDRNN/axi_datamover_0/Data_MM2S] [get_bd_addr_segs processing_system7_0/S_AXI_HP1/HP1_DDR_LOWOCM] -force
   assign_bd_address -offset 0x00000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces HARDWARE_ACCEL/EdgeDRNN/axi_dma_1/Data_MM2S] [get_bd_addr_segs processing_system7_0/S_AXI_HP2/HP2_DDR_LOWOCM] -force
   assign_bd_address -offset 0x00000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces HARDWARE_ACCEL/EdgeDRNN/axi_dma_1/Data_S2MM] [get_bd_addr_segs processing_system7_0/S_AXI_HP2/HP2_DDR_LOWOCM] -force
-  assign_bd_address -offset 0x00000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces HARDWARE_ACCEL/HLS4ML/axi_dma_0/Data_MM2S] [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM] -force
-  assign_bd_address -offset 0x00000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces HARDWARE_ACCEL/HLS4ML/axi_dma_0/Data_S2MM] [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM] -force
 
 
   # Restore current instance

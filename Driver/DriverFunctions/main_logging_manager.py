@@ -14,6 +14,7 @@ from globals import (
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS, LOOP_CPU_AFFINITY, CONTROL_CPU_AFFINITY,
     USE_SECLOC,
+    should_push_chip_secloc_config,
     HARDWARE_ANGLE_FILTER_OVERRIDE,
     HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
@@ -258,10 +259,9 @@ class MainLoggingManager:
                     mode_lines.append(
                         "Hardware angle filter: firmware boot default (trimmed mean 63/7)"
                     )
-            if self.driver.firmwareControl:
-                # The driver mirrors config_secloc.yml onto the chip
-                # (CMD_SET_SECLOC_CONFIG), so the PC-side view is authoritative
-                # for what the chip gate is running.
+            if self.driver.firmwareControl and should_push_chip_secloc_config() and self.driver.chip_secloc_config is not None:
+                # Yaml was pushed to the chip (CMD_SET_SECLOC_CONFIG); the
+                # PC-side copy is authoritative for what the chip gate has.
                 chip_gate = self.driver.chip_secloc_config
                 mode_lines[0] = "Secloc on chip: True"
                 mode_lines[1:1] = [

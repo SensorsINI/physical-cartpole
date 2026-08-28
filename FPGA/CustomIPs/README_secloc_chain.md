@@ -40,9 +40,12 @@ Override the network folder at HLS time with `SECLOC_NN_NETWORK_DIR`.
 
 ## Vivado block design
 
-`FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_Zedboard.tcl` instantiates
-`SECLOC_SHELL_0`, `SECLOC_GATE_0`, `NN_MARSHAL_0` at the former frontend address
-(`0x40410000` on shell only). After BD TCL changes, recreate the project or run:
+`FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl` (Zybo default) and
+`FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_Zedboard.tcl` both instantiate
+`SECLOC_SHELL_0`, `SECLOC_GATE_0`, `NN_MARSHAL_0` at `0x40410000` (shell only).
+Firmware on the Zybo path uses `SeclocFrontendLink_PlainEvaluate` (gate bypassed)
+so PL normalize is on and SecLoc is not the default controller. After BD TCL
+changes, recreate the project or run:
 
 ```bash
 cd FPGA/VivadoProjects
