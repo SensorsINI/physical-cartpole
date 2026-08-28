@@ -453,16 +453,18 @@ class PhysicalCartPoleDriver:
         if self.secloc_pl_fault_chip and not self._secloc_pl_fault_warned:
             self._secloc_pl_fault_warned = True
             print("SecLoc PL fault: selected PL backend but the PL chain is absent or failed (zero force).", flush=True)
-        if self.firmwareControl:
-            self.chip_secloc_stats.record_telemetry(
-                self.secloc_skipped_update_chip,
-                self.secloc_gate_skipped_chip,
-            )
-
         self.th.load_timing_data_from_chip(
             time_current_measurement_chip, time_between_measurements_chip, latency_violation_chip, firmware_latency
         )
         self.idp.load_state_data_from_chip(angle_raw, angleD_raw, invalid_steps, position_raw)
+        if self.firmwareControl:
+            self.chip_secloc_stats.record_telemetry(
+                self.secloc_skipped_update_chip,
+                self.secloc_gate_skipped_chip,
+                self.s,
+                self.target_position_from_chip,
+                time=self.th.time_current_measurement_chip,
+            )
 
     def apply_target_position_from_chip(self):
         self.target_position = self.target_position_from_chip
