@@ -346,7 +346,8 @@ The driver pushes these from the PC at startup (and re-pushes as noted); editing
 |---|---|---|---|
 | Gate `log_base`, `ref_period_ticks`, `dead_ang`, `dead_pos` (`SECLOC_DEFAULT_*`) | `secloc_defaults.h` | `config_secloc.yml` via `CMD_SET_SECLOC_CONFIG` | At connect + on every yaml save |
 | Gate tick size (`SECLOC_DEFAULT_TIME_QUANTUM_S`) | `secloc_defaults.h` | Derived from `POLLING_PERIOD_MS` | At connect + on control-config push |
-| `POLLING_PERIOD_MS`, `CONTROL_SYNC`, `ANGLE_AVERAGE_LEN`, `TIMESTEPS_FOR_DERIVATIVE`, `correct_motor_dynamics`, `ANGLE_HANGING` | `parameters.c` boot values | `Driver/globals.py` via `CMD_SET_CONTROL_CONFIG` | At connect, after calibration, after `b` |
+| `POLLING_PERIOD_MS`, `CONTROL_SYNC`, `ANGLE_AVERAGE_LEN`, `TIMESTEPS_FOR_DERIVATIVE`, `correct_motor_dynamics` | `parameters.c` boot values | `Driver/globals.py` via `CMD_SET_CONTROL_CONFIG` | At connect, after calibration, after `b` |
+| `ANGLE_HANGING` | QSPI / BTN0 if locked, else `parameters.c` | `globals.py` only if the chip is **not** locked; `b` forces RAM | At connect (skipped if BTN0/QSPI); after `b` |
 | `target_position`, `target_equilibrium` | `control.c` init values | Keyboard / dance / protocols via `CMD_SET_TARGET_*` | Continuously while connected |
 
 For standalone-chip experiments, mirror your yaml/`globals.py` values into `secloc_defaults.h` / `parameters.c` and rebuild — that is the only reason to touch those C defaults.
