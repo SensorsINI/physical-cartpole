@@ -21,6 +21,7 @@ from DriverFunctions.chip_secloc_stats import ChipSeclocStatistics
 from DriverFunctions.cpu_affinity import set_thread_cpu_affinity
 from Control_Toolkit_ASF.Controllers.secloc_gate import SeclocGate
 from Control_Toolkit.serial_interface_helper import get_serial_port, set_ftdi_latency_timer
+from DriverFunctions.zynq_serial import prefer_zynq_uart_port
 from Driver.DriverFunctions.main_logging_manager import MainLoggingManager
 from Driver.DriverFunctions.keyboard_controller import KeyboardController
 from Driver.DriverFunctions.DVS.angle_pos_client import AnglePositionClient
@@ -168,6 +169,7 @@ class PhysicalCartPoleDriver:
 
         SERIAL_PORT = get_serial_port(chip_type=CHIP, serial_port_number=SERIAL_PORT_NUMBER)
         if CHIP == 'ZYNQ':
+            SERIAL_PORT = prefer_zynq_uart_port(SERIAL_PORT)
             set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         self.InterfaceInstance.pc_control_mode(False)
