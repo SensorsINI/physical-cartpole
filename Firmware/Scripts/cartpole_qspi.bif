@@ -1,0 +1,23 @@
+// Zybo Z7-20 QSPI boot image (Zynq-7000).
+//
+// Replace the three paths with artifacts from the current Vitis platform
+// (same XSA you JTAG-boot). Then:
+//   bootgen -arch zynq -image cartpole_qspi.bif -w on -o i BOOT.BIN
+//
+// Typical locations after a Debug build:
+//   <vitis_ws>/<platform>/export/<platform>/sw/<platform>/boot/fsbl.elf
+//   <vitis_ws>/<platform>/hw/<design>.bit
+//   <vitis_ws>/CartPoleFirmware/Debug/CartPoleFirmware.elf
+//
+// Hanging calibration lives at flash offset 0xFD0000 (64 KiB) with a
+// non-overlapping 4 KiB fallback at 0xFFF000.
+// program_flash of this BOOT.BIN at offset 0 must NOT erase the whole 16 MiB
+// (Vitis 2020.1 erases only the image range by default; do not check
+// "Erase entire flash" in later GUIs).
+//
+the_ROM_image:
+{
+	[bootloader] fsbl.elf
+	system.bit
+	CartPoleFirmware.elf
+}

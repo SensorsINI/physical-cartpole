@@ -1,0 +1,121 @@
+# Program Zybo Z7-20 QSPI with BOOT.BIN at offset 0.
+#
+# Erases only the image range (not the whole 16 MiB). Hanging calibration
+# at 0xFD0000 (64 KiB) / 0xFFF000 (4 KiB fallback) is preserved as long as
+# BOOT.BIN stays well under ~15.8 MiB.
+#
+# Usage (xsct):
+#   xsct program_qspi_boot.tcl -boot BOOT.BIN -fsbl fsbl.elf
+#   xsct program_qspi_boot.tcl -fsbl fsbl.elf -bit system.bit -elf CartPoleFirmware.elf
+#
+# Usage (program_flash directly):
+#   program_flash -f BOOT.BIN -offset 0 -flash_type qspi-x4-single -fsbl fsbl.elf -verify
+#
+# Then power off, set JP5 to the two center pins labeled QSPI, power on.
+
+set script_dir [file dirname [file normalize [info script]]]
+
+proc usage {} {
+	puts "Usage:"
+	puts "  xsct program_qspi_boot.tcl -boot BOOT.BIN -fsbl fsbl.elf"
+	puts "  xsct program_qspi_boot.tcl -fsbl fsbl.elf -bit system.bit -elf app.elf \[-o BOOT.BIN\]"
+	exit 1
+}
+
+set boot ""
+set fsbl ""
+set bit ""
+set elf ""
+set out [file join $script_dir BOOT.BIN]
+set flash_type "qspi-x4-single"
+
+for {set i 0} {$i < $argc} {incr i} {
+	set a [lindex $argv $i]
+	switch -- $a {
+		-boot - --boot {
+			incr i
+			set boot [lindex $argv $i]
+		}
+		-fsbl - --fsbl {
+			incr i
+			set fsbl [lindex $argv $i]
+		}
+		-bit - --bit {
+			incr i
+			set bit [lindex $argv $i]
+		}
+		-elf - --elf {
+			incr i
+			set elf [lindex $argv $i]
+		}
+		-o - --out {
+			incr i
+			set out [lindex $argv $i]
+		}
+		-h - --help {
+			usage
+		}
+		default {
+			puts "Unknown argument: $a"
+			usage
+		}
+	}
+}
+
+if {$fsbl eq ""} {
+	puts "ERROR: -fsbl is required (Zynq program_flash uses FSBL to init PS QSPI)."
+	usage
+}
+if {![file exists $fsbl]} {
+	puts "ERROR: FSBL not found: $fsbl"
+	exit 1
+}
+
+if {$boot eq ""} {
+	if {$bit eq "" || $elf eq ""} {
+		puts "ERROR: give -boot BOOT.BIN, or -bit and -elf to run bootgen."
+		usage
+	}
+	if {![file exists $bit]} {
+		puts "ERROR: bitstream not found: $bit"
+		exit 1
+	}
+	if {![file exists $elf]} {
+		puts "ERROR: ELF not found: $elf"
+		exit 1
+	}
+	set bif [file join $script_dir cartpole_qspi.generated.bif]
+	set fh [open $bif w]
+	puts $fh "the_ROM_image:"
+	puts $fh "\{"
+	puts $fh "\t\[bootloader\] [file normalize $fsbl]"
+	puts $fh "\t[file normalize $bit]"
+	puts $fh "\t[file normalize $elf]"
+	puts $fh "\}"
+	close $fh
+	puts "bootgen -> $out"
+	set rc [catch {exec bootgen -arch zynq -image $bif -w on -o i $out} result]
+	puts $result
+	if {$rc != 0} {
+		puts "ERROR: bootgen failed"
+		exit 1
+	}
+	set boot $out
+}
+
+if {![file exists $boot]} {
+	puts "ERROR: BOOT.BIN not found: $boot"
+	exit 1
+}
+
+puts "program_flash $boot offset 0 type $flash_type (image-range erase only, not full chip)"
+# Do not pass a full-chip erase flag. 2020.1 program_flash erases the image size.
+set rc [catch {
+	exec program_flash -f $boot -offset 0 -flash_type $flash_type -fsbl $fsbl -verify
+} result]
+puts $result
+if {$rc != 0} {
+	puts "ERROR: program_flash failed"
+	exit 1
+}
+puts "OK. Power off, JP5 = QSPI (two center pins), power on."
