@@ -1008,6 +1008,8 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
 
   set sws_4bits [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gpio_rtl:1.0 sws_4bits ]
 
+  set btns_4bits [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gpio_rtl:1.0 btns_4bits ]
+
   set uart_rtl [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:uart_rtl:1.0 uart_rtl ]
 
 
@@ -1047,7 +1049,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   # Create instance: IRQ_CONCAT, and set properties
   set IRQ_CONCAT [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 IRQ_CONCAT ]
   set_property -dict [ list \
-   CONFIG.NUM_PORTS {3} \
+   CONFIG.NUM_PORTS {4} \
  ] $IRQ_CONCAT
 
   # Create instance: PmodAD1, and set properties
@@ -1087,6 +1089,16 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
    CONFIG.USE_BOARD_FLOW {true} \
  ] $SWITCHES_AND_LEDS_GPIO
 
+  # Create instance: PL_BUTTONS_GPIO (Zybo BTN0-BTN3), and set properties
+  set PL_BUTTONS_GPIO [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 PL_BUTTONS_GPIO ]
+  set_property -dict [ list \
+   CONFIG.C_ALL_INPUTS {1} \
+   CONFIG.C_GPIO_WIDTH {4} \
+   CONFIG.C_INTERRUPT_PRESENT {1} \
+   CONFIG.GPIO_BOARD_INTERFACE {Custom} \
+   CONFIG.USE_BOARD_FLOW {true} \
+ ] $PL_BUTTONS_GPIO
+
   # Create instance: UART_IP, and set properties
   set UART_IP [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_uart16550:2.0 UART_IP ]
 
@@ -1096,7 +1108,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {10} \
+   CONFIG.NUM_MI {11} \
  ] $axi_interconnect_0
 
   # Create instance: processing_system7_0, and set properties
@@ -1596,6 +1608,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_gpio_0_GPIO2 [get_bd_intf_ports leds_4bits] [get_bd_intf_pins SWITCHES_AND_LEDS_GPIO/GPIO2]
   connect_bd_intf_net -intf_net axi_gpio_1_GPIO [get_bd_intf_ports rgb_led] [get_bd_intf_pins RGB_LED_GPIO/GPIO]
   connect_bd_intf_net -intf_net axi_gpio_2_GPIO [get_bd_intf_ports EQUILIBRIUM_SWITCH] [get_bd_intf_pins EQUILIBRIUM_SWITCH_GPIO/GPIO]
+  connect_bd_intf_net -intf_net axi_gpio_3_GPIO [get_bd_intf_ports btns_4bits] [get_bd_intf_pins PL_BUTTONS_GPIO/GPIO]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins UART_LITE_IP/S_AXI] [get_bd_intf_pins axi_interconnect_0/M00_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M01_AXI [get_bd_intf_pins UART_IP/S_AXI] [get_bd_intf_pins axi_interconnect_0/M01_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M02_AXI [get_bd_intf_pins CartPoleInterface/s_axi_MEDIAN] [get_bd_intf_pins axi_interconnect_0/M02_AXI]
@@ -1606,6 +1619,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_interconnect_0_M07_AXI [get_bd_intf_pins CartPoleInterface/s_axi_MOTOR_AXI] [get_bd_intf_pins axi_interconnect_0/M07_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M08_AXI [get_bd_intf_pins CartPoleInterface/s_axi_ENCODER_AXI] [get_bd_intf_pins axi_interconnect_0/M08_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M09_AXI [get_bd_intf_pins SWITCHES_AND_LEDS_GPIO/S_AXI] [get_bd_intf_pins axi_interconnect_0/M09_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M10_AXI [get_bd_intf_pins PL_BUTTONS_GPIO/S_AXI] [get_bd_intf_pins axi_interconnect_0/M10_AXI]
   connect_bd_intf_net -intf_net axi_mem_intercon_1_M00_AXI [get_bd_intf_pins HARDWARE_ACCEL/M00_AXI] [get_bd_intf_pins processing_system7_0/S_AXI_HP1]
   connect_bd_intf_net -intf_net axi_mem_intercon_2_M00_AXI [get_bd_intf_pins HARDWARE_ACCEL/M00_AXI1] [get_bd_intf_pins processing_system7_0/S_AXI_HP2]
   connect_bd_intf_net -intf_net axi_uartlite_0_UART [get_bd_intf_ports uart_rtl] [get_bd_intf_pins UART_LITE_IP/uart_rtl]
@@ -1622,6 +1636,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   connect_bd_net -net ad1_d0_1 [get_bd_ports ad1_d0] [get_bd_pins PmodAD1/ad1_sdin0]
   connect_bd_net -net ad1_d1_1 [get_bd_ports ad1_d1] [get_bd_pins PmodAD1/ad1_sdin1]
   connect_bd_net -net axi_gpio_2_ip2intc_irpt [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/ip2intc_irpt] [get_bd_pins IRQ_CONCAT/In2]
+  connect_bd_net -net axi_gpio_3_ip2intc_irpt [get_bd_pins PL_BUTTONS_GPIO/ip2intc_irpt] [get_bd_pins IRQ_CONCAT/In3]
   connect_bd_net -net axi_uart16550_0_ip2intc_irpt [get_bd_pins IRQ_CONCAT/In0] [get_bd_pins UART_IP/ip2intc_irpt]
   connect_bd_net -net axi_uart16550_0_rtsn [get_bd_ports rtsn_0] [get_bd_pins UART_IP/rtsn]
   connect_bd_net -net axi_uart16550_0_sout [get_bd_ports tx] [get_bd_pins UART_IP/sout]
@@ -1631,9 +1646,9 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   connect_bd_net -net motor_hls_0_direction_output_2 [get_bd_ports Direction_2] [get_bd_pins CartPoleInterface/Direction_2]
   connect_bd_net -net motor_hls_0_pwm_out [get_bd_ports PWM] [get_bd_pins CartPoleInterface/PWM]
   connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins HARDWARE_ACCEL/ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP2_ACLK]
-  connect_bd_net -net processing_system7_0_FCLK_CLK1 [get_bd_pins CartPoleInterface/s_axi_aclk] [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/s_axi_aclk] [get_bd_pins PmodAD1/S_AXI_ACLK] [get_bd_pins RGB_LED_GPIO/s_axi_aclk] [get_bd_pins SWITCHES_AND_LEDS_GPIO/s_axi_aclk] [get_bd_pins UART_IP/s_axi_aclk] [get_bd_pins UART_LITE_IP/s_axi_aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/M07_ACLK] [get_bd_pins axi_interconnect_0/M08_ACLK] [get_bd_pins axi_interconnect_0/M09_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK1] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
+  connect_bd_net -net processing_system7_0_FCLK_CLK1 [get_bd_pins CartPoleInterface/s_axi_aclk] [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/s_axi_aclk] [get_bd_pins PL_BUTTONS_GPIO/s_axi_aclk] [get_bd_pins PmodAD1/S_AXI_ACLK] [get_bd_pins RGB_LED_GPIO/s_axi_aclk] [get_bd_pins SWITCHES_AND_LEDS_GPIO/s_axi_aclk] [get_bd_pins UART_IP/s_axi_aclk] [get_bd_pins UART_LITE_IP/s_axi_aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/M07_ACLK] [get_bd_pins axi_interconnect_0/M08_ACLK] [get_bd_pins axi_interconnect_0/M09_ACLK] [get_bd_pins axi_interconnect_0/M10_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK1] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins HARDWARE_ACCEL/ext_reset_in] [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins rst_ps7_0_100M/ext_reset_in]
-  connect_bd_net -net rst_ps7_0_100M_1_peripheral_aresetn [get_bd_pins CartPoleInterface/ap_rst_n] [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/s_axi_aresetn] [get_bd_pins PmodAD1/S_AXI_ARESETN] [get_bd_pins RGB_LED_GPIO/s_axi_aresetn] [get_bd_pins SWITCHES_AND_LEDS_GPIO/s_axi_aresetn] [get_bd_pins UART_IP/s_axi_aresetn] [get_bd_pins UART_LITE_IP/s_axi_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/M08_ARESETN] [get_bd_pins axi_interconnect_0/M09_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_100M_1_peripheral_aresetn [get_bd_pins CartPoleInterface/ap_rst_n] [get_bd_pins EQUILIBRIUM_SWITCH_GPIO/s_axi_aresetn] [get_bd_pins PL_BUTTONS_GPIO/s_axi_aresetn] [get_bd_pins PmodAD1/S_AXI_ARESETN] [get_bd_pins RGB_LED_GPIO/s_axi_aresetn] [get_bd_pins SWITCHES_AND_LEDS_GPIO/s_axi_aresetn] [get_bd_pins UART_IP/s_axi_aresetn] [get_bd_pins UART_LITE_IP/s_axi_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/M08_ARESETN] [get_bd_pins axi_interconnect_0/M09_ARESETN] [get_bd_pins axi_interconnect_0/M10_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
   connect_bd_net -net sin_0_1 [get_bd_ports rx] [get_bd_pins UART_IP/sin]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins IRQ_CONCAT/dout] [get_bd_pins processing_system7_0/IRQ_F2P]
   connect_bd_net -net xlconstant_1_dout [get_bd_ports uartlite_rtsn] [get_bd_pins UART_LITE_IP/uartlite_rtsn]
@@ -1644,6 +1659,7 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
   assign_bd_address -offset 0x83C30000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs PmodAD1/S_AXI/reg0] -force
   assign_bd_address -offset 0x81210000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs RGB_LED_GPIO/S_AXI/Reg] -force
   assign_bd_address -offset 0x81220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs SWITCHES_AND_LEDS_GPIO/S_AXI/Reg] -force
+  assign_bd_address -offset 0x81230000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs PL_BUTTONS_GPIO/S_AXI/Reg] -force
   assign_bd_address -offset 0x83C40000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs UART_IP/S_AXI/Reg] -force
   assign_bd_address -offset 0x40410000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/SECLOC_SHELL_0/s_axi_CTRL/Reg] -force
   assign_bd_address -offset 0x40400000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs HARDWARE_ACCEL/EdgeDRNN/axi_dma_1/S_AXI_LITE/Reg] -force

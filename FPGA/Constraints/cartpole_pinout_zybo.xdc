@@ -48,6 +48,17 @@ set_property IOSTANDARD LVCMOS33 [get_ports {uartlite_rtsn[0]}]
 set_property PULLDOWN true [get_ports {uartlite_rtsn[0]}]
 
 
+# Zybo Z7 BTN0-BTN3 (PL). Wired so firmware can assign any of them without resynthesis.
+set_property PACKAGE_PIN K18 [get_ports {btns_4bits_tri_i[0]}]
+set_property PACKAGE_PIN P16 [get_ports {btns_4bits_tri_i[1]}]
+set_property PACKAGE_PIN K19 [get_ports {btns_4bits_tri_i[2]}]
+set_property PACKAGE_PIN Y16 [get_ports {btns_4bits_tri_i[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {btns_4bits_tri_i[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {btns_4bits_tri_i[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {btns_4bits_tri_i[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {btns_4bits_tri_i[3]}]
+
+
 # JB
 set_property IOSTANDARD LVCMOS33 [get_ports {EQUILIBRIUM_SWITCH_tri_i[1]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {EQUILIBRIUM_SWITCH_tri_i[0]}]
