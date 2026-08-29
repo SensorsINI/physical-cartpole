@@ -237,16 +237,25 @@ class Interface:
         return setPoint, smoothing, position_KP, position_KI, position_KD, angle_KP, angle_KI, angle_KD
 
     def set_config_control(self, controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
-                           timesteps_for_derivative=1):
+                           timesteps_for_derivative=1, force_angle_hanging=False):
         """timesteps_for_derivative: on-chip derivative window in polling periods
-        (firmware clamps to 1..20 and restarts its history buffers)."""
-        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, 16]
-        msg += list(struct.pack('H', controlLoopPeriodMs))
-        msg += list(struct.pack('?', controlSync))
-        msg += list(struct.pack('f', angle_hanging))
-        msg += list(struct.pack('H', avgLen))
-        msg += list(struct.pack('?', correct_motor_dynamics))
-        msg += list(struct.pack('H', timesteps_for_derivative))
+        (firmware clamps to 1..20 and restarts its history buffers).
+
+        force_angle_hanging: apply hanging even if the chip locked it (BTN0 / QSPI).
+        Default False uses the 16-byte packet; True sends a 17th force byte.
+        """
+        payload = struct.pack(
+            '=H?fH?H',
+            controlLoopPeriodMs, controlSync, angle_hanging, avgLen,
+            correct_motor_dynamics, timesteps_for_derivative,
+        )
+        if force_angle_hanging:
+            payload += struct.pack('=?', True)
+            pkt_len = 17
+        else:
+            pkt_len = 16
+        msg = [SERIAL_SOF, CMD_SET_CONTROL_CONFIG, pkt_len]
+        msg += list(payload)
         msg.append(self._crc(msg))
         self._write_message(msg)
 
@@ -254,10 +263,11 @@ class Interface:
         msg = [SERIAL_SOF, CMD_GET_CONTROL_CONFIG, 4]
         msg.append(self._crc(msg))
         self._write_message(msg)
-        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 16)
+        reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 17)
         (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
-         timesteps_for_derivative) = struct.unpack('=H?fH?H', bytes(reply[3:15]))
-        return controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics, timesteps_for_derivative
+         timesteps_for_derivative, hanging_on_chip) = struct.unpack('=H?fH?H?', bytes(reply[3:16]))
+        return (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
+                timesteps_for_derivative, hanging_on_chip)
 
     def set_motor(self, speed):
         msg = [SERIAL_SOF, CMD_SET_MOTOR, 8]
@@ -418,6 +428,10 @@ class Interface:
 
                     print('\nCRC Failed.')
                     del self.msg[0]
+                    continue
+
+                if cmd != CMD_STATE and self.msg[1] == CMD_STATE:
+                    del self.msg[:packet_len]
                     continue
 
                 # Check command

@@ -192,6 +192,7 @@ class PhysicalCartPoleDriver:
             correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
             timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE,
         )
+        self._sync_hanging_from_chip()
         if hasattr(self.controller, 'secloc'):
             polling_period_s = POLLING_PERIOD_MS / 1000.0
             self.controller.secloc.set_time_quantum(polling_period_s)
@@ -606,11 +607,13 @@ class PhysicalCartPoleDriver:
                                                   controlSync=CONTROL_SYNC,
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
                                                   correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
-                                                  timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
+                                                  timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE,
+                                                  force_angle_hanging=True)
 
         print('\nApplied measured hanging angle for this run.')
         print('ANGLE_HANGING: {:.3f} ADC reading (std {:.3f})'.format(ANGLE_HANGING, angle_hanging_std))
         print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
+        self._sync_hanging_from_chip()
 
     def calibrate(self):
         self.controlEnabled = False
@@ -664,6 +667,27 @@ class PhysicalCartPoleDriver:
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
                                                   correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
                                                   timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
+        self._sync_hanging_from_chip()
+
+    def _sync_hanging_from_chip(self):
+        """Read chip ANGLE_HANGING. If BTN0/QSPI (or `b`) locked it, adopt it for this
+        session only — globals.py is not written."""
+        global ANGLE_HANGING, ANGLE_DEVIATION
+
+        (_period, _sync, chip_hanging, _avg, _motor, _steps,
+         hanging_on_chip) = self.InterfaceInstance.get_config_control()
+        chip_hanging = float(chip_hanging)
+        if hanging_on_chip:
+            print('Chip ANGLE_HANGING: {:.3f} ADC (locked on chip from BTN0/QSPI or `b`; '
+                  'globals.py not applied)'.format(chip_hanging))
+            ANGLE_HANGING = chip_hanging
+            ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
+            print('Session ANGLE_HANGING/ANGLE_DEVIATION adopted from chip '
+                  '(globals.py file unchanged).')
+            print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
+        else:
+            print('Chip ANGLE_HANGING: {:.3f} ADC (from this PC session / firmware default)'.format(
+                chip_hanging))
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
     #       gets the motor full scale and calculates the correction factors relative to that
