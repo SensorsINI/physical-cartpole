@@ -52,7 +52,16 @@ void get_rgb_diodes_input(u32 diode_1, u32 diode_2, u32* diodes)
 u32 rgb_diodes_input_previous;
 const u32 dimmer_counter_max = 10;
 u32 dimmer_counter = 0;
-void indicate_target_position_with_leds(float* target_position)
+static unsigned long rgb_confirm_until_us = 0;
+
+void Led_RgbConfirmFlash(void)
+{
+#ifdef ZYBO_Z720
+	rgb_confirm_until_us = GetTimeNow() + 300000UL;
+#endif
+}
+
+void indicate_target_position_with_leds(float* target_position, bool dead_zone_warning)
 {
 #ifdef ZYBO_Z720
 	// 1 - blue,
@@ -65,23 +74,44 @@ void indicate_target_position_with_leds(float* target_position)
 
 	u32 diode_1;
 	u32 diode_2;
+	unsigned long now = GetTimeNow();
 
-	if (*target_position == 0.0){
-		diode_1 = 4;
-		diode_2 = 4;
-	} else if (*target_position > 0){
-		diode_1 = 0;
-		diode_2 = 2;
-	} else if (*target_position < 0.0){
-		diode_1 = 1;
-		diode_2 = 0;
+	if (rgb_confirm_until_us != 0 && (long)(rgb_confirm_until_us - now) > 0) {
+		diode_1 = 7;
+		diode_2 = 7;
 	} else {
-		diode_1 = 4;
-		diode_2 = 0;
+		rgb_confirm_until_us = 0;
+		if (dead_zone_warning) {
+			if (((now / 250000UL) % 2) == 0) {
+				diode_1 = 4;
+				diode_2 = 0;
+			} else {
+				diode_1 = 0;
+				diode_2 = 4;
+			}
+		} else if (*target_position == 0.0){
+			diode_1 = 3;
+			diode_2 = 3;
+		} else if (*target_position > 0){
+			diode_1 = 0;
+			diode_2 = 2;
+		} else if (*target_position < 0.0){
+			diode_1 = 1;
+			diode_2 = 0;
+		} else {
+			diode_1 = 4;
+			diode_2 = 0;
+		}
 	}
 
 	u32 rgb_diodes_input;
 	get_rgb_diodes_input(diode_1, diode_2, &rgb_diodes_input);
+
+	if (rgb_confirm_until_us != 0) {
+		XGpio_DiscreteWrite(&GpioRGB, 1, rgb_diodes_input);
+		rgb_diodes_input_previous = rgb_diodes_input;
+		return;
+	}
 
 	++dimmer_counter;
 	if (rgb_diodes_input!=rgb_diodes_input_previous){

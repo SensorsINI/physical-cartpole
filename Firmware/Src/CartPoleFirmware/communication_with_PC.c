@@ -111,8 +111,9 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 
 							case CMD_SET_CONTROL_CONFIG:
 							{
-								// 16 bytes since TIMESTEPS_FOR_DERIVATIVE was appended (u16 at payload offset 10)
-								if (pktLen == 16)
+								// 16 bytes: period/sync/hanging/avg/motor/timesteps
+								// 17 bytes: same plus force_angle_hanging (apply hanging even if BTN0/QSPI locked it)
+								if (pktLen == 16 || pktLen == 17)
 								{
 									current_command = CMD_SET_CONTROL_CONFIG;
 								}
@@ -318,18 +319,20 @@ void prepare_message_to_PC_control_config(
 		float angle_hanging,
 		unsigned short angle_averageLen,
 		bool correct_motor_dynamics,
-		unsigned short timesteps_for_derivative
+		unsigned short timesteps_for_derivative,
+		bool hanging_set_on_chip
 		){
 
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
-	txBuffer[ 2] = 16;
+	txBuffer[ 2] = 17;
 	*((unsigned short *)&txBuffer[ 3]) = polling_period;
 	*((bool           *)&txBuffer[ 5]) = controlSync;
 	*((float          *)&txBuffer[6]) = angle_hanging;
 	*((unsigned short *)&txBuffer[10]) = angle_averageLen;
 	*((bool           *)&txBuffer[12]) = correct_motor_dynamics;
 	*((unsigned short *)&txBuffer[13]) = timesteps_for_derivative;
-	txBuffer[15] = crc(txBuffer, 15);
+	txBuffer[15] = hanging_set_on_chip ? 1 : 0;
+	txBuffer[16] = crc(txBuffer, 16);
 
 }

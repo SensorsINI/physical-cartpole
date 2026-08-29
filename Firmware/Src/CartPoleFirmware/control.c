@@ -5,6 +5,10 @@
 #include "communication_with_PC.h"
 #include <stdlib.h>
 #include "math.h"
+#ifdef ZYNQ
+#include "xil_printf.h"
+#include "Zynq/qspi_nvparams.h"
+#endif
 #include "hardware_pid.h"
 #include "control_signal_postprocessing.h"
 #include "experiment_protocol.h"
@@ -46,6 +50,7 @@ float			ANGLE_HANGING;
 float  			ANGLE_DEVIATION;
 
 volatile bool	HardwareConfigSetFromPC;
+volatile bool	AngleHangingSetOnChip;
 volatile bool 	ControlOnChip_Enabled;
 volatile bool	PCControl_Enabled;
 
@@ -107,7 +112,7 @@ void 			cmd_Ping(const unsigned char * buff, unsigned int len);
 void            cmd_StreamOutput(bool en);
 void 			cmd_ControlMode(bool en);
 void			cmd_PCControlMode(bool en);
-void			cmd_SetControlConfig(const unsigned char * config);
+void			cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen);
 void 			cmd_GetControlConfig(void);
 void			cmd_SetSeclocConfig(const unsigned char * config);
 void			cmd_GetSeclocInfo(void);
@@ -116,6 +121,10 @@ void			cmd_SetAngleFilter(const unsigned short, const unsigned short, const unsi
 void			cmd_RunHardwareExperiment(void);
 void 			cmd_transfer_buffers(void);
 void			CONTROL_CalibrationStep(void);
+
+#ifdef ZYNQ
+static int hanging_millicounts(float adc);
+#endif
 
 float angle_deviation_update(float new_angle_hanging);
 float angle_deviation_update(float new_angle_hanging){
@@ -134,6 +143,7 @@ void CONTROL_Init(void)
 	ControlOnChip_Enabled		= false;
 	PCControl_Enabled			= false;
 	HardwareConfigSetFromPC = false;
+	AngleHangingSetOnChip = false;
     isCalibrated        = false;
     ledPeriod           = 500/POLLING_PERIOD_MS;
 
@@ -146,6 +156,20 @@ void CONTROL_Init(void)
     } else if (MOTOR == MOTOR_POLOLU){
     	ANGLE_HANGING = ANGLE_HANGING_POLOLU;
     }
+
+#ifdef ZYNQ
+	{
+		float hanging_qspi;
+		if (QspiNv_LoadHanging(&hanging_qspi) == 0
+		    && hanging_qspi >= 0.0f
+		    && hanging_qspi < ANGLE_360_DEG_IN_ADC_UNITS) {
+			ANGLE_HANGING = hanging_qspi;
+			AngleHangingSetOnChip = true;
+			xil_printf("QSPI hanging millicounts: %d\r\n",
+				   hanging_millicounts(ANGLE_HANGING));
+		}
+	}
+#endif
 
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 
@@ -192,6 +216,153 @@ void CONTROL_ToggleCalibration(void)
     disable_irq();
     calibrate = true;
 	enable_irq();
+}
+
+/* BTN0 hanging: skip 4 control ticks, then wrap-aware mean of 50 hardware-filtered ADC samples. */
+#define HANGING_CAPTURE_SAMPLES 50
+#define HANGING_CAPTURE_SKIP_TICKS 4
+/* ADC counts per control tick; hanging pole should be nearly still. */
+#define HANGING_CAPTURE_MAX_ANGLED_ADC 8.0f
+
+static volatile bool set_hanging_requested = false;
+static bool hanging_capture_active = false;
+static bool hanging_capture_ref_set = false;
+static int hanging_capture_skip = 0;
+static int hanging_capture_count = 0;
+static float hanging_capture_ref = 0.0f;
+static float hanging_capture_sum = 0.0f;
+#ifdef ZYNQ
+static volatile int hanging_nv_pending = 0;
+static float hanging_nv_value = 0.0f;
+static int hanging_nv_skip_logged = 0;
+#endif
+
+void CONTROL_SetHangingFromCurrentReading(void)
+{
+	set_hanging_requested = true;
+}
+
+#ifdef ZYNQ
+static int hanging_millicounts(float adc)
+{
+	if (adc >= 0.0f) {
+		return (int)(adc * 1000.0f + 0.5f);
+	}
+	return (int)(adc * 1000.0f - 0.5f);
+}
+#endif
+
+/* Map ADC onto [0, ANGLE_360_DEG_IN_ADC_UNITS). Same circle as angle_deviation_update. */
+static float wrap_adc_circle(float adc)
+{
+	float circle = ANGLE_360_DEG_IN_ADC_UNITS;
+	while (adc < 0.0f) {
+		adc += circle;
+	}
+	while (adc >= circle) {
+		adc -= circle;
+	}
+	return adc;
+}
+
+#ifdef ZYNQ
+static float adc_dist_to_deadzone(float adc)
+{
+	float circle = ANGLE_360_DEG_IN_ADC_UNITS;
+	adc = wrap_adc_circle(adc);
+	return fminf(adc, circle - adc);
+}
+
+static bool dead_zone_near_vertical(float hanging_adc)
+{
+	float thresh = ANGLE_360_DEG_IN_ADC_UNITS * (DEAD_ZONE_VERTICAL_WARN_DEG / 360.0f);
+	float dist_down = adc_dist_to_deadzone(hanging_adc);
+	float dist_up = adc_dist_to_deadzone(hanging_adc + ANGLE_360_DEG_IN_ADC_UNITS * 0.5f);
+	return (dist_down < thresh) || (dist_up < thresh);
+}
+#endif
+
+static void hanging_capture_abort(const char *reason)
+{
+	hanging_capture_active = false;
+	hanging_capture_ref_set = false;
+	hanging_capture_skip = 0;
+	hanging_capture_count = 0;
+	hanging_capture_sum = 0.0f;
+#ifdef ZYNQ
+	xil_printf("%s\r\n", reason);
+#else
+	(void)reason;
+#endif
+}
+
+/* adc_12bit: hardware-filtered 0-4095 sample, not wrapLocal/dead-zone-treated angle. */
+static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_adc)
+{
+	if (set_hanging_requested) {
+		set_hanging_requested = false;
+		if (ControlOnChip_Enabled || calibrate) {
+			hanging_capture_abort("BTN0 ignored: stop on-chip control first");
+			return;
+		}
+		hanging_capture_active = true;
+		hanging_capture_ref_set = false;
+		hanging_capture_skip = HANGING_CAPTURE_SKIP_TICKS;
+		hanging_capture_count = 0;
+		hanging_capture_sum = 0.0f;
+	}
+
+	if (!hanging_capture_active) {
+		return;
+	}
+
+	if (ControlOnChip_Enabled || calibrate) {
+		hanging_capture_abort("BTN0 ignored: stop on-chip control first");
+		return;
+	}
+
+	if (hanging_capture_skip > 0) {
+		hanging_capture_skip--;
+		return;
+	}
+
+	if (invalid_step != 0 || fabsf(angleD_adc) > HANGING_CAPTURE_MAX_ANGLED_ADC) {
+		hanging_capture_abort("BTN0 capture aborted: pole moving or dead zone");
+		return;
+	}
+
+	float sample = wrap_adc_circle((float)adc_12bit);
+	if (!hanging_capture_ref_set) {
+		hanging_capture_ref = sample;
+		hanging_capture_ref_set = true;
+	}
+
+	float circle = ANGLE_360_DEG_IN_ADC_UNITS;
+	float d = sample - hanging_capture_ref;
+	if (d > (circle * 0.5f)) {
+		d -= circle;
+	} else if (d < -(circle * 0.5f)) {
+		d += circle;
+	}
+	hanging_capture_sum += d;
+	hanging_capture_count++;
+
+	if (hanging_capture_count >= HANGING_CAPTURE_SAMPLES) {
+		float mean = wrap_adc_circle(hanging_capture_ref + hanging_capture_sum / (float)hanging_capture_count);
+		disable_irq();
+		ANGLE_HANGING = mean;
+		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+		AngleHangingSetOnChip = true;
+		enable_irq();
+		hanging_capture_active = false;
+		hanging_capture_ref_set = false;
+#ifdef ZYNQ
+		xil_printf("ANGLE_HANGING millicounts: %d\r\n", hanging_millicounts(mean));
+		Led_RgbConfirmFlash();
+		hanging_nv_value = mean;
+		hanging_nv_pending = 1;
+#endif
+	}
 }
 
 
@@ -255,6 +426,10 @@ void CONTROL_BackgroundTask(void)
 		position_short = position_short - positionCentre;
 		process_angle(angleSamples, angleSampIndex, ANGLE_AVERAGE_LEN, &angle_int, &angle_raw_int, &angleD, &invalid_step);
         angleD_unprocessed = angleD;
+		{
+			unsigned short latest_idx = (unsigned short)((angleSampIndex + ANGLE_AVERAGE_LEN - 1) % ANGLE_AVERAGE_LEN);
+			hanging_capture_feed(angleSamples[latest_idx], invalid_step, angleD);
+		}
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
 		if (time_difference_between_measurement == 0) {
@@ -499,7 +674,27 @@ void CONTROL_BackgroundTask(void)
 	}
 #endif
 	Leds_over_switches_Update(Switches_GetState());
-	indicate_target_position_with_leds(&target_position);
+	indicate_target_position_with_leds(&target_position, dead_zone_near_vertical(ANGLE_HANGING));
+#endif
+
+#ifdef ZYNQ
+	if (hanging_nv_pending) {
+		if (ControlOnChip_Enabled) {
+			if (!hanging_nv_skip_logged) {
+				xil_printf("QSPI hanging save deferred: control on\r\n");
+				hanging_nv_skip_logged = 1;
+			}
+		} else {
+			hanging_nv_pending = 0;
+			hanging_nv_skip_logged = 0;
+			if (QspiNv_SaveHanging(hanging_nv_value) == 0) {
+				xil_printf("QSPI hanging saved millicounts: %d\r\n",
+					   hanging_millicounts(hanging_nv_value));
+			} else {
+				xil_printf("QSPI hanging save failed\r\n");
+			}
+		}
+	}
 #endif
 
 	///////////////////////////////////////////////////
@@ -570,7 +765,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_CONTROL_CONFIG:
 		{
-			cmd_SetControlConfig(&rxBuffer[3]);
+			cmd_SetControlConfig(&rxBuffer[3], rxBuffer[2]);
 			break;
 		}
 		case CMD_GET_CONTROL_CONFIG:
@@ -817,7 +1012,7 @@ void CONTROL_CalibrationStep(void)
 		Motor_Stop();
 		motor_command = 0;
 
-		if(!HardwareConfigSetFromPC && !calibrationFailed)
+		if(!HardwareConfigSetFromPC && !AngleHangingSetOnChip && !calibrationFailed)
 		{
 			MOTOR = calibrationEncoderDirection==1 ? MOTOR_POLOLU : MOTOR_ORIGINAL;
 			ANGLE_HANGING = MOTOR==MOTOR_POLOLU ? ANGLE_HANGING_POLOLU : ANGLE_HANGING_ORIGINAL;
@@ -895,13 +1090,21 @@ void cmd_PCControlMode(bool en)
 }
 
 
-void cmd_SetControlConfig(const unsigned char * config)
+void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 {
+	bool force_angle_hanging = (pktLen >= 17) && (config[12] != 0);
+	bool keep_on_chip_hanging = AngleHangingSetOnChip && !force_angle_hanging;
+
 	disable_irq();
 
 	POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
     CONTROL_SYNC			= *((bool	        *)&config[2]);
-    ANGLE_HANGING      = *((float          *)&config[ 3]);
+	if (!keep_on_chip_hanging) {
+		ANGLE_HANGING = *((float *)&config[3]);
+		if (force_angle_hanging) {
+			AngleHangingSetOnChip = true;
+		}
+	}
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
     set_timesteps_for_derivative(*((unsigned short *)&config[10]));
@@ -913,6 +1116,16 @@ void cmd_SetControlConfig(const unsigned char * config)
     HardwareConfigSetFromPC = true;
 
 	enable_irq();
+
+#ifdef ZYNQ
+	if (keep_on_chip_hanging) {
+		xil_printf("PC ANGLE_HANGING ignored (BTN0/QSPI); millicounts: %d\r\n",
+			   hanging_millicounts(ANGLE_HANGING));
+	} else if (force_angle_hanging) {
+		xil_printf("PC forced ANGLE_HANGING millicounts: %d\r\n",
+			   hanging_millicounts(ANGLE_HANGING));
+	}
+#endif
 }
 
 
@@ -950,10 +1163,10 @@ void cmd_GetSeclocInfo(void)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics, TIMESTEPS_FOR_DERIVATIVE);
+	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics, TIMESTEPS_FOR_DERIVATIVE, AngleHangingSetOnChip);
 
 	disable_irq();
-	Message_SendToPC(txBuffer, 16);
+	Message_SendToPC(txBuffer, 17);
 	enable_irq();
 }
 

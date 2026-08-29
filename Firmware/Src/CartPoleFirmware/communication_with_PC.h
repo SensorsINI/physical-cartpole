@@ -52,7 +52,8 @@ void prepare_message_to_PC_control_config(
 		float angle_hanging,
 		unsigned short angle_averageLen,
 		bool correct_motor_dynamics,
-		unsigned short timesteps_for_derivative
+		unsigned short timesteps_for_derivative,
+		bool hanging_set_on_chip
 		);
 
 void prepare_buffer_to_send_long(unsigned char* Buffer, unsigned char CMD, unsigned int message_length);

@@ -63,10 +63,10 @@ const float POSITION_ENCODER_RANGE					=		4649;
 
 float MOTOR_CORRECTION[3] 							=		{0.5116974, 0.0178784, 0.0280385}; // Pololu; force-fit on committed CPP_step_response.csv (u_max=2.62N, mass=0.317kg). Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
 
-float ANGLE_HANGING_POLOLU 							=		1063.779;  // Measured hanging ADC ('b' calibration); with corrected ANGLE_360 this maps upright -> 0
+float ANGLE_HANGING_POLOLU 							=		1016.84;  // BTN0 hanging ADC (2026-08-29)
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4049.44;  // Calibrated: hanging=1063.779, upright=3088.5 -> 180deg=2024.721 ADC. Must match Driver/globals.py ZYNQ value; mismatch shifts on-chip angle zero and offsets LQR centering
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4143.32;  // Old pair hanging=1063.779, upright=3088.5, 360=4049.44. BTN0 hanging=1016.84, screw unchanged => upright still 3088.5, 180deg=2071.66, 360=4143.32. Must match Driver/globals.py ZYNQ.
 const float POSITION_ENCODER_RANGE					=		4695.0;
 
 #endif
@@ -82,3 +82,5 @@ bool USE_TARGET_SWITCHES							=		false;					// Keep switch positions from chang
 
 float ANGLE_NORMALIZATION_FACTOR					=		((2 * M_PI) / ANGLE_360_DEG_IN_ADC_UNITS);
 float POSITION_NORMALIZATION_FACTOR					=		(TrackHalfLength * 2 / POSITION_ENCODER_RANGE);
+
+const float DEAD_ZONE_VERTICAL_WARN_DEG				=		20.0f;

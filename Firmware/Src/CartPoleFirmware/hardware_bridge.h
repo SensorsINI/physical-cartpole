@@ -111,6 +111,7 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 #define Buttons_And_Switches_Init		Buttons_And_Switches_Init
 #define BUTTON_1						KEY_5
 #define BUTTON_2						KEY_X  // Not implemented yet
+#define BUTTON_3						KEY_X  // PL buttons are Zybo-only
 #define Button_SetAction				Button_SetAction
 
 #include "STM/neural_imitator.h"  // Currently not implemented - just making the code compatible with Zynq
@@ -182,6 +183,7 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 #define Buttons_And_Switches_Init		Buttons_And_Switches_Init
 #define BUTTON_1						PS_BTN_4
 #define BUTTON_2						PS_BTN_5
+#define BUTTON_3						PL_BTN_0  /* Zybo PL BTN0, not a third PS button */
 #define Button_SetAction				Button_SetAction
 
 

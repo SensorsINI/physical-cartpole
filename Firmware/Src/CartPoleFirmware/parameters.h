@@ -45,4 +45,7 @@ extern const int MOTOR_FULL_SCALE_SAFE;
 
 extern bool USE_TARGET_SWITCHES;
 
+/* Warn when the pot dead zone (ADC wrap) is this close to vertical up or down. */
+extern const float DEAD_ZONE_VERTICAL_WARN_DEG;
+
 #endif /* PARAMETERS_H_ */

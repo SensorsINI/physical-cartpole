@@ -107,5 +107,26 @@
 /* DiffLogic is available if its DMA interface is present */
 #define HW_HAS_DIFFLG                   HW_HAS_DIFFLG_DMA
 
+/* ========================================================================
+ * Zybo PL pushbuttons (BTN0-BTN3)
+ *
+ * Present only after the Vitis platform is refreshed from an XSA that
+ * contains PL_BUTTONS_GPIO. Do not MMIO-probe a hardcoded address: on an
+ * older bitstream that slave is missing and the CPU data-aborts.
+ * Expected fabric IRQ after UART / UARTLITE / EQUILIBRIUM concat is 64.
+ * ======================================================================== */
+
+#if defined(XPAR_PL_BUTTONS_GPIO_DEVICE_ID) && defined(XPAR_FABRIC_PL_BUTTONS_GPIO_IP2INTC_IRPT_INTR)
+    #define HW_PL_BUTTONS_GPIO_DEVICE_ID    XPAR_PL_BUTTONS_GPIO_DEVICE_ID
+    #define HW_PL_BUTTONS_IRQ               XPAR_FABRIC_PL_BUTTONS_GPIO_IP2INTC_IRPT_INTR
+    #define HW_HAS_PL_BUTTONS               1
+#elif defined(XPAR_PL_BUTTONS_GPIO_DEVICE_ID) && defined(XPAR_PL_BUTTONS_GPIO_IP2INTC_IRPT_INTR)
+    #define HW_PL_BUTTONS_GPIO_DEVICE_ID    XPAR_PL_BUTTONS_GPIO_DEVICE_ID
+    #define HW_PL_BUTTONS_IRQ               XPAR_PL_BUTTONS_GPIO_IP2INTC_IRPT_INTR
+    #define HW_HAS_PL_BUTTONS               1
+#else
+    #define HW_HAS_PL_BUTTONS               0
+#endif
+
 #endif /* HW_PLATFORM_CONFIG_H */
 

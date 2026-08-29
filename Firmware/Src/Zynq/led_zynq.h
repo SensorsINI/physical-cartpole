@@ -14,6 +14,7 @@ extern XGpio GpioRGB;
 void Led_Init(void);
 void Led_Switch(bool en);
 void Leds_over_switches_Update(u32 leds_state);
-void indicate_target_position_with_leds(float* target_position);
+void Led_RgbConfirmFlash(void);
+void indicate_target_position_with_leds(float* target_position, bool dead_zone_warning);
 
 #endif /*__LED_ZYNQ_H_*/
