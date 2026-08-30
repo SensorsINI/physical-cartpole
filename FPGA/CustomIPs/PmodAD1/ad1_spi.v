@@ -27,10 +27,10 @@ module ad1_spi (
     dout1
 );
 
-    parameter CLOCKS_PER_BIT = 20;//1 bit per 200ns
-    parameter CLOCKS_BEFORE_DATA = 60;//600ns
-    parameter CLOCKS_AFTER_DATA = 500;//5us
-    parameter CLOCKS_BETWEEN_TRANSACTIONS = 400;//4us
+    parameter CLOCKS_PER_BIT = 40;//1 bit per 400ns @ 100 MHz
+    parameter CLOCKS_BEFORE_DATA = 120;//1.2us
+    parameter CLOCKS_AFTER_DATA = 1000;//10us
+    parameter CLOCKS_BETWEEN_TRANSACTIONS = 800;//8us
     localparam BITS_PER_TRANSACTION = 16;
     localparam BIT_HALFWAY_CLOCK = CLOCKS_PER_BIT>>1;
 

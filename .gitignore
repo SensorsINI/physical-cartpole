@@ -39,7 +39,14 @@ Driver/SI_Toolkit_ASF/Experiments/*
 !/FPGA/VivadoProjects/swap_nn_and_build.sh
 !/FPGA/VivadoProjects/build_and_export_xsa.tcl
 !/FPGA/VivadoProjects/add_pl_buttons_and_build.tcl
+!/FPGA/VivadoProjects/set_pmodad1_timing_and_build.tcl
 !/FPGA/VivadoProjects/board_files/
+
+# Slider calibration CSVs/PNGs (global *.csv / *.png would drop them)
+!/tools/slider_pmod/data/
+!/tools/slider_pmod/data/**
+!/tools/slider_pmod/data/**/*.csv
+!/tools/slider_pmod/data/**/*.png
 
 # Vitis HLS build artifacts
 /FPGA/CustomIPs/**/csim/

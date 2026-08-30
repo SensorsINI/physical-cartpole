@@ -642,7 +642,8 @@ void CONTROL_BackgroundTask(void)
 
 #ifdef ZYNQ
 #ifdef USE_EXTERNAL_INTERFACE
-	target_position = get_normed_slider_state()*2*position_jumps_target;
+	/* JB slider: left +TrackHalfLength, visual centre 0, right −TrackHalfLength. */
+	target_position = get_normed_slider_state() * TrackHalfLength;
 
 	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
 	if (target_equilibrium_from_external_button != 0){

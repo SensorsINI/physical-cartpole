@@ -1062,6 +1062,14 @@ proc create_hier_cell_CartPoleInterface { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+  # Must be set on the BD cell. Verilog defaults alone are not enough: the
+  # generated wrapper/XCI latches 20/60/500/400 and that bitstream breaks SPI.
+  set_property -dict [ list \
+   CONFIG.AD1_CLOCKS_AFTER_DATA {1000} \
+   CONFIG.AD1_CLOCKS_BEFORE_DATA {120} \
+   CONFIG.AD1_CLOCKS_BETWEEN_TRANSACTIONS {800} \
+   CONFIG.AD1_CLOCKS_PER_BIT {40} \
+ ] $PmodAD1
   
   # Create instance: RGB_LED_GPIO, and set properties
   set RGB_LED_GPIO [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 RGB_LED_GPIO ]

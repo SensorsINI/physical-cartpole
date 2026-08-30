@@ -26,6 +26,7 @@ and tools for [system identification with neural networks](https://github.com/Se
   * Control from Zybo Z7-20: PID and FPGA-accelerated neural controller
     
   All controllers can stabilize the pole in the upright position and follow target position.
+  On Zybo, a Pmod slider on **JB** can set that target in `CartPoleFirmware` (see [tools/slider_pmod](tools/slider_pmod/README.md)).
 MPC and neural controller can also swing-up the pole.
 * Template with examples for programing experiment sequence for automated data collection.
 * Auxiliary functions allowing easier calibration of the robot, motor safety cut off, and more.
@@ -146,7 +147,13 @@ the 20 uF capacitor filtering potentiometer input
  and connection shorting pin 9 to ground (the last one just because haw we placed the circuits).
 The remaining resistors and capacitor are hidden under heat shrink tube.
 
+#### Target-position slider (JB)
 
+On Zybo, a Pmod slider on **JB** (PmodAD1) sets `target_position` in `CartPoleFirmware` when `USE_EXTERNAL_INTERFACE` is on. Firmware maps ADC affinely between the parked rails (electrical mid is 0); the ends are ±`TrackHalfLength`.
+
+PmodAD1 must be built with SPI counts **40/120/1000/800** at 100 MHz. Calibration, programming, and the check script: [tools/slider_pmod/README.md](tools/slider_pmod/README.md).
+
+While that flag is on, the physical slider overwrites a PC target command every cycle. Close the GUI before running the UART check (230400, Digilent interface 1).
 
 ## Set up and installation
 
@@ -435,6 +442,7 @@ platform refreshed from that XSA (`xparameters.h` must list `PL_BUTTONS_GPIO`):
   is too close to vertical — adjust the screw and press BTN0 again. Cyan means a centered cart target.
 * **BTN4** toggles on-chip control; **BTN5** / **K** start track (cart) calibration only.
   They never change the hanging angle.
+* The JB Pmod slider sets cart `target_position` (green / blue RGB = sign). See [tools/slider_pmod](tools/slider_pmod/README.md).
 * A PC connect overwrites hanging from `globals.py` once, unless BTN0 already ran
   this boot. The driver prints `Chip ANGLE_HANGING`. `b` still forces a new hanging
   onto the chip (RAM only).

@@ -73,6 +73,14 @@ u32 get_external_button_state(){
 
 
 #define AD1_DATA_MASK 0xFFF
+/* Affine: left rail −1, electrical mid (LEFT+RIGHT)/2 → 0, right rail +1.
+ * Keep SLIDER_ADC_LEFT/RIGHT identical to tools/slider_pmod/slider_curve.py.
+ *
+ * Measured 2026-09-01: new slider parks saturate the 12-bit PmodAD1
+ * (short wiring, not the old 10 kΩ+2 kΩ guess). */
+#define SLIDER_ADC_LEFT 0.0f
+#define SLIDER_ADC_RIGHT 4095.0f
+
 u32 slider_value = 2048;
 u32 get_slider_state(){
 #ifdef XPAR_PMODAD1_BASEADDR
@@ -86,9 +94,23 @@ u32 get_slider_state(){
 
 }
 
-float get_normed_slider_state(){
-	float normed_slider_state = get_slider_state();
-	normed_slider_state = -1.0*((normed_slider_state/2048.0)-1.0);
-	return normed_slider_state;
+static float slider_clampf(float x, float lo, float hi)
+{
+	if (x < lo) {
+		return lo;
+	}
+	if (x > hi) {
+		return hi;
+	}
+	return x;
 }
+
+float get_normed_slider_state(){
+	/* Left rail −1, (LEFT+RIGHT)/2 → 0, right rail +1. */
+	float adc = (float)get_slider_state();
+	float from_left = (adc - SLIDER_ADC_LEFT) / (SLIDER_ADC_RIGHT - SLIDER_ADC_LEFT);
+	from_left = slider_clampf(from_left, 0.0f, 1.0f);
+	return 2.0f * from_left - 1.0f;
+}
+
 

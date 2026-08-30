@@ -4,10 +4,12 @@
 	module PmodAD1_AXI #
 	(
 		// Users to add parameters here
-        parameter AD1_CLOCKS_PER_BIT = 20,//1 bit per 200ns
-        parameter AD1_CLOCKS_BEFORE_DATA = 60,//600ns
-        parameter AD1_CLOCKS_AFTER_DATA = 500,//5us
-        parameter AD1_CLOCKS_BETWEEN_TRANSACTIONS = 400,//4us
+        // 100 MHz AXI clock: 40 cycles = 400 ns/bit, same pin timing as 20 @ 50 MHz.
+        // Counts of 20 @ 100 MHz break AD7476 framing (0x3000/0x31FF).
+        parameter AD1_CLOCKS_PER_BIT = 40,//1 bit per 400ns
+        parameter AD1_CLOCKS_BEFORE_DATA = 120,//1.2us
+        parameter AD1_CLOCKS_AFTER_DATA = 1000,//10us
+        parameter AD1_CLOCKS_BETWEEN_TRANSACTIONS = 800,//8us
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
