@@ -39,7 +39,7 @@ from globals import (
     HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
     ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
-    ANGLE_HANGING, ANGLE_HANGING_DEFAULT, ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL,
+    ANGLE_HANGING, ANGLE_HANGING_DEFAULT,
     angle_deviation_update,
     POSITION_ENCODER_RANGE, POSITION_NORMALIZATION_FACTOR,
     MOTOR, MOTOR_CORRECTION, CORRECT_MOTOR_DYNAMICS,
@@ -636,17 +636,15 @@ class PhysicalCartPoleDriver:
         self.apply_calibration_result()
 
     def apply_calibration_result(self):
-        global MOTOR, MOTOR_CORRECTION, ANGLE_DEVIATION, ANGLE_HANGING
+        global MOTOR, MOTOR_CORRECTION
 
         if self.InterfaceInstance.encoderDirection == 1:
             MOTOR = 'POLOLU'
             MOTOR_CORRECTION = MOTOR_CORRECTION_POLOLU
-            detected_motor_angle_hanging = ANGLE_HANGING_POLOLU
 
         elif self.InterfaceInstance.encoderDirection == -1:
             MOTOR = 'ORIGINAL'
             MOTOR_CORRECTION = MOTOR_CORRECTION_ORIGINAL
-            detected_motor_angle_hanging = ANGLE_HANGING_ORIGINAL
         elif self.InterfaceInstance.encoderDirection == 0:
             raise RuntimeError(
                 'Firmware calibration failed: reverse movement was not detected or the cart did not reach center. '
@@ -657,10 +655,6 @@ class PhysicalCartPoleDriver:
                 f'Unexpected value for self.InterfaceInstance.encoderDirection = {self.InterfaceInstance.encoderDirection}'
             )
 
-        if ANGLE_HANGING_DEFAULT:
-            ANGLE_HANGING = detected_motor_angle_hanging
-            ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
-
         print("Done calibrating")
         print('Detected motor: {}'.format(MOTOR))
 
@@ -669,18 +663,17 @@ class PhysicalCartPoleDriver:
                                                   angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
                                                   correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
                                                   timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
-        self._sync_hanging_from_chip()
 
     def _sync_hanging_from_chip(self):
-        """Read chip ANGLE_HANGING. If BTN0/QSPI (or `b`) locked it, adopt it for this
-        session only — globals.py is not written."""
+        """After the first connect, adopt chip hanging only if BTN0 (or `b`) locked it
+        this boot. Otherwise the chip already has the globals.py value just sent."""
         global ANGLE_HANGING, ANGLE_DEVIATION
 
         (_period, _sync, chip_hanging, _avg, _motor, _steps,
          hanging_on_chip) = self.InterfaceInstance.get_config_control()
         chip_hanging = float(chip_hanging)
         if hanging_on_chip:
-            print('Chip ANGLE_HANGING: {:.3f} ADC (locked on chip from BTN0/QSPI or `b`; '
+            print('Chip ANGLE_HANGING: {:.3f} ADC (BTN0 this boot or `b`; '
                   'globals.py not applied)'.format(chip_hanging))
             ANGLE_HANGING = chip_hanging
             ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
@@ -688,7 +681,7 @@ class PhysicalCartPoleDriver:
                   '(globals.py file unchanged).')
             print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
         else:
-            print('Chip ANGLE_HANGING: {:.3f} ADC (from this PC session / firmware default)'.format(
+            print('Chip ANGLE_HANGING: {:.3f} ADC (globals.py applied once this connect)'.format(
                 chip_hanging))
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration

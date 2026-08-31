@@ -51,6 +51,7 @@ float  			ANGLE_DEVIATION;
 
 volatile bool	HardwareConfigSetFromPC;
 volatile bool	AngleHangingSetOnChip;
+static bool		PcHangingApplied = false;
 volatile bool 	ControlOnChip_Enabled;
 volatile bool	PCControl_Enabled;
 
@@ -157,19 +158,11 @@ void CONTROL_Init(void)
     	ANGLE_HANGING = ANGLE_HANGING_POLOLU;
     }
 
-#ifdef ZYNQ
-	{
-		float hanging_qspi;
-		if (QspiNv_LoadHanging(&hanging_qspi) == 0
-		    && hanging_qspi >= 0.0f
-		    && hanging_qspi < ANGLE_360_DEG_IN_ADC_UNITS) {
-			ANGLE_HANGING = hanging_qspi;
-			AngleHangingSetOnChip = true;
-			xil_printf("QSPI hanging millicounts: %d\r\n",
-				   hanging_millicounts(ANGLE_HANGING));
-		}
-	}
-#endif
+	/* Compile-time default only. Do not load QSPI here: a stored hanging would
+	 * lock the chip before the PC can apply globals.py. BTN0 this boot still
+	 * locks; QSPI is written on BTN0 for optional later use. */
+	AngleHangingSetOnChip = false;
+	PcHangingApplied = false;
 
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 
@@ -1012,12 +1005,8 @@ void CONTROL_CalibrationStep(void)
 		Motor_Stop();
 		motor_command = 0;
 
-		if(!HardwareConfigSetFromPC && !AngleHangingSetOnChip && !calibrationFailed)
-		{
+		if (!calibrationFailed) {
 			MOTOR = calibrationEncoderDirection==1 ? MOTOR_POLOLU : MOTOR_ORIGINAL;
-			ANGLE_HANGING = MOTOR==MOTOR_POLOLU ? ANGLE_HANGING_POLOLU : ANGLE_HANGING_ORIGINAL;
-
-			ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 		}
 
 		prepare_message_to_PC_calibration(buffer, calibrationFailed ? 0 : calibrationEncoderDirection);
@@ -1093,16 +1082,19 @@ void cmd_PCControlMode(bool en)
 void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 {
 	bool force_angle_hanging = (pktLen >= 17) && (config[12] != 0);
-	bool keep_on_chip_hanging = AngleHangingSetOnChip && !force_angle_hanging;
+	bool btn0_this_boot = AngleHangingSetOnChip && !force_angle_hanging;
+	bool apply_hanging = force_angle_hanging || (!btn0_this_boot && !PcHangingApplied);
 
 	disable_irq();
 
 	POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
     CONTROL_SYNC			= *((bool	        *)&config[2]);
-	if (!keep_on_chip_hanging) {
+	if (apply_hanging) {
 		ANGLE_HANGING = *((float *)&config[3]);
 		if (force_angle_hanging) {
 			AngleHangingSetOnChip = true;
+		} else {
+			PcHangingApplied = true;
 		}
 	}
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
@@ -1118,11 +1110,14 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 	enable_irq();
 
 #ifdef ZYNQ
-	if (keep_on_chip_hanging) {
-		xil_printf("PC ANGLE_HANGING ignored (BTN0/QSPI); millicounts: %d\r\n",
+	if (btn0_this_boot) {
+		xil_printf("PC ANGLE_HANGING ignored (BTN0 this boot); millicounts: %d\r\n",
 			   hanging_millicounts(ANGLE_HANGING));
 	} else if (force_angle_hanging) {
 		xil_printf("PC forced ANGLE_HANGING millicounts: %d\r\n",
+			   hanging_millicounts(ANGLE_HANGING));
+	} else if (apply_hanging) {
+		xil_printf("PC ANGLE_HANGING applied once from globals; millicounts: %d\r\n",
 			   hanging_millicounts(ANGLE_HANGING));
 	}
 #endif

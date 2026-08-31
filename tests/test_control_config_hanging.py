@@ -45,3 +45,10 @@ def test_btn0_hanging_capture_is_averaged_not_single_sample():
     assert "#define HANGING_CAPTURE_SAMPLES 50" in src
     assert "#define HANGING_CAPTURE_SKIP_TICKS 4" in src
     assert "hanging_capture_sum / (float)hanging_capture_count" in src
+
+
+def test_boot_uses_compile_default_not_qspi_lock():
+    src = CONTROL_C.read_text()
+    assert "QspiNv_LoadHanging" not in src
+    assert "PcHangingApplied" in src
+    assert "BTN0 this boot" in src

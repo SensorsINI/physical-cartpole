@@ -348,13 +348,13 @@ potentiometer dead zone (ADC wrap) within 20° of vertical up or down —
 rotate the screw further toward horizontal and press BTN0 again until the warning stops.
 Turning the screw alone does not update the LEDs until you recapture hanging.
 Cart-centered target indication is **cyan** so it is not confused with that red warning.
-If the chip already has a hanging from **BTN0** or QSPI, a later PC connect still pushes
-period / filter / motor-dynamics from `globals.py`, but **does not overwrite** that hanging.
-The driver reads it back (`CMD_GET_CONTROL_CONFIG`) and prints `Chip ANGLE_HANGING` in the
-terminal; the Python session uses that value. `globals.py` on disk is not written.
-Use `b` when the PC should recapture hanging and push it to the chip (RAM only, not QSPI).
-To persist a PC-side hanging across reboot you still copy it into `ANGLE_HANGING_*` in
-`globals.py` / `parameters.c` (or recapture with BTN0 so QSPI stores it).
+At reset the chip uses the compile-time hanging in `parameters.c`. The first PC
+connect overwrites that once with `globals.py`, unless **BTN0** was pressed after
+this boot and before the driver connected. Later `CMD_SET_CONTROL_CONFIG` packets
+(including after **K** / BTN5) do not change hanging. `b` still forces a new
+hanging onto the chip (RAM; BTN0 also writes QSPI). `globals.py` on disk is not
+written. To persist a hanging across reboot, copy it into `ANGLE_HANGING_*` in
+`globals.py` / `parameters.c`.
 
 BTN1–BTN3 are wired in the bitstream and can be assigned in firmware with `Button_SetAction(PL_BTN_n, ...)`
 without another FPGA build. BTN4 toggles on-chip control; BTN5 starts track calibration.
@@ -382,10 +382,10 @@ In firmware in parameters.c in ANGLE_360_DEG_IN_ADC_UNITS.
 To get a rough estimation you can let the pole hang down and note the angle reading.
 To get more precise measurement press `b` (PC) or **BTN0** on the Zybo (no PC).
 BTN0 averages 50 still, wrap-aware ADC samples (after skipping 4 ticks); `b` averages 1000 streamed samples.
-Fill it in ANGLE_HANGING_ORIGINAL or ANGLE_HANGING_POLOLU in globals.py if you want
-that default when the chip has **not** locked a BTN0/QSPI hanging. A chip lock is kept on connect
-and printed as `Chip ANGLE_HANGING`. On Zybo, **BTN0 also writes QSPI**, so a
-standalone reboot keeps the captured hanging without editing C or Python.
+Fill it in ANGLE_HANGING_ORIGINAL or ANGLE_HANGING_POLOLU in globals.py (and
+`parameters.c` for standalone). The first driver connect applies that globals
+value unless BTN0 already ran this boot. A BTN0 lock is printed as
+`Chip ANGLE_HANGING`. **K** / BTN5 only calibrate cart position.
 Rerun the cartpole software and very gently balance the pole up
 and make sure that the angle reading is oscillating around 0.
 If it is not (probably it is not),
@@ -428,12 +428,16 @@ platform refreshed from that XSA (`xparameters.h` must list `PL_BUTTONS_GPIO`):
 * Hang the pole down and press **BTN0** to recapture `ANGLE_HANGING`. RGB flash white to confirm.
   Firmware prints millicounts on UART, then writes QSPI (`QSPI hanging saved millicounts`).
   BTN0 is ignored while on-chip control or track calibration is running.
-* After reset, firmware loads that hanging from QSPI if the record is valid
-  (`QSPI hanging millicounts`). Compile-time `parameters.c` is the fallback.
+* After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
+  applied at boot). Press BTN0 again after reboot if you want that capture
+  without a PC.
 * If the RGB LEDs alternate red, the potentiometer dead zone (from the *stored* hanging ADC)
   is too close to vertical — adjust the screw and press BTN0 again. Cyan means a centered cart target.
-* **BTN4** toggles on-chip control; **BTN5** starts track (cart) calibration. Track calibration does not overwrite a hanging angle set with BTN0 or loaded from QSPI.
-* A PC connect does **not** overwrite a BTN0/QSPI hanging from `globals.py`. The driver prints the chip value and uses it for the session. `b` still forces a new hanging onto the chip (RAM only).
+* **BTN4** toggles on-chip control; **BTN5** / **K** start track (cart) calibration only.
+  They never change the hanging angle.
+* A PC connect overwrites hanging from `globals.py` once, unless BTN0 already ran
+  this boot. The driver prints `Chip ANGLE_HANGING`. `b` still forces a new hanging
+  onto the chip (RAM only).
 
 #### QSPI boot (no SD card, no PC at power-up)
 
