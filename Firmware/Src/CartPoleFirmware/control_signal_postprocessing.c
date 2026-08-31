@@ -7,8 +7,12 @@
 
 #include "hardware_bridge.h"
 #include "parameters.h"
+#include <math.h>
 
 int control_signal_to_motor_command(float Q, float positionD, bool correct_motor_dynamics) {
+	if (!isfinite(Q) || !isfinite(positionD)) {
+		return 0;
+	}
 	float actualMotorCmd_float = Q;
     int actualMotorCmd = 0;
 
@@ -25,6 +29,9 @@ int control_signal_to_motor_command(float Q, float positionD, bool correct_motor
     }
 
     actualMotorCmd_float = actualMotorCmd_float * (float)MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
+    if (!isfinite(actualMotorCmd_float)) {
+		return 0;
+    }
 
     actualMotorCmd = (int)actualMotorCmd_float;
 

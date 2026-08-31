@@ -3,11 +3,21 @@
 #ifdef ZYNQ
 #include "Zynq/qspi_nvparams.h"
 #endif
+#ifdef RPGD_ON_TARGET_TEST
+#include "rpgd_on_target_test.h"
+#endif
 
 
 int main(void)
 {
 	General_Init();
+#ifdef RPGD_ON_TARGET_TEST
+	Motor_Init();
+	Motor_Stop();
+	PC_Connection_Init();
+	rpgd_on_target_test_run();
+	for (;;) { }
+#else
 	PC_Connection_Init();
 #ifdef ZYNQ
 	QspiNv_Init();
@@ -36,4 +46,5 @@ int main(void)
 	{
 		CONTROL_BackgroundTask();
 	}
+#endif
 }

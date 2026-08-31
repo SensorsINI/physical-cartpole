@@ -12,8 +12,8 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
 USE_EXTERNAL_INTERFACE = True
-CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
-USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development
+CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
+USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development Zybo
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
 # on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
 # older firmware is never poked with an unknown 0xD3 command.
@@ -32,7 +32,7 @@ def should_push_chip_secloc_config(use_secloc=None, use_chip_secloc=None):
     return bool(use_secloc or use_chip_secloc)
 
 
-OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
+OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
 ##### Hardware (FPGA) angle filter #####
 # The recovered June quant LSTM was trained and verified with median-63.
@@ -53,7 +53,7 @@ HARDWARE_ANGLE_FILTER_MODE = 1  # median
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
 # Main-thread compute inherits this process mask (io-main-split architecture).
-CONTROL_CPU_AFFINITY = "2"  # "2" for rpgd (TF); "" for rpgd-c (OpenMP on main)
+CONTROL_CPU_AFFINITY = ""  # "" for rpgd-c (OpenMP); "2" for TF rpgd
 
 # Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
 # pins itself here via per-thread affinity. Full separation from compute requires
@@ -105,7 +105,17 @@ if CONTROLLER_APPLY_WINDOW_MS % POLLING_PERIOD_MS != 0:
         f"(got {CONTROLLER_APPLY_WINDOW_MS} ms and {POLLING_PERIOD_MS} ms)."
     )
 
-TIMESTEPS_FOR_DERIVATIVE = int(os.environ.get("CPP_DERIVATIVE_TIMESTEPS", "2"))
+# Working rpgd-c (dca3cbe6) used a 20 ms derivative window: 1 step at 20 ms, or 4 steps
+# when SecLoc polls at 5 ms. Keep the env override for experiments.
+if "CPP_DERIVATIVE_TIMESTEPS" in os.environ:
+    _derivative_default = os.environ["CPP_DERIVATIVE_TIMESTEPS"]
+elif USE_SECLOC and POLLING_PERIOD_MS == 5:
+    _derivative_default = "4"
+elif CONTROLLER_NAME == "mpc":
+    _derivative_default = "1"
+else:
+    _derivative_default = "2"
+TIMESTEPS_FOR_DERIVATIVE = int(_derivative_default)
 if not 1 <= TIMESTEPS_FOR_DERIVATIVE <= 20:
     raise ValueError("CPP_DERIVATIVE_TIMESTEPS must be between 1 and 20")
 
@@ -143,7 +153,7 @@ elif CHIP == 'ZYNQ':
     if not 0.0 < LSTM_MOTOR_GAIN < 0.95:
         raise ValueError("LSTM_MOTOR_GAIN must be between 0 and 0.95")
     MOTOR_CORRECTION_POLOLU_LSTM_QUANT = (0.5733488, 0.0257380, 0.0258429)
-    MOTOR_CORRECTION_POLOLU_RPGD = (0.6216901, 0.0750750, 0.0549491)
+    MOTOR_CORRECTION_POLOLU_RPGD = (0.5116974, 0.0178784, 0.0280385)
     MOTOR_CORRECTION_POLOLU = (
         MOTOR_CORRECTION_POLOLU_LSTM_QUANT
         if CONTROLLER_NAME == 'neural-imitator'

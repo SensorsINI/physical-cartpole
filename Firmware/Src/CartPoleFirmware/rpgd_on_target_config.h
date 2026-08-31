@@ -1,0 +1,8 @@
+#ifndef RPGD_ON_TARGET_CONFIG_H
+#define RPGD_ON_TARGET_CONFIG_H
+
+#define RPGD_TEST_WARMUP_ITERS     3
+#define RPGD_TEST_STEADY_ITERS     30
+#define RPGD_TEST_PARITY_STEPS     3
+
+#endif

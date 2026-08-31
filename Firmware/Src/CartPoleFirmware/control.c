@@ -20,6 +20,9 @@
 #include "secloc_controller.h"
 #include "secloc_controller_pl.h"
 #include "secloc_lqr.h"
+#ifdef ZYNQ
+#include "rpgd_controller.h"
+#endif
 
 
 #define OnChipController_PID 0
@@ -30,13 +33,15 @@
 #define OnChipController_SECLOC 5
 #define OnChipController_SECLOC_LQR 6
 #define OnChipController_neural_controller_LSTM_C 7
+#ifdef ZYNQ
+#define OnChipController_RPGD 8
+#endif
 
 /* Boot on-chip controller when the chip runs standalone (edit here). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_LQR
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test. */
 #define ON_CHIP_CONTROLLER_DRY_RUN 0
-
 
 // The 3 variables below only matter on Zynq
 #define	CONTROLLERS_SWITCH_NUMBER		0
@@ -49,7 +54,7 @@ bool correct_motor_dynamics = true;
 
 
 bool            streamEnable        = false;
-bool 			interrupt_occurred	= false;
+volatile bool	interrupt_occurred	= false;
 
 float			ANGLE_HANGING;
 float  			ANGLE_DEVIATION;
@@ -527,6 +532,26 @@ void CONTROL_BackgroundTask(void)
 	                Q = CB_Eval(&g_cb);
 	                break;
 	            }
+#ifdef ZYNQ
+	            case OnChipController_RPGD:
+	            {
+	                const unsigned long rpgd_start_us = GetTimeNow();
+	                CB_RebindOnChange(&g_cb, &RPGD_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                const unsigned long rpgd_elapsed_us = GetTimeNow() - rpgd_start_us;
+	                const int rpgd_status = rpgd_controller_last_status();
+	                if (!isfinite(Q) || rpgd_status != 0) {
+	                    rpgd_controller_latch_fault(rpgd_status != 0 ? rpgd_status : -1);
+	                    Q = 0.0f;
+	                    Motor_Stop();
+	                } else if (rpgd_elapsed_us >= (unsigned long)POLLING_PERIOD_MS * 1000ul) {
+	                    rpgd_controller_latch_fault(RPGD_CONTROLLER_STATUS_DEADLINE_MISSED);
+	                    Q = 0.0f;
+	                    Motor_Stop();
+	                }
+	                break;
+	            }
+#endif
 				default:
 				{
 					Q = 0.0;
@@ -635,8 +660,6 @@ void CONTROL_BackgroundTask(void)
 			ledState 		= !ledState;
 			Led_Switch(ledState);
 		}
-
-		interrupt_occurred = false;
 
 	}
 

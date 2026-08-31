@@ -25,6 +25,8 @@
 // Needs the cartpole bitstream with PmodAD1 counts 40/120/1000/800.
 #define USE_EXTERNAL_INTERFACE
 
+/* Opt-in Zynq PS RPGD timing/parity harness. Leave undefined for normal control. */
+/* #define RPGD_ON_TARGET_TEST */
 
 
 
@@ -165,6 +167,7 @@ extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define Interruput_Init()   	TIMER1_Init(POLLING_PERIOD_MS)
 #define GetTimeNow				TIMER1_getSystemTime_Us  // OK
+#define GetTimeNowHighRes		TIMER1_getSystemTime_Cycles
 #define Interrupt_Set    		Interrupt_Set
 #define Interrupt_Unset()	    Interrupt_Set(0)
 #define	SetControlUpdatePeriod  SetControlUpdatePeriod
