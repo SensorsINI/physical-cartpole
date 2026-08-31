@@ -7,7 +7,7 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short POLLING_PERIOD_MS				=		8;
+unsigned short POLLING_PERIOD_MS				=		10;
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
@@ -62,7 +62,8 @@ const float POSITION_ENCODER_RANGE					=		4649;
 
 #else  // ZYBO_Z720
 
-float MOTOR_CORRECTION[3] 							=		{0.5116974, 0.0178784, 0.0280385}; // Pololu; force-fit on committed CPP_step_response.csv (u_max=2.62N, mass=0.317kg). Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
+// Matches the physical recordings used to train Long/quant/LSTM-7IN-64H1-64H2-1OUT-0.
+float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 
 float ANGLE_HANGING_POLOLU 							=		1014;  // Live hanging ADC 2026-08-31; must match Driver/globals.py ZYNQ
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point

@@ -32,6 +32,9 @@ typedef struct {
 /* One-time init; safe to call again. */
 void CB_Init(ControllerBinding* cb);
 
+/* Release the active controller and force init on the next bind/evaluation. */
+void CB_Reset(ControllerBinding* cb);
+
 /* (Re)bind when desired controller changes. Also calls release/init appropriately. */
 void CB_RebindOnChange(ControllerBinding* cb,
                        const ControllerOps* desired_ops,

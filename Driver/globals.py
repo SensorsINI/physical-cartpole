@@ -10,7 +10,7 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # Must match Firmware/Src/CartPoleFirmware/hardware_bridge.h. When True the JB
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
-USE_EXTERNAL_INTERFACE = True
+USE_EXTERNAL_INTERFACE = False
 CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
@@ -34,11 +34,11 @@ def should_push_chip_secloc_config(use_secloc=None, use_chip_secloc=None):
 OPTIMIZER_NAME = 'rpgd'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
 
 ##### Hardware (FPGA) angle filter #####
-# When False, leave the firmware boot default. Set True to override at startup.
-HARDWARE_ANGLE_FILTER_OVERRIDE = False
+# The recovered June quant LSTM was trained and verified with median-63.
+HARDWARE_ANGLE_FILTER_OVERRIDE = True
 HARDWARE_ANGLE_FILTER_WINDOW = 63
-HARDWARE_ANGLE_FILTER_TRIM = 7
-HARDWARE_ANGLE_FILTER_MODE = 2  # trimmed mean (only used when OVERRIDE is True)
+HARDWARE_ANGLE_FILTER_TRIM = 0  # unused in median mode
+HARDWARE_ANGLE_FILTER_MODE = 1  # median
 
 ##### Real-time CPU pinning #####
 # CPU core(s) the control process is pinned to for time-predictable single-step
@@ -132,16 +132,15 @@ elif CHIP == 'ZYNQ' and ZYNQ_BOARD == 'ZEDBOARD':
 elif CHIP == 'ZYNQ':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 10000  # STM value is the default, we make it match concerning Zybo PL clock
     MOTOR_CORRECTION_ORIGINAL = (0.63855139, 0.11653139, 0.11653139)
-    # NOTE: MOTOR_CORRECTION is controller-dependent here on purpose, selected by CONTROLLER_NAME.
-    #   - MLP (neural-imitator) checkpoint uses the force-fit value matching its
-    #     u_max_target=2.62 N training scale.
-    #   - RPGD (mpc) is tuned around a deliberately under-stated model u_max (1.77 N in
-    #     cartpole_physical_parameters.yml) and needs the larger physical authority + stiction
-    #     compensation of the known-good RPGD-era value (commit 801c9b6d).
-    MOTOR_CORRECTION_POLOLU_MLP = (0.5116974, 0.0178784, 0.0280385)   # force-fit, neural-imitator
-    MOTOR_CORRECTION_POLOLU_RPGD = (0.6216901, 0.0750750, 0.0549491)  # known-good RPGD-era
+    # NOTE: MOTOR_CORRECTION is controller-dependent here on purpose.
+    # The active quant LSTM must use the map from its May 2025 physical training
+    # recordings: Q=-1 while moving left produced command -5991.
+    MOTOR_CORRECTION_POLOLU_MLP = (0.5116974, 0.0178784, 0.0280385)   # force-fit, Dense-8
+    MOTOR_CORRECTION_POLOLU_LSTM_QUANT = (0.5733488, 0.0257380, 0.0258429)
+    MOTOR_CORRECTION_POLOLU_RPGD = (0.6216901, 0.0750750, 0.0549491)
     MOTOR_CORRECTION_POLOLU = (
-        MOTOR_CORRECTION_POLOLU_MLP if CONTROLLER_NAME == 'neural-imitator'
+        MOTOR_CORRECTION_POLOLU_LSTM_QUANT
+        if CONTROLLER_NAME == 'neural-imitator'
         else MOTOR_CORRECTION_POLOLU_RPGD
     )
     ANGLE_360_DEG_IN_ADC_UNITS = 4066.88  # 2*(upright 3047.44 − hanging 1014); must match firmware wrapLocal

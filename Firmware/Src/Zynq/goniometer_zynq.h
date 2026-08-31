@@ -16,14 +16,11 @@
 #define HARDWARE_FILTER_MODE_MEDIAN 1
 #define HARDWARE_FILTER_MODE_TRIMMED_MEAN 2
 
-// Boot default chosen from the 2026-07-08 hardware campaign (see
-// Boot default (chosen from hardware campaign): trimmed mean 63/7 gives ~0.16 LSB
-// static noise (vs 0.18 median) and ~5x smoother derivatives during motion,
-// while trimming 7 samples per side keeps median-grade glitch rejection.
-// Dead-zone transitions are covered by the dz_* tracking registers.
+// The recovered June quant LSTM was trained and physically verified with
+// the 63-sample median. Keep this as the standalone on-chip boot default.
 #define HARDWARE_FILTER_WINDOW_SIZE 63
-#define HARDWARE_FILTER_TRIM_COUNT 7
-#define HARDWARE_FILTER_MODE_DEFAULT HARDWARE_FILTER_MODE_TRIMMED_MEAN
+#define HARDWARE_FILTER_TRIM_COUNT 0
+#define HARDWARE_FILTER_MODE_DEFAULT HARDWARE_FILTER_MODE_MEDIAN
 
 // Dead-zone (rail) detection thresholds, 16-bit filter domain (12-bit code x16).
 // A raw sample <= LOW or >= HIGH means the wiper is at/near a track end, i.e.

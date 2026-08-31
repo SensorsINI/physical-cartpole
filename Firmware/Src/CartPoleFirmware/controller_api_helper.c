@@ -22,6 +22,12 @@ void CB_Init(ControllerBinding* cb)
     for (uint8_t i = 0; i < CB_MAX_INPUTS; ++i) cb->in_ptrs[i] = &cb->zero;
 }
 
+void CB_Reset(ControllerBinding* cb)
+{
+    if (cb->ops_last && cb->ops_last->release) cb->ops_last->release();
+    CB_Init(cb);
+}
+
 void CB_RebindOnChange(ControllerBinding* cb,
                        const ControllerOps* desired_ops,
                        const SignalEntry* table, uint8_t table_len)

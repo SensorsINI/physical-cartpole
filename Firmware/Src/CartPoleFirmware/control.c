@@ -15,6 +15,7 @@
 #include "offline_data_manager.h"
 #include "controller_api_helper.h"
 #include "neural_controller_C.h"
+#include "neural_controller_LSTM_C.h"
 #include "lqr.h"
 #include "secloc_controller.h"
 #include "secloc_controller_pl.h"
@@ -28,9 +29,13 @@
 #define OnChipController_neural_controller_C 4
 #define OnChipController_SECLOC 5
 #define OnChipController_SECLOC_LQR 6
+#define OnChipController_neural_controller_LSTM_C 7
 
 /* Boot on-chip controller when the chip runs standalone (edit here). */
-#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_C
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_LSTM_C
+
+/* Set to 1 for a motor-disabled ARM timing/parity smoke test. */
+#define ON_CHIP_CONTROLLER_DRY_RUN 0
 
 
 // The 3 variables below only matter on Zynq
@@ -504,6 +509,12 @@ void CONTROL_BackgroundTask(void)
 	                Q = CB_Eval(&g_cb);
 	                break;
 	            }
+	            case OnChipController_neural_controller_LSTM_C:
+	            {
+	                CB_RebindOnChange(&g_cb, &NNC_LSTM_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                Q = CB_Eval(&g_cb);
+	                break;
+	            }
 	            case OnChipController_SECLOC:
 	            {
 	                CB_RebindOnChange(&g_cb, &SECLOC_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
@@ -527,6 +538,9 @@ void CONTROL_BackgroundTask(void)
 		        motor_command_from_chip = control_signal_to_motor_command(Q, positionD, correct_motor_dynamics);
 		        motor_command_safety_check(&motor_command_from_chip);
 		        safety_switch_off(&motor_command_from_chip, positionLimitLeft, positionLimitRight);
+#if ON_CHIP_CONTROLLER_DRY_RUN
+		        motor_command_from_chip = 0;
+#endif
 
 				time_motor_command_obtained = GetTimeNow();
 				new_motor_command_obtained = true;
@@ -1052,6 +1066,7 @@ void cmd_ControlMode(bool en)
 	if (en && !ControlOnChip_Enabled)
 	{
 		PCControl_Enabled = false;
+		CB_Reset(&g_cb);
         ledPeriod           = 100/POLLING_PERIOD_MS;
 	}
 	else if (!en && ControlOnChip_Enabled)
@@ -1060,6 +1075,7 @@ void cmd_ControlMode(bool en)
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
+		CB_Reset(&g_cb);
         ledPeriod           = 500/POLLING_PERIOD_MS;
 	}
 
