@@ -122,14 +122,16 @@ class MainLoggingManager:
     def _controller_data_to_save(self):
         data = FunctionalDict()
         data.update(self.data_to_save_controller)
-        if self.driver.firmwareControl:
-            # On-chip SecLoc telemetry parsed from the state packet; the PC
-            # controller is idle so its csv dict is not consulted.
-            data['secloc_skipped_update'] = lambda: int(self.driver.secloc_skipped_update_chip)
-            data['secloc_gate_skipped'] = lambda: int(self.driver.secloc_gate_skipped_chip)
-            data['secloc_pl_used'] = lambda: int(self.driver.secloc_pl_used_chip)
-            data['secloc_pl_fault'] = lambda: int(self.driver.secloc_pl_fault_chip)
-            return data
+
+        # Keep one stable schema while recording. Firmware control may be
+        # toggled after `l` (the normal way to capture an on-chip controller);
+        # selecting columns from firmwareControl here used to change the key set
+        # mid-recording and crash DataManager.
+        data['secloc_skipped_update'] = lambda: int(self.driver.secloc_skipped_update_chip)
+        data['secloc_gate_skipped'] = lambda: int(self.driver.secloc_gate_skipped_chip)
+        data['secloc_pl_used'] = lambda: int(self.driver.secloc_pl_used_chip)
+        data['secloc_pl_fault'] = lambda: int(self.driver.secloc_pl_fault_chip)
+
         controller = getattr(self.driver, "controller", None)
         controller_data = getattr(controller, "controller_data_for_csv", {})
         for key in controller_data:

@@ -583,10 +583,23 @@ class PhysicalCartPoleDriver:
 
     def hardware_controller_on_off(self):
         self.firmwareControl = not self.firmwareControl
-        if self.firmwareControl and self.controlEnabled:
-            self.switch_off_control()
+        if self.firmwareControl:
+            if self.controlEnabled:
+                self.switch_off_control()
+            # BTN0 changes the firmware's hanging calibration without a host
+            # command. Adopt it before displaying or recording the next state.
+            self._sync_hanging_from_chip()
         print("\nFirmware Control", self.firmwareControl)
         self.InterfaceInstance.control_mode(self.firmwareControl)
+        if not self.firmwareControl:
+            # The chip stops immediately, but its last nonzero command may still
+            # be present in the packet already being processed. Do not display
+            # or record that stale value while firmware control is off.
+            self.command = 0
+            self.actualMotorCmd = 0
+            self.actualMotorCmd_prev = 0
+            self.Q = 0.0
+            self.Q_prev = 0.0
 
     def run_hardware_experiment(self):
         self.controlEnabled = False
@@ -684,6 +697,7 @@ class PhysicalCartPoleDriver:
                   'globals.py not applied)'.format(chip_hanging))
             ANGLE_HANGING = chip_hanging
             ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
+            self.idp.angle_deviation_finetune = 0.0
             print('Session ANGLE_HANGING/ANGLE_DEVIATION adopted from chip '
                   '(globals.py file unchanged).')
             print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
