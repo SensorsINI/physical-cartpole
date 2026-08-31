@@ -65,10 +65,10 @@ const float POSITION_ENCODER_RANGE					=		4649;
 // Matches the physical recordings used to train Long/quant/LSTM-7IN-64H1-64H2-1OUT-0.
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 
-float ANGLE_HANGING_POLOLU 							=		1014;  // Live hanging ADC 2026-08-31; must match Driver/globals.py ZYNQ
+float ANGLE_HANGING_POLOLU 							=		1013.1933;  // Stationary hanging mean, measured 2026-08-31
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4066.88;  // 2*(upright 3047.44 − hanging 1014). wrapLocal uses this; must match Driver/globals.py.
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4051.4533;  // 2*(upright 3038.9200 - hanging 1013.1933); must match Driver/globals.py.
 const float POSITION_ENCODER_RANGE					=		4695.0;
 
 #endif

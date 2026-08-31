@@ -16,10 +16,10 @@ REPO = Path(__file__).resolve().parents[1]
 GLOBALS = (REPO / "Driver" / "globals.py").read_text()
 PARAMS = (REPO / "Firmware" / "Src" / "CartPoleFirmware" / "parameters.c").read_text()
 
-# Live pair 2026-08-31: hanging ADC 1014, upright ADC 3047.44 → 360 = 2*(up−hang).
-UPRIGHT_ADC = 3047.44
-WORKING_HANG = 1014.0
-WORKING_CIRCLE = 4066.88
+# Live two-pose fit 2026-08-31: 360 = 2*(upright−hanging).
+UPRIGHT_ADC = 3038.9200
+WORKING_HANG = 1013.1933
+WORKING_CIRCLE = 4051.4533
 BAD_CIRCLE = 4143.32
 OLD_CIRCLE = 4049.44
 
@@ -54,6 +54,12 @@ def state_angle(adc: float, hang: float, circle_fw: float, circle_pc: float | No
 
 def _zybo_float(text: str, name: str) -> float:
     # ZYBO block is the last assignment of these names in each file.
+    env_matches = re.findall(
+        rf"{name}\s*=\s*float\(os\.environ\.get\([^,]+,\s*[\"']([0-9.]+)[\"']\)\)",
+        text,
+    )
+    if env_matches:
+        return float(env_matches[-1])
     matches = re.findall(rf"{name}\s*=\s*([0-9.]+)", text)
     assert matches, name
     return float(matches[-1])

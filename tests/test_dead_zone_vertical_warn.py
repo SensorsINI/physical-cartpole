@@ -8,9 +8,9 @@ from __future__ import annotations
 import math
 
 # Firmware/Src/CartPoleFirmware/parameters.c, #else  // ZYBO_Z720
-ANGLE_360_DEG_IN_ADC_UNITS = 4066.88
+ANGLE_360_DEG_IN_ADC_UNITS = 4051.4533
 DEAD_ZONE_VERTICAL_WARN_DEG = 20.0
-ANGLE_HANGING_POLOLU = 1014
+ANGLE_HANGING_POLOLU = 1013.1933
 
 
 def wrap_adc_circle(adc: float, circle: float = ANGLE_360_DEG_IN_ADC_UNITS) -> float:
@@ -64,7 +64,6 @@ def test_dead_zone_at_hanging_down_warns():
 def test_dead_zone_at_upright_warns():
     # Hanging at half-circle puts ADC wrap (0) at upright.
     assert dead_zone_near_vertical(ANGLE_360_DEG_IN_ADC_UNITS * 0.5) is True
-    assert dead_zone_near_vertical(2033.44) is True
 
 
 def test_hanging_at_old_upright_is_still_horizontal_dead_zone():
@@ -75,7 +74,7 @@ def test_hanging_at_old_upright_is_still_horizontal_dead_zone():
 
 def test_threshold_is_twenty_degrees():
     thresh = ANGLE_360_DEG_IN_ADC_UNITS * (DEAD_ZONE_VERTICAL_WARN_DEG / 360.0)
-    assert math.isclose(thresh, 4066.88 * 20.0 / 360.0)
+    assert math.isclose(thresh, 4051.4533 * 20.0 / 360.0)
     just_inside = thresh * 0.99
     just_outside = thresh * 1.01
     assert dead_zone_near_vertical(just_inside) is True
