@@ -1,3 +1,4 @@
+import os
 import math
 import logging
 import numpy as np
@@ -104,7 +105,9 @@ if CONTROLLER_APPLY_WINDOW_MS % POLLING_PERIOD_MS != 0:
         f"(got {CONTROLLER_APPLY_WINDOW_MS} ms and {POLLING_PERIOD_MS} ms)."
     )
 
-TIMESTEPS_FOR_DERIVATIVE = 1  # Derivative window in control cycles. Must match firmware parameters.c (angleD on-chip, positionD here).
+TIMESTEPS_FOR_DERIVATIVE = int(os.environ.get("CPP_DERIVATIVE_TIMESTEPS", "2"))
+if not 1 <= TIMESTEPS_FOR_DERIVATIVE <= 20:
+    raise ValueError("CPP_DERIVATIVE_TIMESTEPS must be between 1 and 20")
 
 if CHIP == 'STM':
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES = 7200
@@ -136,6 +139,9 @@ elif CHIP == 'ZYNQ':
     # The active quant LSTM must use the map from its May 2025 physical training
     # recordings: Q=-1 while moving left produced command -5991.
     MOTOR_CORRECTION_POLOLU_MLP = (0.5116974, 0.0178784, 0.0280385)   # force-fit, Dense-8
+    LSTM_MOTOR_GAIN = float(os.environ.get("LSTM_MOTOR_GAIN", "0.5733488"))
+    if not 0.0 < LSTM_MOTOR_GAIN < 0.95:
+        raise ValueError("LSTM_MOTOR_GAIN must be between 0 and 0.95")
     MOTOR_CORRECTION_POLOLU_LSTM_QUANT = (0.5733488, 0.0257380, 0.0258429)
     MOTOR_CORRECTION_POLOLU_RPGD = (0.6216901, 0.0750750, 0.0549491)
     MOTOR_CORRECTION_POLOLU = (
@@ -177,7 +183,11 @@ TIME_LIMITED_RECORDING_LENGTH = 1000  # in time steps (1 step = POLLING_PERIOD_M
 ##### Logging and Recordings #####
 LOGGING_LEVEL = logging.ERROR
 PATH_TO_EXPERIMENT_RECORDINGS = './ExperimentRecordings/'  # Path where the experiments data is stored
-PRINT_PERIOD_MS = 10  # shows state in terminal every this many control updates
+# Keep terminal redraws out of the 100 Hz control path. This does not change
+# control or CSV cadence; it only refreshes the status display once per second.
+PRINT_PERIOD_MS = int(os.environ.get("CPP_PRINT_PERIOD_MS", "1000"))
+if PRINT_PERIOD_MS < 1:
+    raise ValueError("CPP_PRINT_PERIOD_MS must be at least 1 ms")
 STATISTICS_IN_TERMINAL_AVERAGING_LENGTH = 500
 
 ##### Live Plot (start with 6, save plot with 7 and reset with 8) #####
@@ -187,7 +197,7 @@ LIVE_PLOTTER_REMOTE_IP = '192.168.194.233'
 DEFAULT_ADDRESS = ('localhost', 6000)
 
 CONTROL_SYNC = True  # Delays Input until next Timeslot for more accurate measurements
-AUTOSTART = False  # Autostarts Zero-Controller for Performance Measurement
+AUTOSTART = os.environ.get("CPP_AUTOSTART", "0").lower() in ("1", "true", "yes")
 JSON_PATH = 'CartPoleSimulation/Control_Toolkit_ASF/'
 
 ##### Motor Settings #####

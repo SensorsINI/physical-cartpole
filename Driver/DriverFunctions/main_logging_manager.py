@@ -12,11 +12,13 @@ from CartPoleSimulation.CartPole.csv_logger import create_csv_file_name, create_
 from globals import (
     CHIP,
     CONTROLLER_NAME, POLLING_PERIOD_MS, PRINT_PERIOD_MS, CONTROL_SYNC,
+    TIMESTEPS_FOR_DERIVATIVE,
     CONTROLLER_APPLY_WINDOW_MS, LOOP_CPU_AFFINITY, CONTROL_CPU_AFFINITY,
     USE_SECLOC,
     should_push_chip_secloc_config,
     HARDWARE_ANGLE_FILTER_OVERRIDE,
     HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
+    MOTOR_CORRECTION,
     PATH_TO_EXPERIMENT_RECORDINGS, TIME_LIMITED_RECORDING_LENGTH,
     DEFAULT_ADDRESS, LIVE_PLOTTER_USE_REMOTE_SERVER, LIVE_PLOTTER_REMOTE_USERNAME, LIVE_PLOTTER_REMOTE_IP
 )
@@ -246,6 +248,9 @@ class MainLoggingManager:
                 f"Secloc gate: {USE_SECLOC}",
                 f"IO CPU affinity: {LOOP_CPU_AFFINITY}",
                 f"Control CPU affinity: {CONTROL_CPU_AFFINITY}",
+                f"Motor correction: {MOTOR_CORRECTION}",
+                f"Terminal print period: {PRINT_PERIOD_MS} ms",
+                f"Derivative timesteps: {TIMESTEPS_FOR_DERIVATIVE}",
             ]
             if CHIP == 'ZYNQ':
                 if HARDWARE_ANGLE_FILTER_OVERRIDE:
@@ -319,7 +324,7 @@ class MainLoggingManager:
 
         self.driver.th.latency_data_for_statistics_in_terminal()
 
-        if True or self.printCount >= PRINT_PERIOD_MS / POLLING_PERIOD_MS:
+        if self.printCount >= PRINT_PERIOD_MS / POLLING_PERIOD_MS:
             self.printCount = 0
 
             ESC = '\033['
