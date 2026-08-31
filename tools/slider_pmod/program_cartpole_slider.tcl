@@ -2,7 +2,7 @@
 
 set bit /home/marcin/PycharmProjects/physical-cartpole/FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_secloc/CartpoleDriverZynq_AXIS_secloc.runs/impl_1/cartpole_driver_design_wrapper.bit
 set elf /home/marcin/PycharmProjects/physical-cartpole/Firmware/VitisProjects/CartPoleFirmware/Debug/CartPoleFirmware.elf
-set ps7 /home/marcin/PycharmProjects/physical-cartpole/Firmware/VitisProjects/cartpole_zybo_secloc2026/export/cartpole_zybo_secloc2026/hw/ps7_init.tcl
+set ps7 /home/marcin/PycharmProjects/physical-cartpole/Firmware/VitisProjects/cartpole_zybo_secloc2026/hw/ps7_init.tcl
 
 puts "BIT $bit"
 puts "ELF $elf"
