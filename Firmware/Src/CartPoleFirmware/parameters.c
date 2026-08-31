@@ -63,10 +63,10 @@ const float POSITION_ENCODER_RANGE					=		4649;
 
 float MOTOR_CORRECTION[3] 							=		{0.5116974, 0.0178784, 0.0280385}; // Pololu; force-fit on committed CPP_step_response.csv (u_max=2.62N, mass=0.317kg). Must match Driver/globals.py MOTOR_CORRECTION_POLOLU.
 
-float ANGLE_HANGING_POLOLU 							=		1016.84;  // BTN0 hanging ADC (2026-08-29)
+float ANGLE_HANGING_POLOLU 							=		1014;  // Live hanging ADC 2026-08-31; must match Driver/globals.py ZYNQ
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4143.32;  // Old pair hanging=1063.779, upright=3088.5, 360=4049.44. BTN0 hanging=1016.84, screw unchanged => upright still 3088.5, 180deg=2071.66, 360=4143.32. Must match Driver/globals.py ZYNQ.
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4066.88;  // 2*(upright 3047.44 − hanging 1014). wrapLocal uses this; must match Driver/globals.py.
 const float POSITION_ENCODER_RANGE					=		4695.0;
 
 #endif

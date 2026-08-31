@@ -140,12 +140,12 @@ elif CHIP == 'ZYNQ':
         MOTOR_CORRECTION_POLOLU_MLP if CONTROLLER_NAME == 'neural-imitator'
         else MOTOR_CORRECTION_POLOLU_RPGD
     )
-    ANGLE_360_DEG_IN_ADC_UNITS = 4143.32  # Recalibrated 2026-08-29: BTN0 hanging 1016.84 vs old 1063.779; upright ADC kept 3088.5 => 360 = 4049.44 + 2*(1063.779-1016.84)
+    ANGLE_360_DEG_IN_ADC_UNITS = 4066.88  # 2*(upright 3047.44 − hanging 1014); must match firmware wrapLocal
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
-    ANGLE_HANGING_POLOLU = 1016.84  # BTN0 hanging ADC; with ANGLE_360 this maps upright -> 0
+    ANGLE_HANGING_POLOLU = 1014  # Live hanging ADC 2026-08-31; with 4066.88 this maps that upright -> 0
     ANGLE_HANGING_ORIGINAL = 1078.5  # Value from sensor when pendulum is at stable equilibrium point
     POSITION_ENCODER_RANGE = 4695.0  # For new implementation with Zybo. FIXME: Not clear why different then for STM
 
