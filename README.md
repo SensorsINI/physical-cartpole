@@ -28,6 +28,9 @@ and tools for [system identification with neural networks](https://github.com/Se
   All controllers can stabilize the pole in the upright position and follow target position.
   On Zybo, a Pmod slider on **JB** can set that target in `CartPoleFirmware` (see [tools/slider_pmod](tools/slider_pmod/README.md)).
 MPC and neural controller can also swing-up the pole.
+The recovered physical swing-up LSTM, its original TensorFlow artifacts, provenance,
+checksums, and validation recordings are preserved in
+[examples/models/adaptive-quant-lstm-2025-06-01](examples/models/adaptive-quant-lstm-2025-06-01/README.md).
 * Template with examples for programing experiment sequence for automated data collection.
 * Auxiliary functions allowing easier calibration of the robot, motor safety cut off, and more.
 

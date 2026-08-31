@@ -1,0 +1,132 @@
+schema_version: 1
+
+model:
+  name: LSTM-7IN-64H1-64H2-1OUT-0
+  historical_collection: Long/quant
+  role: adaptive physical-cartpole swing-up controller
+  framework: TensorFlow/Keras 2.14
+  created_at: "2025-06-01 18:12:20 +02:00"
+  saved_at: "2025-06-01 20:27:53 +02:00"
+  source_revision: ea1d585945e947e00a83772fb21bbdbdecf04ae1
+  first_tracked_selection: b9c6cfaee1a512a4492e9834e8729f5da6d50cdb
+  quantized: false
+  dtype: float32
+
+architecture:
+  input_count: 7
+  training_sequence_length: 110
+  layers:
+    - type: LSTM
+      units: 64
+      return_sequences: true
+    - type: LSTM
+      units: 64
+      return_sequences: true
+    - type: Dense
+      units: 1
+      activation: linear
+  trainable_parameters: 51521
+  inputs:
+    - angleD
+    - angle_cos
+    - angle_sin
+    - position
+    - positionD
+    - target_equilibrium
+    - target_position
+  output: Q_calculated_offline_slow
+
+training:
+  experiment: MPC_before_NNI_6_05_s1_1t_qunatized_cleaned
+  seed: 1873
+  optimizer: Adam
+  initial_learning_rate: 0.002
+  configured_epochs: 100
+  completed_epochs: 61
+  best_validation_loss: 0.0709776655
+  best_validation_epoch: 56
+  batch_size: 1024
+  loss: squared
+  washout_samples: 100
+  post_washout_samples: 10
+  label_shift_samples: 1
+  series_mode: train_for_random_vertical_angle_shift
+  feature_noise: 0.0
+  mean_timestep_s: 0.010018234141170979
+  timestep_std_s: 0.0024623412173241377
+  data:
+    training_files: 221
+    validation_files: 6
+    test_files: 7
+    total_files: 234
+    total_bytes: 540871558
+    manifest: data/TRAINING_DATA_SHA256SUMS
+
+normalization:
+  input_scale:
+    - 0.00332930
+    - 1.0
+    - 1.0
+    - 5.05050516
+    - 0.18420650
+    - 1.0
+    - 5.05050516
+  input_offset: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  output_scale: [1.0]
+  output_offset: [0.0]
+
+artifacts:
+  directory: models/LSTM-7IN-64H1-64H2-1OUT-0
+  integrity_manifest: SHA256SUMS
+  original_file_count: 15
+  original_source: Driver/CartPoleSimulation/SI_Toolkit_ASF/Experiments/MPC_before_NNI_6_05_s1_1t_qunatized_cleaned/Models/LSTM-7IN-64H1-64H2-1OUT-0
+  historical_copy: Driver/CartPoleSimulation/SI_Toolkit_ASF/Experiments/CP_Models_02_06_2025/Long/quant/LSTM-7IN-64H1-64H2-1OUT-0
+  keras_sha256: cf0ef1199dbcb836844161be0d16633e3195d284e99c956dfab44197a75fb6a9
+  derived_weights_h5:
+    path: models/LSTM-7IN-64H1-64H2-1OUT-0/ckpt.weights.h5
+    sha256: 46d5f0c3f57010bd2dcc038fab6a470a4caef01e6b3b7a7776b261f7f392ae41
+    created_at: "2026-08-31"
+    tensor_match_to_keras_archive: exact
+    runtime_purpose: TensorFlow/Keras 2.13 compatibility
+  compatibility:
+    archive_writer: Keras 2.14.0
+    current_runtime: TensorFlow 2.13.0 / Keras 2.13.1
+    native_archive_load_in_current_runtime: false
+    verified_application_load: ckpt.weights.h5
+
+deployment:
+  initial_parent_commit: feaaa124
+  working_reference_parent_commit: 3bab8a20
+  firmware_arrays: Firmware/Src/General/NC_LSTM/network_parameters.c
+  tensor_match: exact for all eight learned float32 tensors
+  c_tensorflow_max_output_error: 0.0000032
+  control_period_ms: 10
+  derivative_timesteps: 2
+  derivative_span_ms: 20
+  angle_filter:
+    mode: median
+    window: 63
+  hanging_angle_adc: 1014.0
+  full_angle_adc: 4066.88
+  motor_correction: [0.5733488, 0.0257380, 0.0258429]
+  output_clipping: [-1.0, 1.0]
+  recurrent_initialization: zero state followed by one nominal-upright step
+  dead_zone_handling: FPGA rail-event trigger plus bounded 45/90 ms extrapolation
+  position_calibration_required_after_power_cycle: true
+
+validation:
+  gap_corrected_n1:
+    recording: validation/CPP_neural-imitator_2026-08-31_17-26-53.csv
+    sha256: 5cfbc3eb8529161771d00a286a533728648f1e8b2c40d6ed8f01a8e4444df4ac
+    sustained_capture_s: 8.17
+    continuous_within_3_deg_s: 66.82
+    max_abs_angleD_adc_per_step: 85
+  pre_gap_fix_ps_baseline:
+    recording: validation/CPP_zynq-ps-lstm-primed-retry_2026-08-31_11-45-50.csv
+    sha256: db9ad69bad1a12dd659dcb8e8274c9a7b3ade30cea9495349ede3df52643627b
+    sustained_capture_s: 27.31
+    continuous_within_3_deg_s: 47.69
+    max_abs_angleD_adc_per_step: 2027
+  n2_selection:
+    recorded: false
+    evidence: subsequent physical observation after the gap-corrected N=1 run

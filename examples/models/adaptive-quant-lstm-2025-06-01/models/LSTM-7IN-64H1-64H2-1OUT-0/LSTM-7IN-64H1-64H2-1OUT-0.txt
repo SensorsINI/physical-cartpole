@@ -1,0 +1,59 @@
+CREATED:
+2025-06-01 at time 18:12:20
+
+WITH GIT REVISION:
+ea1d585945e947e00a83772fb21bbdbdecf04ae1
+
+LIBRARY:
+TF
+
+NET NAME:
+LSTM-64H1-64H2
+
+NET FULL NAME:
+LSTM-7IN-64H1-64H2-1OUT-0
+
+INPUTS:
+angleD, angle_cos, angle_sin, position, positionD, target_equilibrium, target_position
+
+OUTPUTS:
+Q_calculated_offline_slow
+
+TYPE:
+LSTM
+
+NORMALIZATION:
+./SI_Toolkit_ASF/Experiments/MPC_before_NNI_6_05_s1_1t_qunatized_cleaned/Models/LSTM-7IN-64H1-64H2-1OUT-0/NI_2025-06-01_17-53-28.csv
+
+NORMALIZE:
+True
+
+PARENT NET:
+Network trained from scratch
+
+WASH OUT LENGTH:
+100
+
+POST WASH OUT LENGTH:
+10
+
+SHIFT LABELS:
+1
+
+CONSTRUCT NETWORK:
+with cells
+
+TRAINING_FILES:
+./SI_Toolkit_ASF/Experiments/MPC_before_NNI_6_05_s1_1t_qunatized_cleaned/Recordings/Train
+
+VALIDATION_FILES:
+./SI_Toolkit_ASF/Experiments/MPC_before_NNI_6_05_s1_1t_qunatized_cleaned/Recordings/Validate
+
+TEST_FILES:
+./SI_Toolkit_ASF/Experiments/MPC_before_NNI_6_05_s1_1t_qunatized_cleaned/Recordings/Test
+
+TIMESTEP MEAN [s]:
+0.010018234141170979
+
+TIMESTEP STD [s]:
+0.0024623412173241377

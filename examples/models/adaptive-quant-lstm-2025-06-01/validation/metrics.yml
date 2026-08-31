@@ -1,0 +1,57 @@
+schema_version: 1
+notes:
+  - Raw angleD thresholds are ADC counts per 10 ms control step.
+  - The gap-corrected recording used N=1; N=2 was selected afterward.
+  - A manually applied perturbation occurred after CSV recording stopped and is not quantified here.
+
+gap_corrected:
+  file: CPP_neural-imitator_2026-08-31_17-26-53.csv
+  backend: Zynq PS C
+  duration_s: 75.001
+  samples: 7499
+  derivative_timesteps: 1
+  chip_packet_skips: 1
+  position_raw_range: [-1149, 2002]
+  motor_command_range: [-5991, 5990]
+  firmware_latency_ms:
+    median: 0.940
+    maximum: 0.950
+    violations: 0
+  hardware_dead_zone_event_rows: 117
+  abs_angleD_raw_adc_per_step:
+    p99: 79.02
+    maximum: 85
+    above_100: 0
+    above_200: 0
+    above_400: 0
+    above_800: 0
+  first_transient_crossing_within_20_deg_s: 3.591
+  sustained_capture_within_3_deg_s: 8.17
+  longest_continuous_within_3_deg_s: 66.82
+  longest_continuous_within_5_deg_s: 66.97
+
+pre_gap_fix_baseline:
+  file: CPP_zynq-ps-lstm-primed-retry_2026-08-31_11-45-50.csv
+  backend: Zynq PS C
+  duration_s: 74.999
+  samples: 7500
+  derivative_timesteps: 1
+  chip_packet_skips: 0
+  position_raw_range: [-2131, 1468]
+  motor_command_range: [-5991, 5990]
+  firmware_latency_ms:
+    median: 0.940
+    maximum: 1.880
+    violations: 0
+  hardware_dead_zone_event_rows: 0
+  abs_angleD_raw_adc_per_step:
+    p99: 1523.26
+    maximum: 2027
+    above_100: 293
+    above_200: 278
+    above_400: 265
+    above_800: 156
+  first_transient_crossing_within_20_deg_s: 0.179
+  sustained_capture_within_3_deg_s: 27.31
+  longest_continuous_within_3_deg_s: 47.69
+  longest_continuous_within_5_deg_s: 47.78
