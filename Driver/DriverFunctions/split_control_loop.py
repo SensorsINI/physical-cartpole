@@ -227,6 +227,11 @@ class SplitControlLoop:
             return self._last_applied_now
 
     @property
+    def is_busy(self):
+        with self._lock:
+            return self._busy
+
+    @property
     def applied_Q(self):
         with self._lock:
             return self._applied_Q
