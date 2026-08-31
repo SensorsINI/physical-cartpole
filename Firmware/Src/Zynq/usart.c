@@ -5,15 +5,10 @@
 //#define USE_UART_LITE_IP		// At PMOD JC for Zybo Z7-20
 
 // Check that only one condition is defined
-// Count the number of defined conditions
-#define COUNT_DEFINED (defined(USE_UART_PS) + defined(USE_UART_PS_SIMPLE) + defined(USE_UART_LITE_IP) + defined(USE_UART_550_IP))
-
-// Check that only one condition is defined
-#if COUNT_DEFINED > 1
+#if (defined(USE_UART_PS) + defined(USE_UART_PS_SIMPLE) \
+     + defined(USE_UART_LITE_IP) + defined(USE_UART_550_IP)) > 1
 #error "Multiple UART firmware selected. Only one condition for UART firmware should be defined."
 #endif
-
-#undef COUNT_DEFINED // Optional: Undefine to keep the macro scope limited to this check
 
 
 #ifdef USE_UART_PS_SIMPLE

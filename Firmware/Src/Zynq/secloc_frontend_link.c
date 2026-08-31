@@ -7,10 +7,7 @@
 #include <string.h>
 
 #include "xil_io.h"
-/* Resolves via the flattened Vitis src tree (src/secloc_controller_pl.h ->
- * Firmware/Src/General/secloc_controller_pl.h), same as ../controller_api.h
- * in neural_imitator.c. */
-#include "../secloc_controller_pl.h"
+#include "secloc_controller_pl.h"
 
 /* Register map: mirrors the Vitis-generated xsecloc_shell_hw.h
  * (FPGA/CustomIPs/secloc_shell_hls/.../drivers/secloc_shell_v1_0/src).

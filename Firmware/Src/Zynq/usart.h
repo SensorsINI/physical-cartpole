@@ -3,7 +3,7 @@
 
 #include "xparameters.h"
 #include "stdbool.h"
-#include "../hardware_bridge.h"
+#include "hardware_bridge.h"
 
 #define USART_RX_BUFFER_SIZE		256UL
 

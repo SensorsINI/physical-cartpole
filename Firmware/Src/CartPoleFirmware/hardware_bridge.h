@@ -30,16 +30,11 @@
 
 
 
-// Check that only one condition is defined
-// Count the number of defined conditions
-#define COUNT_DEFINED (defined(STM) + defined(ZYNQ))
 
 // Check that only one condition is defined
-#if COUNT_DEFINED > 1
+#if defined(STM) && defined(ZYNQ)
 #error "Both STM and Zynq firmware selected. Only one condition for firmware should be defined."
 #endif
-
-#undef COUNT_DEFINED // Optional: Undefine to keep the macro scope limited to this check
 
 // See parameters.c to set values
 extern const unsigned int UART_BAUD;

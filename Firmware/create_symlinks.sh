@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
 # This script create symbolic links in DEST_DIR from all files in SOURCE_DIR.
 # To make the links work on other machines the links use relative paths.
 # If there is a direcotry encountered inside SOURCE_DIR,
@@ -20,22 +23,22 @@ declare -a directories=(
 
 
 # For CartPoleFirmware on Zynq (First create CartPoleFirmware project in Vitis!)
-:'
+: <<'ZYNQ_CARTPOLE_EXAMPLE'
 declare -a directories=(
   "./Src/CartPoleFirmware ./VitisProjects/CartPoleFirmware/src"
   "./Src/General ./VitisProjects/CartPoleFirmware/src"
   "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
 )
-'
+ZYNQ_CARTPOLE_EXAMPLE
 
 # For NeuralImitator on Zynq (First create NeuralImitator project in Vitis!)
-:'
+: <<'ZYNQ_IMITATOR_EXAMPLE'
 declare -a directories=(
   "./Src/Embedded_Controller ./VitisProjects/Embedded_Controller/src"
   "./Src/General ./VitisProjects/Embedded_Controller/src"
   "./Src/Zynq ./VitisProjects/Embedded_Controller/src/Zynq"
 )
-'
+ZYNQ_IMITATOR_EXAMPLE
 
 
 ##########################################################################################################
@@ -49,8 +52,8 @@ create_symlinks() {
 
   # Ensure the source directory exists
   if [ ! -d "$src_dir" ]; then
-    echo "Source directory $src_dir does not exist."
-    return
+    echo "ERROR: source directory $src_dir does not exist." >&2
+    return 1
   fi
 
   # Ensure the destination directory exists, create if not
@@ -67,8 +70,13 @@ create_symlinks() {
 
     if [ -f "$item" ]; then
       # If it's a file, create the symlink
-      ln -s "$(realpath --relative-to="$dest_dir" "$item")" "$dest_dir/$name"
-      echo "Created symlink for $name in $dest_dir"
+      link_target="$(realpath --relative-to="$dest_dir" "$item")"
+      if [ -e "$dest_dir/$name" ] && [ ! -L "$dest_dir/$name" ]; then
+        echo "ERROR: refusing to replace regular file $dest_dir/$name" >&2
+        return 1
+      fi
+      ln -sfn "$link_target" "$dest_dir/$name"
+      echo "Updated symlink for $name in $dest_dir"
 
     elif [ -d "$item" ]; then
       # If it's a directory, create the directory in the destination and recurse
@@ -82,15 +90,24 @@ create_symlinks() {
 # Allow overriding the directory pairs from the command line.
 # Each argument must be a single "SRC DEST" pair, e.g.:
 #   ./create_symlinks.sh "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
-if [ "$#" -gt 0 ]; then
+if [ "${1:-}" = "--zynq" ]; then
+  directories=(
+    "./Src/CartPoleFirmware ./VitisProjects/CartPoleFirmware/src"
+    "./Src/General ./VitisProjects/CartPoleFirmware/src"
+    "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
+  )
+elif [ "$#" -gt 0 ]; then
   directories=("$@")
 fi
 
 # Loop through the directory pairs and run the create_symlinks function for each pair
 for dirs in "${directories[@]}"; do
   # Split the pair into source and destination
-  src_dir=$(echo $dirs | awk '{print $1}')
-  dest_dir=$(echo $dirs | awk '{print $2}')
+  read -r src_dir dest_dir extra <<< "$dirs"
+  if [ -z "${src_dir:-}" ] || [ -z "${dest_dir:-}" ] || [ -n "${extra:-}" ]; then
+    echo "ERROR: each directory mapping must be one quoted 'SOURCE DESTINATION' argument" >&2
+    exit 1
+  fi
 
   # Run the create_symlinks function with the current source and destination
   create_symlinks "$src_dir" "$dest_dir"

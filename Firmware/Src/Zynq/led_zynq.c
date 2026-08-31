@@ -1,6 +1,6 @@
 #include "led_zynq.h"
 
-#include "../hardware_bridge.h"
+#include "hardware_bridge.h"
 
 XGpio GpioRGB;
 

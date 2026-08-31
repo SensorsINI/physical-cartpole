@@ -1,5 +1,5 @@
 #include "qspi_nvparams.h"
-#include "../hardware_bridge.h"
+#include "hardware_bridge.h"
 
 #include <string.h>
 

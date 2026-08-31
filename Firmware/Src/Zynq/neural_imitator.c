@@ -43,7 +43,7 @@
 #endif
 
 /******************** make this module a float-based controller **********/
-#include "../controller_api.h"
+#include "controller_api.h"
 #include <string.h>   /* memcpy */
 
 /* Wire-order input names the PC will use; keep short, ASCII. */
