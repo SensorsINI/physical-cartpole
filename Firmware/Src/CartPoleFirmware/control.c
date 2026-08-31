@@ -40,8 +40,11 @@
 /* Boot on-chip controller when the chip runs standalone (edit here). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_LQR
 
-/* Set to 1 for a motor-disabled ARM timing/parity smoke test. */
+/* Set to 1 for a motor-disabled ARM timing/parity smoke test.
+ * May also be supplied as -DON_CHIP_CONTROLLER_DRY_RUN=1. */
+#ifndef ON_CHIP_CONTROLLER_DRY_RUN
 #define ON_CHIP_CONTROLLER_DRY_RUN 0
+#endif
 
 // The 3 variables below only matter on Zynq
 #define	CONTROLLERS_SWITCH_NUMBER		0
@@ -1138,7 +1141,13 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 
 	disable_irq();
 
+#ifdef ZYNQ
+	if (!rpgd_controller_owns_timing()) {
+		POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
+	}
+#else
 	POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
+#endif
     CONTROL_SYNC			= *((bool	        *)&config[2]);
 	if (apply_hanging) {
 		ANGLE_HANGING = *((float *)&config[3]);
@@ -1150,11 +1159,18 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 	}
     ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
     correct_motor_dynamics = *((bool	        *)&config[9]);
+#ifdef ZYNQ
+    if (!rpgd_controller_owns_timing()) {
+        set_timesteps_for_derivative(*((unsigned short *)&config[10]));
+        SetControlUpdatePeriod(POLLING_PERIOD_MS);
+        secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
+    }
+#else
     set_timesteps_for_derivative(*((unsigned short *)&config[10]));
-
     SetControlUpdatePeriod(POLLING_PERIOD_MS);
-    ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
     secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
+#endif
+    ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 
     HardwareConfigSetFromPC = true;
 

@@ -74,6 +74,7 @@ Driver/SI_Toolkit_ASF/Experiments/*
 /FPGA/CustomIPs/**/*.protoinst
 
 /Firmware/VitisProjects/*
+/Firmware/AmpWorkspace/
 /Firmware/Packages/
 
 /Firmware/Scripts/cartpole_qspi.generated.bif

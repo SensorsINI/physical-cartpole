@@ -15,6 +15,11 @@ void rpgd_on_target_test_run(void)
 #include "rpgd_config_defaults.h"
 #include "rpgd_controller.h"
 #include "rpgd_c/rpgd_cartpole.h"
+#include "rpgd_c/rpgd_worker.h"
+
+#ifdef RPGD_DUAL_CORE
+#include "rpgd_amp_dispatch.h"
+#endif
 
 #include <math.h>
 #include <stdint.h>
@@ -24,14 +29,19 @@ void rpgd_on_target_test_run(void)
 #include "xil_printf.h"
 #endif
 
-#define RPGD_TEST_MAX_SAMPLES 32
-
 _Static_assert(RPGD_TEST_PARITY_STEPS == RPGD_GOLDEN_N_STEPS,
                "Parity-step configuration does not match generated goldens");
 _Static_assert(RPGD_TEST_STEADY_ITERS <= RPGD_TEST_MAX_SAMPLES,
                "Increase RPGD_TEST_MAX_SAMPLES for steady timing");
 _Static_assert(RPGD_TEST_WARMUP_ITERS <= RPGD_TEST_MAX_SAMPLES,
                "Increase RPGD_TEST_MAX_SAMPLES for warmup timing");
+_Static_assert(RPGD_TEST_LONG_ITERS <= RPGD_TEST_MAX_SAMPLES,
+               "Increase RPGD_TEST_MAX_SAMPLES for long timing");
+
+static unsigned long long g_sort_buf[RPGD_TEST_MAX_SAMPLES];
+static unsigned long long g_warmup[RPGD_TEST_WARMUP_ITERS];
+static unsigned long long g_steady[RPGD_TEST_MAX_SAMPLES];
+static RpgdWorkerScratch g_test_scratch;
 
 static void print_u32(const char* label, unsigned int value)
 {
@@ -83,18 +93,17 @@ static int within_tol(float a, float b, float tol)
 
 static void print_timing(const char* title, unsigned long long* samples, int n)
 {
-    unsigned long long copy[RPGD_TEST_MAX_SAMPLES];
     if (n > RPGD_TEST_MAX_SAMPLES) n = RPGD_TEST_MAX_SAMPLES;
-    memcpy(copy, samples, (size_t)n * sizeof(unsigned long long));
-    sort_u64(copy, n);
-    unsigned long long min_ticks = copy[0];
-    unsigned long long max_ticks = copy[n - 1];
+    memcpy(g_sort_buf, samples, (size_t)n * sizeof(unsigned long long));
+    sort_u64(g_sort_buf, n);
+    unsigned long long min_ticks = g_sort_buf[0];
+    unsigned long long max_ticks = g_sort_buf[n - 1];
     unsigned long long sum = 0;
-    for (int i = 0; i < n; ++i) sum += copy[i];
-    unsigned long long median_ticks = copy[n / 2];
+    for (int i = 0; i < n; ++i) sum += g_sort_buf[i];
+    unsigned long long median_ticks = g_sort_buf[n / 2];
     int p95_index = (95 * n + 99) / 100 - 1;
     if (p95_index < 0) p95_index = 0;
-    unsigned long long p95_ticks = copy[p95_index];
+    unsigned long long p95_ticks = g_sort_buf[p95_index];
 #ifdef ZYNQ
     xil_printf("%s n=%d\r\n", title, n);
 #endif
@@ -174,6 +183,149 @@ static void fill_runtime_and_state(RpgdRuntime* runtime, float* state6)
     runtime->m_pole = 0.0f;
 }
 
+static int run_split_parity(void)
+{
+    RpgdConfig cfg = RPGD_DEFAULT_CONFIG;
+    RpgdRuntime runtime;
+    float state6[6];
+    fill_runtime_and_state(&runtime, state6);
+    RpgdSolver* mono = rpgd_create(&cfg);
+    if (!mono) return 0;
+    rpgd_debug_set_q(mono, RPGD_GOLDEN_Q_INIT);
+    float u_mono[RPGD_TEST_PARITY_STEPS];
+    float costs_mono[RPGD_GOLDEN_N_COSTS];
+    int idx_mono[RPGD_GOLDEN_N_COSTS];
+    for (int i = 0; i < RPGD_TEST_PARITY_STEPS; ++i) {
+        u_mono[i] = rpgd_step(mono, state6, &runtime);
+        if (i == 0) {
+            rpgd_debug_get_costs(mono, costs_mono);
+            rpgd_debug_get_indices(mono, idx_mono);
+        }
+    }
+    rpgd_destroy(mono);
+
+    RpgdSolver* split = rpgd_create(&cfg);
+    if (!split) return 0;
+    rpgd_debug_set_q(split, RPGD_GOLDEN_Q_INIT);
+    int pass = 1;
+    for (int i = 0; i < RPGD_TEST_PARITY_STEPS; ++i) {
+        RpgdStepPlan plan;
+        if (rpgd_step_prepare(split, state6, &runtime, &plan) != RPGD_STATUS_OK) pass = 0;
+        if (rpgd_step_optimize_range(split, &plan, 0, 8, &g_test_scratch) != RPGD_STATUS_OK) pass = 0;
+        if (rpgd_step_optimize_range(split, &plan, 8, cfg.num_rollouts, &g_test_scratch) != RPGD_STATUS_OK) pass = 0;
+        const float u = rpgd_step_finalize(split, &plan);
+        if (u != u_mono[i]) pass = 0;
+        if (i == 0) {
+            float costs[RPGD_GOLDEN_N_COSTS];
+            int idx[RPGD_GOLDEN_N_COSTS];
+            rpgd_debug_get_costs(split, costs);
+            rpgd_debug_get_indices(split, idx);
+            if (memcmp(costs, costs_mono, sizeof(costs_mono)) != 0) pass = 0;
+            if (memcmp(idx, idx_mono, sizeof(idx_mono)) != 0) pass = 0;
+        }
+    }
+    rpgd_destroy(split);
+#ifdef ZYNQ
+    xil_printf(pass ? "RPGD_SPLIT PASS\r\n" : "RPGD_SPLIT FAIL\r\n");
+#endif
+    return pass;
+}
+
+#ifdef RPGD_DUAL_CORE
+static int run_dual_core_parity_and_timing(void)
+{
+    RpgdConfig cfg = RPGD_DEFAULT_CONFIG;
+    RpgdRuntime runtime;
+    float state6[6];
+    fill_runtime_and_state(&runtime, state6);
+
+    RpgdSolver* serial = rpgd_create(&cfg);
+    if (!serial) return 0;
+    rpgd_debug_set_q(serial, RPGD_GOLDEN_Q_INIT);
+    float u_serial[8];
+    float q_serial[RPGD_GOLDEN_Q_INIT_LEN];
+    for (int i = 0; i < 8; ++i) u_serial[i] = rpgd_step(serial, state6, &runtime);
+    rpgd_debug_get_q(serial, q_serial);
+    rpgd_destroy(serial);
+
+    RpgdSolver* dual = rpgd_create(&cfg);
+    if (!dual) return 0;
+    if (rpgd_amp_init(dual, 0u) != RPGD_STATUS_OK) {
+#ifdef ZYNQ
+        xil_printf("RPGD_DUAL FAIL amp_init status=%d state=%u\r\n",
+                   rpgd_amp_last_status(), rpgd_amp_worker_state());
+#endif
+        rpgd_destroy(dual);
+        return 0;
+    }
+    rpgd_debug_set_q(dual, RPGD_GOLDEN_Q_INIT);
+    int pass = 1;
+    for (int i = 0; i < 8; ++i) {
+        float u = 0.0f;
+        const int rc = rpgd_amp_step(dual, state6, &runtime, &u);
+        if (rc != RPGD_STATUS_OK || u != u_serial[i]) pass = 0;
+        if (!rpgd_amp_ready()) pass = 0;
+        const RpgdAmpTiming* t = rpgd_amp_last_timing();
+        print_u32("dual_prepare_us=", t->prepare_us);
+        print_u32("dual_dispatch_us=", t->dispatch_us);
+        print_u32("dual_cpu0_us=", t->cpu0_range_us);
+        print_u32("dual_cpu1_us=", t->cpu1_range_us);
+        print_u32("dual_barrier_us=", t->barrier_us);
+        print_u32("dual_finalize_us=", t->finalize_us);
+        print_u32("dual_total_us=", t->total_us);
+    }
+    float q_dual[RPGD_GOLDEN_Q_INIT_LEN];
+    rpgd_debug_get_q(dual, q_dual);
+    if (memcmp(q_serial, q_dual, sizeof(q_serial)) != 0) pass = 0;
+
+    int n = RPGD_TEST_STEADY_ITERS;
+    if (n > RPGD_TEST_MAX_SAMPLES) n = RPGD_TEST_MAX_SAMPLES;
+    int timing_status = RPGD_STATUS_OK;
+    unsigned int over_30ms = 0;
+    for (int i = 0; i < n; ++i) {
+        unsigned long long s = GetTimeNowHighRes();
+        float u = 0.0f;
+        const int rc = rpgd_amp_step(dual, state6, &runtime, &u);
+        g_steady[i] = GetTimeNowHighRes() - s;
+        if (rc != RPGD_STATUS_OK || !isfinite(u)) timing_status = rc;
+        if (us_from_ticks(g_steady[i]) >= 30000u) ++over_30ms;
+        if (!rpgd_amp_ready()) {
+            timing_status = rpgd_amp_last_status();
+            n = i + 1;
+            break;
+        }
+    }
+    if (n < 1) {
+#ifdef ZYNQ
+        xil_printf("dual_steady skipped\r\n");
+#endif
+        rpgd_amp_park();
+        rpgd_destroy(dual);
+        return 0;
+    }
+    print_timing("dual_steady", g_steady, n);
+    memcpy(g_sort_buf, g_steady, (size_t)n * sizeof(unsigned long long));
+    sort_u64(g_sort_buf, n);
+    const unsigned int median_us = us_from_ticks(g_sort_buf[n / 2]);
+    const unsigned int p95_us = us_from_ticks(g_sort_buf[(95 * n + 99) / 100 - 1]);
+    const unsigned int max_us = us_from_ticks(g_sort_buf[n - 1]);
+    const int gate = pass && timing_status == RPGD_STATUS_OK
+        && median_us <= 28000u && p95_us < 29000u && over_30ms == 0u;
+    print_u32("dual_timeouts=", rpgd_amp_timeout_count());
+    print_u32("dual_epoch=", rpgd_amp_epoch());
+    print_u32("dual_worker_state=", rpgd_amp_worker_state());
+    print_u32("dual_over_30ms=", over_30ms);
+    print_u32("dual_max_us=", max_us);
+    print_i32("dual_gate=", gate);
+    rpgd_amp_park();
+    rpgd_destroy(dual);
+#ifdef ZYNQ
+    xil_printf(pass ? "RPGD_DUAL_PARITY PASS\r\n" : "RPGD_DUAL_PARITY FAIL\r\n");
+#endif
+    return gate;
+}
+#endif
+
 void rpgd_on_target_test_run(void)
 {
 #ifdef ZYNQ
@@ -182,7 +334,9 @@ void rpgd_on_target_test_run(void)
     print_u32("timer_tick_hz=", CLOCK_FREQ);
     const int parity_pass = run_parity();
     print_i32("parity=", parity_pass);
-    if (!parity_pass) {
+    const int split_pass = run_split_parity();
+    print_i32("split_parity=", split_pass);
+    if (!parity_pass || !split_pass) {
 #ifdef ZYNQ
         xil_printf("RPGD_ON_TARGET timing skipped: parity failed\r\n");
 #endif
@@ -205,7 +359,7 @@ void rpgd_on_target_test_run(void)
     float state6[6];
     fill_runtime_and_state(&runtime, state6);
 
-    unsigned long long warmup[RPGD_TEST_WARMUP_ITERS];
+    unsigned long long* warmup = g_warmup;
     for (int i = 0; i < RPGD_TEST_WARMUP_ITERS; ++i) {
         unsigned long long s = GetTimeNowHighRes();
         (void)rpgd_step(solver, state6, &runtime);
@@ -213,7 +367,7 @@ void rpgd_on_target_test_run(void)
     }
     print_timing("warmup", warmup, RPGD_TEST_WARMUP_ITERS);
 
-    unsigned long long steady[RPGD_TEST_STEADY_ITERS];
+    unsigned long long* steady = g_steady;
     int timing_status = RPGD_STATUS_OK;
     for (int i = 0; i < RPGD_TEST_STEADY_ITERS; ++i) {
         unsigned long long s = GetTimeNowHighRes();
@@ -239,10 +393,18 @@ void rpgd_on_target_test_run(void)
     print_i32("deadline_pass=", timing_status == RPGD_STATUS_OK && max_us < period_us);
     rpgd_destroy(solver);
 
+#ifdef RPGD_DUAL_CORE
+    print_i32("dual_gate=", run_dual_core_parity_and_timing());
+    /* Dual-core RPGD_Init programs the control timer through the GIC.
+     * This harness never calls Interrupt_Init, so skip controller bind here
+     * (Stage B uses the normal firmware image). */
+    print_i32("controller_init_skipped=", 1);
+#else
     RPGD_Ops.init();
     print_u32("controller_stride=", rpgd_controller_stride());
     print_i32("controller_init_status=", rpgd_controller_last_status());
     RPGD_Ops.release();
+#endif
 #ifdef ZYNQ
     xil_printf("RPGD_ON_TARGET idle\r\n");
 #endif

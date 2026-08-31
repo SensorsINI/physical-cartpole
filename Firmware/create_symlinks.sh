@@ -96,6 +96,14 @@ if [ "${1:-}" = "--zynq" ]; then
     "./Src/General ./VitisProjects/CartPoleFirmware/src"
     "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
   )
+elif [ "${1:-}" = "--zynq-amp" ]; then
+  directories=(
+    "./Src/CartPoleFirmware ./VitisProjects/CartPoleFirmware/src"
+    "./Src/General ./VitisProjects/CartPoleFirmware/src"
+    "./Src/Zynq ./VitisProjects/CartPoleFirmware/src/Zynq"
+    "./Src/RPGDWorker ./VitisProjects/RPGDWorker/src"
+    "./Src/General/rpgd_c ./VitisProjects/RPGDWorker/src/rpgd_c"
+  )
 elif [ "$#" -gt 0 ]; then
   directories=("$@")
 fi

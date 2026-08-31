@@ -2,6 +2,7 @@
 #include "parameters.h"
 #include "median_filter.h"
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h> // For SHRT_MAX
 #include "math.h"
 
@@ -289,6 +290,10 @@ void set_timesteps_for_derivative(unsigned short timesteps) {
 	position_history_initialised = 0;
 	idx_for_derivative_calculation_angle = 0;
 	idx_for_derivative_calculation_position = 0;
+	angleDBufferIndex = 0;
+	positionDBufferIndex = 0;
+	memset(angleDBuffer, 0, sizeof(angleDBuffer));
+	memset(positionDBuffer, 0, sizeof(positionDBuffer));
 	last_difference = 100000.0;
 	freezme = 0;
 }

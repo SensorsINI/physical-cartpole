@@ -2,7 +2,20 @@
 #define RPGD_ON_TARGET_CONFIG_H
 
 #define RPGD_TEST_WARMUP_ITERS     3
-#define RPGD_TEST_STEADY_ITERS     30
 #define RPGD_TEST_PARITY_STEPS     3
+
+#ifdef RPGD_DUAL_CORE
+#ifndef RPGD_TEST_STEADY_ITERS
+#define RPGD_TEST_STEADY_ITERS     1000
+#endif
+#ifndef RPGD_TEST_LONG_ITERS
+#define RPGD_TEST_LONG_ITERS       0
+#endif
+#else
+#define RPGD_TEST_STEADY_ITERS     30
+#define RPGD_TEST_LONG_ITERS       0
+#endif
+
+#define RPGD_TEST_MAX_SAMPLES      10000
 
 #endif

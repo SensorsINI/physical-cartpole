@@ -19,6 +19,7 @@ proc usage {} {
 	puts "Usage:"
 	puts "  xsct program_qspi_boot.tcl -boot BOOT.BIN -fsbl fsbl.elf"
 	puts "  xsct program_qspi_boot.tcl -fsbl fsbl.elf -bit system.bit -elf app.elf \[-o BOOT.BIN\]"
+	puts "  xsct program_qspi_boot.tcl -fsbl fsbl.elf -bit system.bit -elf cpu0.elf -elf1 cpu1.elf --accept-dual-qspi"
 	exit 1
 }
 
@@ -26,6 +27,8 @@ set boot ""
 set fsbl ""
 set bit ""
 set elf ""
+set elf1 ""
+set accept_dual 0
 set out [file join $script_dir BOOT.BIN]
 set flash_type "qspi-x4-single"
 
@@ -47,6 +50,13 @@ for {set i 0} {$i < $argc} {incr i} {
 		-elf - --elf {
 			incr i
 			set elf [lindex $argv $i]
+		}
+		-elf1 - --elf1 {
+			incr i
+			set elf1 [lindex $argv $i]
+		}
+		--accept-dual-qspi {
+			set accept_dual 1
 		}
 		-o - --out {
 			incr i
@@ -84,13 +94,29 @@ if {$boot eq ""} {
 		puts "ERROR: ELF not found: $elf"
 		exit 1
 	}
+	if {$elf1 ne ""} {
+		if {!$accept_dual} {
+			puts "ERROR: dual-ELF QSPI requires --accept-dual-qspi after Stage A-D acceptance."
+			puts "NV-parameter sectors 0x00FD0000 and 0x00FFF000 are preserved only if BOOT.BIN stays below them."
+			exit 1
+		}
+		if {![file exists $elf1]} {
+			puts "ERROR: CPU1 ELF not found: $elf1"
+			exit 1
+		}
+	}
 	set bif [file join $script_dir cartpole_qspi.generated.bif]
 	set fh [open $bif w]
 	puts $fh "the_ROM_image:"
 	puts $fh "\{"
 	puts $fh "\t\[bootloader\] [file normalize $fsbl]"
 	puts $fh "\t[file normalize $bit]"
-	puts $fh "\t[file normalize $elf]"
+	if {$elf1 eq ""} {
+		puts $fh "\t[file normalize $elf]"
+	} else {
+		puts $fh "\t\[destination_cpu=a9-0\] [file normalize $elf]"
+		puts $fh "\t\[destination_cpu=a9-1\] [file normalize $elf1]"
+	}
 	puts $fh "\}"
 	close $fh
 	puts "bootgen -> $out"
