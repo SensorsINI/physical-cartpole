@@ -449,6 +449,10 @@ void CONTROL_BackgroundTask(void)
 		if (calibrate) {
 			CONTROL_CalibrationStep();
 		} else {
+#ifdef USE_EXTERNAL_INTERFACE
+			/* Own target before on-chip control and before STATE is packed. */
+			target_position = get_normed_slider_state() * TrackHalfLength;
+#endif
 			// Microcontroller Control Routine
 			if (ControlOnChip_Enabled)	{
 
@@ -540,6 +544,9 @@ void CONTROL_BackgroundTask(void)
 					&target_position, &target_equilibrium,
 					&run_hardware_experiment, &save_to_offline_buffers,
 					&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
+#ifdef USE_EXTERNAL_INTERFACE
+			target_position = get_normed_slider_state() * TrackHalfLength;
+#endif
 		}
 
         if(save_to_offline_buffers){
@@ -788,9 +795,13 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_TARGET_POSITION:
 		{
+#ifdef USE_EXTERNAL_INTERFACE
+			/* JB slider owns target_position; ignore the PC value. */
+#else
 			target_position = *((float *)&rxBuffer[3]);
 #ifdef ZYNQ
 			USE_TARGET_SWITCHES = false;
+#endif
 #endif
 			break;
 		}

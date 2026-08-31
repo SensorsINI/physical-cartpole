@@ -47,6 +47,7 @@ from globals import (
     MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES, MOTOR_FULL_SCALE_SAFE,
     SERIAL_PORT_NUMBER, SERIAL_BAUD,
     SEND_CHANGE_IN_TARGET_POSITION_ALWAYS,
+    USE_EXTERNAL_INTERFACE,
     AUTOSTART,
     USE_DVS_STATE_ESTIMATION,
     USE_EKF, EKF_CALIBRATION_RUN,
@@ -489,6 +490,12 @@ class PhysicalCartPoleDriver:
         self.CartPoleInstance.target_position = self.target_position
 
     def set_target_position(self):
+
+        if USE_EXTERNAL_INTERFACE:
+            # Chip slider is the source; STATE already carried it in load_data_from_chip.
+            self.apply_target_position_from_chip()
+            self.CartPoleInstance.target_position = self.target_position
+            return
 
         if self.epm.current_experiment_protocol.is_idle():
             self.target_position, self.CartPoleInstance.target_equilibrium = self.dancer.dance_step(

@@ -7,6 +7,10 @@ from CartPole.cartpole_parameters import TrackHalfLength
 
 CHIP = "ZYNQ"  # Can be "STM" or "ZYNQ"; remember to change chip specific values on firmware if you want to run control from there
 ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardware_bridge.h
+# Must match Firmware/Src/CartPoleFirmware/hardware_bridge.h. When True the JB
+# slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
+# and shows the chip target (STATE) on the PC.
+USE_EXTERNAL_INTERFACE = True
 CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
