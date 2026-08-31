@@ -23,7 +23,7 @@
 //configuration for Zynq
 // JB Pmod slider → CartPoleFirmware target_position (see tools/slider_pmod/README.md).
 // Needs the cartpole bitstream with PmodAD1 counts 40/120/1000/800.
-//#define USE_EXTERNAL_INTERFACE
+#define USE_EXTERNAL_INTERFACE
 
 
 
