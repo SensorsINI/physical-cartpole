@@ -42,6 +42,8 @@ ANGLE_FILTER_MODE_TRIMMED_MEAN = 2
 # the PL block is absent or the transaction failed; the step output zero force,
 # no SW fallback) when the on-chip SecLoc wrapper is active.
 STATE_MESSAGE_LEN = 36
+# Firmware uses a 200-byte reply buffer: 3-byte header + 2 bytes/sample + CRC.
+MAX_RAW_ANGLE_SAMPLES_PER_PACKET = 98
 SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
 
@@ -332,11 +334,24 @@ class Interface:
         }
 
     def collect_raw_angle(self, lenght=100, interval_us=100):
-        msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8, lenght % 256, lenght // 256, interval_us % 256, interval_us // 256]
-        msg.append(self._crc(msg))
-        self._write_message(msg)
-        reply = self._receive_reply(CMD_COLLECT_RAW_ANGLE, 4 + 2 * lenght, crc=False, timeout=100)
-        return struct.unpack(str(lenght) + 'H', bytes(reply[3:3 + 2 * lenght]))
+        if lenght < 0:
+            raise ValueError("lenght must be non-negative")
+
+        samples = []
+        remaining = lenght
+        while remaining:
+            chunk = min(remaining, MAX_RAW_ANGLE_SAMPLES_PER_PACKET)
+            msg = [SERIAL_SOF, CMD_COLLECT_RAW_ANGLE, 8,
+                   chunk % 256, chunk // 256,
+                   interval_us % 256, interval_us // 256]
+            msg.append(self._crc(msg))
+            self._write_message(msg)
+            reply = self._receive_reply(
+                CMD_COLLECT_RAW_ANGLE, 4 + 2 * chunk, crc=False, timeout=100)
+            samples.extend(struct.unpack(
+                str(chunk) + 'H', bytes(reply[3:3 + 2 * chunk])))
+            remaining -= chunk
+        return tuple(samples)
 
     def set_angle_filter(self, window_size, trim_count, filter_mode):
         """Reconfigure the FPGA angle filter block at runtime (Zynq only).
