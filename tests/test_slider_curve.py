@@ -38,6 +38,14 @@ def test_c_rails_match_python():
         SLIDER_ADC_RIGHT, abs=1e-4
     )
 
+
+def test_slider_target_half_length_is_fourteen_cm():
+    text = (REPO_ROOT / "Firmware" / "Src" / "CartPoleFirmware" / "parameters.c").read_text()
+    m = re.search(r"SliderTargetHalfLength\s*=\s*([0-9.]+)", text)
+    assert m and float(m.group(1)) == pytest.approx(0.14)
+    assert SLIDER_TARGET_HALF_LENGTH == pytest.approx(0.14)
+
+
 def test_map_is_single_affine():
     text = C_PATH.read_text()
     assert "2.0f * from_left - 1.0f" in text

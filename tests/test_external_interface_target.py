@@ -48,6 +48,13 @@ def test_slider_applied_before_state_packet():
     assert apply < state
 
 
+def test_slider_target_is_capped_at_fourteen_cm():
+    params = (REPO / "Firmware" / "Src" / "CartPoleFirmware" / "parameters.c").read_text()
+    assert re.search(r"SliderTargetHalfLength\s*=\s*0\.14", params)
+    assert "get_normed_slider_state() * SliderTargetHalfLength" in CONTROL
+    assert "get_normed_slider_state() * TrackHalfLength" not in CONTROL
+
+
 def test_driver_adopts_chip_target_when_slider_on():
     if not _globals_slider_on():
         return

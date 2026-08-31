@@ -26,6 +26,7 @@ unsigned short ANGLE_AVERAGE_LEN					=		1;		// Number of samples to average over
 
 
 const float TrackHalfLength							=		0.198;
+const float SliderTargetHalfLength					=		0.14;  // JB pot rails; inside the 0.198 m track
 
 int MOTOR = MOTOR_POLOLU;
 

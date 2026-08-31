@@ -451,7 +451,7 @@ void CONTROL_BackgroundTask(void)
 		} else {
 #ifdef USE_EXTERNAL_INTERFACE
 			/* Own target before on-chip control and before STATE is packed. */
-			target_position = get_normed_slider_state() * TrackHalfLength;
+			target_position = get_normed_slider_state() * SliderTargetHalfLength;
 #endif
 			// Microcontroller Control Routine
 			if (ControlOnChip_Enabled)	{
@@ -545,7 +545,7 @@ void CONTROL_BackgroundTask(void)
 					&run_hardware_experiment, &save_to_offline_buffers,
 					&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
 #ifdef USE_EXTERNAL_INTERFACE
-			target_position = get_normed_slider_state() * TrackHalfLength;
+			target_position = get_normed_slider_state() * SliderTargetHalfLength;
 #endif
 		}
 
@@ -649,8 +649,8 @@ void CONTROL_BackgroundTask(void)
 
 #ifdef ZYNQ
 #ifdef USE_EXTERNAL_INTERFACE
-	/* JB slider: left +TrackHalfLength, visual centre 0, right −TrackHalfLength. */
-	target_position = get_normed_slider_state() * TrackHalfLength;
+	/* JB slider: left −SliderTargetHalfLength, electrical mid 0, right +SliderTargetHalfLength. */
+	target_position = get_normed_slider_state() * SliderTargetHalfLength;
 
 	int target_equilibrium_from_external_button = get_target_equilibrium_from_external_button();
 	if (target_equilibrium_from_external_button != 0){

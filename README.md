@@ -149,7 +149,7 @@ The remaining resistors and capacitor are hidden under heat shrink tube.
 
 #### Target-position slider (JB)
 
-On Zybo, a Pmod slider on **JB** (PmodAD1) sets `target_position` in `CartPoleFirmware` when `USE_EXTERNAL_INTERFACE` is on. Firmware maps ADC affinely between the parked rails (electrical mid is 0); the ends are ±`TrackHalfLength`.
+On Zybo, a Pmod slider on **JB** (PmodAD1) sets `target_position` in `CartPoleFirmware` when `USE_EXTERNAL_INTERFACE` is on. Firmware maps ADC affinely between the parked rails (electrical mid is 0); the ends are ±`SliderTargetHalfLength` (0.14 m, inside the 0.198 m track). The driver displays that chip target.
 
 PmodAD1 must be built with SPI counts **40/120/1000/800** at 100 MHz. Calibration, programming, and the check script: [tools/slider_pmod/README.md](tools/slider_pmod/README.md).
 
