@@ -42,8 +42,8 @@
 /* 2026-09-02 go-to: AMP RPGD 20 ms / 8 rollouts (hang 3261.643). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_RPGD
 #else
-/* Dense-8 on-chip C. AMP flash still boots RPGD; LSTM go-to is 49b2aec1. */
-#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_C
+/* Dense-8 on PL (hls4ml via SecLoc frontend, gate bypassed). AMP flash still boots RPGD. */
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_NeuralImitator
 #endif
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test.
