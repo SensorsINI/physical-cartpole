@@ -1,4 +1,4 @@
-/* On-chip AMP RPGD: 20 ms period, 8 rollouts (4 per core), N=1. */
+/* 2026-09-02 go-to: on-chip AMP RPGD, 20 ms, 8 rollouts (4 per core), N=1. */
 /* Source/config fingerprint: 0502c299bb481e2a */
 #ifndef RPGD_ZYNQ_30MS_CONFIG_H
 #define RPGD_ZYNQ_30MS_CONFIG_H

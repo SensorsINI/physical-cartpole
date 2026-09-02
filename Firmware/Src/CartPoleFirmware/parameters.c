@@ -63,7 +63,7 @@ const float POSITION_ENCODER_RANGE					=		4649;
 #else  // ZYBO_Z720
 
 #ifdef RPGD_DUAL_CORE
-/* Same map as the working PC rpgd-c 25 ms run. */
+/* 2026-09-02 go-to: same LSTM quant map as working PC rpgd-c at 20 ms. */
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 #else
 // Matches the physical recordings used to train Long/quant/LSTM-7IN-64H1-64H2-1OUT-0.
