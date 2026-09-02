@@ -4,11 +4,11 @@
 #include "communication_with_PC_general.h"
 #include <stdbool.h>
 
-// State packet length includes an 8-byte accumulated chip timestamp and 1 SecLoc telemetry byte
+// State packet length includes an 8-byte accumulated chip timestamp, 1 SecLoc telemetry byte
 // (bit 0 = skipped_update, bit 1 = gate_skipped, bit 2 = step computed by the PL backend,
 // bit 3 = PL fault: PL backend selected but the PL block is absent or the transaction
-// failed; the step output zero force, no SW fallback).
-#define STATE_MESSAGE_LEN 36
+// failed; the step output zero force, no SW fallback), and target_equilibrium (float).
+#define STATE_MESSAGE_LEN 40
 
 
 int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt);
@@ -19,6 +19,7 @@ void prepare_message_to_PC_state(
 		float angleD_unprocessed,
 		short position,
 		float target_position,
+		float target_equilibrium,
 		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,

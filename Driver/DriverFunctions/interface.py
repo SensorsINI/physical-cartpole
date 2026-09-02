@@ -42,8 +42,8 @@ ANGLE_FILTER_MODE_TRIMMED_MEAN = 2
 # and 1 SecLoc telemetry byte (bit 0 = skipped_update, bit 1 = gate_skipped,
 # bit 2 = step computed by the PL backend, bit 3 = PL fault: PL backend selected but
 # the PL block is absent or the transaction failed; the step output zero force,
-# no SW fallback) when the on-chip SecLoc wrapper is active.
-STATE_MESSAGE_LEN = 36
+# no SW fallback) when the on-chip SecLoc wrapper is active, plus target_equilibrium.
+STATE_MESSAGE_LEN = 40
 # Firmware uses a 200-byte reply buffer: 3-byte header + 2 bytes/sample + CRC.
 MAX_RAW_ANGLE_SAMPLES_PER_PACKET = 98
 SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
@@ -705,14 +705,14 @@ class Interface:
 
         (angle, angleD, position, target_position, command, invalid_steps, time_difference,
          time_current_measurement_chip, latency, latency_violation,
-         secloc_flags) = struct.unpack(
-            '=hfhfhBIQ2HB', bytes(reply[3:message_length - 1]))
+         secloc_flags, target_equilibrium) = struct.unpack(
+            '=hfhfhBIQ2HBf', bytes(reply[3:message_length - 1]))
 
         return (angle, angleD, position, target_position, command, invalid_steps,
                 time_difference / 1e6, time_current_measurement_chip / 1e6,
                 latency / 1e5, latency_violation,
                 secloc_flags & 1, (secloc_flags >> 1) & 1, (secloc_flags >> 2) & 1,
-                (secloc_flags >> 3) & 1)
+                (secloc_flags >> 3) & 1, target_equilibrium)
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
         survive = reconnect_at_timeout and cmd == CMD_STATE

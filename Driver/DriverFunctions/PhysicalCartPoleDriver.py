@@ -132,6 +132,7 @@ class PhysicalCartPoleDriver:
         self.target_position = 0.0
         self.target_position_previous = 0.0
         self.target_position_from_chip = 0.0
+        self.target_equilibrium_from_chip = 1.0
         self.target_equilibrium_previous = 0  # -1 or 1, 0 is not a valid value, but this ensures that at the begining the target equilibrium is always updated
         self.base_target_position = 0.0
 
@@ -489,7 +490,8 @@ class PhysicalCartPoleDriver:
          invalid_steps, time_between_measurements_chip, time_current_measurement_chip,
          firmware_latency, latency_violation_chip,
          self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip,
-         self.secloc_pl_used_chip, self.secloc_pl_fault_chip) = state
+         self.secloc_pl_used_chip, self.secloc_pl_fault_chip,
+         self.target_equilibrium_from_chip) = state
         if recovered:
             # Chip may still report a stale nonzero command; do not restore it.
             self._hold_motor_after_uart_loss()
@@ -513,6 +515,9 @@ class PhysicalCartPoleDriver:
     def apply_target_position_from_chip(self):
         self.target_position = self.target_position_from_chip
 
+    def apply_target_equilibrium_from_chip(self):
+        self.CartPoleInstance.target_equilibrium = self.target_equilibrium_from_chip
+
     def update_parameters_in_cartpole_instance(self):
         """
         Just to make changes visible in GUI
@@ -532,8 +537,9 @@ class PhysicalCartPoleDriver:
     def set_target_position(self):
 
         if USE_EXTERNAL_INTERFACE:
-            # Chip slider is the source; STATE already carried it in load_data_from_chip.
+            # Chip slider/button are the source; STATE already carried them.
             self.apply_target_position_from_chip()
+            self.apply_target_equilibrium_from_chip()
             self.CartPoleInstance.target_position = self.target_position
             return
 

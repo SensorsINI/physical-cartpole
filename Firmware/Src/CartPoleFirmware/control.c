@@ -463,8 +463,14 @@ void CONTROL_BackgroundTask(void)
 			CONTROL_CalibrationStep();
 		} else {
 #ifdef USE_EXTERNAL_INTERFACE
-			/* Own target before on-chip control and before STATE is packed. */
+			/* Own targets before on-chip control and before STATE is packed. */
 			target_position = get_normed_slider_state() * SliderTargetHalfLength;
+			{
+				int te = get_target_equilibrium_from_external_button();
+				if (te != 0) {
+					target_equilibrium = (float)te;
+				}
+			}
 #endif
 			// Microcontroller Control Routine
 			if (ControlOnChip_Enabled)	{
@@ -588,6 +594,12 @@ void CONTROL_BackgroundTask(void)
 					&ControlOnChip_Enabled, &motor_command, &USE_TARGET_SWITCHES);
 #ifdef USE_EXTERNAL_INTERFACE
 			target_position = get_normed_slider_state() * SliderTargetHalfLength;
+			{
+				int te = get_target_equilibrium_from_external_button();
+				if (te != 0) {
+					target_equilibrium = (float)te;
+				}
+			}
 #endif
 		}
 
@@ -636,6 +648,7 @@ void CONTROL_BackgroundTask(void)
 					angleD_unprocessed,
 					position_short,
 					target_position,
+					target_equilibrium,
 					motor_command,
 					invalid_step,
 					time_difference_between_measurement,
@@ -847,7 +860,11 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_TARGET_EQUILIBRIUM:
 		{
+#ifdef USE_EXTERNAL_INTERFACE
+			/* JB button owns target_equilibrium; ignore the PC value. */
+#else
 			target_equilibrium = *((float *)&rxBuffer[3]);
+#endif
 			break;
 		}
 		case CMD_COLLECT_RAW_ANGLE:

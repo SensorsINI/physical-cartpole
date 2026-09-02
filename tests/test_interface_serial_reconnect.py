@@ -61,7 +61,7 @@ class StreamingStateDevice:
 
 def _state_packet(interface):
     payload = struct.pack(
-        "=hfhfhBIQ2HB",
+        "=hfhfhBIQ2HBf",
         -958,
         0.25,
         232,
@@ -73,6 +73,7 @@ def _state_packet(interface):
         660,
         0,
         0,
+        1.0,
     )
     packet = [SERIAL_SOF, CMD_STATE, STATE_MESSAGE_LEN]
     packet.extend(payload)
@@ -96,7 +97,7 @@ def test_read_state_reconnects_when_input_buffer_flush_fails(monkeypatch):
     assert broken_device.closed
     assert replacement_device.writes
     assert replacement_device.writes[0][1] == interface_module.CMD_STREAM_ON
-    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0)
+    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0, 1.0)
 
 
 def test_collect_raw_angle_chunks_requests_to_fit_firmware_buffer(monkeypatch):
@@ -176,7 +177,7 @@ def test_read_state_survives_brief_io_error_and_records_incident(monkeypatch):
 
     state = interface.read_state()
 
-    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0)
+    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0, 1.0)
     assert broken_device.closed
     assert interface.uart.incident_count == 1
     assert not interface.uart.disconnected

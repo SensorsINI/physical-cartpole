@@ -246,6 +246,7 @@ void prepare_message_to_PC_state(
 		float angleD_unprocessed,
 		short position,
 		float target_position,
+		float target_equilibrium,
 		int motor_command,
 		int invalid_step,
 		unsigned long time_difference_between_measurement,
@@ -269,6 +270,7 @@ void prepare_message_to_PC_state(
 	*((unsigned short *)&buffer[30]) = (unsigned short)(latency / 10);
 	*((unsigned short *)&buffer[32]) = (unsigned short)(latency_violation);
 	buffer[34] = secloc_flags;
+	*((float *)&buffer[35]) = target_equilibrium;
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
 }
