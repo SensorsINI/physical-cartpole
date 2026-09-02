@@ -15,6 +15,9 @@ int main(void)
 	Motor_Init();
 	Motor_Stop();
 	PC_Connection_Init();
+#ifdef ZYNQ
+	Gic_AmpEnableDistributor();
+#endif
 	rpgd_on_target_test_run();
 	for (;;) { }
 #else
@@ -41,6 +44,9 @@ int main(void)
 	Interruput_Init();
 	SetControlUpdatePeriod(POLLING_PERIOD_MS);			// Not needed for STM, introduced for consistency with Zynq
 	Interrupt_Set(CONTROL_Loop);
+#ifdef ZYNQ
+	Gic_AmpEnableDistributor();
+#endif
 
 	while (1)
 	{

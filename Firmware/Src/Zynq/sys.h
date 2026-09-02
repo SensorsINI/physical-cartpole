@@ -10,6 +10,7 @@ extern XScuGic XScuGicInstance; // The Instance of the Interrupt Controller Driv
 
 void Sleep_ms(unsigned int ms);
 void General_Init(void);
+void Gic_AmpEnableDistributor(void);
 
 #define POLOLU_MOTOR // define if using replacement Pololu motor with reversed polarity; see also encoder.c
 
