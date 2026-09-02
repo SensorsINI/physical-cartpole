@@ -223,3 +223,55 @@ def test_read_state_repeated_timeout_does_not_raise(monkeypatch):
     assert interface.uart.incident_count == 1
     assert interface.uart.reconnect_failures >= 1
     assert interface.uart.last_error_type is not None
+
+
+def test_reconnect_rediscovers_uart_when_old_path_is_gone(monkeypatch):
+    interface = Interface()
+    interface.port = "/dev/ttyUSB1"
+    interface.baud = 230400
+    broken_device = RaisingReadDevice(OSError(2, "No such file or directory"))
+    interface.device = broken_device
+
+    opens = []
+
+    def fake_serial(port, *_, **__):
+        opens.append(port)
+        if port == "/dev/ttyUSB1":
+            raise serial.SerialException("could not open port /dev/ttyUSB1")
+        if port == "/dev/ttyUSB3":
+            return StreamingStateDevice(_state_packet(interface))
+        raise serial.SerialException(f"unexpected port {port}")
+
+    monkeypatch.setattr(interface_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(interface_module.serial, "Serial", fake_serial)
+    monkeypatch.setattr(interface, "_candidate_reconnect_ports", lambda: ["/dev/ttyUSB1", "/dev/ttyUSB3"])
+
+    state = interface.read_state()
+
+    assert state[0] == -958
+    assert opens == ["/dev/ttyUSB1", "/dev/ttyUSB3"]
+    assert interface.port == "/dev/ttyUSB3"
+    assert interface.uart.incident_count == 1
+    assert not interface.uart.disconnected
+    assert interface.uart.reconnect_successes == 1
+
+
+def test_reconnect_records_failure_when_no_uart_path_exists(monkeypatch):
+    interface = Interface()
+    interface.port = "/dev/ttyUSB1"
+    interface.baud = 230400
+    interface.device = None
+    interface.uart.begin_incident(OSError(2, "No such file or directory"))
+
+    def fake_serial(*_, **__):
+        raise serial.SerialException("could not open port /dev/ttyUSB1")
+
+    monkeypatch.setattr(interface_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(interface_module.serial, "Serial", fake_serial)
+    monkeypatch.setattr(interface, "_candidate_reconnect_ports", lambda: ["/dev/ttyUSB1"])
+
+    assert interface.read_state() is None
+    assert interface.uart.disconnected
+    assert interface.uart.incident_count == 1
+    assert interface.uart.reconnect_failures >= 1
+    assert "No such file" in interface.uart.status_line() or "could not open" in interface.uart.status_line()

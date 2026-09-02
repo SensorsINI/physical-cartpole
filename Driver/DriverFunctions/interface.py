@@ -4,6 +4,8 @@ import termios
 import time
 import pandas as pd
 
+from DriverFunctions.zynq_serial import prefer_zynq_uart_port
+
 PING_TIMEOUT = 1.0  # Seconds
 CALIBRATE_TIMEOUT = 20.0  # Seconds
 HARDWARE_EXPERIMENT_TIMEOUT = 30.0  # Seconds
@@ -109,7 +111,8 @@ class UartHealth:
         if self.disconnected:
             started = self.last_start
             elapsed = 0.0 if started is None else (now if now is not None else time.monotonic()) - started
-            return f"UART: DOWN {elapsed:.1f}s (drop {self.incident_count})"
+            last = self.last_error_message or "unknown"
+            return f"UART: DOWN {elapsed:.1f}s (drop {self.incident_count}) last={last}"
         last = self.last_error_message or "unknown"
         return (
             f"UART: OK after {self.incident_count} drops "
@@ -212,13 +215,30 @@ class Interface:
         self.device = None
 
         time.sleep(1)
-        try:
-            self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
-        except SERIAL_IO_ERRORS as e:
+        last_error = None
+        opened_port = None
+        for port in self._candidate_reconnect_ports():
+            try:
+                self.device = serial.Serial(port, baudrate=self.baud, timeout=timeout)
+                opened_port = port
+                last_error = None
+                break
+            except SERIAL_IO_ERRORS as e:
+                last_error = e
+                self.device = None
+
+        if self.device is None:
             self.uart.reconnect_failures += 1
-            self.note_io_error(e)
-            self.device = None
+            if last_error is not None:
+                self.note_io_error(last_error)
             return False
+
+        if opened_port != self.port:
+            print(
+                f'UART reconnected on {opened_port} (was {self.port}).',
+                flush=True,
+            )
+            self.port = opened_port
 
         self.msg = []
         self.start = False
@@ -236,6 +256,16 @@ class Interface:
                 self.prevPktNum = 1000
 
         return True
+
+    def _candidate_reconnect_ports(self):
+        """Last path first, then Digilent FTDI UART if it re-enumerated."""
+        ports = []
+        if getattr(self, "port", None):
+            ports.append(self.port)
+        discovered = prefer_zynq_uart_port(None)
+        if discovered and discovered not in ports:
+            ports.append(discovered)
+        return ports
 
     def ping(self):
         msg = [SERIAL_SOF, CMD_PING, 4]
