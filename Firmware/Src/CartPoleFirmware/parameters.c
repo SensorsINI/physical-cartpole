@@ -12,7 +12,7 @@ unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
 // Calculating derivatives and dead angle detection
-unsigned short TIMESTEPS_FOR_DERIVATIVE				=		2;  // 20 at most. Must match Driver/globals.py (angleD computed here, positionD in driver).
+unsigned short TIMESTEPS_FOR_DERIVATIVE				=		1;  // Dense-8 known-good: 10 ms window at 10 ms. Must match Driver/globals.py.
 // TIMESTEPS_FOR_DERIVATIVE: How many timesteps are taken for derivative (position and angle) calculation
 // and dead angle detection.
 // Too small value makes the effect of sensor quantization severe.
@@ -66,7 +66,7 @@ const float POSITION_ENCODER_RANGE					=		4649;
 /* 2026-09-02 go-to: same LSTM quant map as working PC rpgd-c at 20 ms. */
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 #else
-// Matches the physical recordings used to train Long/quant/LSTM-7IN-64H1-64H2-1OUT-0.
+/* Dense-8: same 0.573 map as working LSTM/RPGD on this cart (force-fit 0.511 too weak). */
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 #endif
 

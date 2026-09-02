@@ -42,8 +42,8 @@
 /* 2026-09-02 go-to: AMP RPGD 20 ms / 8 rollouts (hang 3261.643). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_RPGD
 #else
-/* LSTM go-to is parent 49b2aec1. Accidental Vitis Debug stays LSTM. */
-#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_LSTM_C
+/* Dense-8 on-chip C. AMP flash still boots RPGD; LSTM go-to is 49b2aec1. */
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_C
 #endif
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test.

@@ -12,7 +12,7 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
 USE_EXTERNAL_INTERFACE = True
-CONTROLLER_NAME = 'mpc'  # PC rpgd-c go-to (20 ms / 8); LSTM go-to is 49b2aec1
+CONTROLLER_NAME = 'neural-imitator'  # Dense-8 PC; LSTM go-to is 49b2aec1
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development Zybo
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
 # on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
@@ -53,7 +53,7 @@ HARDWARE_ANGLE_FILTER_MODE = 1  # median
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
 # Main-thread compute inherits this process mask (io-main-split architecture).
-CONTROL_CPU_AFFINITY = ""  # "" for rpgd-c (OpenMP); "2" for TF neural-imitator / rpgd
+CONTROL_CPU_AFFINITY = "2"  # "2" for TF neural-imitator / rpgd; "" for rpgd-c (OpenMP)
 
 # Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
 # pins itself here via per-thread affinity. Full separation from compute requires
@@ -116,6 +116,8 @@ elif USE_SECLOC and POLLING_PERIOD_MS == 5:
     _derivative_default = "4"
 elif CONTROLLER_NAME == "mpc":
     _derivative_default = "3" if POLLING_PERIOD_MS == 5 else "1"
+elif CONTROLLER_NAME == "neural-imitator":
+    _derivative_default = "1"  # Dense-8 known-good: 10 ms window at 10 ms
 else:
     _derivative_default = "2"
 TIMESTEPS_FOR_DERIVATIVE = int(_derivative_default)
@@ -151,7 +153,7 @@ elif CHIP == 'ZYNQ':
     # NOTE: MOTOR_CORRECTION is controller-dependent here on purpose.
     # The active quant LSTM must use the map from its May 2025 physical training
     # recordings: Q=-1 while moving left produced command -5991.
-    MOTOR_CORRECTION_POLOLU_MLP = (0.5116974, 0.0178784, 0.0280385)   # force-fit, Dense-8
+    MOTOR_CORRECTION_POLOLU_MLP = (0.5116974, 0.0178784, 0.0280385)   # force-fit; too weak for Dense-8 today
     LSTM_MOTOR_GAIN = float(os.environ.get("LSTM_MOTOR_GAIN", "0.5733488"))
     if not 0.0 < LSTM_MOTOR_GAIN < 0.95:
         raise ValueError("LSTM_MOTOR_GAIN must be between 0 and 0.95")
