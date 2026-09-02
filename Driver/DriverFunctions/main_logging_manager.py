@@ -379,6 +379,10 @@ class MainLoggingManager:
             if timing_latency_string:
                 self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency_string + CLEAR_LINE)
 
+            uart_line = self.driver.InterfaceInstance.uart.status_line()
+            if uart_line:
+                self.tcm.print_temporary(BACK_TO_BEGINNING + uart_line + CLEAR_LINE)
+
             cached_controller_status = getattr(self.driver, "_cached_controller_status", None)
             if cached_controller_status and (self.driver.controlEnabled or self.driver.firmwareControl):
                 self.tcm.print_temporary(

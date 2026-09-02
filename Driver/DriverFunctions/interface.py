@@ -47,6 +47,77 @@ MAX_RAW_ANGLE_SAMPLES_PER_PACKET = 98
 SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
 
+class UartHealth:
+    """Disconnect statistics for the cartpole UART/FTDI link."""
+
+    def __init__(self):
+        self.incident_count = 0
+        self.last_start = None
+        self.last_end = None
+        self.last_duration = 0.0
+        self.total_downtime = 0.0
+        self.disconnected = False
+        self.last_error_type = None
+        self.last_error_errno = None
+        self.last_error_message = None
+        self.reconnect_successes = 0
+        self.reconnect_failures = 0
+        self._recovered_since_check = False
+
+    def record_error(self, error):
+        if error is None:
+            return
+        self.last_error_type = type(error).__name__
+        self.last_error_errno = getattr(error, "errno", None)
+        if isinstance(error, OSError) and error.strerror:
+            self.last_error_message = error.strerror
+        else:
+            self.last_error_message = str(error) or self.last_error_type
+
+    def begin_incident(self, error=None):
+        if error is not None:
+            self.record_error(error)
+        if self.disconnected:
+            return False
+        self.disconnected = True
+        self.incident_count += 1
+        self.last_start = time.monotonic()
+        self.last_end = None
+        self._recovered_since_check = False
+        return True
+
+    def end_incident(self):
+        if not self.disconnected:
+            return
+        now = time.monotonic()
+        self.last_end = now
+        if self.last_start is not None:
+            self.last_duration = now - self.last_start
+            self.total_downtime += self.last_duration
+        self.disconnected = False
+        self.reconnect_successes += 1
+        self._recovered_since_check = True
+
+    def consume_recovered(self):
+        recovered = self._recovered_since_check
+        self._recovered_since_check = False
+        return recovered
+
+    def status_line(self, now=None):
+        if self.incident_count == 0 and not self.disconnected:
+            return None
+        if self.disconnected:
+            started = self.last_start
+            elapsed = 0.0 if started is None else (now if now is not None else time.monotonic()) - started
+            return f"UART: DOWN {elapsed:.1f}s (drop {self.incident_count})"
+        last = self.last_error_message or "unknown"
+        return (
+            f"UART: OK after {self.incident_count} drops "
+            f"(last {self.last_duration:.1f}s, total {self.total_downtime:.1f}s) "
+            f"last={last}"
+        )
+
+
 class Interface:
     def __init__(self):
         self.device = None
@@ -60,6 +131,9 @@ class Interface:
         self.calibration_completed = False
 
         self.hardware_experiment_length = 0
+        self.uart = UartHealth()
+        # Setup still fails loudly; the run loop opts into surviving I/O errors.
+        self._survive_io_errors = False
 
     def open(self, port, baud):
         self.port = port
@@ -68,20 +142,59 @@ class Interface:
         self.device.reset_input_buffer()
 
     def close(self):
-        if self.device:
+        if not self.device:
+            return
+        try:
             self.pc_control_mode(False)
             self.control_mode(False)
             self.set_motor(0)
-            time.sleep(2)
+            if not self.uart.disconnected:
+                time.sleep(2)
+        except SERIAL_IO_ERRORS:
+            pass
+        try:
             self.device.close()
-            self.device = None
+        except SERIAL_IO_ERRORS:
+            pass
+        self.device = None
 
     def clear_read_buffer(self):
         self.device.reset_input_buffer()
         self.prevPktNum = 1000
 
+    def enable_runtime_io_tolerance(self):
+        self._survive_io_errors = True
+
+    def note_io_error(self, error):
+        if self.uart.begin_incident(error):
+            detail = self.uart.last_error_message or "serial error"
+            print(f'\nUART lost ({detail}); reconnecting.', flush=True)
+
+    def _mark_reconnected(self):
+        if not self.uart.disconnected:
+            return
+        self.uart.end_incident()
+        print(
+            f'\nUART restored after {self.uart.last_duration:.1f}s '
+            f'(drop {self.uart.incident_count}).',
+            flush=True,
+        )
+
     def _write_message(self, msg):
-        self.device.write(bytearray(msg))
+        if not self.device:
+            err = serial.SerialException("UART disconnected")
+            self.note_io_error(err)
+            if not self._survive_io_errors:
+                raise err
+            return False
+        try:
+            self.device.write(bytearray(msg))
+            return True
+        except SERIAL_IO_ERRORS as e:
+            self.note_io_error(e)
+            if not self._survive_io_errors:
+                raise
+            return False
 
     def _send_stream_output_request(self, en):
         msg = [SERIAL_SOF, CMD_STREAM_ON, 5, en]
@@ -89,15 +202,24 @@ class Interface:
         self._write_message(msg)
 
     def _reconnect(self, timeout=None, restart_stream=False):
-        print('\nSerial I/O error; reconnecting.')
+        if not self.uart.disconnected:
+            self.note_io_error(serial.SerialException("Serial I/O error"))
         try:
             if self.device:
                 self.device.close()
         except SERIAL_IO_ERRORS:
             pass
+        self.device = None
 
         time.sleep(1)
-        self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
+        try:
+            self.device = serial.Serial(self.port, baudrate=self.baud, timeout=timeout)
+        except SERIAL_IO_ERRORS as e:
+            self.uart.reconnect_failures += 1
+            self.note_io_error(e)
+            self.device = None
+            return False
+
         self.msg = []
         self.start = False
         self.prevPktNum = 1000
@@ -106,11 +228,14 @@ class Interface:
             self._send_stream_output_request(True)
             try:
                 self.clear_read_buffer()
-            except SERIAL_IO_ERRORS:
+            except SERIAL_IO_ERRORS as e:
                 # If the newly opened port cannot be flushed either, let the
                 # following read timeout/error drive the next reconnect attempt.
+                self.note_io_error(e)
                 self.msg = []
                 self.prevPktNum = 1000
+
+        return True
 
     def ping(self):
         msg = [SERIAL_SOF, CMD_PING, 4]
@@ -373,11 +498,17 @@ class Interface:
                 f"got {(echoed_window, echoed_trim, echoed_mode)}")
 
     def read_state(self):
-        if not self.calibration_in_progress:
+        self.enable_runtime_io_tolerance()
+        if self.device is None:
+            if not self._reconnect(timeout=READ_STATE_TIMEOUT, restart_stream=True):
+                return None
+        elif not self.calibration_in_progress:
             try:
                 self.clear_read_buffer()
-            except SERIAL_IO_ERRORS:
-                self._reconnect(timeout=READ_STATE_TIMEOUT, restart_stream=True)
+            except SERIAL_IO_ERRORS as e:
+                self.note_io_error(e)
+                if not self._reconnect(timeout=READ_STATE_TIMEOUT, restart_stream=True):
+                    return None
         message_length = STATE_MESSAGE_LEN
         timeout = CALIBRATE_TIMEOUT if self.calibration_in_progress else READ_STATE_TIMEOUT
         reply = self._receive_reply(
@@ -386,6 +517,14 @@ class Interface:
             timeout,
             reconnect_at_timeout=not self.calibration_in_progress,
         )
+        if reply is None:
+            return None
+
+        if self.uart.disconnected:
+            self._mark_reconnected()
+            self.set_motor(0)
+            if self.uart.disconnected:
+                return None
 
         (angle, angleD, position, target_position, command, invalid_steps, time_difference,
          time_current_measurement_chip, latency, latency_violation,
@@ -399,22 +538,47 @@ class Interface:
                 (secloc_flags >> 3) & 1)
 
     def _receive_reply(self, cmd, cmdLen, timeout=None, crc=True, reconnect_at_timeout=True):
-        self.device.timeout = timeout
+        survive = reconnect_at_timeout and cmd == CMD_STATE
+        reconnects = 0
         self.start = False
 
         while True:
+            if self.device is None:
+                if reconnect_at_timeout and reconnects == 0:
+                    self.note_io_error(serial.SerialException("UART disconnected"))
+                    if self._reconnect(timeout=timeout, restart_stream=True):
+                        reconnects += 1
+                        continue
+                if survive:
+                    return None
+                raise serial.SerialException("UART disconnected")
+
+            self.device.timeout = timeout
             try:
                 c = self.device.read()
-            except SERIAL_IO_ERRORS:
-                if reconnect_at_timeout:
-                    self._reconnect(timeout=timeout, restart_stream=True)
-                    continue
+            except SERIAL_IO_ERRORS as e:
+                self.note_io_error(e)
+                if reconnect_at_timeout and reconnects == 0:
+                    if self._reconnect(timeout=timeout, restart_stream=True):
+                        reconnects += 1
+                        continue
+                if survive:
+                    return None
                 raise
+
             # Timeout: reopen device, start stream, reset msg and try again
             if len(c) == 0:
                 if reconnect_at_timeout:
-                    print('\n_receive_reply: no response; reconnecting.')
+                    self.note_io_error(serial.SerialException("Timeout"))
+                    if survive:
+                        if reconnects == 0:
+                            if self._reconnect(timeout=timeout, restart_stream=True):
+                                reconnects += 1
+                                continue
+                        return None
                     self._reconnect(timeout=timeout, restart_stream=True)
+                    reconnects += 1
+                    continue
             else:
                 self.msg.append(ord(c))
                 if self.start == False:

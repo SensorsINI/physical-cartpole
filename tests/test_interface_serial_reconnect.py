@@ -1,3 +1,4 @@
+import serial
 import struct
 import sys
 import termios
@@ -117,3 +118,108 @@ def test_collect_raw_angle_chunks_requests_to_fit_firmware_buffer(monkeypatch):
 
     assert requested_chunks == [98, 98, 9]
     assert samples == tuple(range(count))
+
+
+class RaisingReadDevice:
+    def __init__(self, error):
+        self.error = error
+        self.timeout = None
+        self.closed = False
+
+    def reset_input_buffer(self):
+        pass
+
+    def write(self, data):
+        pass
+
+    def read(self):
+        raise self.error
+
+    def close(self):
+        self.closed = True
+
+
+class TimeoutDevice:
+    def __init__(self):
+        self.timeout = None
+        self.writes = []
+        self.closed = False
+
+    def reset_input_buffer(self):
+        pass
+
+    def write(self, data):
+        self.writes.append(bytes(data))
+
+    def read(self):
+        return b""
+
+    def close(self):
+        self.closed = True
+
+
+def test_read_state_survives_brief_io_error_and_records_incident(monkeypatch):
+    interface = Interface()
+    interface.port = "/dev/ttyUSB-test"
+    interface.baud = 230400
+    broken_device = RaisingReadDevice(OSError(5, "Input/output error"))
+    interface.device = broken_device
+
+    replacement_device = StreamingStateDevice(_state_packet(interface))
+    clock = {"t": 0.0}
+    monkeypatch.setattr(interface_module.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(interface_module.time, "sleep", lambda seconds: clock.__setitem__("t", clock["t"] + seconds))
+    monkeypatch.setattr(interface_module.serial, "Serial", lambda *_, **__: replacement_device)
+
+    state = interface.read_state()
+
+    assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0)
+    assert broken_device.closed
+    assert interface.uart.incident_count == 1
+    assert not interface.uart.disconnected
+    assert interface.uart.last_duration == 1.0
+    assert interface.uart.total_downtime == 1.0
+    assert interface.uart.reconnect_successes == 1
+    assert interface.uart.last_error_message == "Input/output error"
+    assert interface.uart.last_error_errno == 5
+    assert interface.uart.status_line() == (
+        "UART: OK after 1 drops (last 1.0s, total 1.0s) last=Input/output error"
+    )
+    motor_writes = [w for w in replacement_device.writes if w[1] == interface_module.CMD_SET_MOTOR]
+    assert motor_writes
+    assert struct.unpack("i", motor_writes[0][3:7])[0] == 0
+
+
+def test_read_state_repeated_timeout_does_not_raise(monkeypatch):
+    interface = Interface()
+    interface.port = "/dev/ttyUSB-test"
+    interface.baud = 230400
+    interface.device = TimeoutDevice()
+
+    opens = {"n": 0}
+
+    def fake_serial(*_, **__):
+        opens["n"] += 1
+        if opens["n"] > 2:
+            raise serial.SerialException("could not open port")
+        return TimeoutDevice()
+
+    monkeypatch.setattr(interface_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(interface_module.serial, "Serial", fake_serial)
+
+    assert interface.read_state() is None
+    assert interface.uart.disconnected
+    assert interface.uart.incident_count == 1
+    assert interface.uart.reconnect_successes == 0
+    assert interface.uart.status_line().startswith("UART: DOWN")
+    assert "(drop 1)" in interface.uart.status_line()
+
+    assert interface.read_state() is None
+    assert interface.uart.disconnected
+    assert interface.uart.incident_count == 1
+
+    assert interface.read_state() is None
+    assert interface.uart.disconnected
+    assert interface.uart.incident_count == 1
+    assert interface.uart.reconnect_failures >= 1
+    assert interface.uart.last_error_type is not None

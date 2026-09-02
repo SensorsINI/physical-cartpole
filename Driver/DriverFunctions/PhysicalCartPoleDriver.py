@@ -10,7 +10,7 @@ from CartPoleSimulation.CartPole.cartpole_ekf import EKFCartPole, EKFAdaptiveTun
 
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
-from DriverFunctions.interface import Interface
+from DriverFunctions.interface import Interface, SERIAL_IO_ERRORS
 from DriverFunctions.incoming_data_processor import IncomingDataProcessor
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import ExperimentProtocolsManager
 
@@ -262,8 +262,15 @@ class PhysicalCartPoleDriver:
             self._io_thread.join(timeout=2.0)
         self._io_thread = None
         self.angle_position_client.close()
-        self.InterfaceInstance.set_motor(0)
-        self.InterfaceInstance.close()
+        self.InterfaceInstance.enable_runtime_io_tolerance()
+        try:
+            self.InterfaceInstance.set_motor(0)
+        except SERIAL_IO_ERRORS:
+            pass
+        try:
+            self.InterfaceInstance.close()
+        except SERIAL_IO_ERRORS:
+            pass
         self.joystick.quit()
         self.mlm.live_plotter_sender.close()
         self.mlm.finish_csv_recording()
@@ -281,14 +288,19 @@ class PhysicalCartPoleDriver:
         if values == self._chip_secloc_sent:
             return
         self.InterfaceInstance.set_secloc_config(*values)
+        if self.InterfaceInstance.uart.disconnected:
+            return
         self._chip_secloc_sent = values
 
     def io_step(self):
 
+        self.InterfaceInstance.enable_runtime_io_tolerance()
         self.keyboard_controller.keyboard_input()
 
         self._sync_chip_secloc_config()
-        self.load_data_from_chip()
+        if not self.load_data_from_chip():
+            self._finish_io_step_without_chip()
+            return
         self.check_calibration_status()
 
         self.th.time_measurement()
@@ -447,13 +459,38 @@ class PhysicalCartPoleDriver:
         s[:] = self.s_dvs[:]
 
 
+    def _hold_motor_after_uart_loss(self):
+        self.Q = 0.0
+        self.command = 0
+        self.actualMotorCmd = 0
+
+    def _finish_io_step_without_chip(self):
+        self._hold_motor_after_uart_loss()
+        self.CartPoleInstance.Q_ccrc = self.Q
+        self.mlm.step()
+        self.actualMotorCmd_prev = self.actualMotorCmd
+        self.Q_prev_prev = self.Q_prev
+        self.Q_prev = self.Q
+        self.Q_ccrc_prev = self.CartPoleInstance.Q_ccrc
+        self.update_parameters_in_cartpole_instance()
+        if self.on_io_step is not None:
+            self.on_io_step()
+
     def load_data_from_chip(self):
         # This function will block at the rate of the control loop
+        state = self.InterfaceInstance.read_state()
+        if state is None:
+            self._hold_motor_after_uart_loss()
+            return False
+        recovered = self.InterfaceInstance.uart.consume_recovered()
         (angle_raw, angleD_raw, position_raw, self.target_position_from_chip, self.command,
          invalid_steps, time_between_measurements_chip, time_current_measurement_chip,
          firmware_latency, latency_violation_chip,
          self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip,
-         self.secloc_pl_used_chip, self.secloc_pl_fault_chip) = self.InterfaceInstance.read_state()
+         self.secloc_pl_used_chip, self.secloc_pl_fault_chip) = state
+        if recovered:
+            # Chip may still report a stale nonzero command; do not restore it.
+            self._hold_motor_after_uart_loss()
         if self.secloc_pl_fault_chip and not self._secloc_pl_fault_warned:
             self._secloc_pl_fault_warned = True
             print("SecLoc PL fault: selected PL backend but the PL chain is absent or failed (zero force).", flush=True)
@@ -469,6 +506,7 @@ class PhysicalCartPoleDriver:
                 self.target_position_from_chip,
                 time=self.th.time_current_measurement_chip,
             )
+        return True
 
     def apply_target_position_from_chip(self):
         self.target_position = self.target_position_from_chip
@@ -513,11 +551,13 @@ class PhysicalCartPoleDriver:
         if send_target_to_chip and (SEND_CHANGE_IN_TARGET_POSITION_ALWAYS or self.firmwareControl):
             if self.target_position != self.target_position_previous:
                 self.InterfaceInstance.set_target_position(self.target_position)
-                self.target_position_previous = self.target_position
+                if not self.InterfaceInstance.uart.disconnected:
+                    self.target_position_previous = self.target_position
 
             if self.CartPoleInstance.target_equilibrium != self.target_equilibrium_previous:
                 self.InterfaceInstance.set_target_equilibrium(self.CartPoleInstance.target_equilibrium)
-                self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
+                if not self.InterfaceInstance.uart.disconnected:
+                    self.target_equilibrium_previous = self.CartPoleInstance.target_equilibrium
 
         if not self.controlEnabled:
             self.apply_target_position_from_chip()
