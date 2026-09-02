@@ -37,7 +37,7 @@
 #define OnChipController_RPGD 8
 #endif
 
-/* Boot on-chip controller when the chip runs standalone (edit here). */
+/* 2026-09-02 go-to: PC neural-imitator + this on-chip LSTM (hang 3261.643). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_LSTM_C
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test.

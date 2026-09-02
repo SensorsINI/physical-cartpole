@@ -7,8 +7,11 @@ swing-up controller:
 
 It is the model selected by the late 3 June 2025 configuration and recovered as
 the working PC/TensorFlow and Zynq PS/C controller in August 2026. Parent-repo
-commit `3bab8a20` is the working firmware/configuration reference; `feaaa124`
-contains the initial side-by-side Zynq PS integration.
+commit `3bab8a20` is the August working firmware/configuration reference;
+`feaaa124` contains the initial side-by-side Zynq PS integration. After the
+2026-09-02 potentiometer remesure, the go-to physical reference is the
+`WORKING REFERENCE: PC and on-chip LSTM` commit on `Development` (hanging
+3261.643, circle 4044.15).
 
 ## What “quant” means here
 
@@ -91,8 +94,8 @@ The working reference uses:
 - 10 ms control period
 - two-sample derivative window (`N=2`, spanning 20 ms)
 - FPGA median angle filter, window 63
-- hanging angle 1014 ADC counts
-- full angle span 4066.88 ADC counts
+- hanging angle 3261.643 ADC counts (remeasured 2026-09-02; August ref used 1014)
+- full angle span 4044.15 ADC counts (August ref used 4066.88)
 - motor map `(0.5733488, 0.0257380, 0.0258429)`
 - clipped network output in `[-1, 1]`
 - zero recurrent state followed by one nominal-upright priming step
@@ -125,6 +128,12 @@ long sustained upright interval. See `validation/metrics.yml`.
 The final `N=2` selection was made after a subsequent physical comparison and
 is represented by the working source configuration, but that manually observed
 run was not recorded.
+
+On 2026-09-02, after remesuring hang/upright on the same Zybo, PC
+`neural-imitator` balanced from hanging for 167 s (157 s with |angle|<0.3).
+Zynq PS LSTM (`OnChipController_neural_controller_LSTM_C`) swung up in 9.1 s
+and ran 120 s (96 s near upright) while the JB slider moved the target. Host C
+and TensorFlow match to about `1e-6` on the same inputs.
 
 ## Integrity
 

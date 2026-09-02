@@ -97,6 +97,7 @@ artifacts:
 deployment:
   initial_parent_commit: feaaa124
   working_reference_parent_commit: 3bab8a20
+  working_reference_2026_09_02: Development WORKING REFERENCE PC and on-chip LSTM
   firmware_arrays: Firmware/Src/General/NC_LSTM/network_parameters.c
   tensor_match: exact for all eight learned float32 tensors
   c_tensorflow_max_output_error: 0.0000032
@@ -106,8 +107,10 @@ deployment:
   angle_filter:
     mode: median
     window: 63
-  hanging_angle_adc: 1014.0
-  full_angle_adc: 4066.88
+  hanging_angle_adc: 3261.643
+  full_angle_adc: 4044.15
+  hanging_angle_adc_august_2026: 1014.0
+  full_angle_adc_august_2026: 4066.88
   motor_correction: [0.5733488, 0.0257380, 0.0258429]
   output_clipping: [-1.0, 1.0]
   recurrent_initialization: zero state followed by one nominal-upright step
@@ -130,3 +133,14 @@ validation:
   n2_selection:
     recorded: false
     evidence: subsequent physical observation after the gap-corrected N=1 run
+  remesure_2026_09_02:
+    hanging_angle_adc: 3261.643
+    upright_angle_adc: 1239.568
+    full_angle_adc: 4044.15
+    pc_neural_imitator_s: 167
+    pc_near_upright_s: 157
+    chip_lstm_s: 120
+    chip_swing_up_s: 9.1
+    chip_near_upright_s: 96.3
+    recorded: false
+    evidence: live PC and Zynq PS LSTM runs after angle remesure
