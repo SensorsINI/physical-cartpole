@@ -259,18 +259,18 @@ void prepare_message_to_PC_state(
 	buffer[ 0] = SERIAL_SOF;
 	buffer[ 1] = CMD_STATE;
 	buffer[ 2] = message_len;
-	*((short *)&buffer[3]) = angle;
-	*((float *)&buffer[5]) = angleD_unprocessed;
-	*((short *)&buffer[9]) = position;
-	*((float *)&buffer[11]) = target_position;
-	*((short *)&buffer[15]) = motor_command;
-	*((unsigned char *)&buffer[17]) = invalid_step;
-	*((unsigned int *)&buffer[18]) = (unsigned int)time_difference_between_measurement;
+	serial_put_i16(&buffer[3], (short)angle);
+	serial_put_f32(&buffer[5], angleD_unprocessed);
+	serial_put_i16(&buffer[9], position);
+	serial_put_f32(&buffer[11], target_position);
+	serial_put_i16(&buffer[15], (short)motor_command);
+	buffer[17] = (unsigned char)invalid_step;
+	serial_put_u32(&buffer[18], (unsigned int)time_difference_between_measurement);
 	memcpy(&buffer[22], &time_current_measurement, sizeof(time_current_measurement));
-	*((unsigned short *)&buffer[30]) = (unsigned short)(latency / 10);
-	*((unsigned short *)&buffer[32]) = (unsigned short)(latency_violation);
+	serial_put_u16(&buffer[30], (unsigned short)(latency / 10));
+	serial_put_u16(&buffer[32], latency_violation);
 	buffer[34] = secloc_flags;
-	*((float *)&buffer[35]) = target_equilibrium;
+	serial_put_f32(&buffer[35], target_equilibrium);
 	// latency maximum: 10 * 65'535 Us = 653ms
 	buffer[message_len-1] = crc(buffer, message_len-1);
 }
@@ -290,10 +290,10 @@ void prepare_message_to_PC_secloc_info(
 	buffer[ 2] = 22;
 	buffer[ 3] = backend;
 	buffer[ 4] = pl_available;
-	*((unsigned int *)&buffer[ 5]) = shadow_mismatch_count;
-	*((unsigned int *)&buffer[ 9]) = pl_update_count;
-	*((unsigned int *)&buffer[13]) = pl_nn_wait_cycles;
-	*((unsigned int *)&buffer[17]) = pl_fault_count;
+	serial_put_u32(&buffer[ 5], shadow_mismatch_count);
+	serial_put_u32(&buffer[ 9], pl_update_count);
+	serial_put_u32(&buffer[13], pl_nn_wait_cycles);
+	serial_put_u32(&buffer[17], pl_fault_count);
 	buffer[21] = crc(buffer, 21);
 }
 
@@ -328,12 +328,12 @@ void prepare_message_to_PC_control_config(
 	txBuffer[ 0] = SERIAL_SOF;
 	txBuffer[ 1] = CMD_GET_CONTROL_CONFIG;
 	txBuffer[ 2] = 17;
-	*((unsigned short *)&txBuffer[ 3]) = polling_period;
-	*((bool           *)&txBuffer[ 5]) = controlSync;
-	*((float          *)&txBuffer[6]) = angle_hanging;
-	*((unsigned short *)&txBuffer[10]) = angle_averageLen;
-	*((bool           *)&txBuffer[12]) = correct_motor_dynamics;
-	*((unsigned short *)&txBuffer[13]) = timesteps_for_derivative;
+	serial_put_u16(&txBuffer[ 3], polling_period);
+	txBuffer[ 5] = controlSync ? 1 : 0;
+	serial_put_f32(&txBuffer[6], angle_hanging);
+	serial_put_u16(&txBuffer[10], angle_averageLen);
+	txBuffer[12] = correct_motor_dynamics ? 1 : 0;
+	serial_put_u16(&txBuffer[13], timesteps_for_derivative);
 	txBuffer[15] = hanging_set_on_chip ? 1 : 0;
 	txBuffer[16] = crc(txBuffer, 16);
 

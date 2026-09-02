@@ -1,7 +1,51 @@
 #ifndef __COMMUNICATION_WITH_PC_GENERAL_H_
-#define __COMMUNICATION_WITH_GENERAL_PC_H_
+#define __COMMUNICATION_WITH_PC_GENERAL_H_
 
 #include <stdbool.h>
+#include <string.h>
+
+/* Cortex-A9 VFP vstr/vldr requires 4-byte alignment. The wire format parks
+ * floats at odd offsets, so store/load them with memcpy, not *(float *). */
+static inline void serial_put_i16(unsigned char *p, short v)
+{
+	memcpy(p, &v, sizeof(v));
+}
+static inline void serial_put_u16(unsigned char *p, unsigned short v)
+{
+	memcpy(p, &v, sizeof(v));
+}
+static inline void serial_put_u32(unsigned char *p, unsigned int v)
+{
+	memcpy(p, &v, sizeof(v));
+}
+static inline void serial_put_f32(unsigned char *p, float v)
+{
+	memcpy(p, &v, sizeof(v));
+}
+static inline short serial_get_i16(const unsigned char *p)
+{
+	short v;
+	memcpy(&v, p, sizeof(v));
+	return v;
+}
+static inline unsigned short serial_get_u16(const unsigned char *p)
+{
+	unsigned short v;
+	memcpy(&v, p, sizeof(v));
+	return v;
+}
+static inline int serial_get_i32(const unsigned char *p)
+{
+	int v;
+	memcpy(&v, p, sizeof(v));
+	return v;
+}
+static inline float serial_get_f32(const unsigned char *p)
+{
+	float v;
+	memcpy(&v, p, sizeof(v));
+	return v;
+}
 
 // Command set for both programs
 #define SERIAL_MAX_PKT_LENGTH		32

@@ -32,13 +32,13 @@ void prepare_message_to_PC_config_PID(
 	txBuffer[ 1] = CMD_GET_PID_CONFIG;
 	txBuffer[ 2] = 28;
 
-	*((float          *)&txBuffer[3]) = position_KP;
-	*((float          *)&txBuffer[7]) = position_KI;
-	*((float          *)&txBuffer[11]) = position_KD;
+	serial_put_f32(&txBuffer[3], position_KP);
+	serial_put_f32(&txBuffer[7], position_KI);
+	serial_put_f32(&txBuffer[11], position_KD);
 
-	*((float          *)&txBuffer[15]) = angle_KP;
-	*((float          *)&txBuffer[19]) = angle_KI;
-	*((float          *)&txBuffer[23]) = angle_KD;
+	serial_put_f32(&txBuffer[15], angle_KP);
+	serial_put_f32(&txBuffer[19], angle_KI);
+	serial_put_f32(&txBuffer[23], angle_KD);
 
 	txBuffer[27] = crc(txBuffer, 27);
 
