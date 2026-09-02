@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build motor-safe CPU0 dual-core timing ELF + CPU1 RPGD worker ELF.
-# Does not program the board or enable the motor.
+# Build CPU0 dual-core ELF + CPU1 RPGD worker ELF.
+# Default: motor-safe on-target timing harness (-DRPGD_ON_TARGET_TEST).
+# Production cartpole (boots RPGD, motor path live):
+#   RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh
+# Does not program the board.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP="${ROOT}/Firmware/VitisProjects/CartPoleFirmware"
@@ -16,26 +19,26 @@ CC="${RPGD_ARM_CC:-arm-none-eabi-gcc}"
 SIZE="${RPGD_ARM_SIZE:-arm-none-eabi-size}"
 OBJCOPY="${RPGD_ARM_OBJCOPY:-arm-none-eabi-objcopy}"
 
-DEFAULT_CPU0_BSP="${ROOT}/Firmware/AmpWorkspace/cartpole_rpgd_amp/export/cartpole_rpgd_amp/sw/cartpole_rpgd_amp/standalone_domain"
-DEFAULT_CPU1_BSP="${ROOT}/Firmware/AmpWorkspace/cartpole_rpgd_amp/export/cartpole_rpgd_amp/sw/cartpole_rpgd_amp/standalone_domain_cpu1"
-FALLBACK_CPU0_BSP="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/export/cartpole_zybo_secloc2026/sw/cartpole_zybo_secloc2026/standalone_domain"
+# Same hardware platform as Vitis Debug LSTM (PL buttons / slider).
+DEFAULT_CPU0_BSP="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/export/cartpole_zybo_secloc2026/sw/cartpole_zybo_secloc2026/standalone_domain"
+DEFAULT_CPU1_BSP="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/export/cartpole_zybo_secloc2026/sw/cartpole_zybo_secloc2026/standalone_domain_cpu1"
 
-CPU0_BSP="${RPGD_CPU0_BSP_ROOT:-}"
-CPU1_BSP="${RPGD_CPU1_BSP_ROOT:-}"
+CPU0_BSP="${RPGD_CPU0_BSP_ROOT:-${DEFAULT_CPU0_BSP}}"
+CPU1_BSP="${RPGD_CPU1_BSP_ROOT:-${DEFAULT_CPU1_BSP}}"
 bsp_ok() { [ -f "${1}/bspinclude/include/xsysmon.h" ] && [ -d "${1}/bsplib/lib" ]; }
-if [ -z "${CPU0_BSP}" ]; then
-  if bsp_ok "${DEFAULT_CPU0_BSP}"; then
-    CPU0_BSP="${DEFAULT_CPU0_BSP}"
-  else
-    CPU0_BSP="${FALLBACK_CPU0_BSP}"
-  fi
+if ! bsp_ok "${CPU0_BSP}"; then
+  echo "ERROR: CPU0 BSP missing or incomplete: ${CPU0_BSP}" >&2
+  echo "Refresh Firmware/VitisProjects/cartpole_zybo_secloc2026 from the PL-buttons XSA." >&2
+  exit 1
 fi
-if [ -z "${CPU1_BSP}" ]; then
-  if bsp_ok "${DEFAULT_CPU1_BSP}"; then
-    CPU1_BSP="${DEFAULT_CPU1_BSP}"
-  else
-    CPU1_BSP="${CPU0_BSP}"
-  fi
+if ! bsp_ok "${CPU1_BSP}"; then
+  echo "ERROR: CPU1 AMP BSP missing: ${CPU1_BSP}" >&2
+  echo "Run: xsct Firmware/Scripts/setup_rpgd_amp_platform.tcl" >&2
+  exit 1
+fi
+if ! rg -q "XPAR_PL_BUTTONS_GPIO_DEVICE_ID" "${CPU0_BSP}/bspinclude/include/xparameters.h"; then
+  echo "ERROR: CPU0 BSP has no PL_BUTTONS_GPIO. Use the cartpole_zybo_pl_buttons platform, not a stale XSA." >&2
+  exit 1
 fi
 
 if ! command -v "${CC}" >/dev/null 2>&1; then
@@ -45,7 +48,7 @@ fi
 for required in "${CPU0_BSP}/bspinclude/include" "${CPU0_BSP}/bsplib/lib" "${XILINX_SPEC}" "${CPU0_LINKER}" "${CPU1_LINKER}"; do
   if [ ! -e "${required}" ]; then
     echo "ERROR: required input missing: ${required}" >&2
-    echo "Run Firmware/Scripts/setup_rpgd_amp_platform.tcl if the AMP BSP is absent." >&2
+    echo "Run: xsct Firmware/Scripts/setup_rpgd_amp_platform.tcl" >&2
     exit 1
   fi
 done
@@ -56,12 +59,23 @@ fi
 
 mkdir -p "${OUT}/obj_cpu0" "${OUT}/obj_cpu1"
 
+PRODUCTION="${RPGD_AMP_PRODUCTION:-0}"
+CPU0_DEFS=( -DRPGD_BAREMETAL -DRPGD_DUAL_CORE -DUSE_AMP=1 -DNDEBUG )
+if [ "${PRODUCTION}" != "1" ]; then
+  CPU0_DEFS+=( -DRPGD_ON_TARGET_TEST )
+fi
+if [ -n "${RPGD_CPU0_EXTRA_CFLAGS:-}" ]; then
+  # Word-split is intentional: callers pass extra -D/-f flags.
+  read -r -a _cpu0_extra <<< "${RPGD_CPU0_EXTRA_CFLAGS}"
+  CPU0_DEFS+=( "${_cpu0_extra[@]}" )
+fi
+
 COMMON_CPU0=(
   -std=gnu11 -Wall -Wextra -O3
   -ffunction-sections -fdata-sections
   -fmessage-length=0
   -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard
-  -DRPGD_BAREMETAL -DRPGD_DUAL_CORE -DRPGD_ON_TARGET_TEST -DUSE_AMP=1 -DNDEBUG
+  "${CPU0_DEFS[@]}"
   "-I${FIRMWARE_SRC}"
   "-I${FIRMWARE_SRC}/CartPoleFirmware"
   "-I${FIRMWARE_SRC}/General"
@@ -143,7 +157,7 @@ echo "Linking ${CPU1_ELF}"
   echo "=== cpu1 ==="
   "${SIZE}" "${CPU1_ELF}"
   "${CC}" --version | head -1
-  printf 'CPU0_BSP=%s\nCPU1_BSP=%s\n' "${CPU0_BSP}" "${CPU1_BSP}"
+  printf 'PRODUCTION=%s\nCPU0_BSP=%s\nCPU1_BSP=%s\n' "${PRODUCTION}" "${CPU0_BSP}" "${CPU1_BSP}"
   printf 'CPU0_LINKER=%s\nCPU1_LINKER=%s\n' "${CPU0_LINKER}" "${CPU1_LINKER}"
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "${CPU0_ELF}" "${CPU1_ELF}" "${CPU0_LINKER}" "${CPU1_LINKER}"
@@ -155,4 +169,8 @@ echo "Linking ${CPU1_ELF}"
 echo "Built:"
 echo "  ${CPU0_ELF}"
 echo "  ${CPU1_ELF}"
-echo "Motor remains disabled. Do not program QSPI from this script."
+if [ "${PRODUCTION}" = "1" ]; then
+  echo "Production AMP: CPU0 boots RPGD. Program with Firmware/Scripts/program_rpgd_amp_production.sh"
+else
+  echo "Motor-safe on-target harness. Do not program QSPI from this script."
+fi
