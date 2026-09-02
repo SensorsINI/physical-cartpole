@@ -12,7 +12,7 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
 USE_EXTERNAL_INTERFACE = True
-CONTROLLER_NAME = 'mpc'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
+CONTROLLER_NAME = 'neural-imitator'  # e.g. 'pid', 'lqr', 'mpc', 'do-mpc', 'do-mpc-discrete', 'neural-imitator'
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development Zybo
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
 # on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
@@ -53,7 +53,7 @@ HARDWARE_ANGLE_FILTER_MODE = 1  # median
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
 # Main-thread compute inherits this process mask (io-main-split architecture).
-CONTROL_CPU_AFFINITY = ""  # "" for rpgd-c (OpenMP); "2" for TF rpgd
+CONTROL_CPU_AFFINITY = "2"  # "" for rpgd-c (OpenMP); "2" for TF neural-imitator / rpgd
 
 # Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
 # pins itself here via per-thread affinity. Full separation from compute requires
