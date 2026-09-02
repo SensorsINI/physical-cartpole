@@ -29,6 +29,20 @@ def parse_cpu_spec(cpu_spec):
     return cpus
 
 
+def format_cpu_affinity(cpus):
+    """Describe CPU indices as 'CPU 3 of 8' or 'CPUs 2, 3 of 8'."""
+    cpus = sorted(cpus)
+    if not cpus:
+        desc = "no CPUs"
+    else:
+        label = "CPU" if len(cpus) == 1 else "CPUs"
+        desc = f"{label} {', '.join(str(c) for c in cpus)}"
+    total = os.cpu_count()
+    if total:
+        desc += f" of {total}"
+    return desc
+
+
 def is_pinned():
     """True if the process is restricted to fewer cores than the machine has."""
     if not hasattr(os, "sched_getaffinity"):
@@ -59,8 +73,8 @@ def set_thread_cpu_affinity(cpu_spec, thread_label="thread"):
         selected = requested & (all_cpus or requested)
         if not selected:
             print(
-                f"{thread_label} CPU affinity: requested {sorted(requested)} not available; "
-                f"keeping {sorted(available)}"
+                f"{thread_label} CPU affinity: requested {format_cpu_affinity(requested)} "
+                f"not available; keeping {format_cpu_affinity(available)}"
             )
             return None
         os.sched_setaffinity(0, selected)
@@ -68,7 +82,7 @@ def set_thread_cpu_affinity(cpu_spec, thread_label="thread"):
     except OSError as exc:
         print(f"{thread_label} CPU affinity: failed to apply ({exc})")
         return None
-    print(f"{thread_label} CPU affinity: {result}")
+    print(f"{thread_label} CPU affinity: pinned to {format_cpu_affinity(result)}")
     return result
 
 
@@ -91,14 +105,14 @@ def set_control_cpu_affinity(cpu_spec):
     selected = requested & available
     if not selected:
         print(
-            f"Control CPU affinity: requested {sorted(requested)} not available; "
-            f"keeping {sorted(available)}"
+            f"Control CPU affinity: requested {format_cpu_affinity(requested)} "
+            f"not available; keeping {format_cpu_affinity(available)}"
         )
         return None
 
     os.sched_setaffinity(0, selected)
     result = sorted(os.sched_getaffinity(0))
-    print(f"Control CPU affinity: {result}")
+    print(f"Control CPU affinity: pinned to {format_cpu_affinity(result)}")
     return result
 
 
