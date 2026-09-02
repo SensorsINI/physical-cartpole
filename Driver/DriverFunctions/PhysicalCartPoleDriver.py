@@ -173,6 +173,8 @@ class PhysicalCartPoleDriver:
             SERIAL_PORT = prefer_zynq_uart_port(SERIAL_PORT)
             set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
+        # Chip STATE period T. UART "skipped" means read_state wait > 1.5 T.
+        self.InterfaceInstance.uart.poll_period_s = POLLING_PERIOD_MS / 1000.0
         self.InterfaceInstance.pc_control_mode(False)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)

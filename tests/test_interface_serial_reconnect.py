@@ -16,6 +16,7 @@ from DriverFunctions.interface import (
     SERIAL_SOF,
     STATE_MESSAGE_LEN,
     Interface,
+    UartHealth,
 )
 
 
@@ -182,9 +183,9 @@ def test_read_state_survives_brief_io_error_and_records_incident(monkeypatch):
     assert interface.uart.reconnect_successes == 1
     assert interface.uart.last_error_message == "Input/output error"
     assert interface.uart.last_error_errno == 5
-    assert interface.uart.status_line() == (
-        "UART: OK after 1 drops (last 1.0s, total 1.0s) last=Input/output error"
-    )
+    assert "OK after 1 drops (last 1.0s, total 1.0s) last=Input/output error" in interface.uart.status_line()
+    assert "wait p50=" in interface.uart.status_line()
+    assert "skipped=" in interface.uart.status_line()
     motor_writes = [w for w in replacement_device.writes if w[1] == interface_module.CMD_SET_MOTOR]
     assert motor_writes
     assert struct.unpack("i", motor_writes[0][3:7])[0] == 0
@@ -223,6 +224,30 @@ def test_read_state_repeated_timeout_does_not_raise(monkeypatch):
     assert interface.uart.incident_count == 1
     assert interface.uart.reconnect_failures >= 1
     assert interface.uart.last_error_type is not None
+
+
+def test_framing_rejects_are_counted_not_printed(capsys):
+    interface = Interface()
+    junk = [SERIAL_SOF, 0x00, STATE_MESSAGE_LEN]
+    junk.extend([0] * (STATE_MESSAGE_LEN - 3))
+    bad_crc = [SERIAL_SOF, CMD_STATE, STATE_MESSAGE_LEN]
+    bad_crc.extend([0] * (STATE_MESSAGE_LEN - 4))
+    bad_crc.append(0)
+    stream = junk + bad_crc + _state_packet(interface)
+    interface.device = StreamingStateDevice(stream)
+    interface.port = "/dev/ttyUSB-test"
+    interface.baud = 230400
+
+    state = interface.read_state()
+
+    assert state[0] == -958
+    assert interface.uart.missed_cmd >= 1
+    assert interface.uart.crc_failed >= 1
+    assert interface.uart.framing_count() >= 2
+    assert "framing crc=" in interface.uart.status_line()
+    captured = capsys.readouterr().out
+    assert "CRC Failed" not in captured
+    assert "Missed CMD" not in captured
 
 
 def test_reconnect_rediscovers_uart_when_old_path_is_gone(monkeypatch):
@@ -275,3 +300,22 @@ def test_reconnect_records_failure_when_no_uart_path_exists(monkeypatch):
     assert interface.uart.incident_count == 1
     assert interface.uart.reconnect_failures >= 1
     assert "No such file" in interface.uart.status_line() or "could not open" in interface.uart.status_line()
+
+
+def test_uart_health_skipped_and_lost_cycles():
+    health = UartHealth()
+    health.poll_period_s = 0.01
+    health.record_read(0.008, lost=False, now=1.0)
+    health.record_read(0.0102, lost=False, now=1.0102)  # 10.2 ms is not a missed tick
+    health.record_read(0.025, lost=False, resync=True, now=1.035)
+    health.record_read(1.0, lost=True, now=2.035)
+
+    assert health.good_reads == 3
+    assert health.lost_count == 1
+    assert health.skipped_count == 2
+    assert health.resync_reads == 1
+    line = health.status_line()
+    assert "skipped=2(>15ms)" in line
+    assert "wait p50=" in line
+    assert "lost=1" in line
+    assert "resync=1" in line

@@ -379,6 +379,7 @@ class MainLoggingManager:
             if timing_latency_string:
                 self.tcm.print_temporary(BACK_TO_BEGINNING + timing_latency_string + CLEAR_LINE)
 
+            # wait p50/p99/max = read_state block time; skipped = wait > 1.5 T.
             uart_line = self.driver.InterfaceInstance.uart.status_line()
             if uart_line:
                 self.tcm.print_temporary(BACK_TO_BEGINNING + uart_line + CLEAR_LINE)

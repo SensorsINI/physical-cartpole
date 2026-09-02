@@ -50,7 +50,26 @@ SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 
 
 class UartHealth:
-    """Disconnect statistics for the cartpole UART/FTDI link."""
+    """UART link health for the cartpole FTDI/STATE stream.
+
+    wait (p50/p99/max) is the wall time of one read_state() call: flush RX,
+    then block until a STATE frame is parsed (or the read fails). It is not
+    set_motor→STATE, not a command RTT, and not the full control period.
+
+    In a listen-only loop the wait is about one chip period T. After compute
+    and set_motor, read_state starts later in the period, so the wait is the
+    remainder until the next chip edge (often a few ms).
+
+    skipped: that wait was longer than SKIPPED_WAIT_MULTIPLIER * T. That is a
+    missed chip tick (or a USB stall), not “slightly over T”. A 10.3 ms wait
+    on a 10 ms tick does not accumulate into a dropped packet every 33 calls;
+    each read_state flushes and phase-locks to the next edge.
+
+    lost: no STATE (timeout / port gone). Chip firmware_latency in STATE is
+    the motor-command-vs-tick figure; these host waits are not that.
+    """
+
+    SKIPPED_WAIT_MULTIPLIER = 1.5
 
     def __init__(self):
         self.incident_count = 0
@@ -65,6 +84,23 @@ class UartHealth:
         self.reconnect_successes = 0
         self.reconnect_failures = 0
         self._recovered_since_check = False
+        self.crc_failed = 0
+        self.missed_cmd = 0
+        self.wrong_len = 0
+        self.framing_bursts = 0
+        self.last_framing_kind = None
+        self._last_framing_at = None
+        self.poll_period_s = 0.01
+        self.read_attempts = 0
+        self.good_reads = 0
+        self.lost_count = 0
+        self.skipped_count = 0
+        self.resync_reads = 0
+        self.max_wait_s = 0.0
+        self._first_read_at = None
+        self._last_read_at = None
+        self._wait_ring = []
+        self._wait_ring_cap = 512
 
     def record_error(self, error):
         if error is None:
@@ -105,20 +141,101 @@ class UartHealth:
         self._recovered_since_check = False
         return recovered
 
+    def record_framing(self, kind):
+        """Count a parse reject. kind is crc, missed_cmd, or wrong_len."""
+        now = time.monotonic()
+        if self._last_framing_at is None or (now - self._last_framing_at) > 0.5:
+            self.framing_bursts += 1
+        self._last_framing_at = now
+        self.last_framing_kind = kind
+        if kind == "crc":
+            self.crc_failed += 1
+        elif kind == "missed_cmd":
+            self.missed_cmd += 1
+        elif kind == "wrong_len":
+            self.wrong_len += 1
+
+    def framing_count(self):
+        return self.crc_failed + self.missed_cmd + self.wrong_len
+
+    def chip_period_s(self):
+        return self.poll_period_s if self.poll_period_s > 0 else 0.01
+
+    def skipped_wait_s(self):
+        return self.SKIPPED_WAIT_MULTIPLIER * self.chip_period_s()
+
+    def record_read(self, wait_s, lost=False, resync=False, now=None):
+        """Record one read_state() wait (flush + receive), not a send→recv RTT."""
+        if now is None:
+            now = time.monotonic()
+        if self._first_read_at is None:
+            self._first_read_at = now
+        self._last_read_at = now
+        self.read_attempts += 1
+        wait_s = max(0.0, float(wait_s))
+        self.max_wait_s = max(self.max_wait_s, wait_s)
+        if wait_s > self.skipped_wait_s():
+            self.skipped_count += 1
+        if lost:
+            self.lost_count += 1
+        else:
+            self.good_reads += 1
+        if resync:
+            self.resync_reads += 1
+        ring = self._wait_ring
+        ring.append(wait_s)
+        if len(ring) > self._wait_ring_cap:
+            del ring[0]
+
+    def _percentile_ms(self, q):
+        if not self._wait_ring:
+            return 0.0
+        ordered = sorted(self._wait_ring)
+        index = min(len(ordered) - 1, int(round((q / 100.0) * (len(ordered) - 1))))
+        return 1000.0 * ordered[index]
+
+    def good_hz(self):
+        if self._first_read_at is None or self._last_read_at is None:
+            return 0.0
+        elapsed = self._last_read_at - self._first_read_at
+        if elapsed <= 0 or self.good_reads <= 1:
+            return 0.0
+        return (self.good_reads - 1) / elapsed
+
     def status_line(self, now=None):
-        if self.incident_count == 0 and not self.disconnected:
-            return None
+        parts = []
         if self.disconnected:
             started = self.last_start
             elapsed = 0.0 if started is None else (now if now is not None else time.monotonic()) - started
             last = self.last_error_message or "unknown"
-            return f"UART: DOWN {elapsed:.1f}s (drop {self.incident_count}) last={last}"
-        last = self.last_error_message or "unknown"
-        return (
-            f"UART: OK after {self.incident_count} drops "
-            f"(last {self.last_duration:.1f}s, total {self.total_downtime:.1f}s) "
-            f"last={last}"
-        )
+            parts.append(
+                f"DOWN {elapsed:.1f}s (drop {self.incident_count}) last={last}"
+            )
+        elif self.incident_count:
+            last = self.last_error_message or "unknown"
+            parts.append(
+                f"OK after {self.incident_count} drops "
+                f"(last {self.last_duration:.1f}s, total {self.total_downtime:.1f}s) "
+                f"last={last}"
+            )
+        if self.framing_count():
+            parts.append(
+                f"framing crc={self.crc_failed} miss={self.missed_cmd} "
+                f"bad_len={self.wrong_len} bursts={self.framing_bursts}"
+            )
+        if self.read_attempts:
+            skipped_ms = 1000.0 * self.skipped_wait_s()
+            parts.append(
+                f"io {self.good_hz():.1f}Hz lost={self.lost_count} "
+                f"skipped={self.skipped_count}(>{skipped_ms:.0f}ms) "
+                f"wait p50={self._percentile_ms(50):.0f}ms "
+                f"p99={self._percentile_ms(99):.0f}ms "
+                f"max={1000.0 * self.max_wait_s:.0f}ms "
+                f"resync={self.resync_reads}"
+            )
+        if not parts:
+            return None
+        return "UART: " + " | ".join(parts)
 
 
 class Interface:
@@ -162,6 +279,10 @@ class Interface:
         self.device = None
 
     def clear_read_buffer(self):
+        # Drop already-queued bytes, including a STATE that arrived during
+        # compute. The next read then waits for the following chip edge
+        # (phase lock). If a packet was already in the buffer, that sample
+        # is skipped; the wait itself does not accumulate slip.
         self.device.reset_input_buffer()
         self.prevPktNum = 1000
 
@@ -528,7 +649,24 @@ class Interface:
                 f"got {(echoed_window, echoed_trim, echoed_mode)}")
 
     def read_state(self):
+        """Flush RX, then block until the next STATE (or fail).
+
+        The wait recorded on UartHealth is this call only. set_motor happens
+        after io_step compute; it is not part of the wait. Chip
+        firmware_latency is the motor-vs-tick number.
+        """
         self.enable_runtime_io_tolerance()
+        framing0 = self.uart.framing_count()
+        t0 = time.monotonic()
+        result = self._read_state_once()
+        self.uart.record_read(
+            time.monotonic() - t0,
+            lost=result is None,
+            resync=self.uart.framing_count() > framing0,
+        )
+        return result
+
+    def _read_state_once(self):
         if self.device is None:
             if not self._reconnect(timeout=READ_STATE_TIMEOUT, restart_stream=True):
                 return None
@@ -635,7 +773,7 @@ class Interface:
                         del self.msg[:5]
                         continue
 
-                    print('\nCRC Failed.')
+                    self.uart.record_framing("crc")
                     del self.msg[0]
                     continue
 
@@ -645,19 +783,19 @@ class Interface:
 
                 # Check command
                 if self.msg[1] != cmd:
-                    print('\nMissed CMD.')
+                    self.uart.record_framing("missed_cmd")
                     del self.msg[0]
                     continue
 
                 # Check message packet length
                 if self.msg[2] != cmdLen and cmdLen < 256:
-                    print('\nWrong Packet Length.')
+                    self.uart.record_framing("wrong_len")
                     del self.msg[0]
                     continue
 
                 # Verify integrity of message
                 if crc and self.msg[cmdLen - 1] != self._crc(self.msg[:cmdLen - 1]):
-                    print('\nCRC Failed.')
+                    self.uart.record_framing("crc")
                     del self.msg[0]
                     continue
 
