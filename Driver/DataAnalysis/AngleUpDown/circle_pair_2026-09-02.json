@@ -1,0 +1,13 @@
+{
+  "utc": "2026-09-02T08:43:51.122337+00:00",
+  "hanging_mean": 3261.643,
+  "hanging_std": 0.7743067867454088,
+  "upright_mean": 1239.568,
+  "upright_std": 0.7108980236292686,
+  "ANGLE_360_DEG_IN_ADC_UNITS": 4044.15,
+  "ANGLE_HANGING_POLOLU": 3261.643,
+  "dead_zone_near_vertical": false,
+  "dead_zone_dist_down_adc": 782.5070000000001,
+  "dead_zone_dist_up_adc": 1239.5679999999998,
+  "dead_zone_warn_thresh_adc": 224.67499999999998
+}

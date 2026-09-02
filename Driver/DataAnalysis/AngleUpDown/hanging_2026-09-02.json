@@ -1,0 +1,12 @@
+{
+  "pose": "hanging",
+  "utc": "2026-09-02T08:42:05.493326+00:00",
+  "n": 1000,
+  "interval_us": 100,
+  "mean": 3261.643,
+  "std": 0.7743067867454088,
+  "min": 3260.0,
+  "max": 3263.0,
+  "source": "collect_raw_angle stream_off",
+  "note": "remeasure after screw move 2026-09-02"
+}

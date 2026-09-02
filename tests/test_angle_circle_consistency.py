@@ -16,10 +16,10 @@ REPO = Path(__file__).resolve().parents[1]
 GLOBALS = (REPO / "Driver" / "globals.py").read_text()
 PARAMS = (REPO / "Firmware" / "Src" / "CartPoleFirmware" / "parameters.c").read_text()
 
-# Live two-pose fit 2026-08-31: 360 = 2*(upright−hanging).
-UPRIGHT_ADC = 3038.9200
-WORKING_HANG = 1013.1933
-WORKING_CIRCLE = 4051.4533
+# Live two-pose fit 2026-09-02: 360 = 2*|upright−hanging|.
+UPRIGHT_ADC = 1239.5680
+WORKING_HANG = 3261.643
+WORKING_CIRCLE = 4044.15
 BAD_CIRCLE = 4143.32
 OLD_CIRCLE = 4049.44
 
@@ -79,8 +79,9 @@ def test_working_pair_puts_live_upright_at_zero():
 
 
 def test_stretched_circle_is_the_minus_0_145_offset():
-    # Firmware wrap with 4143, PC still 1020/4049 — what "adjust globals only" did.
-    got = state_angle(UPRIGHT_ADC, 1020.0, BAD_CIRCLE, OLD_CIRCLE)
+    # Historical Aug-31 bug: firmware wrap 4143, PC still 1020/4049.
+    old_upright = 3038.9200
+    got = state_angle(old_upright, 1020.0, BAD_CIRCLE, OLD_CIRCLE)
     assert got == pytest.approx(-0.145, abs=0.01)
-    # Both sides on 4143 still miss zero: true upright is ~3047, not 3088.5.
-    assert abs(state_angle(UPRIGHT_ADC, 1016.84, BAD_CIRCLE)) > 0.05
+    # Both sides on 4143 still miss zero: true upright then was ~3047, not 3088.5.
+    assert abs(state_angle(old_upright, 1016.84, BAD_CIRCLE)) > 0.05

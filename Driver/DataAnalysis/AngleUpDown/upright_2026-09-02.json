@@ -1,0 +1,13 @@
+{
+  "pose": "upright",
+  "utc": "2026-09-02T08:43:51.122337+00:00",
+  "n": 1000,
+  "interval_us": 100,
+  "mean": 1239.568,
+  "std": 0.7108980236292686,
+  "min": 1238.0,
+  "max": 1241.0,
+  "source": "collect_raw_angle stream_off",
+  "paired_hanging_mean": 3261.643,
+  "ANGLE_360_DEG_IN_ADC_UNITS": 4044.15
+}

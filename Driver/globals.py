@@ -159,14 +159,14 @@ elif CHIP == 'ZYNQ':
         if CONTROLLER_NAME == 'neural-imitator'
         else MOTOR_CORRECTION_POLOLU_RPGD
     )
-    ANGLE_360_DEG_IN_ADC_UNITS = 4051.4533  # 2*(upright 3038.9200 - hanging 1013.1933), measured 2026-08-31
+    ANGLE_360_DEG_IN_ADC_UNITS = 4044.15  # 2*(upright 1239.5680 - hanging 3261.6430), measured 2026-09-02
     # FIXME: At first one would expect ANGLE_360_DEG_IN_ADC_UNITS to be the same for Zybo and STM
     #   It is unclear if the difference comes from measuring it on different cartpoles
     #   or is due to imprecise voltage shifting which is required on Zybo
     #   Please think it through and adjust this comment appropriately.
     # Default is the measured value. For a deliberate LQR failure test, set
-    # CPP_ANGLE_HANGING_POLOLU to 878.145 after a PS reset for a -12 degree zero shift.
-    ANGLE_HANGING_POLOLU = float(os.environ.get("CPP_ANGLE_HANGING_POLOLU", "1013.1933"))
+    # CPP_ANGLE_HANGING_POLOLU after a PS reset for a known zero shift.
+    ANGLE_HANGING_POLOLU = float(os.environ.get("CPP_ANGLE_HANGING_POLOLU", "3261.643"))
     if not 0.0 <= ANGLE_HANGING_POLOLU < 4096.0:
         raise ValueError("CPP_ANGLE_HANGING_POLOLU must be in the 12-bit ADC range")
     ANGLE_HANGING_ORIGINAL = 1078.5  # Value from sensor when pendulum is at stable equilibrium point
