@@ -38,7 +38,7 @@
 #endif
 
 /* Boot on-chip controller when the chip runs standalone (edit here). */
-#define ON_CHIP_BOOT_CONTROLLER OnChipController_LQR
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_LSTM_C
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test.
  * May also be supplied as -DON_CHIP_CONTROLLER_DRY_RUN=1. */
