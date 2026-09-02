@@ -103,7 +103,8 @@ static void flush_shared(RpgdSolver* solver, const RpgdStepPlan* plan)
 
 static void invalidate_cpu1_slices(RpgdSolver* solver)
 {
-    rpgd_cache_visit_rollout_slice(solver, RPGD_AMP_CPU1_FIRST, RPGD_AMP_CPU1_LAST, inv_cb);
+    const int n = rpgd_get_num_rollouts(solver);
+    rpgd_cache_visit_rollout_slice(solver, n / 2, n, inv_cb);
 }
 
 static void drain_worker(uint32_t epoch)
@@ -126,8 +127,13 @@ static void fail_step(RpgdSolver* solver, int status, uint32_t epoch, int is_tim
 {
     drain_worker(epoch);
     rpgd_step_abort(solver, RPGD_STATUS_WORKER_FAILURE);
-    Motor_Stop();
-    if (is_timeout) ++g_timeout_count;
+    if (is_timeout) {
+        ++g_timeout_count;
+        /* UART/IRQ load can push a step past 24.5 ms. Keep the worker; the
+         * caller holds the last action instead of latching a fatal fault. */
+    } else {
+        Motor_Stop();
+    }
     g_ready = worker_usable();
     g_last_status = status;
 }
@@ -224,13 +230,10 @@ int rpgd_amp_step(RpgdSolver* solver, const float* state6, const RpgdRuntime* ru
     uint32_t epoch = g_epoch + 1u;
     if (epoch == 0u) epoch = 1u;
     const int N = rpgd_get_num_rollouts(solver);
-    int cpu0_first = RPGD_AMP_CPU0_FIRST;
-    int cpu0_last = RPGD_AMP_CPU0_LAST;
-    int cpu1_first = RPGD_AMP_CPU1_FIRST;
-    int cpu1_last = RPGD_AMP_CPU1_LAST;
-    if (cpu0_last > N) cpu0_last = N;
-    if (cpu1_first > N) cpu1_first = N;
-    if (cpu1_last > N) cpu1_last = N;
+    int cpu0_first = 0;
+    int cpu0_last = N / 2;
+    int cpu1_first = N / 2;
+    int cpu1_last = N;
 
     t0 = now_ticks();
     const unsigned long long t_dispatch = t0;

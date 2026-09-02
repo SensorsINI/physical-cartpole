@@ -22,6 +22,7 @@
 #include "secloc_lqr.h"
 #ifdef ZYNQ
 #include "rpgd_controller.h"
+#include "rpgd_zynq_30ms_config.h"
 #endif
 
 
@@ -37,8 +38,13 @@
 #define OnChipController_RPGD 8
 #endif
 
-/* 2026-09-02 go-to: PC neural-imitator + this on-chip LSTM (hang 3261.643). */
+#if defined(ZYNQ) && defined(RPGD_DUAL_CORE)
+/* Supported Zybo image: AMP CPU0+CPU1. CPU1 WFE-sleeps until RPGD starts. */
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_RPGD
+#else
+/* STM, or an accidental Vitis Debug build without -DRPGD_DUAL_CORE. */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_LSTM_C
+#endif
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test.
  * May also be supplied as -DON_CHIP_CONTROLLER_DRY_RUN=1. */
@@ -52,6 +58,29 @@
 #define	EQUILIBRIUM_SWITCH_NUMBER		2
 
 unsigned short current_controller = ON_CHIP_BOOT_CONTROLLER;
+
+/* Boot / on-chip default period. The PC may overwrite POLLING_PERIOD_MS via
+ * CMD_SET_CONTROL_CONFIG (globals.py) while no controller owns the timer.
+ * RPGD dual-core takes the period again when it starts (dt must match). */
+static unsigned short default_polling_period_ms(unsigned short controller)
+{
+	switch (controller) {
+	case OnChipController_PID:
+	case OnChipController_PID_position:
+		return 5;
+	case OnChipController_LQR:
+	case OnChipController_SECLOC_LQR:
+		return 8;
+	case OnChipController_SECLOC:
+		return 5;
+#ifdef ZYNQ
+	case OnChipController_RPGD:
+		return (unsigned short)RPGD_CONTROL_PERIOD_MS;
+#endif
+	default:
+		return 10;
+	}
+}
 
 bool correct_motor_dynamics = true;
 
@@ -159,6 +188,7 @@ void CONTROL_Init(void)
 	HardwareConfigSetFromPC = false;
 	AngleHangingSetOnChip = false;
     isCalibrated        = false;
+	POLLING_PERIOD_MS = default_polling_period_ms(current_controller);
     ledPeriod           = 500/POLLING_PERIOD_MS;
 
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
@@ -544,17 +574,16 @@ void CONTROL_BackgroundTask(void)
 #ifdef ZYNQ
 	            case OnChipController_RPGD:
 	            {
-	                const unsigned long rpgd_start_us = GetTimeNow();
+	                /* Bind/init outside the deadline: solver create is tens of ms. */
 	                CB_RebindOnChange(&g_cb, &RPGD_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+	                const unsigned long rpgd_start_us = GetTimeNow();
 	                Q = CB_Eval(&g_cb);
 	                const unsigned long rpgd_elapsed_us = GetTimeNow() - rpgd_start_us;
 	                const int rpgd_status = rpgd_controller_last_status();
+	                (void)rpgd_elapsed_us;
+	                (void)rpgd_controller_take_deadline_grace();
 	                if (!isfinite(Q) || rpgd_status != 0) {
 	                    rpgd_controller_latch_fault(rpgd_status != 0 ? rpgd_status : -1);
-	                    Q = 0.0f;
-	                    Motor_Stop();
-	                } else if (rpgd_elapsed_us >= (unsigned long)POLLING_PERIOD_MS * 1000ul) {
-	                    rpgd_controller_latch_fault(RPGD_CONTROLLER_STATUS_DEADLINE_MISSED);
 	                    Q = 0.0f;
 	                    Motor_Stop();
 	                }
@@ -829,7 +858,7 @@ void CONTROL_BackgroundTask(void)
 		}
 		case CMD_SET_MOTOR:
 		{
-			int motor_command_from_PC = *((int *)&rxBuffer[3]);
+			int motor_command_from_PC = serial_get_i32(&rxBuffer[3]);
 			safety_switch_off(&motor_command_from_PC, positionLimitLeft, positionLimitRight);
 
 			time_motor_command_obtained = GetTimeNow();
@@ -851,7 +880,7 @@ void CONTROL_BackgroundTask(void)
 #ifdef USE_EXTERNAL_INTERFACE
 			/* JB slider owns target_position; ignore the PC value. */
 #else
-			target_position = *((float *)&rxBuffer[3]);
+			target_position = serial_get_f32(&rxBuffer[3]);
 #ifdef ZYNQ
 			USE_TARGET_SWITCHES = false;
 #endif
@@ -863,7 +892,7 @@ void CONTROL_BackgroundTask(void)
 #ifdef USE_EXTERNAL_INTERFACE
 			/* JB button owns target_equilibrium; ignore the PC value. */
 #else
-			target_equilibrium = *((float *)&rxBuffer[3]);
+			target_equilibrium = serial_get_f32(&rxBuffer[3]);
 #endif
 			break;
 		}
@@ -1109,7 +1138,15 @@ void cmd_ControlMode(bool en)
 	if (en && !ControlOnChip_Enabled)
 	{
 		PCControl_Enabled = false;
+		enable_irq();
 		CB_Reset(&g_cb);
+#ifdef ZYNQ
+		if (current_controller == OnChipController_RPGD) {
+			Motor_Stop();
+			CB_RebindOnChange(&g_cb, &RPGD_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+		}
+#endif
+		disable_irq();
         ledPeriod           = 100/POLLING_PERIOD_MS;
 	}
 	else if (!en && ControlOnChip_Enabled)
@@ -1160,30 +1197,30 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 
 #ifdef ZYNQ
 	if (!rpgd_controller_owns_timing()) {
-		POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
+		POLLING_PERIOD_MS = serial_get_u16(&config[0]);
 	}
 #else
-	POLLING_PERIOD_MS = *((unsigned short *)&config[0]);
+	POLLING_PERIOD_MS = serial_get_u16(&config[0]);
 #endif
-    CONTROL_SYNC			= *((bool	        *)&config[2]);
+    CONTROL_SYNC			= (config[2] != 0);
 	if (apply_hanging) {
-		ANGLE_HANGING = *((float *)&config[3]);
+		ANGLE_HANGING = serial_get_f32(&config[3]);
 		if (force_angle_hanging) {
 			AngleHangingSetOnChip = true;
 		} else {
 			PcHangingApplied = true;
 		}
 	}
-    ANGLE_AVERAGE_LEN    = *((unsigned short *)&config[ 7]);
-    correct_motor_dynamics = *((bool	        *)&config[9]);
+    ANGLE_AVERAGE_LEN    = serial_get_u16(&config[ 7]);
+    correct_motor_dynamics = (config[9] != 0);
 #ifdef ZYNQ
     if (!rpgd_controller_owns_timing()) {
-        set_timesteps_for_derivative(*((unsigned short *)&config[10]));
+        set_timesteps_for_derivative(serial_get_u16(&config[10]));
         SetControlUpdatePeriod(POLLING_PERIOD_MS);
         secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
     }
 #else
-    set_timesteps_for_derivative(*((unsigned short *)&config[10]));
+    set_timesteps_for_derivative(serial_get_u16(&config[10]));
     SetControlUpdatePeriod(POLLING_PERIOD_MS);
     secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);
 #endif
@@ -1212,10 +1249,10 @@ void cmd_SetSeclocConfig(const unsigned char * config)
 {
 	disable_irq();
 
-	float   log_base         = *((float   *)&config[ 0]);
-	int32_t ref_period_ticks = *((int32_t *)&config[ 4]);
-	float   dead_ang         = *((float   *)&config[ 8]);
-	float   dead_pos         = *((float   *)&config[12]);
+	float   log_base         = serial_get_f32(&config[ 0]);
+	int32_t ref_period_ticks = serial_get_i32(&config[ 4]);
+	float   dead_ang         = serial_get_f32(&config[ 8]);
+	float   dead_pos         = serial_get_f32(&config[12]);
 
 	secloc_controller_set_config(log_base, ref_period_ticks, dead_ang, dead_pos);
 

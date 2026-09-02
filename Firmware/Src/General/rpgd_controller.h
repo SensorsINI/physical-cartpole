@@ -10,6 +10,7 @@ extern const ControllerOps RPGD_Ops;
 int rpgd_controller_last_status(void);
 unsigned int rpgd_controller_stride(void);
 int rpgd_controller_owns_timing(void);
+int rpgd_controller_take_deadline_grace(void);
 void rpgd_controller_latch_fault(int status);
 
 #endif

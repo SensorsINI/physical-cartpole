@@ -1,18 +1,16 @@
-/* Generated from Control_Toolkit_ASF YAML + CartPoleParameters.
- * Do not edit by hand; rerun generate_rpgd_zynq_golden.py
- */
+/* On-chip AMP RPGD: 20 ms period, 8 rollouts (4 per core), N=1. */
 /* Source/config fingerprint: 0502c299bb481e2a */
 #ifndef RPGD_ZYNQ_30MS_CONFIG_H
 #define RPGD_ZYNQ_30MS_CONFIG_H
 
 #include "rpgd_c/rpgd_cartpole.h"
 
-#define RPGD_CONTROL_PERIOD_MS 30
+#define RPGD_CONTROL_PERIOD_MS 20
 #define RPGD_30MS_DERIVATIVE_STEPS 1
 
 #define RPGD_30MS_CONFIG { \
     .mpc_horizon = 35, \
-    .num_rollouts = 16, \
+    .num_rollouts = 8, \
     .outer_its = 5, \
     .resamp_per = 10, \
     .period_interpolation_inducing_points = 4, \
@@ -25,7 +23,7 @@
     .num_threads = 1, \
     .reserve_threads = 1, \
     .seed = 123u, \
-    .mpc_timestep = 0.0299999993f, \
+    .mpc_timestep = 0.02f, \
     .learning_rate = 0.0500000007f, \
     .adam_beta_1 = 0.899999976f, \
     .adam_beta_2 = 0.999000013f, \

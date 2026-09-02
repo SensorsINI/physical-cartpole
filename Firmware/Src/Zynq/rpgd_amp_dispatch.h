@@ -11,10 +11,10 @@ extern "C" {
 #endif
 
 #define RPGD_AMP_CPU0_FIRST           0
-#define RPGD_AMP_CPU0_LAST            8
-#define RPGD_AMP_CPU1_FIRST           8
-#define RPGD_AMP_CPU1_LAST            16
-#define RPGD_AMP_TIMEOUT_US           29000u
+#define RPGD_AMP_CPU0_LAST            4
+#define RPGD_AMP_CPU1_FIRST           4
+#define RPGD_AMP_CPU1_LAST            8
+#define RPGD_AMP_TIMEOUT_US           19000u
 #define RPGD_AMP_DRAIN_TIMEOUT_US     50000u
 #define RPGD_AMP_READY_TIMEOUT_US     2000000u
 #define RPGD_CONTROLLER_STATUS_AMP_UNAVAILABLE (-101)

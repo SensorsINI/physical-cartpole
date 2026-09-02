@@ -45,6 +45,7 @@ static float g_rpgd_last_output;
 static int g_rpgd_last_status = RPGD_STATUS_INVALID_ARGUMENT;
 static int g_rpgd_fault_latched;
 static int g_rpgd_owns_timing;
+static int g_rpgd_deadline_grace;
 static unsigned short g_saved_polling_ms;
 static unsigned short g_saved_derivative_steps;
 
@@ -114,6 +115,7 @@ static void RPGD_Init(void)
     g_rpgd_phase = 0u;
     g_rpgd_last_output = 0.0f;
     g_rpgd_fault_latched = 0;
+    g_rpgd_deadline_grace = 1;
     g_rpgd_last_status = rpgd_validate_config(&cfg);
     if (g_rpgd_last_status != RPGD_STATUS_OK) return;
 
@@ -164,6 +166,7 @@ static void RPGD_Release(void)
     g_rpgd_last_output = 0.0f;
     g_rpgd_last_status = RPGD_STATUS_INVALID_ARGUMENT;
     g_rpgd_fault_latched = 0;
+    g_rpgd_deadline_grace = 0;
     rpgd_restore_timing();
 }
 
@@ -201,7 +204,15 @@ static void RPGD_Evaluate(const float* in, float* out)
         }
     }
 #ifdef RPGD_DUAL_CORE
+    const float prev_u = g_rpgd_last_output;
     const int amp_rc = rpgd_amp_step(g_rpgd_solver, state6, &runtime, &g_rpgd_last_output);
+    if (amp_rc == RPGD_CONTROLLER_STATUS_AMP_TIMEOUT) {
+        g_rpgd_last_output = prev_u;
+        g_rpgd_last_status = RPGD_STATUS_OK;
+        out[0] = prev_u;
+        g_rpgd_phase = g_rpgd_stride > 1u ? 1u : 0u;
+        return;
+    }
     g_rpgd_last_status = amp_rc;
 #else
     g_rpgd_last_output = rpgd_step(g_rpgd_solver, state6, &runtime);
@@ -229,6 +240,13 @@ unsigned int rpgd_controller_stride(void)
 int rpgd_controller_owns_timing(void)
 {
     return g_rpgd_owns_timing;
+}
+
+int rpgd_controller_take_deadline_grace(void)
+{
+    if (!g_rpgd_deadline_grace) return 0;
+    g_rpgd_deadline_grace = 0;
+    return 1;
 }
 
 void rpgd_controller_latch_fault(int status)

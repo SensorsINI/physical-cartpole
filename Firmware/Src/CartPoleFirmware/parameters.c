@@ -7,7 +7,7 @@
 const unsigned int UART_BAUD	=	230400; 	// 115200, 128000, 153600, 230400, 460800, 921600, 1500000, 2000000 // Not working for Zynq yet
 
 
-unsigned short POLLING_PERIOD_MS				=		10;
+unsigned short POLLING_PERIOD_MS				=		10;  /* CONTROL_Init replaces this with the boot controller default; the PC may overwrite via CMD_SET_CONTROL_CONFIG. */
 unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
@@ -62,8 +62,13 @@ const float POSITION_ENCODER_RANGE					=		4649;
 
 #else  // ZYBO_Z720
 
+#ifdef RPGD_DUAL_CORE
+/* Same map as the working PC rpgd-c 25 ms run. */
+float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
+#else
 // Matches the physical recordings used to train Long/quant/LSTM-7IN-64H1-64H2-1OUT-0.
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
+#endif
 
 float ANGLE_HANGING_POLOLU 							=		3261.643;  // Stationary hanging mean, measured 2026-09-02
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
