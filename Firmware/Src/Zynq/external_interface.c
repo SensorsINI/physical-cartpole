@@ -31,9 +31,9 @@ void GPIO_external_button_interrupt(void *InstancePtr) {
     	// But we do observe it, also sometimes observe wring side active which probably indicates that button is faulty.
     	ButtonState = NewButtonState;
     	if (ButtonState == 2){
-    		TargetEquilibrium = 1;
-    	} else if (ButtonState == 1){
     		TargetEquilibrium = -1;
+    	} else if (ButtonState == 1){
+    		TargetEquilibrium = 1;
     	}
     }
 }
