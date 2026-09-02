@@ -12,7 +12,7 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
 USE_EXTERNAL_INTERFACE = True
-CONTROLLER_NAME = 'neural-imitator'  # 2026-09-02 go-to with on-chip LSTM
+CONTROLLER_NAME = 'mpc'  # PC rpgd-c go-to; LSTM go-to is 49b2aec1 (neural-imitator)
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development Zybo
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
 # on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
@@ -32,7 +32,7 @@ def should_push_chip_secloc_config(use_secloc=None, use_chip_secloc=None):
     return bool(use_secloc or use_chip_secloc)
 
 
-OPTIMIZER_NAME = 'rpgd-c'  # e.g. 'rpgd' (Python/TF), 'rpgd-c' (C/OpenMP), 'mppi'; only used if CONTROLLER_NAME = 'mpc'
+OPTIMIZER_NAME = 'rpgd-c'  # PC RPGD go-to; 'rpgd' is the TF baseline
 
 ##### Hardware (FPGA) angle filter #####
 # The recovered June quant LSTM was trained and verified with median-63.
@@ -53,7 +53,7 @@ HARDWARE_ANGLE_FILTER_MODE = 1  # median
 # So set it to match OPTIMIZER_NAME above. Examples: "2" pins to core 2; "2,3" or
 # "2-3" allow those cores; "" disables pinning.
 # Main-thread compute inherits this process mask (io-main-split architecture).
-CONTROL_CPU_AFFINITY = "2"  # "" for rpgd-c (OpenMP); "2" for TF neural-imitator / rpgd
+CONTROL_CPU_AFFINITY = ""  # "" for rpgd-c (OpenMP); "2" for TF neural-imitator / rpgd
 
 # Core(s) for the chip IO thread (serial polling, gate, actuation). The IO thread
 # pins itself here via per-thread affinity. Full separation from compute requires
@@ -86,12 +86,14 @@ elif CONTROLLER_NAME == 'lqr':
     POLLING_PERIOD_MS = 8
 elif CONTROLLER_NAME == 'neural-imitator':
     POLLING_PERIOD_MS = 10
+elif CONTROLLER_NAME == 'mpc':
+    POLLING_PERIOD_MS = 10  # rpgd-c is fast enough; TF rpgd used 20 ms
 elif CONTROLLER_NAME == 'fpga':
     POLLING_PERIOD_MS = 15
 elif CONTROLLER_NAME.startswith('secloc'):
     POLLING_PERIOD_MS = 2  # fast polling so the Secloc gate sees fresh state every 2 ms
 else:
-    POLLING_PERIOD_MS = 20  # e.g. 5 for PID or 20 for mppi
+    POLLING_PERIOD_MS = 20  # e.g. mppi
 
 if USE_SECLOC and CONTROLLER_NAME in ('mpc', 'neural-imitator'):
     POLLING_PERIOD_MS = 5
@@ -153,7 +155,7 @@ elif CHIP == 'ZYNQ':
     if not 0.0 < LSTM_MOTOR_GAIN < 0.95:
         raise ValueError("LSTM_MOTOR_GAIN must be between 0 and 0.95")
     MOTOR_CORRECTION_POLOLU_LSTM_QUANT = (0.5733488, 0.0257380, 0.0258429)
-    MOTOR_CORRECTION_POLOLU_RPGD = (0.5116974, 0.0178784, 0.0280385)
+    MOTOR_CORRECTION_POLOLU_RPGD = (0.5116974, 0.0178784, 0.0280385)  # force-fit go-to (MotorCalibration --force-fit)
     MOTOR_CORRECTION_POLOLU = (
         MOTOR_CORRECTION_POLOLU_LSTM_QUANT
         if CONTROLLER_NAME == 'neural-imitator'
