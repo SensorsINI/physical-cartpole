@@ -4,6 +4,8 @@ import sys
 import termios
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "Driver"))
@@ -184,8 +186,11 @@ def test_read_state_survives_brief_io_error_and_records_incident(monkeypatch):
     assert interface.uart.last_error_message == "Input/output error"
     assert interface.uart.last_error_errno == 5
     assert "OK after 1 drops (last 1.0s, total 1.0s) last=Input/output error" in interface.uart.status_line()
-    assert "wait p50=" in interface.uart.status_line()
-    assert "skipped=" in interface.uart.status_line()
+    line = interface.uart.status_line()
+    assert "wait min=" in line
+    assert "p1=" in line
+    assert "p50=" in line
+    assert "skipped=" in line
     motor_writes = [w for w in replacement_device.writes if w[1] == interface_module.CMD_SET_MOTOR]
     assert motor_writes
     assert struct.unpack("i", motor_writes[0][3:7])[0] == 0
@@ -314,8 +319,11 @@ def test_uart_health_skipped_and_lost_cycles():
     assert health.lost_count == 1
     assert health.skipped_count == 2
     assert health.resync_reads == 1
+    assert health.min_wait_s == pytest.approx(0.008)
+    assert health.max_wait_s == pytest.approx(1.0)
     line = health.status_line()
     assert "skipped=2(>15ms)" in line
-    assert "wait p50=" in line
+    assert "wait min=8ms p1=8ms" in line
+    assert "max=1000ms" in line
     assert "lost=1" in line
     assert "resync=1" in line

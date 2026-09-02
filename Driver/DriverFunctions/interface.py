@@ -52,13 +52,18 @@ SERIAL_IO_ERRORS = (OSError, serial.SerialException, termios.error)
 class UartHealth:
     """UART link health for the cartpole FTDI/STATE stream.
 
-    wait (p50/p99/max) is the wall time of one read_state() call: flush RX,
-    then block until a STATE frame is parsed (or the read fails). It is not
-    set_motor→STATE, not a command RTT, and not the full control period.
+    wait (min/p1/p50/p99/max) is the wall time of one read_state() call:
+    flush RX, then block until a STATE frame is parsed (or the read fails).
+    It is not set_motor→STATE, not a command RTT, and not the full control
+    period.
 
     In a listen-only loop the wait is about one chip period T. After compute
     and set_motor, read_state starts later in the period, so the wait is the
-    remainder until the next chip edge (often a few ms).
+    remainder until the next chip edge. min/p1 is that leftover slack: how
+    much later you could have started the wait and still caught that tick.
+    Near 0 means the next bit of extra compute would miss and flush. Faster
+    compute only makes the wait longer (toward T); it does not threaten
+    catching. p99/max is the other tail (early start or a stall).
 
     skipped: that wait was longer than SKIPPED_WAIT_MULTIPLIER * T. That is a
     missed chip tick (or a USB stall), not “slightly over T”. A 10.3 ms wait
@@ -96,6 +101,7 @@ class UartHealth:
         self.lost_count = 0
         self.skipped_count = 0
         self.resync_reads = 0
+        self.min_wait_s = None
         self.max_wait_s = 0.0
         self._first_read_at = None
         self._last_read_at = None
@@ -173,6 +179,7 @@ class UartHealth:
         self._last_read_at = now
         self.read_attempts += 1
         wait_s = max(0.0, float(wait_s))
+        self.min_wait_s = wait_s if self.min_wait_s is None else min(self.min_wait_s, wait_s)
         self.max_wait_s = max(self.max_wait_s, wait_s)
         if wait_s > self.skipped_wait_s():
             self.skipped_count += 1
@@ -225,10 +232,12 @@ class UartHealth:
             )
         if self.read_attempts:
             skipped_ms = 1000.0 * self.skipped_wait_s()
+            min_ms = 0.0 if self.min_wait_s is None else 1000.0 * self.min_wait_s
             parts.append(
                 f"io {self.good_hz():.1f}Hz lost={self.lost_count} "
                 f"skipped={self.skipped_count}(>{skipped_ms:.0f}ms) "
-                f"wait p50={self._percentile_ms(50):.0f}ms "
+                f"wait min={min_ms:.0f}ms p1={self._percentile_ms(1):.0f}ms "
+                f"p50={self._percentile_ms(50):.0f}ms "
                 f"p99={self._percentile_ms(99):.0f}ms "
                 f"max={1000.0 * self.max_wait_s:.0f}ms "
                 f"resync={self.resync_reads}"
