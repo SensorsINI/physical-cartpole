@@ -87,7 +87,7 @@ elif CONTROLLER_NAME == 'lqr':
 elif CONTROLLER_NAME == 'neural-imitator':
     POLLING_PERIOD_MS = 10
 elif CONTROLLER_NAME == 'mpc':
-    POLLING_PERIOD_MS = 10  # rpgd-c is fast enough; TF rpgd used 20 ms
+    POLLING_PERIOD_MS = 20  # match on-chip AMP RPGD (8 rollouts, dt == period)
 elif CONTROLLER_NAME == 'fpga':
     POLLING_PERIOD_MS = 15
 elif CONTROLLER_NAME.startswith('secloc'):
@@ -107,14 +107,15 @@ if CONTROLLER_APPLY_WINDOW_MS % POLLING_PERIOD_MS != 0:
         f"(got {CONTROLLER_APPLY_WINDOW_MS} ms and {POLLING_PERIOD_MS} ms)."
     )
 
-# Working rpgd-c (dca3cbe6) used a 20 ms derivative window: 1 step at 20 ms, or 4 steps
-# when SecLoc polls at 5 ms. Keep the env override for experiments.
+# Derivative span is N * POLLING_PERIOD_MS. Working TF rpgd used 20 ms (N=1 at 20 ms).
+# rpgd-c at 5 ms uses N=3 → 15 ms (a bit wider than the 10 ms / N=1 run).
+# Keep the env override for experiments.
 if "CPP_DERIVATIVE_TIMESTEPS" in os.environ:
     _derivative_default = os.environ["CPP_DERIVATIVE_TIMESTEPS"]
 elif USE_SECLOC and POLLING_PERIOD_MS == 5:
     _derivative_default = "4"
 elif CONTROLLER_NAME == "mpc":
-    _derivative_default = "1"
+    _derivative_default = "3" if POLLING_PERIOD_MS == 5 else "1"
 else:
     _derivative_default = "2"
 TIMESTEPS_FOR_DERIVATIVE = int(_derivative_default)
@@ -155,7 +156,7 @@ elif CHIP == 'ZYNQ':
     if not 0.0 < LSTM_MOTOR_GAIN < 0.95:
         raise ValueError("LSTM_MOTOR_GAIN must be between 0 and 0.95")
     MOTOR_CORRECTION_POLOLU_LSTM_QUANT = (0.5733488, 0.0257380, 0.0258429)
-    MOTOR_CORRECTION_POLOLU_RPGD = (0.5116974, 0.0178784, 0.0280385)  # force-fit go-to (MotorCalibration --force-fit)
+    MOTOR_CORRECTION_POLOLU_RPGD = (0.5733488, 0.0257380, 0.0258429)  # works for PC rpgd-c at 25 ms; AMP uses the same
     MOTOR_CORRECTION_POLOLU = (
         MOTOR_CORRECTION_POLOLU_LSTM_QUANT
         if CONTROLLER_NAME == 'neural-imitator'
