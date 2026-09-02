@@ -12,7 +12,7 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
 USE_EXTERNAL_INTERFACE = True
-CONTROLLER_NAME = 'mpc'  # PC rpgd-c go-to; LSTM go-to is 49b2aec1 (neural-imitator)
+CONTROLLER_NAME = 'mpc'  # PC rpgd-c go-to (20 ms / 8); LSTM go-to is 49b2aec1
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development Zybo
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
 # on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
@@ -156,7 +156,7 @@ elif CHIP == 'ZYNQ':
     if not 0.0 < LSTM_MOTOR_GAIN < 0.95:
         raise ValueError("LSTM_MOTOR_GAIN must be between 0 and 0.95")
     MOTOR_CORRECTION_POLOLU_LSTM_QUANT = (0.5733488, 0.0257380, 0.0258429)
-    MOTOR_CORRECTION_POLOLU_RPGD = (0.5733488, 0.0257380, 0.0258429)  # works for PC rpgd-c at 25 ms; AMP uses the same
+    MOTOR_CORRECTION_POLOLU_RPGD = (0.5733488, 0.0257380, 0.0258429)  # 2026-09-02 go-to: PC rpgd-c and AMP at 20 ms
     MOTOR_CORRECTION_POLOLU = (
         MOTOR_CORRECTION_POLOLU_LSTM_QUANT
         if CONTROLLER_NAME == 'neural-imitator'
