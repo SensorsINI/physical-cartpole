@@ -1,5 +1,9 @@
 # SecLoc on Zedboard — experiment platform guide
 
+> **Not the Development Zybo show default.** This guide is for the
+> **SecLoc2026** branch on **Zedboard**. On the lab Zybo show image keep
+> `USE_SECLOC` and `USE_CHIP_SECLOC` **False** in `Driver/globals.py`.
+
 For the **SecLoc2026** branch. Assumes a flashed Zedboard.
 ```bash
 git checkout Secloc2026
@@ -17,7 +21,7 @@ export PYTHONPATH=$PWD:$PWD/Driver/CartPoleSimulation
 python Driver/control.py
 ```
 
-1. `Shift+K` — calibrate track centre.
+1. `K` — calibrate track centre.
 2. **`u`** — chip SecLoc (gate + NN in PL; default experiment path).
 3. **`k`** — PC SecLoc (gate in Python, inner controller on CPU).
 4. **`l`** — CSV recording → `Driver/ExperimentRecordings/`.
@@ -53,7 +57,7 @@ The PS is always in the loop (sensing/actuation) regardless of who computes Q. A
 The canonical loop for **every** experiment below:
 
 ```text
-edit knob → python Driver/control.py → Shift+K (calibrate, once per power-up)
+edit knob → python Driver/control.py → K (calibrate, once per power-up)
 → u or k (start control) → l (start recording) → run 30–60 s, optionally disturb
 → l (stop recording) → ESC → analyze + plot the CSV
 ```
@@ -63,7 +67,7 @@ edit knob → python Driver/control.py → Shift+K (calibrate, once per power-up
 Defaults are a working profile: chip SecLoc, PL_SHADOW backend, `log_base=1.05`, NN inner. Just:
 
 ```bash
-python Driver/control.py     # Shift+K, u, l … l, ESC
+python Driver/control.py     # K, u, l … l, ESC
 ```
 
 While running, watch the terminal: rolling skip %, `secloc@chip:PL` tag, and press **`5`** — expect `pl_available=1`, `pl_faults=0`, `shadow_mismatches=0`.
@@ -385,7 +389,7 @@ PC control (`k`) and chip control (`u`) are mutually exclusive. Chip boots `ON_C
 | Key | Effect |
 |---|---|
 | `h` / `?` | Print key list |
-| `Shift+K` | Calibrate track centre (`CMD_CALIBRATE`) |
+| `K` | Calibrate track centre (`CMD_CALIBRATE`) |
 | `k` | PC control on/off (SecLoc wrapper + `CONTROLLER_NAME` inner) |
 | `u` | Chip control on/off — **primary PL SecLoc path** |
 | `5` | Print `CMD_GET_SECLOC_INFO`: `backend`, `pl_available`, `shadow_mismatches`, `pl_update_count`, `pl_nn_wait_cycles`, `pl_faults` |

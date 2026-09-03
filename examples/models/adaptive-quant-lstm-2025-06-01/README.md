@@ -106,7 +106,7 @@ The generated pure-C tensors are tracked in
 match the Keras float32 tensors exactly. Offline C/TensorFlow sequence parity
 was verified to a maximum output difference of approximately `3.2e-6`.
 
-After every cartpole power cycle, run position calibration (`Shift+K`) before
+After every cartpole power cycle, run position calibration (**`K`**) before
 enabling control. `python Driver/control.py` configures the FTDI timer and sends
 the runtime derivative/filter settings. Use `k` for PC/TensorFlow control or
 `u` for Zynq PS/C control. The two paths implement the same policy, but the PC

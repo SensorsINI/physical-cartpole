@@ -114,16 +114,39 @@ With `CONTROLLER_NAME = 'pid'`, `h` also prints gain keys:
 
 Do not arm PID with the pole hanging.
 
+## Split control loop
+
+`control.py` runs two threads:
+
+* **IO thread** (`LOOP_CPU_AFFINITY`, default core `"3"`) — UART polling, keyboard,
+  gate, actuation, CSV trigger. Period: `POLLING_PERIOD_MS`.
+* **Main thread** (`CONTROL_CPU_AFFINITY`) — controller `compute_step`. Result
+  applied after `CONTROLLER_APPLY_WINDOW_MS` (often equal to the period).
+
+Pin the main thread for single-threaded TensorFlow optimizers (`rpgd`, neural
+imitator): `CONTROL_CPU_AFFINITY = "2"`. Clear it (`""`) for parallel `rpgd-c`
+so OpenMP can use other cores.
+
 ## CSV logging
 
 **`l`** writes to `Driver/ExperimentRecordings/` (override with
-`PATH_TO_EXPERIMENT_RECORDINGS`). File names start with `CPP`. Columns include
-time, raw and SI state, targets, `Q`, PWM, latency counters, and any
-controller-specific fields.
+`PATH_TO_EXPERIMENT_RECORDINGS`). File names start with `CPP`.
 
-You can start a recording while on-chip control is active — that is the normal
-way to capture a show-mux controller. The column set does not change if you
-toggle `u` mid-file.
+Core columns (see [main_logging_manager.py](../Driver/DriverFunctions/main_logging_manager.py)):
+
+| Column | Content |
+|---|---|
+| `time`, `time_chip`, `deltaTimeMs` | Host and chip clocks |
+| `angle_raw`, `angle`, `angleD` | Pole state (rad / ADC) |
+| `position_raw`, `position`, `positionD` | Cart state |
+| `target_position`, `target_equilibrium` | Setpoints |
+| `Q`, `actualMotorSave` | Normalized command and PWM counts |
+| `latency`, `controller_steptime` | Timing diagnostics |
+| `measurement` | Active experiment protocol name |
+
+Controller-specific columns are appended when the active PC controller exports
+`controller_data_for_csv`. Recording while on-chip control is active (`u`) is
+supported — the usual way to log a show-mux run.
 
 **`L`** stops after `TIME_LIMITED_RECORDING_LENGTH` steps (default 1000).
 
@@ -164,6 +187,27 @@ runs.
 
 **`N`** runs the **on-chip** twin of the IROS script (hanging reset, swing-up,
 two targets, ~16 s, then motor 0). It turns PC control off first.
+
+### Which protocol to use
+
+| Goal | Protocol | Pole on cart? | Notes |
+|---|---|---|---|
+| Motor map for control | `step-response` | Yes (or off for bare cart mass ID) | Paste result into `globals.py` + `parameters.c` |
+| Force vs velocity (EMF) | `emf-identification` | **Off**, no added mass | Long shuttle; decorrelates power and speed |
+| Absolute force gain | `pulse-identification` | **Off** | Short pulses at known speeds |
+| Batch swing-up data | `swing-up` | Yes | Needs a controller that can swing up |
+| IROS-style demo script | `iros24-ex1` | Yes | PC **`k`** or configure firmware path |
+| Random cart targets | `follow-a-random-target` | Yes | Enables PC **`k`** automatically |
+
+## UART troubleshooting
+
+| Issue | Check |
+|---|---|
+| No connection | Port: Digilent **interface 1** (`SERIAL_PORT_NUMBER = 1`, often `/dev/ttyUSB1`). Close Vitis and other serial monitors. |
+| Laggy PC control | FTDI latency timer: 1 ms on Linux (driver sets it); Windows: [SettingLatencyTimerOnWindows.png](../Docs/SettingLatencyTimerOnWindows.png). |
+| `skipped` in status line | IO thread waited > 1.5 chip STATE periods — heavy PC load or wrong `POLLING_PERIOD_MS` vs chip period. |
+| Wrong hanging after connect | **BTN0** this boot locks chip hanging; driver adopts it. Otherwise first connect pushes `globals.py` once. |
+| MacOS latency | No known FTDI fix (see [Known issues](../README.md#known-issues)). |
 
 ## Dance
 

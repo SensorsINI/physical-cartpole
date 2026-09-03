@@ -5,6 +5,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 README = (REPO / "README.md").read_text()
+HARDWARE = (REPO / "Docs" / "hardware.md").read_text()
+FIRMWARE = (REPO / "Docs" / "firmware-and-flash.md").read_text()
 SLIDER = (REPO / "tools" / "slider_pmod" / "README.md").read_text()
 
 
@@ -22,24 +24,25 @@ def test_show_mux_and_arming_are_documented():
 
 
 def test_slider_half_length_is_twelve_cm():
-    assert "0.12 m" in README
-    assert "±0.14" not in README
-    assert "0.14 m" not in README
+    assert "0.12 m" in HARDWARE
+    assert "±0.14" not in HARDWARE
+    assert "0.14 m" not in HARDWARE
     assert "±0.12 m" in SLIDER
     assert "0.14 m" not in SLIDER
 
 
 def test_setup_paths_and_tools_version():
-    assert "Firmware/CubeIDE/CartPoleFirmware" in README
     assert "2020.1" in README
-    assert "CartpoleDriverZynq_AXIS_12_09_2025.tcl" in README
-    assert "cartpole_zybo_secloc2026" in README
+    assert "Firmware/CubeIDE/CartPoleFirmware" in FIRMWARE
+    assert "CartpoleDriverZynq_AXIS_12_09_2025.tcl" in FIRMWARE
+    assert "cartpole_zybo_secloc2026" in FIRMWARE
 
 
 def test_obsolete_factory_and_zynq_folder_docs_are_gone():
-    assert "pendulum.py" not in README
-    assert "zynq/zybo.tcl" not in README
-    assert "source ./zybo.tcl" not in README
-    assert "zybo_vitis_pot_motor_test.zip" not in README
-    assert "BELOW NOT FULLY UPDATED YET" not in README
-    assert "petalinux" not in README.lower()
+    for text in (README, HARDWARE, FIRMWARE):
+        assert "pendulum.py" not in text
+        assert "zynq/zybo.tcl" not in text
+        assert "source ./zybo.tcl" not in text
+        assert "zybo_vitis_pot_motor_test.zip" not in text
+        assert "BELOW NOT FULLY UPDATED YET" not in text
+        assert "petalinux" not in text.lower()

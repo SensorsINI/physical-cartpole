@@ -27,6 +27,18 @@ On Zybo the default lab path is **on-chip control** (switches + **BTN4** / **`u`
 The PC `k` path is for development, comparison, and protocols that need a Python
 controller.
 
+## Pre-flight checklist
+
+Before arming with the pole on the track:
+
+1. Track clear; 12 V motor supply ready to cut.
+2. **JP5** = QSPI for standalone boot, or JTAG if developing from RAM.
+3. **SW0–SW3** all off until after arm.
+4. Pole hanging; **BTN0** (or **`b`**) captured hanging — RGB white flash, not alternating red.
+5. **BTN5** or **`K`** once per power cycle if the encoder zero may be stale.
+6. Exactly **one** switch on before expecting motion.
+7. JB slider near center if you want target ≈ 0.
+
 ## Safety
 
 Firmware keeps PWM at 0 until you arm (**BTN4**, PC **`u`**, or PC **`k`**).
@@ -152,13 +164,24 @@ idle, `Q = 0`.
 | Switch | On-chip controller | Period (typical) | Notes |
 |---|---|---|---|
 | SW0 | AMP RPGD on CPU1 | 20 ms | Small-batch gradient NMPC. CPU0 runs the mux and motor loop. |
-| SW1 | Dense-8 C on the PS | 10 ms | Feedforward neural imitator (supervised on NMPC data). |
+| SW1 | Dense-8 C on the PS | 10 ms | Feedforward neural imitator (`OnChipController_neural_controller_C`; weights in `Firmware/Src/General/NC_C/`, net name `Dense-7IN-32H1-32H2-1OUT-8`). |
 | SW2 | LSTM C on the PS | 10 ms | Recurrent imitator; adapts from recent trajectory ([A-NC](https://proceedings.mlr.press/v283/paluch25a.html)). |
 | SW3 | Short-pole neural imitator in the PL | 1 ms | FPGA network; PWM period 2500. |
 
 Each selection also loads that controller’s plant profile (PWM period, motor
 map, derivative span, encoder range). Show-mux profiles currently share the
 LSTM/RPGD motor map `{0.5733488, 0.0257380, 0.0258429}`.
+
+### On-chip controller implementation map
+
+| Switch | Firmware id | Period | PWM period | Primary source |
+|---|---|---|---|---|
+| SW0 | `OnChipController_RPGD` | 20 ms | 10000 | CPU1 RPGD worker; [controller_profiles.c](../Firmware/Src/CartPoleFirmware/controller_profiles.c) |
+| SW1 | `OnChipController_neural_controller_C` | 10 ms | 10000 | [neural_controller_C.c](../Firmware/Src/General/neural_controller_C.c), weights [NC_C/](../Firmware/Src/General/NC_C/) |
+| SW2 | `OnChipController_neural_controller_LSTM_C` | 10 ms | 10000 | [neural_controller_LSTM_C.c](../Firmware/Src/General/neural_controller_LSTM_C.c), weights [NC_LSTM/](../Firmware/Src/General/NC_LSTM/) |
+| SW3 | `OnChipController_NeuralImitator` | 1 ms | 2500 | PL + [neural_imitator.c](../Firmware/Src/Zynq/neural_imitator.c); bitstream [cartpole_short_pole_secloc.bit](../FPGA/bitstreams/cartpole_short_pole_secloc.bit) |
+
+Model bundles and PC paths: [examples/models/README.md](../examples/models/README.md).
 
 The LEDs above the switches mirror the DIP state.
 
@@ -230,7 +253,19 @@ Not stored across reset (unless you copy numbers into `parameters.c` /
 Angle circle (`ANGLE_360_DEG_IN_ADC_UNITS`) and the motor map
 (`MOTOR_CORRECTION`) are compile-time / file constants. Recalibrate those only
 when the analog chain or the motor changes. See
-[Calibration](../README.md#calibration).
+[calibration.md](calibration.md).
+
+## Glossary
+
+| Term | Meaning |
+|---|---|
+| **Q** | Normalized motor command in \[-1, 1\] before PWM scaling |
+| **ANGLE_HANGING** | Raw ADC value when the pole hangs straight down; defines zero angle |
+| **target_equilibrium** | `+1` upright, `−1` hanging setpoint for swing-up controllers |
+| **target_position** | Cart position setpoint (m); JB slider owns it when `USE_EXTERNAL_INTERFACE` is on |
+| **show mux** | SW0–SW3 one-hot selector for on-chip controllers |
+| **MOTOR_CORRECTION** | `(gain, friction+, friction−)` map from Q to PWM counts |
+| **Arm** | BTN4, **`u`**, or **`k`** — enables control path; motor still needs valid switch for on-chip |
 
 ## If something goes wrong
 

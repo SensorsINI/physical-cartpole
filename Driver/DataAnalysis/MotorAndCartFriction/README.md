@@ -19,7 +19,9 @@ and parameter of rolling friction of the cart - needed for the simulation.
 
 All above files require a measurement of cart accelerating in both directions
 with piecewise constant motor command (to achieve saturation velocity).
-Use bidirectional step_response_experiment in measure.py to get it.
+Record a bidirectional step response with `python Driver/control.py`:
+press **`m`** until the terminal shows `step-response`, then **`n`** to run it.
+See [Docs/pc-driver.md](../../../Docs/pc-driver.md#experiment-protocols).
 
 As a matter of example we provide two csv recordings - 
 Original.csv and Pololu.csv -
