@@ -3,7 +3,6 @@
 /Driver/ExperimentRecordings/
 
 /provide_password.patch
-/.cartpole_sudo_password
 
 *env
 .DS_Store
