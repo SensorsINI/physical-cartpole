@@ -16,10 +16,10 @@ REPO = Path(__file__).resolve().parents[1]
 GLOBALS = (REPO / "Driver" / "globals.py").read_text()
 PARAMS = (REPO / "Firmware" / "Src" / "CartPoleFirmware" / "parameters.c").read_text()
 
-# Live two-pose fit 2026-09-02: 360 = 2*|upright−hanging|.
-UPRIGHT_ADC = 1239.5680
-WORKING_HANG = 3261.643
-WORKING_CIRCLE = 4044.15
+# Live two-pose fit 2026-09-03 (new analog chain, FPGA median-63): 360 = 2*|upright−hanging|.
+UPRIGHT_ADC = 1238.988
+WORKING_HANG = 3273.353
+WORKING_CIRCLE = 4068.73
 BAD_CIRCLE = 4143.32
 OLD_CIRCLE = 4049.44
 

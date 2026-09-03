@@ -81,10 +81,10 @@ float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 #endif
 
-float ANGLE_HANGING_POLOLU 							=		3261.643;  // Stationary hanging mean, measured 2026-09-02
+float ANGLE_HANGING_POLOLU 							=		3273.353;  // Stationary hanging mean, new analog chain 2026-09-03
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4044.15;  // 2*(upright 1239.5680 - hanging 3261.6430); must match Driver/globals.py.
+const float ANGLE_360_DEG_IN_ADC_UNITS				=		4068.73;  // 2*(upright 1238.988 - hanging 3273.353); must match Driver/globals.py.
 #if IROS_SHORT_POLE_PROFILE
 const float POSITION_ENCODER_RANGE					=		4705.0;
 #else
