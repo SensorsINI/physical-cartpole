@@ -178,6 +178,10 @@ Firmware/Scripts/program_show_qspi.sh
 Then power off, JP5 = QSPI, power on. The show image is AMP CPU0
 (`CartPoleFirmware_rpgd_amp_cpu0.elf`); FSBL loads that one app. See
 [Docs/firmware-and-flash.md](Docs/firmware-and-flash.md).
+The script uses reliable 1-bit FSBL reads on the Zybo's 16 MiB S25FL128S;
+otherwise a cleared QUAD-enable bit makes linear reads return `0x888888xx`
+and the FSBL stops before configuring the FPGA. It erases only the boot-image
+range, preserving the hanging-calibration slot at `0xFD0000`.
 
 ### Hardware and calibration
 

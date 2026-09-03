@@ -17,6 +17,8 @@ HANGING_OFF=$((0xFD0000))
 
 FSBL_EXPORT="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/export/cartpole_zybo_secloc2026/sw/cartpole_zybo_secloc2026/boot/fsbl.elf"
 FSBL_ZYNQ="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/zynq_fsbl/executable.elf"
+FSBL_DIR="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/zynq_fsbl"
+FSBL_QSPI="${FSBL_DIR}/qspi.c"
 
 if [ -f /tools/Xilinx/Vivado/2020.1/settings64.sh ]; then
   # shellcheck source=/dev/null
@@ -37,11 +39,17 @@ if [ ! -f "${BIT}" ]; then
   exit 1
 fi
 
+if [ -f "${FSBL_QSPI}" ]; then
+  echo "Building FSBL with reliable 1-bit QSPI linear reads..."
+  python3 "${ROOT}/Firmware/Scripts/patch_qspi_fsbl_single.py" "${FSBL_QSPI}"
+  make -C "${FSBL_DIR}" -j"$(nproc)"
+fi
+
 FSBL=""
-if [ -f "${FSBL_EXPORT}" ]; then
-  FSBL="${FSBL_EXPORT}"
-elif [ -f "${FSBL_ZYNQ}" ]; then
+if [ -f "${FSBL_ZYNQ}" ]; then
   FSBL="${FSBL_ZYNQ}"
+elif [ -f "${FSBL_EXPORT}" ]; then
+  FSBL="${FSBL_EXPORT}"
 else
   echo "ERROR: secloc2026 FSBL not found. Generate the cartpole_zybo_secloc2026 platform." >&2
   echo "  looked for ${FSBL_EXPORT}" >&2

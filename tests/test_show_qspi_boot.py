@@ -13,6 +13,9 @@ PROD_SH = (REPO / "Firmware" / "Scripts" / "program_rpgd_amp_production.sh").rea
 SHOW_QSPI = (REPO / "Firmware" / "Scripts" / "program_show_qspi.sh").read_text()
 BIF = (REPO / "Firmware" / "Scripts" / "cartpole_qspi.bif").read_text()
 QSPI_TCL = (REPO / "Firmware" / "Scripts" / "program_qspi_boot.tcl").read_text()
+QSPI_FSBL_PATCH = (
+    REPO / "Firmware" / "Scripts" / "patch_qspi_fsbl_single.py"
+).read_text()
 CPU0_LD = (REPO / "Firmware" / "Src" / "Zynq" / "lscript_cpu0_amp.ld").read_text()
 CPU1_LD = (REPO / "Firmware" / "Src" / "RPGDWorker" / "lscript_cpu1_amp.ld").read_text()
 NV = (REPO / "Firmware" / "Src" / "Zynq" / "qspi_nvparams.h").read_text()
@@ -91,6 +94,17 @@ def test_qspi_programmer_keeps_dual_elf_gated():
     assert "--accept-dual-qspi" in QSPI_TCL
     assert "destination_cpu=a9-1" in QSPI_TCL
     assert "image-range erase only" in QSPI_TCL
+
+
+def test_show_qspi_builds_fsbl_with_reliable_single_bit_reads():
+    assert "patch_qspi_fsbl_single.py" in SHOW_QSPI
+    assert 'make -C "${FSBL_DIR}"' in SHOW_QSPI
+    assert SHOW_QSPI.find('if [ -f "${FSBL_ZYNQ}" ]') < SHOW_QSPI.find(
+        'elif [ -f "${FSBL_EXPORT}" ]'
+    )
+    assert "SINGLE_QSPI_CONFIG_FAST_QUAD_READ" in QSPI_FSBL_PATCH
+    assert "SINGLE_QSPI_CONFIG_FAST_READ" in QSPI_FSBL_PATCH
+    assert "replace(old, new, 1)" in QSPI_FSBL_PATCH
 
 
 def test_cpu1_blob_is_linked_from_objcopy():
