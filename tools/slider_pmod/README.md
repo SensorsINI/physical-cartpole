@@ -5,7 +5,7 @@ This is the calibration path for the **main** Zybo `CartPoleFirmware`, not the s
 The physical Pmod slider on **JB** is read by PmodAD1 (`0x83C30000`). With `USE_EXTERNAL_INTERFACE` defined in `Firmware/Src/CartPoleFirmware/hardware_bridge.h`, every control cycle sets
 
 ```
-target_position = get_normed_slider_state() * SliderTargetHalfLength  /* ±0.14 m */
+target_position = get_normed_slider_state() * SliderTargetHalfLength  /* ±0.12 m */
 ```
 
 in `Firmware/Src/CartPoleFirmware/control.c`. That **overwrites** a PC `CMD_SET_TARGET_POSITION` while the flag is on. The driver shows the chip target. Leave on-chip control off while checking the map.
@@ -22,9 +22,9 @@ Measured rails (2026-09-01): the slider saturates the 12-bit ADC (**0 … 4095**
 
 | Slider | Normed | `target_position` |
 |---|---|---|
-| Left stop (min ADC) | −1 | −0.14 m |
+| Left stop (min ADC) | −1 | −0.12 m |
 | Electrical mid | 0 | 0 |
-| Right stop (max ADC) | +1 | +0.14 m |
+| Right stop (max ADC) | +1 | +0.12 m |
 
 RGB: green if target > 0, blue if < 0.
 
@@ -37,7 +37,7 @@ tools/slider_pmod/program_cartpole_slider.sh
 python3 tools/slider_pmod/measure_slider_linear.py
 ```
 
-UART is **230400** on the Digilent FTDI **interface 1** (usually `/dev/ttyUSB1`). Park still, then press Enter at LEFT and RIGHT. Expect about −0.14 m and +0.14 m.
+UART is **230400** on the Digilent FTDI **interface 1** (usually `/dev/ttyUSB1`). Park still, then press Enter at LEFT and RIGHT. Expect about −0.12 m and +0.12 m.
 
 Live print: `python3 tools/slider_pmod/measure_slider_linear.py --watch`
 

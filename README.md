@@ -3,166 +3,225 @@
 ![NC_short_pole_1kHz.gif](Docs%2FNC_short_pole_1kHz.gif)
 
 ## Overview
-This repository contains software, firmware and hardware to operate a 
-[commercial cartpole robot](https://de.aliexpress.com/item/1005004322352088.html).
-It provides integration with [Neural Control Tools](https://github.com/SensorsINI/Neural-Control-Tools).
-The cartpole robot producer and developers of this repository are independent parties
-hence we cannot guarantee the compatibility with future versions of the robot.
+
+This repository contains software, firmware, and hardware to operate a
+[commercial cartpole robot](https://de.aliexpress.com/item/1005004322352088.html)
+from a PC and from a Zybo Z7-20 (Zynq-7000). The default lab/show path is
+**Zybo + AMP firmware**: CPU0 runs the show mux and motor loop; CPU1 runs the
+RPGD worker. STM32 on the original robot is still supported.
+
+Once the hardware is up you can swing up and stabilize from the board alone
+(QSPI + switches), log or retarget from a PC while the chip controls, run
+PID / MPC / neural imitators on the host, record scripted experiments, or use
+the CartPoleSimulation GUI with no robot attached. How those modes fit together
+is in [Docs/operating.md](Docs/operating.md).
+
+The cartpole producer and the authors of this repository are independent parties,
+so compatibility with future robot revisions is not guaranteed.
+
+Integration with [Neural Control Tools](https://github.com/SensorsINI/Neural-Control-Tools),
+[CartPoleSimulation](https://github.com/SensorsINI/CartPoleSimulation),
+[SI_Toolkit](https://github.com/SensorsINI/SI_Toolkit), and
+[Control_Toolkit](https://github.com/SensorsINI/Control_Toolkit).
 
 ## Publications
+
+* [A-NC: Adaptive Neural Control with implicit online inference of privileged parameters](https://proceedings.mlr.press/v283/paluch25a.html)
+  (L4DC 2025, PMLR 283:987–998)
 * [Hardware Neural Control of CartPole and F1TENTH Race Car](https://arxiv.org/abs/2407.08681)
 * [RPGD: A Small-Batch Parallel Gradient Descent Optimizer with Explorative Resampling
 for Nonlinear Model Predictive Control](https://www.zora.uzh.ch/id/eprint/254218/1/RPGD_ICRA_2023.pdf)
 
 ## Features
 
-* USB interface to a PC
-* Support for original STM but also for Zybo Z7-20
-* Integration with tailored [Cartpole Simulator](https://github.com/SensorsINI/CartPoleSimulation)
-and tools for [system identification with neural networks](https://github.com/SensorsINI/SI_Toolkit) and [control](https://github.com/SensorsINI/Control_Toolkit).
-* Various control modes 
-  * Control from PC: PID, MPC and neural controller
-  * Control from STM: PID
-  * Control from Zybo Z7-20: PID and FPGA-accelerated neural controller
-    
-  All controllers can stabilize the pole in the upright position and follow target position.
-  On Zybo, a Pmod slider on **JB** can set that target in `CartPoleFirmware` (see [tools/slider_pmod](tools/slider_pmod/README.md)).
-MPC and neural controller can also swing-up the pole.
-The recovered physical swing-up LSTM, its original TensorFlow artifacts, provenance,
-checksums, and validation recordings are preserved in
-[examples/models/adaptive-quant-lstm-2025-06-01](examples/models/adaptive-quant-lstm-2025-06-01/README.md).
-* Template with examples for programing experiment sequence for automated data collection.
-* Auxiliary functions allowing easier calibration of the robot, motor safety cut off, and more.
+* USB-UART to a PC (230400 baud on Zybo)
+* Zybo Z7-20 on-chip controllers selected by SW0–SW3 (one-hot show mux):
+  AMP RPGD, Dense-8 C, LSTM C, short-pole PL neural imitator
+* Dual-core AMP: CPU0 starts CPU1; RPGD runs on the worker
+* QSPI standalone boot (no PC after programming)
+* JB Pmod slider owns `target_position` when `USE_EXTERNAL_INTERFACE` is on
+* PC driver: PID, MPC (rpgd-c), neural imitator, CSV, live plotter, dance, joystick
+* STM32: onboard PID (board button + PC `u`)
+* Experiment-protocol templates (IROS script, motor ID, swing-up batches)
+* Motor safety: output disabled until armed; stall cut; brake before track ends
 
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| This README | Hardware, install, calibration, flashing, known issues |
+| [Docs/operating.md](Docs/operating.md) | Day-to-day use: modes, buttons, switches, LEDs, slider, safety, typical sessions |
+| [Docs/pc-driver.md](Docs/pc-driver.md) | `control.py`: keys, controllers, logging, plotter, protocols, simulation |
+| [tools/slider_pmod/README.md](tools/slider_pmod/README.md) | JB slider map and UART check |
+| [Driver/CartPoleSimulation/README.md](Driver/CartPoleSimulation/README.md) | Simulator GUI, data generation, training pipeline |
+| [examples/models](examples/models/README.md) | Preserved on-chip / PC network bundles |
+| [Docs/SecLoc_Experiment_Platform.md](Docs/SecLoc_Experiment_Platform.md) | SecLoc / Zedboard research path (not the Development show default) |
+
+## Contents
+
+* [Quick start (Zybo)](#quick-start-zybo)
+* [Hardware](#hardware)
+* [Set up and installation](#set-up-and-installation)
+* [Calibration](#calibration)
+* [Using the robot](#using-the-robot)
+* [Standalone / QSPI (no PC at power-up)](#standalone--qspi-no-pc-at-power-up)
+* [STM32](#stm32)
+* [FPGA and Vitis rebuild](#fpga-and-vitis-rebuild)
+* [Known issues](#known-issues)
+
+## Quick start (Zybo)
+
+Keep the track clear. For a first boot after flashing, leave the motor disconnected
+or be ready to cut 12 V.
+
+**JP5 = JTAG** while programming flash or loading over JTAG. **JP5 = QSPI**
+(two center pins) only for a cold boot from flash. Close Vitis; it steals JTAG.
+
+1. Program (pick one):
+   * QSPI: `Firmware/Scripts/program_show_qspi.sh`
+   * JTAG RAM (does not write flash): `Firmware/Scripts/program_rpgd_amp_production.sh`
+2. Power on with **SW0–SW3 all off**. The motor command stays 0 until you arm.
+3. Hang the pole straight down. Press **BTN0**. That disarms control, zeros PWM,
+   captures `ANGLE_HANGING`, and leaves control off. RGB flashes white on success.
+4. Arm with **BTN4**, or `python Driver/control.py` then **`u`**.
+5. Turn on **exactly one** switch:
+
+   | Switch | On-chip controller |
+   |---|---|
+   | SW0 | AMP RPGD (CPU1) |
+   | SW1 | Dense-8 C (PS) |
+   | SW2 | LSTM C (PS) |
+   | SW3 | Short-pole PL neural imitator |
+
+   All off, or more than one on: Q = 0, motor stopped.
+6. **BTN0** again: disarm + new hanging capture. **BTN5** or PC **`K`**: track
+   center only (does not change hanging).
+
+What the switches, RGB LEDs, and slider do after this first boot, and how to
+log or take over from the PC:
+[Docs/operating.md](Docs/operating.md), [Docs/pc-driver.md](Docs/pc-driver.md).
+
+The show image is AMP CPU0 (`CartPoleFirmware_rpgd_amp_cpu0.elf`), not the Vitis
+Debug ELF. FSBL loads that one app; CPU0 copies the CPU1 blob into DDR and
+releases it. Do not pack a second ELF or `destination_cpu`.
+
+---
 
 ## Hardware
 
 ### BOM in short
-To operate cartpole, beyond the cartpole robot itself (see "Original setup" below), you need:
+
+To operate the cartpole, beyond the robot itself (see [Original setup](#original-setup)):
+
 * If you want to use it with STM32:
-  * Make sure to buy cartpole **with STM32 board**.
-  * STM32 programmer (e.g. STLink or J-Link)
+  * Buy the cartpole **with STM32 board**.
+  * STM32 programmer (ST-Link or J-Link)
 * If you want to use it with Zybo-Z7-20:
   * [Zybo-Z7-20 board](https://digilent.com/shop/zybo-z7-zynq-7000-arm-fpga-soc-development-board/)
-  
-     We are using Zybo-Z7 **-20** board, and our current designs consumes over the half of the FPGA resources.
-With some additional optimization it should be possible to fit well performing neural controllers on even smaller Zynq chips.
-No matter if you switch to smaller or bigger board, you will probably need to adjust the design
-regarding input and output pins and buttons, LEDs and switches assignments.
-  * You need to prepare the analog filter with voltage divider for angle (ADC) input and H-bridge for motor.
-  See below for the details, here just list of items:
-      * 12V, 5A power supply for the motor (usually comes with the cartpole robot)
-      * 2 x [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/) (12-pin Test Point Header),
-        we use it to solder H-bridge and analog filter on it
-      * H-Bridge: [Pololu TB6612FNG Dualer Motortreiber](https://www.berrybase.ch/pololu-tb6612fng-dualer-motortreiber)
-      * 1 x Ferrite bead, we took just what we had in house to clean power supply for potentiometer
-      * Capacitors: 
-        * 1 x 1uF for filtering angle signal from potentiometer (RC time constant  =  0.1 ms; you can adjust this one)
-        * 1 x 20uF and 1 x 4.7 uF for filtering power supply for potentiometer
-        * 1 x 470uF for filtering power supply for H-Bridge - probably facultative, just any big capacitor will do
-      * Resistors:
-        * 12 kOhm for voltage divider for potentiometer
-        * 100 Ohm for filtering angle signal from potentiometer (RC time constant  =  0.1 ms)
-      * Some wires to solder connections
-      * Barrel connector for power supply to be soldered to H-Bridge
-* Additionally, you might want to buy:
-    * Possibly a cable to connect the STM32 or Zybo board (micro USB) to PC, not sure if included with cartpole robot or Zybo.
-      You probably want a rather long one for convenience (1-2m).
-    * Spare motor **with Encoder** - we use Pololu 19:1 Metal Gearmotor, 37Dx68Lmm, 12V with 64 CPR Encoder [#4751](https://www.pololu.com/product/4751) 
-    * Power supply for Zybo-Z7 board - 5V, 2.5A, barrel connector; the board can be powered also from USB.
-    * Zybo on-board QSPI flash — supported standalone boot (no PC after programming).
-      Set JP5 to the two center pins labeled QSPI. See [Firmware/Scripts](Firmware/Scripts/cartpole_qspi.bif).
-    * SD card and SD card reader — optional fallback to copy `BOOT.BIN` onto a card (JP5 = SD)
-    * Spare STM boards if you want to work mostly with them - they seem to be fragile
-    * metal bars for experiments with poles of different mass and length -
-we had these in-house so you have to find on your own where to buy them.
-With a rough measurement the pole mounting hole is 6mm in diameter, the pole is 5.7mm in diameter.
-  * Some material to decorate the cartpole - don't forget the artistic side of the project! ;-)
+
+     We use Zybo-Z7 **-20**. The current design consumes over half of the FPGA.
+     A smaller or larger Zynq needs pin, button, LED, and switch remapping.
+  * Analog filter with voltage divider for the angle ADC, and an H-bridge for the motor:
+      * 12 V, 5 A power supply for the motor (usually ships with the robot)
+      * 2 × [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/)
+        (H-bridge and analog filter)
+      * H-bridge: [Pololu TB6612FNG](https://www.berrybase.ch/pololu-tb6612fng-dualer-motortreiber)
+      * 1 × ferrite bead (potentiometer supply)
+      * Capacitors: 1 µF (angle RC, τ ≈ 0.1 ms), 20 µF and 4.7 µF (potentiometer
+        supply), 470 µF (H-bridge supply, optional)
+      * Resistors: 12 kΩ divider, 100 Ω in the angle RC
+      * Wires; barrel connector on the H-bridge
+* Also useful:
+    * Long micro-USB cable (1–2 m)
+    * Spare motor **with encoder**: Pololu 19:1 Metal Gearmotor 37Dx68Lmm 12 V,
+      64 CPR [#4751](https://www.pololu.com/product/4751)
+    * Zybo 5 V, 2.5 A barrel supply (USB power also works)
+    * Zybo on-board QSPI — supported standalone boot. JP5 on the two center pins
+      labeled QSPI. Image: [Firmware/Scripts/cartpole_qspi.bif](Firmware/Scripts/cartpole_qspi.bif)
+    * SD card — optional fallback (`BOOT.BIN` on the card, JP5 = SD)
+    * Spare STM boards if you work mostly with them
+    * Metal bars for other pole masses/lengths (mounting hole ~6 mm, pole ~5.7 mm)
 
 ### Original setup
 
-We bought our cartpole robot on AliExpress.
-As of today there are a few links to the product e.g. [this](https://de.aliexpress.com/item/1005004322352088.html).
-It is worth to search for "inverted pendulum" on AliExpress to find the cheapest option and compare with the picture below.
-Out of different versions we have the one using STM32 (ST32F103C8T6) board. **Not** the one with Arduino.
-If you plan to use Zybo-Z7-20 instead, you might be fine buying just the mechanical part of the robot
-(but probably need to buy power supply for the motor separately in such a case).
-![cartpole_official_picture.jpg](Docs%2Fcartpole_official_picture.jpg).
+We bought the robot on AliExpress
+([example listing](https://de.aliexpress.com/item/1005004322352088.html)).
+Search for “inverted pendulum” and match the picture. We have the STM32
+(ST32F103C8T6) version, **not** Arduino. For Zybo-only use, the mechanical
+assembly plus a motor supply is enough.
+
+![cartpole_official_picture.jpg](Docs%2Fcartpole_official_picture.jpg)
 
 #### Belt tension
-The belt tension is crucial for the cartpole to work properly.
-Unfortunately we have no method to quantify it.
-It should be tight enough to prevent the belt from slipping on the motor pulley,
-but not too tight not to cause too much lateral force on the motor.
-It seems to work best if when I push down the upper part of the belt with my finger,
-I can touch the lower part of the belt and it gets tense when I do it.
+
+Tight enough that the belt does not slip on the motor pulley, not so tight that
+it side-loads the motor. A practical check: pushing the upper belt down should
+just meet the lower belt and then go taut.
 
 ### Motors
 
-As the replacement of the original motor
-we use Pololu 19:1 Metal Gearmotor, 37Dx68Lmm, 12V with 64 CPR Encoder [#4751](https://www.pololu.com/product/4751).
-This motor has a similar characteristics to the original one, but its connector has wires in different order.
-For STM setup the original motor is the default, the Pololu needs additional "adapter".
-This adapter is shown below:
+Replacement motor: Pololu 19:1 37Dx68Lmm 12 V with 64 CPR encoder
+[#4751](https://www.pololu.com/product/4751). Similar dynamics to the original;
+the connector wire order differs. On STM the original motor is the firmware
+default; Pololu needs the adapter below.
+
 ![motor_adapter.png](Docs%2Fmotor_adapter.png)
 
-TODO:
-As for my understanding same adapter (up to the male-female reverse endings) would do to port original motor to Zybo-Z7-20.
-I have not tried this yet.
-In this case the end with the white tape should be on the Zybo side - all the cables keep their color-indicated meaning as on the picture -
-and the other end connected to motor taking care that the wiring is as if it were connected directly to the stm board.
+The same adapter (male/female reversed) should port the original motor to Zybo,
+with the taped end on the Zybo side and STM-equivalent color mapping on the
+motor end. That Zybo wiring has **not** been tried on the lab robots.
 
-You can notice that the polulu motor with the adapter has still the reversed sign of the encoder signal.
-We use this feature in the calibration to distinguish the motors:
-while applying the same voltage to the motor, the encoder signal should have the opposite sign for the Pololu motor.
+The Pololu-plus-adapter encoder sign is reversed versus the original motor.
+Track calibration uses that to distinguish motors.
 
+### Custom PMODs for Zybo-Z7-20
 
-### Custom PMOD connectors for Zybo-Z7-20
 #### H-bridge
-Unfortunately the Digilent h-bridge PMODs does not meet specification of the cartpole motor.
-The original setup with STM32 uses TB6612FNG H-brdige.
-We bought it as [Pololu TB6612FNG Dualer Motortreiber](https://www.berrybase.ch/pololu-tb6612fng-dualer-motortreiber)
-and build our own PMOD H-Bridge by soldering it to [Pmod TPH2](https://digilent.com/shop/pmod-tph2-12-pin-test-point-header/).
-Below hopefully self-explanatory picture on how to prepare the h-bridge.
-The PMOD should be connected to the Zybo's JE PMOD connector, the other end should be connected to the motor.
-The colors of the wires on the picture match the colors of the wires at the Pololu motor connector.
-The barrel connector is for motor supply (12V, 5A).
+
+Digilent H-bridge PMODs do not meet this motor. The STM robot uses TB6612FNG;
+we solder the Pololu module to a Pmod TPH2. Plug it into **JE**. Wire colors
+match the Pololu motor connector. Barrel is 12 V, 5 A.
+
 ![HBridgePMOD.png](Docs%2FHBridgePMOD.png)
 
-#### Analog Filter
-To get a clean angle measurement from the potentiometer, we designed an analog filter.
-We also need a voltage divider as the board delivers 3.3V to the potentiometer
-and ADC (XADC) on Zynq operate in the range 0-1V.
-The potentiometer output is read from PIN 3 of PMOD connector JA on Zybo Z7-20.
-The schematic is provided below:
+#### Analog filter
+
+The potentiometer is 3.3 V; Zynq XADC is 0–1 V, so a divider plus RC is required.
+Angle is PIN 3 of **JA**.
+
 ![Analog-Filter-Zynq-Angle.png](Docs%2FAnalog-Filter-Zynq-Angle.png)
 
-Below some picture to facilitate the assembly.
 ![pot_pmod_front.png](Docs%2Fpot_pmod_front.png)
 
-Visible capacitor is 1uF for filtering angle signal from potentiometer.
-It is place so that it can be easily replaced with different value to adjust the filter's time constant.
-Also visible a lot of glue to keep the connection stable when the cartpole is moving.
+The visible 1 µF is the angle filter; it is easy to swap to change τ.
+Glue helps the wiring survive cart motion.
 
 ![pot_pmod_back.png](Docs%2Fpot_pmod_back.png)
-From top to bottom visible is the ferrite bead,
-the 20 uF capacitor filtering potentiometer input
- and connection shorting pin 9 to ground (the last one just because haw we placed the circuits).
-The remaining resistors and capacitor are hidden under heat shrink tube.
+
+From top to bottom: ferrite bead, 20 µF on the potentiometer supply, pin 9
+shorted to ground. Other parts are under heat-shrink.
 
 #### Target-position slider (JB)
 
-On Zybo, a Pmod slider on **JB** (PmodAD1) sets `target_position` in `CartPoleFirmware` when `USE_EXTERNAL_INTERFACE` is on. Firmware maps ADC affinely between the parked rails (electrical mid is 0); the ends are ±`SliderTargetHalfLength` (0.14 m, inside the 0.198 m track). The driver displays that chip target.
+A Pmod slider on **JB** (PmodAD1) sets `target_position` when
+`USE_EXTERNAL_INTERFACE` is defined in
+[hardware_bridge.h](Firmware/Src/CartPoleFirmware/hardware_bridge.h)
+(default on Development). Firmware maps ADC affinely between the parked rails
+(electrical mid = 0). The ends are ±`SliderTargetHalfLength` (**0.12 m**, inside
+the 0.198 m track half-length). The driver displays the chip target and does
+not send `CMD_SET_TARGET_POSITION`.
 
-PmodAD1 must be built with SPI counts **40/120/1000/800** at 100 MHz. Calibration, programming, and the check script: [tools/slider_pmod/README.md](tools/slider_pmod/README.md).
+PmodAD1 must be built with SPI counts **40/120/1000/800** at 100 MHz.
+Calibration and check scripts: [tools/slider_pmod/README.md](tools/slider_pmod/README.md).
+Close the GUI before a UART slider check (230400, Digilent interface 1).
 
-While that flag is on, the physical slider overwrites a PC target command every cycle. Close the GUI before running the UART check (230400, Digilent interface 1).
+---
 
 ## Set up and installation
 
-### PC (Python project)
+### PC (Python)
 
-0. Create python 3.11 environment, if you haven't done it yet. e.g.
+0. Python 3.11 environment, e.g.
 
     `conda create -n cpp python=3.11`
 
@@ -170,26 +229,21 @@ While that flag is on, the physical slider overwrites a PC target command every 
 
     `conda install pip`
 
-    Where CPP is the name of the environment (stands for CartPole Physical).
-
-1. Clone the repository
+1. Clone with submodules:
 
     `git clone --recurse-submodules https://github.com/SensorsINI/physical-cartpole`
 
-If  CartPoleSimulation, SI_Toolkit (System Identification Toolbox) or Control Toolkit folders are empty, use these lines to pull all submodules:
+If `CartPoleSimulation`, SI_Toolkit, or Control Toolkit are empty:
 
 ```bash
 git submodule update --init --recursive
-git submodule update --recursive --remote
 ```
 
-2. Install the dependencies
+Prefer a pinned submodule checkout over `--remote` unless you intend to move them.
 
-    `pip install -r requirements.txt`
+2. `pip install -r requirements.txt`
 
-    This installs all the dependencies - it is quite a lot of packages, so it may take a while.
-
-3. Add alias for quick environment switch and modification of python path
+3. Path helper (adjust the conda hook path):
 
 ```bash
 alias xilinx='source /tools/Xilinx/Vivado/2020.1/settings64.sh'
@@ -203,422 +257,275 @@ cpp() {
 }
 ```
 
-In PyCharm, mark `physical-cartpole`, `Driver`, and `Driver/CartPoleSimulation` as Sources Root
-(`right click -> Mark Directory as -> Sources Root`). `conda env config vars set` is not reliable for this.
+In PyCharm, mark `physical-cartpole`, `Driver`, and `Driver/CartPoleSimulation`
+as Sources Root. `conda env config vars set` is not reliable for this.
 
+### Zybo firmware and driver defaults
 
+Xilinx tools are **Vivado / Vitis 2020.1**. Development defaults
+([globals.py](Driver/globals.py) and
+[hardware_bridge.h](Firmware/Src/CartPoleFirmware/hardware_bridge.h)):
 
-### STM32
-* Connect the STLink or the J-link to the STM32 board and to the PC.
-  The J-Link picture below applies to ST-Link as well; the connector is the same.
-![jtag_programming.png](Docs%2Fjtag_programming.png)
-* Open STM32CubeIDE and go to `File -> Import... -> Existing Projects into Workspace`
-and import [Firmware/CubeIDE/CartPoleFirmware](Firmware/CubeIDE/CartPoleFirmware).
-![CubeImportProject.png](Docs/CubeImportProject.png)
-* Go to hardware_bridge.h and comment out `#define ZYNQ` and uncomment `#define STM`.
-* Build the project (hammer icon).
-* Right click on the project and select `Run As -> STM32 C/C++ Application`. Go to `Debugger` tab and set up your J-link or ST-link.
-For us it looks as follows:
-![RunConfigurationSTM.png](Docs%2FRunConfigurationSTM.png)
+* `CHIP = "ZYNQ"`, `ZYNQ_BOARD = "ZYBO_Z720"`
+* `#define ZYNQ`, `#define ZYBO_Z720`, `#define USE_EXTERNAL_INTERFACE`
+* `SHOW_SWITCH_MUX = True` — chip ignores PC period / derivative N
+* `MOTOR = 'POLOLU'`
 
-* Run the project. The firmware should be loaded to the STM32 board.
-For STM board, the firmware is saved in the flash memory,
-so you do not need to load it every time you start the board.
-This also means that the original firmware will be overwritten,
-so if you intend to use it later, make sure to fetch it from the chip and save.
+UART is **230400** on the Digilent FTDI **interface 1** (usually `/dev/ttyUSB1`).
+The FTDI default latency is 16 ms; the driver sets 1 ms on Linux. On Windows,
+set the latency timer in the FTDI driver (see
+[Docs/SettingLatencyTimerOnWindows.png](Docs/SettingLatencyTimerOnWindows.png)).
+No MacOS fix is known.
 
-* Open `Driver/globals.py` and set `CHIP` variable to `STM`
+If you previously built for STM, restore `#define ZYNQ` and `CHIP = "ZYNQ"`.
 
-## BELOW NOT FULLY UPDATED YET
+Daily JTAG load (RAM only):
 
-### ZYNQ
-* The project is configured to work with ZYNQ as default after download.
-In case you used it first with STM, you need to undo the relevant changes:
-  * Go to hardware_bridge.h and comment out `#define STM` and uncomment `#define ZYNQ`.
-  * Open globals.py and set `CHIP` variable to `ZYNQ`
+```console
+Firmware/Scripts/program_rpgd_amp_production.sh
+```
 
-  Otherwise you can ignore this first point.
-
-
-The FTDI chip used in the Zybo-Z7-20 board has a default 16ms latency, meaning that it waits for 16ms before sending data to the PC.
-This can be set to 1 ms instead in code for Linux or in the FTDI driver settings for Windows. I have not yet found solution for MacOS.
-
-Below the print screen demonstrating how to set the latency timer to 1ms in Windows:
-![SettingLatencyTimerOnWindows.png](Docs/SettingLatencyTimerOnWindows.png)
-
-## Running from PC
-Do the steps as described in `Set up and installation` section.
-
-The main module to control the cartpole from PC is [control.py](Driver/control.py).
-
-Parameters are in [globals.py](Driver/globals.py).
-
-To get working controllers you first need to calibrate the cartpole.
-
-## Calibration
-
-There are mainly three things which need to be calibrated:
-
-* middle of the cartpole track
-* motor power
-* vertical angle
-
-There is also a friction which might play an important role in cartpole modeling and control,
-but you should be able to get a working controller without adjusting it.
-Hence for friction, see the wiki page.
-
-### Middle of the cartpole track
-This is the only calibration value that is not hardcoded and needs to be recalibrated each time cartpole is powered on.
-After starting the python program to drive cartpole from PC,
-press `Shift+K`.
-The cartpole will move to the left and right boundary of the track.
-and stop in the middle. 
-
-If the cartpole get stuck it might mean that the motor power is too low to overcome friction.
-This usually happens just before stopping in the middle (as it slows down not to overshoot),
-hence it might be confusing - the cartpole seems in the middle but PC is still waiting for the calibration to finish.
-In this case you need to increase it in calibration function in firmware.
-
-If you are running multiple dozens of experiments,
-you might want to recalibrate the cartpole from time to time.
-
-#### Calibration and motor selection
-
-The calibration also allows cartpole to distinguish between the original and the Pololu motor,
-see Motors subsection of Hardware section.
-
-
-Take care! The default motor is hardcoded independently in firmware and in the python program.
-When starting python program, the motor value from software is sent to the board and overwrites the value in firmware.
-If you run calibration from python program, this value will be overwritten for both software and firmware control.
-If you run calibration with button press from the board, the value in firmware will be overwritten but not in the python program.
-After restarting the board or python program, the motor selections is reset to its respective hardcoded default value.
-
-<strong style="color:yellow;">TODO: Can we make the motor value management simpler?</strong>
-
-In our lab we have two cartpole robots,
-one with the original motor and one with the Pololu motor.
-Setting the motor type identifies the robot instance
-and determines parameters which are not dependent on motor: ANGLE_HANGING_POLOLU, ANGLE_HANGING_ORIGINAL.
-I.e. for what reading of the potentiometer the pole is hanging vertically, which is different for each robot.
-
-<strong style="color:red;">FIXME: Calibration with STM not running now.</strong>
-
-
-### Motor power
-Each motor has a bit different power characteristics.
-Additionally, the power might change with time.
-Hence, we try to determine the relation between the motor power and the cartpole acceleration.
-We do it based on the saturation velocity, during the step response experiment.
-The experiment script is in [step_response_experiment.py](Driver%2FDriverFunctions%2FExperimentProtocols%2Fstep_response_experiment.py)
-The scripts for this calibration are in [MotorAndCartFriction](Driver%2FDataAnalysis%2FMotorAndCartFriction)
-
-#### motor power calibration procedure
-* Start the cartpole control software (control.py)
-* Calibrate (`Shift+K`)
-* Press `m` untill you see in terminal:
-`Loading step-response experiment protocol!`
-* Press `n` to start the step response experiment.
-    
-    The cartpole will accelerate a few time to the left and to the right.
-    
-    Potential issues:
-  * If the minimal speed it too low the cart might get stuck due to friction.
-      You can either very, very gently push it (not to skew the measurement) or increase the minimal speed in experiment script.
-
-* As soon as the cartpole stops, 
-the data will be saved in the [Driver/ExperimentRecordings](Driver%2FExperimentRecordings) folder
-(does not exist until you record first data).
-* Copy the data to the [Driver/DataAnalysis/MotorAndCartFriction](Driver%2FDataAnalysis%2FMotorAndCartFriction) folder.
-* Open [Driver/DataAnalysis/MotorCalibration.py](Driver%2FDataAnalysis%2FMotorAndCartFriction%2FMotorCalibration.py)
-You will find there detailed explanations how the calibration coefficients are calculated.
-Change variable `FILE_NAME` to the name of the file with the data and run the script.
-You will see the plot of the saturation velocity vs. motor power and calibration coefficients in the terminal.
-Copy the calibration coefficients to the globals.py (MOTOR_CORRECTION_ORIGINAL or MOTOR_CORRECTION_POLOLU)
-and in firmware to parameters.c (MOTOR_CORRECTION).
-
-<strong style="color:red;">FIXME: MotorCalibration returns NaN now.</strong>
-
-### Angle calibration
-
-#### Potentiometer dead zone
-The potentiometer has a dead zone between 0 and max value.
-To minimise how it interferes with the control,
-we set the dead zone to the position when the pole is horizontal,
-with the hope this the state not crucial for control and which the pole is usually passing rarely & quickly.
-We place it to the left, but all should work if you place it to the right.
-To change it
-* Run the cartpole control software, you will see the raw angle reading in the terminal.
-* While holding the pole in the horizontal position,
-use a screwdriver to rotate the joint on which it is mounted until you find the dead zone.
-If necessary loose a bit the screw holding the pole to the potentiometer - and if not necessary tighten it afterwards! Otherwise the angle reading might drift!
-
-On Zybo, after you move the screw, hang the pole straight down and press **BTN0**.
-That immediately disarms on-chip and PC control, zeros PWM, and overwrites
-`ANGLE_HANGING` from a wrap-aware mean of 50 hardware-filtered 12-bit ADC samples
-(aborted if the pole is moving or cart calibration is running). Control stays off.
-Same role as the PC `b` key, but `b` averages 1000 streamed processed-angle samples instead.
-The two RGB LEDs then **alternate red** if the *stored* `ANGLE_HANGING` places the
-potentiometer dead zone (ADC wrap) within 20° of vertical up or down —
-rotate the screw further toward horizontal and press BTN0 again until the warning stops.
-Turning the screw alone does not update the LEDs until you recapture hanging.
-Cart-centered target indication is **cyan** so it is not confused with that red warning.
-At reset the chip uses the compile-time hanging in `parameters.c`. The first PC
-connect overwrites that once with `globals.py`, unless **BTN0** was pressed after
-this boot and before the driver connected. Later `CMD_SET_CONTROL_CONFIG` packets
-(including after **K** / BTN5) do not change hanging. `b` still forces a new
-hanging onto the chip (RAM; BTN0 also writes QSPI). `globals.py` on disk is not
-written. To persist a hanging across reboot, copy it into `ANGLE_HANGING_*` in
-`globals.py` / `parameters.c`.
-
-BTN1–BTN3 are wired in the bitstream and can be assigned in firmware with `Button_SetAction(PL_BTN_n, ...)`
-without another FPGA build. BTN4 toggles on-chip control; BTN5 starts track calibration.
-
-#### Full circle in the ADC units
-Although the ADC is 12-bit, which would correspond to 4096 units per full circle,
-due to the dead zone the full circle corresponds to more units.
-To determine how many units corresponds to the full circle,
-gently balance the pole up and down and note the difference in ADC reading.
-The full circle is then double this value.
-You can use my script in [Driver/DataAnalysis/AngleUpDown](Driver%2FDataAnalysis%2FAngleUpDown)
-or do this simple measurement evaluation on your own.
-While running to cartpole software you can press `b`
-to measure the angle multiple times and get more precise results.
-Insert the result in globals.py in ANGLE_360_DEG_IN_ADC_UNITS
-FIXME: This should depend on both the motor (different robot = different potentiometer)
-and the chip (Zynq setup uses voltage shifter which is generally not 100% precise).
-
-FIXME: Too complicated!
-In firmware there is no ANGLE_360_DEG_IN_ADC_UNITS instead currently you need to read out angle and position normalization.
-Currently you can read this varable only if running the software in debug mode.
-In firmware in parameters.c in ANGLE_360_DEG_IN_ADC_UNITS.
-
-#### Zero angle calibration
-To get a rough estimation you can let the pole hang down and note the angle reading.
-To get more precise measurement press `b` (PC) or **BTN0** on the Zybo (no PC).
-BTN0 disarms control first, then averages 50 still, wrap-aware ADC samples;
-`b` averages 1000 streamed samples.
-Fill it in ANGLE_HANGING_ORIGINAL or ANGLE_HANGING_POLOLU in globals.py (and
-`parameters.c` for standalone). The first driver connect applies that globals
-value unless BTN0 already ran this boot. A BTN0 lock is printed as
-`Chip ANGLE_HANGING`. **K** / BTN5 only calibrate cart position.
-Rerun the cartpole software and very gently balance the pole up
-and make sure that the angle reading is oscillating around 0.
-If it is not (probably it is not),
-adjust the value in globals.py by trial and error and rerun the software.
-
-
-BRAVO! You have calibrated the cartpole! And I am done with writing this section!
-Now a more fun part - control!
-
-## Cartpole control with PC
-
-## Cartpole control without PC
-
-After you have **calibrating** your cartpole
-and hardcoded the respected values in firmware
-You can also control the cartpole without connecting to PC at all.
-We however strongly recommend that you first make sure
-that the cartpole is working properly with PC control
-also regarding firmware controllers - it is much easier to debug!
-
-### STM32
-
-STM32 board has 2 buttons on top.
-The reset button reloads the firmware.
-TODO: The USER button switches the firmware PID on and off.
-While switching it on it first calibrates the cartpole.
-Please keep the pole vertical during the calibration -
-the PID control starts immediately after the calibration! 
-The PID cannot swing-up the pole,
-and it will crash the cart into track boundaries,
-if it starts with the pole not roughly vertical.
-As the PID is not our main focus,
-it is by far not as well tuned as the PID originally shipped with the cartpole.
-
-### Zybo-Z7-20
-
-Standalone (no PC), with the bitstream that includes PL buttons **and** a Vitis
-platform refreshed from that XSA (`xparameters.h` must list `PL_BUTTONS_GPIO`):
-
-* Hang the pole down and press **BTN0** to recapture `ANGLE_HANGING`. RGB flash white to confirm.
-  Firmware prints millicounts on UART, then writes QSPI (`QSPI hanging saved millicounts`).
-  If control was armed, BTN0 disarms it first and leaves it off. Do not press BTN0
-  during cart (track) calibration.
-* After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
-  applied at boot). Press BTN0 again after reboot if you want that capture
-  without a PC.
-* If the RGB LEDs alternate red, the potentiometer dead zone (from the *stored* hanging ADC)
-  is too close to vertical — adjust the screw and press BTN0 again. Cyan means a centered cart target.
-* **BTN4** toggles on-chip control; **BTN5** / **K** start track (cart) calibration only.
-  They never change the hanging angle.
-* The JB Pmod slider sets cart `target_position` (green / blue RGB = sign). See [tools/slider_pmod](tools/slider_pmod/README.md).
-* A PC connect overwrites hanging from `globals.py` once, unless BTN0 already ran
-  this boot. The driver prints `Chip ANGLE_HANGING`. `b` still forces a new hanging
-  onto the chip (RAM only).
-
-#### QSPI boot (no SD card, no PC at power-up)
-
-The show image is **AMP CPU0** (`CartPoleFirmware_rpgd_amp_cpu0.elf`), not Vitis Debug
-`CartPoleFirmware.elf`. FSBL loads that one ELF; CPU0 copies the CPU1 worker into DDR
-and releases it. Do not pack a second ELF or `destination_cpu`.
-
-Daily bring-up can stay **JP5 = JTAG** (`Firmware/Scripts/program_rpgd_amp_production.sh`).
-That path also lets CPU0 start CPU1. Switch JP5 to QSPI when you want power-up without a PC.
-
-1. JP5 = **JTAG**. Close Vitis. Build if needed:
-   `RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh`
-2. Program QSPI at **offset 0**, image-range erase only — **do not
-   erase the entire 16 MiB flash** or you wipe hanging at `0xFD0000` / `0xFFF000`:
+QSPI flash (JP5 must be JTAG; boot-mode register `0xF800025C` = 0):
 
 ```console
 Firmware/Scripts/program_show_qspi.sh
 ```
 
-   That packs secloc2026 `fsbl.elf` + `FPGA/bitstreams/cartpole_short_pole_secloc.bit` +
-   AMP CPU0 and calls [`program_qspi_boot.tcl`](Firmware/Scripts/program_qspi_boot.tcl).
-   Template BIF: [`Firmware/Scripts/cartpole_qspi.bif`](Firmware/Scripts/cartpole_qspi.bif).
-3. Power off. Place JP5 on the **two center pins labeled QSPI**. Power on.
-   Hang the pole, BTN0, then BTN4 (or PC `u`) and exactly one of SW0–SW3.
+Then power off, JP5 = QSPI, power on.
 
-SD boot (copy the same `BOOT.BIN` to a card, JP5 = SD) remains a fallback.
+### STM32 firmware
 
-BTN0–BTN3 are in the Zybo recreate script
-[`FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl`](FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl)
-(source of truth). To patch an already-generated secloc project, run
-[`FPGA/VivadoProjects/add_pl_buttons_and_build.tcl`](FPGA/VivadoProjects/add_pl_buttons_and_build.tcl).
-After a rebuild, import `FPGA/VivadoProjects/cartpole_zybo_pl_buttons.xsa` into Vitis and refresh
-the platform. Until that refresh, firmware **skips** PL buttons (no MMIO to `0x81230000`);
-the RGB warning still follows compile-time / last PC `ANGLE_HANGING`.
-Old bitstream + new firmware must boot; BTN0 simply does nothing until the matching XSA is imported.
+* Connect ST-Link or J-Link. The J-Link picture applies to ST-Link; the
+  connector is the same.
+![jtag_programming.png](Docs%2Fjtag_programming.png)
+* STM32CubeIDE → `File -> Import... -> Existing Projects into Workspace` →
+  [Firmware/CubeIDE/CartPoleFirmware](Firmware/CubeIDE/CartPoleFirmware).
+![CubeImportProject.png](Docs/CubeImportProject.png)
+* In `hardware_bridge.h`: comment `#define ZYNQ`, uncomment `#define STM`.
+* Build, then `Run As -> STM32 C/C++ Application`. Debugger tab: your probe.
+![RunConfigurationSTM.png](Docs%2FRunConfigurationSTM.png)
+* STM firmware lives in flash and overwrites the factory image. Save the
+  original first if you still need it.
+* `Driver/globals.py`: `CHIP = "STM"`
 
+---
 
-## Notes
+## Calibration
 
-### Modes of Operation
+Three things matter for control: track center, hanging / zero angle, and the
+motor map. Friction identification is optional for a first working controller;
+see [Driver/DataAnalysis/MotorAndCartFriction/README.md](Driver/DataAnalysis/MotorAndCartFriction/README.md).
 
-The pendulum microcontroller firmware has two modes of operation:
+### Track center
 
-_(1) Self-Contained Mode_  
-In this mode, the pendulum is controlled directly by the firmware
-using an onboard basic PD control scheme.
-A PC is not required at all for this mode.
-However you can use the PC to adjust the control parameters on-the-fly,
-as well as read out set points and other useful values
-generated by the on-board control algorithm in real time.
-If you want 'factory mode', just boot up the controller and set it running.
+Not stored. Recalibrate after every power cycle (`K` on the PC, **BTN5** on Zybo).
+The cart drives to both ends and stops in the middle. If it stalls near center,
+calibration speed in firmware may be too low for friction.
 
-_(2) PC Control Mode_  
-In this mode,
-the pendulum firmware runs as an interface to the physical hardware.
-Control is performed over USB by an algorithm running on another connected device (PC, FPGA, etc).
-The firmware outputs the current pendulum angle and cart position at regular intervals,
-and accepts motor speed and direction as input.
-The frequency of the control loop running on the PC is governed by the period set for outputting angle/position from the pendulum micro (currently hardcoded to 5 ms).
+`K` / BTN5 never change `ANGLE_HANGING`.
 
-In either mode,
-when enabling control of the pendulum for the first time,
-the firmware will automatically run a calibration routine.
-During this routine, the cart will slowly move from left to right in order to determine the maximum limits of movement.
+### Motor type (ORIGINAL vs POLOLU)
 
-### Buttons
+Calibration also detects encoder sign and sets `MOTOR`. That value is hardcoded
+**independently** in firmware (`parameters.c`) and in `globals.py`.
 
-Two buttons are used by the firmware
+* Starting the Python driver sends the PC motor type to the chip and overwrites
+  firmware RAM.
+* Calibration from the PC updates both sides for that session.
+* Calibration from a board button updates firmware RAM only.
+* After reset, each side reloads its compile-time / file default.
 
-_S1_  
-This is the CPU's hard reset.
+In the lab, motor type also selects which robot’s hanging constants apply
+(`ANGLE_HANGING_POLOLU` vs `ANGLE_HANGING_ORIGINAL`).
 
-_S2_  
-Used to switch between the 2 modes of operation in the pendulum firmware.
+### Motor power
 
-### LEDs
+Each motor (and wear) changes the Q → acceleration map. Record a bidirectional
+step response (`m` until the step-response protocol is selected, then `n`),
+then follow
+[Driver/DataAnalysis/MotorAndCartFriction/README.md](Driver/DataAnalysis/MotorAndCartFriction/README.md).
+Paste `MOTOR_CORRECTION` into `globals.py` **and**
+[parameters.c](Firmware/Src/CartPoleFirmware/parameters.c) (reflash for on-chip).
+Show-mux profiles currently share the LSTM/RPGD map
+`{0.5733488, 0.0257380, 0.0258429}`.
 
-There is a blue LED (L2) that flashes periodically, fast or slow depending on which mode the firmware is operating in. Fast (200 ms period) -> Self-contained mode. Slow (1 s period) -> PC control mode.
+### Angle: dead zone
 
-### PC Interface
+Put the potentiometer dead zone at **horizontal** (usually left). With the PC
+running, hold the pole horizontal and turn the pot joint until the raw ADC
+wraps. Tighten the clamp afterward or the reading drifts.
 
-The interface to the pendulum firmware is through the `pendulum.py` module, which provides a series of high-level functions to configure and command various things on the microcontroller. `control.py` contains an example implementation of a PD controller running the PC and interfacing directly with the pendulum firmware.
+On Zybo, hang the pole and press **BTN0**. That immediately disarms on-chip and
+PC control, zeros PWM, and overwrites `ANGLE_HANGING` from a wrap-aware mean of
+50 hardware-filtered 12-bit samples (aborted if the pole is moving or track
+calibration is running). Control stays off. PC **`b`** is the same role but
+averages 1000 streamed samples and does not write QSPI.
 
-### Parameters
+RGB **alternating red**: stored hanging places the dead zone within 20° of
+vertical. Turn the screw toward horizontal and press BTN0 again. **Cyan** is a
+centered cart target, not a fault.
 
-Parameters that can be adjusted via the PC are listed below. Note that raw values are used for set points and control gains.
-* Angle set point (~3110 is vertical).
-* Angle average length (number of samples to average over when determining current angle).
-* Angle smoothing factor (0 to 1.0 - used in 1st order low-pass filter).
-* Angle control gains (P and D).
-* Position set point (0: centre, <0: left, >0: right).
-* Position control period (as a multiple of Angle control period - 5 ms).
-* Position smoothing factor (0 to 1.0 - used in 1st order low-pass filter).
-* Position control gains (P and D).
+After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
+loaded at boot). The first PC connect applies `globals.py` once, unless BTN0
+already ran this boot. Later `CMD_SET_CONTROL_CONFIG` (including after `K`) does
+not change hanging. `b` forces RAM on the chip; BTN0 also writes QSPI at
+`0xFD0000` / `0xFFF000`. To persist across reboot without BTN0, copy the value
+into `ANGLE_HANGING_*` in `globals.py` and `parameters.c`.
 
-### Output
+BTN1–BTN3 are in the bitstream and can take `Button_SetAction(PL_BTN_n, ...)`
+without another FPGA build.
 
-If enabled, the following data is streamed to the PC at regular 5 ms intervals:
-* Current pendulum angle.
-* Current cart position.
-* Motor speed command calculated by onboard controller (0 when running in PC-control mode).
+### Full circle (`ANGLE_360_DEG_IN_ADC_UNITS`)
 
-<!---## Zynq
-The [zynq](zynq) folder has the Vivado and Petalinux project for the Minized zynq board. The Xilinx tools version is 2021.2. To replicate the projects you need to install both tools following the installation guides [Vivado](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiTo8K28Lf-AhUxXaQEHfyKDOMQFnoECAMQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug973-vivado-release-notes-install-license%2FDownload-and-Installation&usg=AOvVaw3DnvsfdstplLh6SIkN30Gq) and [Petalinux](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjq55rD8Lf-AhXmUqQEHbBYCGYQFnoECAgQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug1144-petalinux-tools-reference-guide%2FInstalling-the-PetaLinux-Tool&usg=AOvVaw2rKoUMzp-5K6sm-C3m291-)
+The ADC is 12-bit, but the dead zone means a physical turn is more than 4096
+counts. Measure hanging vs upright on the side that does not include the wrap;
+the circle is twice that difference. Script:
+[Driver/DataAnalysis/AngleUpDown](Driver/DataAnalysis/AngleUpDown).
 
-### Deploying the bsp file
-To decompress the bsp file and get the Petalinux and Vivado project, run the next commands under [zynq](zynq) folder:
-```console
-source /path/to/petalinux/install/folder/settings.sh
-petalinux-create -t project -s minized_sbc_base_2021_1.bsp
+Firmware **does** define `ANGLE_360_DEG_IN_ADC_UNITS` in `parameters.c`. It
+must match `globals.py`. Current Zybo Development values (new analog chain,
+2026-09-03): hanging **3273.353**, circle **4068.73**. STM and Zybo numbers
+differ (different robots and/or the 3.3 V → 1 V divider).
+
+### Zero angle
+
+Hang the pole, then **BTN0** or **`b`**. Gently balance upright: the reported
+angle should oscillate around 0. Fine-tune with `=` / `-`, or edit
+`ANGLE_HANGING_*` and restart.
+
+---
+
+## Using the robot
+
+Hardware and flashing are above. Daily operation — show vs PC, what SW0–SW3
+and the RGB LEDs mean, targets, safety — is
+[Docs/operating.md](Docs/operating.md). The host program
+(`python Driver/control.py`), every key, CSV / plotter, and experiment
+protocols are [Docs/pc-driver.md](Docs/pc-driver.md).
+
+Short map:
+
+* **Show, no PC:** QSPI boot, BTN0, BTN4, exactly one of SW0–SW3, JB slider.
+  Full first-boot list: [Quick start](#quick-start-zybo).
+* **PC as logger:** same on-chip path, then `control.py` and **`u`** / **`l`**.
+* **PC as controller:** set `CONTROLLER_NAME` in `Driver/globals.py`, **`k`**.
+  That name is only the `k` path; switches still select the chip controller.
+* **`k` and `u` are exclusive.** The slider, when `USE_EXTERNAL_INTERFACE` is
+  on, owns `target_position` on both paths (`[` / `]` / `;` are ignored).
+
+---
+
+## Standalone / QSPI (no PC at power-up)
+
+Hardcode hanging and motor map in `parameters.c` first, or press BTN0 after each
+boot. Prove the same image on JTAG before flashing.
+
+The show `BOOT.BIN` is secloc2026 FSBL +
+`FPGA/bitstreams/cartpole_short_pole_secloc.bit` + AMP CPU0
+(`CartPoleFirmware_rpgd_amp_cpu0.elf`). CPU0 starts CPU1. Image-range erase
+only — **do not erase the entire 16 MiB** or you wipe hanging at `0xFD0000` /
+`0xFFF000`.
+
+1. JP5 = **JTAG**. Close Vitis. Build if needed:
+   `RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh`
+2. `Firmware/Scripts/program_show_qspi.sh`
+   (uses [program_qspi_boot.tcl](Firmware/Scripts/program_qspi_boot.tcl);
+   template BIF: [cartpole_qspi.bif](Firmware/Scripts/cartpole_qspi.bif)).
+3. Power off. JP5 = **QSPI**. Power on. Hang, BTN0, BTN4, exactly one of SW0–SW3.
+
+SD boot (same `BOOT.BIN` on a card, JP5 = SD) is a fallback.
+
+Safety on this image:
+
+* Motor output is latched off until BTN4 / `u` / `k`
+* Stall: significant command with almost no encoder travel for 100 ms → command 0
+* Position limits brake with a margin before the encoder range ends
+* Invalid / bouncing DIP: Q = 0 for that tick
+
+PL buttons need a platform whose `xparameters.h` lists `PL_BUTTONS_GPIO`.
+Source of truth:
+[FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl](FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl).
+To patch an existing secloc project:
+[add_pl_buttons_and_build.tcl](FPGA/VivadoProjects/add_pl_buttons_and_build.tcl),
+then import `FPGA/VivadoProjects/cartpole_zybo_pl_buttons.xsa` and refresh
+`cartpole_zybo_secloc2026`. Old bit + new firmware still boots; BTN0 does
+nothing until that XSA is imported.
+
+---
+
+## STM32
+
+STM remains a supported chip (`#define STM`, `CHIP = "STM"`). On-chip control is
+PID. The USER button (`KEY_5` / `BUTTON_1`) toggles it the same way as PC `u`.
+Track calibration and hanging capture are **not** wired to STM extra buttons
+(`BUTTON_2` / `BUTTON_3` are unused); use the PC (`K`, `b`).
+
+PID does not swing up. Do not arm with the pole far from vertical or the cart
+will hit the ends. The reset button reloads flash.
+
+The old factory-firmware PC module, board mode buttons, and
+“calibrate automatically on first enable” behavior do **not** apply to this
+firmware.
+
+---
+
+## FPGA and Vitis rebuild
+
+You do **not** need this for daily show use. Prebuilt bitstream:
+[FPGA/bitstreams/cartpole_short_pole_secloc.bit](FPGA/bitstreams/cartpole_short_pole_secloc.bit).
+Platform: `Firmware/VitisProjects/cartpole_zybo_secloc2026`.
+
+Tools: **Vivado / Vitis 2020.1** (`source /tools/Xilinx/Vivado/2020.1/settings64.sh`).
+
+Recreate the Zybo block design from
+[FPGA/VivadoProjects](FPGA/VivadoProjects):
+
+```tcl
+cd FPGA/VivadoProjects
+source ./CartpoleDriverZynq_AXIS_12_09_2025.tcl
 ```
-A new folder will be create with the petalinux project where you can find the Vivado project under the hardware folder.
 
-### Apps cross-compilation
-Minized zynq PS (Processing System) is a ARM based architecture, so we need to cross-compile the application to be deployed in the ARM cores os the Zynq. A [makefile](zynq/apps/makefile) template is ready in the [apps](zynq/apps/) folder to be modified according our app requierements.
-* <u>Cross-compiler installation</u>
-```console
-sudo apt-get install g++-8-arm-linux-gnueabihf
-```
-* <u>Compile the user app</u>
-    - Create a folder for the new app and copy the makefile template and all app source file.
-    - Modify the makefile template according to the app requirements.
-    - Run the following command in the new app folder.
-    ```console
-    make
-    ```-->
-## Zynq
-The [zynq](zynq) folder has the Vivado and Vitis projects for both Zybo and Zedboard boards. The Xilinx tools version is 2021.2. To replicate the projects you need to install Vivado (including Vitis) following the installation guides [Vivado](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiTo8K28Lf-AhUxXaQEHfyKDOMQFnoECAMQAQ&url=https%3A%2F%2Fdocs.xilinx.com%2Fr%2F2021.2-English%2Fug973-vivado-release-notes-install-license%2FDownload-and-Installation&usg=AOvVaw3DnvsfdstplLh6SIkN30Gq)
+Generate bitstream, export hardware (**Fixed**, include bitstream), import the
+XSA into the `cartpole_zybo_secloc2026` Vitis platform and refresh both
+standalone domains. AMP CPU1 domain:
 
-### Creating Vivado project
-Open Vivado tool and click on the TCL console tab. This tab is place at window bottom. Navigate to [zynq](zynq) folder:
 ```console
-cd path/to/zynq/folder
+xsct Firmware/Scripts/setup_rpgd_amp_platform.tcl
 ```
 
-Then run the tcl script using the next command:
+Production ELFs (CPU1 blob linked into CPU0):
+
 ```console
-source ./zybo.tcl
+RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh
 ```
-The vivado project will be create and it will be ready for synthesis. Yo can modify this project according your needs.
 
-# Archiving Vivado project.
+Related TCL: `add_pl_buttons_and_build.tcl`, `set_pmodad1_timing_and_build.tcl`,
+`swap_nn_and_build.tcl`, Zedboard `CartpoleDriverZynq_AXIS_Zedboard.tcl`.
 
-To generate a new tcl script with the current project configuration, run the next command in the TCL console:
-```console
+To snapshot a live Vivado project:
+
+```tcl
 write_project_tcl -force ./zybo_new.tcl
-``` 
+```
 
-### Creating Vitis project
-Vitis projects are compressed in [zybo_vitis_pot_motor_test.zip](zynq/zybo_vitis_pot_motor_test.zip) file. So to import then into Vitis follow the next steps:
-- Open Vitis using a new workspace
-- Click on File -> Import...
-- Select "Vitis project exported zip file" option
-- Browse [zybo_vitis_pot_motor_test.zip](zynq/zybo_vitis_pot_motor_test.zip) file
-- Select all the projects
-- Click Finish
+SecLoc (Zedboard / research, not the Development show default):
+[Docs/SecLoc_Experiment_Platform.md](Docs/SecLoc_Experiment_Platform.md),
+[FPGA/CustomIPs/README_secloc_chain.md](FPGA/CustomIPs/README_secloc_chain.md).
+`USE_SECLOC` / `USE_CHIP_SECLOC` stay **False** on Development Zybo.
 
-The projects are ready to be run in the Zybo board.
+There is no legacy top-level FPGA folder and no exported Vitis zip in this tree.
+Recreate from `FPGA/VivadoProjects` as above.
 
+---
 
 ## Known issues
 
-sys.stdin.read(1) which is used for keyboard input causes the debugger of Pycharm to hang.
-
-For USB-UART bridge if you use FTDI chip - not the case for original stm board, but a default bridge for Zybo board or PMODs
-you will get 16ms latency due to FTDI chip waiting for minimal number of bytes to transfer to PC. You can disable this feature programmatically.
+* `sys.stdin` / `KBHit` can hang the **PyCharm debugger**. Run `control.py` from
+  a real terminal.
+* FTDI UART is 16 ms latency until the driver (Linux) or the Windows driver
+  setting forces 1 ms. MacOS: no known fix.
+* Vitis and `program_flash` cannot share JTAG. Close Vitis first.
+* Flashing QSPI with JP5 on QSPI stalls (`BOOT_MODE` is then 1). Power off, JP5
+  = JTAG, power on, flash, then move JP5 back.
+* `git submodule update --remote` can move CartPoleSimulation / toolkits off the
+  pinned commits this repo expects.
