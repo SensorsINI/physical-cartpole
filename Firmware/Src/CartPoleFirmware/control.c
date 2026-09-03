@@ -270,16 +270,14 @@ void CONTROL_ToggleCalibration(void)
 	enable_irq();
 }
 
-/* BTN0 hanging: skip 4 control ticks, then wrap-aware mean of 50 hardware-filtered ADC samples. */
+/* BTN0 hanging: wrap-aware mean of 50 hardware-filtered ADC samples. */
 #define HANGING_CAPTURE_SAMPLES 50
-#define HANGING_CAPTURE_SKIP_TICKS 4
 /* ADC counts per control tick; hanging pole should be nearly still. */
 #define HANGING_CAPTURE_MAX_ANGLED_ADC 8.0f
 
 static volatile bool set_hanging_requested = false;
 static bool hanging_capture_active = false;
 static bool hanging_capture_ref_set = false;
-static int hanging_capture_skip = 0;
 static int hanging_capture_count = 0;
 static float hanging_capture_ref = 0.0f;
 static float hanging_capture_sum = 0.0f;
@@ -291,7 +289,16 @@ static int hanging_nv_skip_logged = 0;
 
 void CONTROL_SetHangingFromCurrentReading(void)
 {
+	disable_irq();
+	Motor_DisableOutput();
+	motor_command = 0;
+	ControlOnChip_Enabled = false;
+	PCControl_Enabled = false;
+	time_motor_command_obtained = 0;
+	new_motor_command_obtained = false;
 	set_hanging_requested = true;
+	ledPeriod = led_blink_ticks(500);
+	enable_irq();
 }
 
 #ifdef ZYNQ
@@ -338,7 +345,6 @@ static void hanging_capture_abort(const char *reason)
 {
 	hanging_capture_active = false;
 	hanging_capture_ref_set = false;
-	hanging_capture_skip = 0;
 	hanging_capture_count = 0;
 	hanging_capture_sum = 0.0f;
 #ifdef ZYNQ
@@ -353,13 +359,12 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 {
 	if (set_hanging_requested) {
 		set_hanging_requested = false;
-		if (ControlOnChip_Enabled || calibrate) {
-			hanging_capture_abort("BTN0 ignored: stop on-chip control first");
+		if (ControlOnChip_Enabled || PCControl_Enabled || calibrate) {
+			hanging_capture_abort("BTN0 capture aborted: control or cart calibration active");
 			return;
 		}
 		hanging_capture_active = true;
 		hanging_capture_ref_set = false;
-		hanging_capture_skip = HANGING_CAPTURE_SKIP_TICKS;
 		hanging_capture_count = 0;
 		hanging_capture_sum = 0.0f;
 	}
@@ -368,13 +373,8 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		return;
 	}
 
-	if (ControlOnChip_Enabled || calibrate) {
-		hanging_capture_abort("BTN0 ignored: stop on-chip control first");
-		return;
-	}
-
-	if (hanging_capture_skip > 0) {
-		hanging_capture_skip--;
+	if (ControlOnChip_Enabled || PCControl_Enabled || calibrate) {
+		hanging_capture_abort("BTN0 capture aborted: control or cart calibration active");
 		return;
 	}
 

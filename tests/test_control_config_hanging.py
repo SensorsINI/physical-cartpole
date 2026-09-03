@@ -43,8 +43,27 @@ def test_get_unpack_hanging_on_chip_flag():
 def test_btn0_hanging_capture_is_averaged_not_single_sample():
     src = CONTROL_C.read_text()
     assert "#define HANGING_CAPTURE_SAMPLES 50" in src
-    assert "#define HANGING_CAPTURE_SKIP_TICKS 4" in src
+    assert "HANGING_CAPTURE_SKIP_TICKS" not in src
     assert "hanging_capture_sum / (float)hanging_capture_count" in src
+
+
+def test_btn0_immediately_disarms_all_control_before_capture():
+    src = CONTROL_C.read_text()
+    handler = src.split("void CONTROL_SetHangingFromCurrentReading(void)", 1)[1]
+    handler = handler.split("#ifdef ZYNQ", 1)[0]
+    assert "Motor_DisableOutput();" in handler
+    assert "motor_command = 0;" in handler
+    assert "ControlOnChip_Enabled = false;" in handler
+    assert "PCControl_Enabled = false;" in handler
+    assert handler.index("Motor_DisableOutput();") < handler.index(
+        "set_hanging_requested = true;"
+    )
+
+    capture = src.split("static void hanging_capture_feed", 1)[1]
+    capture = capture.split("int clip(", 1)[0]
+    assert capture.count(
+        "ControlOnChip_Enabled || PCControl_Enabled || calibrate"
+    ) == 2
 
 
 def test_boot_uses_compile_default_not_qspi_lock():
