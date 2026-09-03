@@ -22,7 +22,19 @@ only — **do not erase the entire 16 MiB** or you wipe hanging at `0xFD0000` /
    template BIF: [cartpole_qspi.bif](../Firmware/Scripts/cartpole_qspi.bif)).
 3. Power off. JP5 = **QSPI**. Power on. Hang, BTN0, BTN4, exactly one of SW0–SW3.
 
-SD boot (same `BOOT.BIN` on a card, JP5 = SD) is a fallback.
+### Standalone / microSD fallback
+
+With the FAT card mounted on the PC (the lab card is labeled `SD_Zybo`):
+
+```console
+Firmware/Scripts/install_show_sd.sh
+```
+
+The script rebuilds the same show image, writes it as `BOOT.BIN` at the card
+root, and verifies the copy. It does not partition or format the card. Safely
+eject it, insert it in the Zybo, set JP5 to **SD**, and power-cycle. The
+BootROM loads the FSBL from SD; that FSBL still loads the bitstream and AMP
+CPU0, and CPU0 starts CPU1 exactly as in QSPI boot.
 
 ### Safety on the show image
 
@@ -49,6 +61,8 @@ nothing until that XSA is imported.
 | Run from RAM (dev) | JTAG | `Firmware/Scripts/program_rpgd_amp_production.sh` |
 | Flash for standalone boot | JTAG while flashing | `Firmware/Scripts/program_show_qspi.sh` |
 | Boot from flash | QSPI (center pins) | Power cycle after flash |
+| Install SD fallback | Card mounted on PC | `Firmware/Scripts/install_show_sd.sh` |
+| Boot from SD | SD | Insert card and power-cycle |
 
 Close Vitis before JTAG flash — it steals the probe. Flashing with JP5 on QSPI
 stalls (`BOOT_MODE` is then 1).

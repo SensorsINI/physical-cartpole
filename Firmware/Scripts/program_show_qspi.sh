@@ -82,6 +82,11 @@ if [ "${boot_size}" -ge "${HANGING_OFF}" ]; then
 fi
 echo "BOOT.BIN ${boot_size} bytes (hanging reserved at 0xFD0000 / 0xFFF000)"
 
+if [ "${SHOW_QSPI_BUILD_ONLY:-0}" = "1" ]; then
+  echo "Build-only mode: ${BOOT}"
+  exit 0
+fi
+
 mkdir -p /tmp/xsct_home_pl_buttons
 export _JAVA_OPTIONS="-Duser.home=/tmp/xsct_home_pl_buttons"
 if [ ! -S /tmp/.X11-unix/X115 ]; then

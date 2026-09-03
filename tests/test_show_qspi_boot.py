@@ -16,6 +16,7 @@ QSPI_TCL = (REPO / "Firmware" / "Scripts" / "program_qspi_boot.tcl").read_text()
 QSPI_FSBL_PATCH = (
     REPO / "Firmware" / "Scripts" / "patch_qspi_fsbl_single.py"
 ).read_text()
+SD_INSTALL = (REPO / "Firmware" / "Scripts" / "install_show_sd.sh").read_text()
 CPU0_LD = (REPO / "Firmware" / "Src" / "Zynq" / "lscript_cpu0_amp.ld").read_text()
 CPU1_LD = (REPO / "Firmware" / "Src" / "RPGDWorker" / "lscript_cpu1_amp.ld").read_text()
 NV = (REPO / "Firmware" / "Src" / "Zynq" / "qspi_nvparams.h").read_text()
@@ -99,12 +100,27 @@ def test_qspi_programmer_keeps_dual_elf_gated():
 def test_show_qspi_builds_fsbl_with_reliable_single_bit_reads():
     assert "patch_qspi_fsbl_single.py" in SHOW_QSPI
     assert 'make -C "${FSBL_DIR}"' in SHOW_QSPI
+    assert "SHOW_QSPI_BUILD_ONLY" in SHOW_QSPI
     assert SHOW_QSPI.find('if [ -f "${FSBL_ZYNQ}" ]') < SHOW_QSPI.find(
         'elif [ -f "${FSBL_EXPORT}" ]'
     )
     assert "SINGLE_QSPI_CONFIG_FAST_QUAD_READ" in QSPI_FSBL_PATCH
     assert "SINGLE_QSPI_CONFIG_FAST_READ" in QSPI_FSBL_PATCH
     assert "replace(old, new, 1)" in QSPI_FSBL_PATCH
+
+
+def test_sd_installer_copies_same_show_image_without_formatting():
+    assert "SHOW_QSPI_BUILD_ONLY=1" in SD_INSTALL
+    assert "SD_Zybo" in SD_INSTALL
+    assert 'DEST="${MOUNT}/BOOT.BIN"' in SD_INSTALL
+    assert "cmp -s" in SD_INSTALL
+    assert "findmnt" in SD_INSTALL
+    assert "vfat|fat|msdos" in SD_INSTALL
+    assert "mkfs" not in SD_INSTALL
+    assert "parted" not in SD_INSTALL
+    assert "fdisk" not in SD_INSTALL
+    assert "install_show_sd.sh" in README
+    assert "JP5 = SD" in README
 
 
 def test_cpu1_blob_is_linked_from_objcopy():

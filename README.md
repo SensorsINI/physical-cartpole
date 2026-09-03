@@ -183,6 +183,15 @@ otherwise a cleared QUAD-enable bit makes linear reads return `0x888888xx`
 and the FSBL stops before configuring the FPGA. It erases only the boot-image
 range, preserving the hanging-calibration slot at `0xFD0000`.
 
+microSD backup (FAT card labeled `SD_Zybo` mounted on the PC):
+
+```console
+Firmware/Scripts/install_show_sd.sh
+```
+
+Safely eject and insert the card, set JP5 = SD, then power-cycle. The card
+contains the same standalone `BOOT.BIN` as QSPI.
+
 ### Hardware and calibration
 
 * Mechanical setup, PMODs, motors: [Docs/hardware.md](Docs/hardware.md)
