@@ -59,7 +59,7 @@ class StreamingStateDevice:
         self.closed = True
 
 
-def _state_packet(interface):
+def _state_packet(interface, telemetry_flags=0):
     payload = struct.pack(
         "=hfhfhBIQ2HBf",
         -958,
@@ -72,7 +72,7 @@ def _state_packet(interface):
         123456,
         660,
         0,
-        0,
+        telemetry_flags,
         1.0,
     )
     packet = [SERIAL_SOF, CMD_STATE, STATE_MESSAGE_LEN]
@@ -98,6 +98,53 @@ def test_read_state_reconnects_when_input_buffer_flush_fails(monkeypatch):
     assert replacement_device.writes
     assert replacement_device.writes[0][1] == interface_module.CMD_STREAM_ON
     assert state == (-958, 0.25, 232, 0.0, 28, 0, 0.01, 0.123456, 0.0066, 0, 0, 0, 0, 0, 1.0)
+
+
+def test_read_state_extracts_angle_calibration_revision():
+    interface = Interface()
+    interface.device = StreamingStateDevice(_state_packet(interface, telemetry_flags=0xB5))
+
+    state = interface.read_state()
+
+    assert interface.angle_calibration_revision == 0x0B
+    assert state[10:14] == (1, 0, 1, 0)
+
+
+def test_control_config_advertises_upright_span_calibration(monkeypatch):
+    interface = Interface()
+    status = 0x80 | 0x20 | (7 << 1) | 1
+    payload = struct.pack("=H?fH?HB", 5, False, 1100.5, 1, True, 2, status)
+    reply = [SERIAL_SOF, interface_module.CMD_GET_CONTROL_CONFIG, 17]
+    reply.extend(payload)
+    reply.append(0)
+    monkeypatch.setattr(interface, "_write_message", lambda _msg: True)
+    monkeypatch.setattr(interface, "_receive_reply", lambda *_args, **_kwargs: reply)
+
+    config = interface.get_config_control()
+
+    assert config[-1] is True
+    assert interface.angle_calibration_revision == 7
+    assert interface.angle_span_set_on_chip is True
+    assert interface.supports_angle_span_calibration is True
+
+
+def test_get_angle_calibration_reads_circle_and_status(monkeypatch):
+    interface = Interface()
+    interface.supports_angle_span_calibration = True
+    status = 0x80 | 0x20 | (3 << 1) | 1
+    reply = [SERIAL_SOF, interface_module.CMD_GET_ANGLE_CALIBRATION, 9]
+    reply.extend(struct.pack("=fB", 4072.25, status))
+    reply.append(0)
+    writes = []
+    monkeypatch.setattr(interface, "_write_message", lambda msg: writes.append(msg))
+    monkeypatch.setattr(interface, "_receive_reply", lambda *_args, **_kwargs: reply)
+
+    circle = interface.get_angle_calibration()
+
+    assert circle == pytest.approx(4072.25)
+    assert writes[0][1] == interface_module.CMD_GET_ANGLE_CALIBRATION
+    assert interface.angle_calibration_revision == 3
+    assert interface.angle_span_set_on_chip is True
 
 
 def test_collect_raw_angle_chunks_requests_to_fit_firmware_buffer(monkeypatch):

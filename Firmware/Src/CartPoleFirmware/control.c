@@ -99,7 +99,11 @@ float  			ANGLE_DEVIATION;
 
 volatile bool	HardwareConfigSetFromPC;
 volatile bool	AngleHangingSetOnChip;
+static bool		AngleSpanSetOnChip = false;
 static bool		PcHangingApplied = false;
+/* Low four bits are exported in every STATE packet. This lets a connected
+ * host notice every BTN0/BTN1/forced update without increasing the packet. */
+static unsigned char AngleCalibrationRevision = 0;
 volatile bool 	ControlOnChip_Enabled;
 volatile bool	PCControl_Enabled;
 
@@ -163,6 +167,7 @@ void 			cmd_ControlMode(bool en);
 void			cmd_PCControlMode(bool en);
 void			cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen);
 void 			cmd_GetControlConfig(void);
+void 			cmd_GetAngleCalibration(void);
 void			cmd_SetSeclocConfig(const unsigned char * config);
 void			cmd_GetSeclocInfo(void);
 void			cmd_CollectRawAngle(const unsigned short, const unsigned short);
@@ -193,6 +198,8 @@ void CONTROL_Init(void)
 	PCControl_Enabled			= false;
 	HardwareConfigSetFromPC = false;
 	AngleHangingSetOnChip = false;
+	AngleSpanSetOnChip = false;
+	AngleCalibrationRevision = 0;
     isCalibrated        = false;
 #if defined(ZYNQ) && defined(ZYBO_Z720)
 	apply_show_profile_for_controller(SHOW_MUX_IDLE);
@@ -281,6 +288,12 @@ static bool hanging_capture_ref_set = false;
 static int hanging_capture_count = 0;
 static float hanging_capture_ref = 0.0f;
 static float hanging_capture_sum = 0.0f;
+static volatile bool set_upright_requested = false;
+static bool upright_capture_active = false;
+static bool upright_capture_ref_set = false;
+static int upright_capture_count = 0;
+static float upright_capture_ref = 0.0f;
+static float upright_capture_sum = 0.0f;
 #ifdef ZYNQ
 static volatile int hanging_nv_pending = 0;
 static float hanging_nv_value = 0.0f;
@@ -296,8 +309,29 @@ void CONTROL_SetHangingFromCurrentReading(void)
 	PCControl_Enabled = false;
 	time_motor_command_obtained = 0;
 	new_motor_command_obtained = false;
+	set_upright_requested = false;
+	upright_capture_active = false;
 	set_hanging_requested = true;
 	ledPeriod = led_blink_ticks(500);
+	enable_irq();
+}
+
+void CONTROL_SetUprightFromCurrentReading(void)
+{
+	disable_irq();
+	Motor_DisableOutput();
+	motor_command = 0;
+	ControlOnChip_Enabled = false;
+	PCControl_Enabled = false;
+	time_motor_command_obtained = 0;
+	new_motor_command_obtained = false;
+	set_hanging_requested = false;
+	hanging_capture_active = false;
+	set_upright_requested = true;
+	ledPeriod = led_blink_ticks(500);
+#ifdef ZYNQ
+	Led_RgbUprightCaptureStart();
+#endif
 	enable_irq();
 }
 
@@ -405,6 +439,8 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		ANGLE_HANGING = mean;
 		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 		AngleHangingSetOnChip = true;
+		AngleSpanSetOnChip = false;
+		AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;
 		enable_irq();
 		hanging_capture_active = false;
 		hanging_capture_ref_set = false;
@@ -413,6 +449,97 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		Led_RgbConfirmFlash();
 		hanging_nv_value = mean;
 		hanging_nv_pending = 1;
+#endif
+	}
+}
+
+static void upright_capture_abort(const char *reason)
+{
+	upright_capture_active = false;
+	upright_capture_ref_set = false;
+	upright_capture_count = 0;
+	upright_capture_sum = 0.0f;
+#ifdef ZYNQ
+	xil_printf("%s\r\n", reason);
+	Led_RgbUprightCaptureError();
+#else
+	(void)reason;
+#endif
+}
+
+/* BTN1 upright: average in the raw 12-bit ADC circle, then use the direct
+ * hanging-to-upright path. The potentiometer dead zone must be horizontal. */
+static void upright_capture_feed(int adc_12bit, int invalid_step, float angleD_adc)
+{
+	if (set_upright_requested) {
+		set_upright_requested = false;
+		if (ControlOnChip_Enabled || PCControl_Enabled || calibrate) {
+			upright_capture_abort("BTN1 capture aborted: control or cart calibration active");
+			return;
+		}
+		upright_capture_active = true;
+		upright_capture_ref_set = false;
+		upright_capture_count = 0;
+		upright_capture_sum = 0.0f;
+	}
+
+	if (!upright_capture_active) {
+		return;
+	}
+	if (ControlOnChip_Enabled || PCControl_Enabled || calibrate) {
+		upright_capture_abort("BTN1 capture aborted: control or cart calibration active");
+		return;
+	}
+	if (invalid_step != 0 || fabsf(angleD_adc) > HANGING_CAPTURE_MAX_ANGLED_ADC) {
+		upright_capture_abort("BTN1 capture aborted: pole moving or dead zone");
+		return;
+	}
+
+	float sample = (float)(adc_12bit & 0x0FFF);
+	if (!upright_capture_ref_set) {
+		upright_capture_ref = sample;
+		upright_capture_ref_set = true;
+	}
+	float d = sample - upright_capture_ref;
+	if (d > 2048.0f) {
+		d -= 4096.0f;
+	} else if (d < -2048.0f) {
+		d += 4096.0f;
+	}
+	upright_capture_sum += d;
+	upright_capture_count++;
+
+	if (upright_capture_count >= HANGING_CAPTURE_SAMPLES) {
+		float upright = upright_capture_ref
+			+ upright_capture_sum / (float)upright_capture_count;
+		while (upright < 0.0f) {
+			upright += 4096.0f;
+		}
+		while (upright >= 4096.0f) {
+			upright -= 4096.0f;
+		}
+		float new_circle = 2.0f * fabsf(upright - ANGLE_HANGING);
+		if (new_circle < 0.8f * ANGLE_360_DEG_IN_ADC_UNITS
+		    || new_circle > 1.2f * ANGLE_360_DEG_IN_ADC_UNITS) {
+			upright_capture_abort("BTN1 capture rejected: pole is not opposite hanging");
+			return;
+		}
+
+		disable_irq();
+		ANGLE_360_DEG_IN_ADC_UNITS = new_circle;
+		ANGLE_NORMALIZATION_FACTOR = (2.0f * M_PI) / ANGLE_360_DEG_IN_ADC_UNITS;
+		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+		/* The span is meaningful only together with the hanging reference used. */
+		AngleHangingSetOnChip = true;
+		AngleSpanSetOnChip = true;
+		AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;
+		enable_irq();
+		upright_capture_active = false;
+		upright_capture_ref_set = false;
+#ifdef ZYNQ
+		xil_printf("UPRIGHT millicounts: %d; ANGLE_360 millicounts: %d\r\n",
+			   hanging_millicounts(upright), hanging_millicounts(new_circle));
+		Led_RgbUprightCaptureSuccess();
 #endif
 	}
 }
@@ -481,6 +608,7 @@ void CONTROL_BackgroundTask(void)
 		{
 			unsigned short latest_idx = (unsigned short)((angleSampIndex + ANGLE_AVERAGE_LEN - 1) % ANGLE_AVERAGE_LEN);
 			hanging_capture_feed(angleSamples[latest_idx], invalid_step, angleD);
+			upright_capture_feed(angleSamples[latest_idx], invalid_step, angleD);
 		}
 
 		unsigned long time_difference_between_measurement = time_current_measurement-time_last_measurement;
@@ -760,8 +888,10 @@ void CONTROL_BackgroundTask(void)
 					time_accumulated_us,
 					latency,
 					latency_violation,
-					(ControlOnChip_Enabled && current_controller == OnChipController_SECLOC)
-						? secloc_controller_telemetry_flags() : 0
+					(unsigned char)(
+						((ControlOnChip_Enabled && current_controller == OnChipController_SECLOC)
+							? secloc_controller_telemetry_flags() : 0)
+						| ((AngleCalibrationRevision & 0x0Fu) << 4))
 					);
 
 	    	Message_SendToPC(buffer, STATE_MESSAGE_LEN);
@@ -930,6 +1060,11 @@ void CONTROL_BackgroundTask(void)
 		case CMD_GET_CONTROL_CONFIG:
 		{
 			cmd_GetControlConfig();
+			break;
+		}
+		case CMD_GET_ANGLE_CALIBRATION:
+		{
+			cmd_GetAngleCalibration();
 			break;
 		}
 		case CMD_SET_MOTOR:
@@ -1321,6 +1456,8 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 		ANGLE_HANGING = serial_get_f32(&config[3]);
 		if (force_angle_hanging) {
 			AngleHangingSetOnChip = true;
+			AngleSpanSetOnChip = false;
+			AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;
 		} else {
 			PcHangingApplied = true;
 		}
@@ -1393,10 +1530,30 @@ void cmd_GetSeclocInfo(void)
 
 void cmd_GetControlConfig(void)
 {
-	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics, TIMESTEPS_FOR_DERIVATIVE, AngleHangingSetOnChip);
+	unsigned char hanging_status =
+		(AngleHangingSetOnChip ? 1u : 0u)
+		| ((AngleCalibrationRevision & 0x0Fu) << 1)
+		| (AngleSpanSetOnChip ? 0x20u : 0u)
+		| 0x80u;
+	prepare_message_to_PC_control_config(txBuffer, POLLING_PERIOD_MS, CONTROL_SYNC, ANGLE_HANGING, ANGLE_AVERAGE_LEN, correct_motor_dynamics, TIMESTEPS_FOR_DERIVATIVE, hanging_status);
 
 	disable_irq();
 	Message_SendToPC(txBuffer, 17);
+	enable_irq();
+}
+
+void cmd_GetAngleCalibration(void)
+{
+	unsigned char calibration_status =
+		(AngleHangingSetOnChip ? 1u : 0u)
+		| ((AngleCalibrationRevision & 0x0Fu) << 1)
+		| (AngleSpanSetOnChip ? 0x20u : 0u)
+		| 0x80u;
+	prepare_message_to_PC_angle_calibration(
+		txBuffer, ANGLE_360_DEG_IN_ADC_UNITS, calibration_status);
+
+	disable_irq();
+	Message_SendToPC(txBuffer, 9);
 	enable_irq();
 }
 

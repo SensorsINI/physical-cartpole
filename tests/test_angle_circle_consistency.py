@@ -61,6 +61,10 @@ def _zybo_float(text: str, name: str) -> float:
     if env_matches:
         return float(env_matches[-1])
     matches = re.findall(rf"{name}\s*=\s*([0-9.]+)", text)
+    if not matches and name == "ANGLE_360_DEG_IN_ADC_UNITS":
+        matches = re.findall(
+            r"ANGLE_360_DEFAULT_ADC_UNITS\s+([0-9.]+)f?", text
+        )
     assert matches, name
     return float(matches[-1])
 

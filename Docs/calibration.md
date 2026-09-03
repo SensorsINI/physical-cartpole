@@ -5,7 +5,8 @@ motor map. Friction identification is optional for a first working controller;
 see [Driver/DataAnalysis/MotorAndCartFriction/README.md](../Driver/DataAnalysis/MotorAndCartFriction/README.md).
 
 Day-to-day keys and buttons: **`K`** / **BTN5** (track center), **`b`** / **BTN0**
-(hanging), and the [operating guide](operating.md).
+(hanging), **BTN1** (upright/full-circle span), and the
+[operating guide](operating.md).
 
 ## Track center
 
@@ -63,7 +64,7 @@ not change hanging. `b` forces RAM on the chip; BTN0 also writes QSPI at
 `0xFD0000` / `0xFFF000`. To persist across reboot without BTN0, copy the value
 into `ANGLE_HANGING_*` in `globals.py` and `parameters.c`.
 
-BTN1–BTN3 are in the bitstream and can take `Button_SetAction(PL_BTN_n, ...)`
+BTN2–BTN3 remain free in the bitstream and can take `Button_SetAction(PL_BTN_n, ...)`
 without another FPGA build.
 
 ## Full circle (`ANGLE_360_DEG_IN_ADC_UNITS`)
@@ -72,6 +73,14 @@ The ADC is 12-bit, but the dead zone means a physical turn is more than 4096
 counts. Measure hanging vs upright on the side that does not include the wrap;
 the circle is twice that difference. Script:
 [Driver/DataAnalysis/AngleUpDown](../Driver/DataAnalysis/AngleUpDown).
+
+On Zybo, capture hanging with **BTN0**, hold the pole still and upright, then
+press **BTN1**. BTN1 disarms control, averages 50 filtered samples, and applies
+`2 × |upright − ANGLE_HANGING|` to the circle, normalization factor, and zero
+offset. It rejects movement and results outside ±20% of the previous circle.
+RGB is blue while sampling, green on success, and red on rejection. A connected
+driver adopts the new span automatically. The result is session-only; copy it
+from the terminal into `globals.py` and `parameters.c` to persist it.
 
 Firmware **does** define `ANGLE_360_DEG_IN_ADC_UNITS` in `parameters.c`. It
 must match `globals.py`. Current Zybo Development values (new analog chain,
@@ -89,5 +98,6 @@ angle should oscillate around 0. Fine-tune with `=` / `-`, or edit
 1. Dead zone at horizontal; pot clamp tight.
 2. **`K`** or **BTN5** — track center.
 3. **BTN0** or **`b`** — hanging capture.
-4. Balance upright; angle reads ~0 rad (`=` / `-` if needed).
-5. Optional: step-response motor map → paste into `globals.py` and `parameters.c`.
+4. Hold upright and press **BTN1** — full-circle span capture.
+5. Balance upright; angle reads ~0 rad (`=` / `-` if needed).
+6. Optional: step-response motor map → paste into `globals.py` and `parameters.c`.

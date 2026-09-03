@@ -37,7 +37,8 @@ float MOTOR_CORRECTION[3] 							=		{0.595228, 0.0323188, 0.0385016}; // Pololu
 float ANGLE_HANGING_POLOLU 							=		1055.5;  // Value from sensor when pendulum is at stable equilibrium point
 float ANGLE_HANGING_ORIGINAL						=		1046.75;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4271.34;
+#define ANGLE_360_DEFAULT_ADC_UNITS						4271.34f
+float ANGLE_360_DEG_IN_ADC_UNITS						=		ANGLE_360_DEFAULT_ADC_UNITS;
 float POSITION_ENCODER_RANGE						=		4164.0;
 
 const unsigned int CLOCK_FREQ						=		72000000;
@@ -56,7 +57,8 @@ float MOTOR_CORRECTION[3] 							=		{0.5846884, 0.0223145, 0.0224489};
 float ANGLE_HANGING_POLOLU 							=		1068;
 float ANGLE_HANGING_ORIGINAL						=		1075;
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4302;
+#define ANGLE_360_DEFAULT_ADC_UNITS						4302.0f
+float ANGLE_360_DEG_IN_ADC_UNITS						=		ANGLE_360_DEFAULT_ADC_UNITS;
 float POSITION_ENCODER_RANGE						=		4649;
 
 #else  // ZYBO_Z720
@@ -67,7 +69,8 @@ float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 float ANGLE_HANGING_POLOLU 							=		3273.353;  // Stationary hanging mean, new analog chain 2026-09-03
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
-const float ANGLE_360_DEG_IN_ADC_UNITS				=		4068.73;  // 2*(upright 1238.988 - hanging 3273.353); must match Driver/globals.py.
+#define ANGLE_360_DEFAULT_ADC_UNITS						4068.73f
+float ANGLE_360_DEG_IN_ADC_UNITS						=		ANGLE_360_DEFAULT_ADC_UNITS;  // 2*(upright 1238.988 - hanging 3273.353); must match Driver/globals.py.
 float POSITION_ENCODER_RANGE						=		4695.0;
 
 #endif
@@ -80,7 +83,7 @@ bool USE_TARGET_SWITCHES							=		false;					// Keep switch positions from chang
 
 #endif
 
-float ANGLE_NORMALIZATION_FACTOR					=		((2 * M_PI) / ANGLE_360_DEG_IN_ADC_UNITS);
+float ANGLE_NORMALIZATION_FACTOR					=		((2 * M_PI) / ANGLE_360_DEFAULT_ADC_UNITS);
 float POSITION_NORMALIZATION_FACTOR					=		(0.198 * 2 / 4695.0);
 
 const float DEAD_ZONE_VERTICAL_WARN_DEG				=		20.0f;

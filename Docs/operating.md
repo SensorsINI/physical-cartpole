@@ -14,7 +14,7 @@ Keep the track clear. Have a hand on the 12 V motor supply.
 
 | Goal | Path |
 |---|---|
-| Demo / show, no laptop after boot | QSPI image, **BTN0 → BTN4**, exactly one of **SW0–SW3**, JB slider for the cart target |
+| Demo / show, no laptop after boot | QSPI image, **BTN0 → BTN1 → BTN4**, exactly one of **SW0–SW3**, JB slider for the cart target |
 | Watch an on-chip controller and log CSV | Same as the show, plus `python Driver/control.py` and **`u`** / **`l`** |
 | Run a controller on the PC | Set `CONTROLLER_NAME` in `Driver/globals.py`, then **`k`** |
 | Identify the motor / cart | Experiment protocols **`m`** / **`n`** (pole off for force ID) |
@@ -34,10 +34,12 @@ Before arming with the pole on the track:
 1. Track clear; 12 V motor supply ready to cut.
 2. **JP5** = QSPI for standalone boot, or JTAG if developing from RAM.
 3. **SW0–SW3** all off until after arm.
-4. Pole hanging; **BTN0** (or **`b`**) captured hanging — RGB white flash, not alternating red.
-5. **BTN5** or **`K`** once per power cycle if the encoder zero may be stale.
-6. Exactly **one** switch on before expecting motion.
-7. JB slider near center if you want target ≈ 0.
+4. Pole hanging; **BTN0** (or **`b`**) captured hanging — RGB white flash.
+5. If recalibrating the angle scale, hold upright and press **BTN1** — blue
+   while sampling, green on success, red on rejection.
+6. **BTN5** or **`K`** once per power cycle if the encoder zero may be stale.
+7. Exactly **one** switch on before expecting motion.
+8. JB slider near center if you want target ≈ 0.
 
 ## Safety
 
@@ -99,12 +101,15 @@ on both paths.
 3. **BTN0** — disarms, zeros PWM, captures `ANGLE_HANGING`. RGB flashes **white**
    on success. Alternating **red** means the pot dead zone is too close to
    vertical: rotate the clamp toward horizontal and press BTN0 again.
-4. Optional: **BTN5** once after power-up to re-center the track (does not
+4. Hold the pole upright and press **BTN1** to refresh `ANGLE_360_DEG_IN_ADC_UNITS`.
+   RGB is **blue** for the 50-sample capture, **green** on success, and **red**
+   if the pole moved or was not opposite the hanging pose.
+5. Optional: **BTN5** once after power-up to re-center the track (does not
    change hanging).
-5. **BTN4** to arm. Motor is still 0 until a valid one-hot switch is on.
-6. Turn on **exactly one** of SW0–SW3. Move the JB slider to set the cart
+6. **BTN4** to arm. Motor is still 0 until a valid one-hot switch is on.
+7. Turn on **exactly one** of SW0–SW3. Move the JB slider to set the cart
    target (±12 cm).
-7. **BTN0** again to stop and recapture hanging. All switches off also stops
+8. **BTN0** again to stop and recapture hanging. All switches off also stops
    the controller (`Q = 0`).
 
 Hardcode hanging and the motor map in `parameters.c` if you do not want to
@@ -190,9 +195,10 @@ The LEDs above the switches mirror the DIP state.
 | Button | Firmware name | Action |
 |---|---|---|
 | **BTN0** (PL) | `BUTTON_3` | Disarm on-chip and PC control, zero PWM, capture hanging (50 wrap-aware filtered ADC samples). Aborts if the pole is moving, the dead zone is in the sample, or calibration is running. Writes QSPI at `0xFD0000` / `0xFFF000` when control stays off. |
+| **BTN1** (PL) | `BUTTON_4` | Disarm and capture upright (50 samples), then set `ANGLE_360_DEG_IN_ADC_UNITS = 2 × |upright − hanging|`. Rejects movement or a result outside ±20% of the current span. Session only. |
 | **BTN4** (PS) | `BUTTON_1` | Arm / disarm on-chip control. Same as PC **`u`**. |
 | **BTN5** (PS) | `BUTTON_2` | Track-center calibration. Same as PC **`K`**. Never changes hanging. |
-| **BTN1–BTN3** | PL, unassigned by default | Present in the bitstream; `Button_SetAction(PL_BTN_n, …)` can bind them without a new FPGA build. |
+| **BTN2–BTN3** | PL, unassigned by default | Present in the bitstream; `Button_SetAction(PL_BTN_n, …)` can bind them without a new FPGA build. |
 
 After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
 loaded at boot). First PC connect applies `globals.py` once, unless BTN0 already
@@ -203,6 +209,9 @@ ran this boot.
 | Pattern | Meaning |
 |---|---|
 | Both white, ~300 ms | BTN0 hanging capture succeeded |
+| Both blue | BTN1 upright capture in progress |
+| Both green, ~700 ms | BTN1 updated the full-circle angle span |
+| Both red, ~1 s | BTN1 capture rejected |
 | Alternating red | Stored hanging puts the pot dead zone within ~20° of vertical |
 | Both cyan | Cart target is 0 (center) |
 | Green (one diode) | Target > 0 |
@@ -246,6 +255,7 @@ Not stored across reset (unless you copy numbers into `parameters.c` /
 
 * Track center — **BTN5** / **`K`**
 * Session hanging — **BTN0** / **`b`**, or the compile-time default
+* Session full-circle angle span — **BTN1**, or the compile-time default
 * Motor type in RAM — calibration detects encoder sign; each side reloads its
   file default after reset. Starting the Python driver overwrites firmware RAM
   with `MOTOR` from `globals.py`
@@ -273,6 +283,7 @@ when the analog chain or the motor changes. See
 |---|---|
 | Cart does not move after arm | Switches not one-hot; motor output still latched off; 12 V unplugged; stall latched (disarm and re-arm) |
 | RGB alternating red | Dead zone near vertical — rotate the pot clamp, BTN0 again |
+| BTN1 flashes red | Hold the pole still and truly upright; run BTN0 hanging capture first |
 | Angle jumps or wraps near upright | Dead zone is not at horizontal; see Calibration |
 | BTN0 does nothing | Old bitstream without `PL_BUTTONS_GPIO`; JP5 / image mismatch |
 | PC `k` does nothing | Run from a real terminal, not the PyCharm debugger; check UART (`/dev/ttyUSB1`, 230400) |

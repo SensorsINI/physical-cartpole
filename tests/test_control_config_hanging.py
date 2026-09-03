@@ -3,7 +3,11 @@
 Firmware/Src/CartPoleFirmware/communication_with_PC.c:
   SET 16: period/sync/hanging/avg/motor/timesteps
   SET 17: plus force_angle_hanging
-  GET 17: same fields as SET 16 plus hanging_set_on_chip, CRC last
+  GET 17: same fields as SET 16 plus hanging status, CRC last
+
+Hanging status bit 0 is hanging_set_on_chip, bits 1..4 carry the calibration
+revision also sent in STATE telemetry bits 4..7, bit 5 is BTN1 span ownership,
+and bit 7 advertises support for querying the runtime angle span.
 """
 from __future__ import annotations
 
@@ -11,6 +15,10 @@ import struct
 from pathlib import Path
 
 CONTROL_C = Path(__file__).resolve().parents[1] / "Firmware/Src/CartPoleFirmware/control.c"
+DRIVER = (
+    Path(__file__).resolve().parents[1]
+    / "Driver/DriverFunctions/PhysicalCartPoleDriver.py"
+)
 
 
 def test_packed_control_config_sizes():
@@ -28,13 +36,19 @@ def test_set_force_byte_is_thirteenth_payload_byte():
     assert forced[12] == 1
 
 
-def test_get_unpack_hanging_on_chip_flag():
-    payload = struct.pack("=H?fH?H?", 5, False, 1100.5, 1, True, 2, True)
-    period, sync, hanging, avg, motor, steps, on_chip = struct.unpack("=H?fH?H?", payload)
+def test_get_unpack_hanging_status():
+    revision = 9
+    wire_status = 0x80 | 0x20 | (revision << 1) | 1
+    payload = struct.pack("=H?fH?HB", 5, False, 1100.5, 1, True, 2, wire_status)
+    period, sync, hanging, avg, motor, steps, status = struct.unpack("=H?fH?HB", payload)
+    on_chip = bool(status & 1)
     assert period == 5
     assert sync is False
     assert abs(hanging - 1100.5) < 1e-4
     assert on_chip is True
+    assert (status >> 1) & 0x0F == revision
+    assert status & 0x20
+    assert status & 0x80
     assert steps == 2
     assert motor is True
     assert avg == 1
@@ -45,6 +59,15 @@ def test_btn0_hanging_capture_is_averaged_not_single_sample():
     assert "#define HANGING_CAPTURE_SAMPLES 50" in src
     assert "HANGING_CAPTURE_SKIP_TICKS" not in src
     assert "hanging_capture_sum / (float)hanging_capture_count" in src
+
+
+def test_btn0_revision_notifies_connected_driver():
+    firmware = CONTROL_C.read_text()
+    driver = DRIVER.read_text()
+    assert "AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;" in firmware
+    assert "((AngleCalibrationRevision & 0x0Fu) << 4)" in firmware
+    assert "self._sync_angle_calibration_if_changed()" in driver
+    assert "revision != self._angle_calibration_revision_seen" in driver
 
 
 def test_btn0_immediately_disarms_all_control_before_capture():
@@ -60,7 +83,7 @@ def test_btn0_immediately_disarms_all_control_before_capture():
     )
 
     capture = src.split("static void hanging_capture_feed", 1)[1]
-    capture = capture.split("int clip(", 1)[0]
+    capture = capture.split("static void upright_capture_abort", 1)[0]
     assert capture.count(
         "ControlOnChip_Enabled || PCControl_Enabled || calibrate"
     ) == 2

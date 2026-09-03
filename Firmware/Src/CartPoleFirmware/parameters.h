@@ -38,7 +38,7 @@ typedef enum {
 
 extern const float TrackHalfLength;
 extern float SliderTargetHalfLength;
-extern const float ANGLE_360_DEG_IN_ADC_UNITS;
+extern float ANGLE_360_DEG_IN_ADC_UNITS;
 extern float POSITION_ENCODER_RANGE;
 
 extern float ANGLE_HANGING_POLOLU;

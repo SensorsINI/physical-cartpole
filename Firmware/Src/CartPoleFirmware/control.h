@@ -6,6 +6,7 @@ void cmd_Calibrate(void);
 void CONTROL_ToggleState(void);
 void CONTROL_ToggleCalibration(void);
 void CONTROL_SetHangingFromCurrentReading(void);
+void CONTROL_SetUprightFromCurrentReading(void);
 void CONTROL_Loop(void);
 void CONTROL_BackgroundTask(void);
 

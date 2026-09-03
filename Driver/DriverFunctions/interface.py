@@ -30,6 +30,7 @@ CMD_TRANSFER_BUFFERS = 0xD1
 CMD_SET_ANGLE_FILTER = 0xD2
 CMD_SET_SECLOC_CONFIG = 0xD3
 CMD_GET_SECLOC_INFO = 0xD4
+CMD_GET_ANGLE_CALIBRATION = 0xD5
 
 SECLOC_BACKEND_NAMES = {0: 'SW', 1: 'PL', 2: 'PL-shadow'}
 
@@ -42,7 +43,8 @@ ANGLE_FILTER_MODE_TRIMMED_MEAN = 2
 # and 1 SecLoc telemetry byte (bit 0 = skipped_update, bit 1 = gate_skipped,
 # bit 2 = step computed by the PL backend, bit 3 = PL fault: PL backend selected but
 # the PL block is absent or the transaction failed; the step output zero force,
-# no SW fallback) when the on-chip SecLoc wrapper is active, plus target_equilibrium.
+# no SW fallback) when the on-chip SecLoc wrapper is active. Bits 4..7 carry
+# the angle-calibration revision. The packet also carries target_equilibrium.
 STATE_MESSAGE_LEN = 40
 # Firmware uses a 200-byte reply buffer: 3-byte header + 2 bytes/sample + CRC.
 MAX_RAW_ANGLE_SAMPLES_PER_PACKET = 98
@@ -258,6 +260,9 @@ class Interface:
         self.encoderDirection = None
         self.calibration_in_progress = False
         self.calibration_completed = False
+        self.angle_calibration_revision = 0
+        self.supports_angle_span_calibration = False
+        self.angle_span_set_on_chip = False
 
         self.hardware_experiment_length = 0
         self.uart = UartHealth()
@@ -552,9 +557,26 @@ class Interface:
         self._write_message(msg)
         reply = self._receive_reply(CMD_GET_CONTROL_CONFIG, 17)
         (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
-         timesteps_for_derivative, hanging_on_chip) = struct.unpack('=H?fH?H?', bytes(reply[3:16]))
+         timesteps_for_derivative, hanging_status) = struct.unpack('=H?fH?HB', bytes(reply[3:16]))
+        hanging_on_chip = bool(hanging_status & 0x01)
+        self.angle_calibration_revision = (hanging_status >> 1) & 0x0F
+        self.angle_span_set_on_chip = bool(hanging_status & 0x20)
+        self.supports_angle_span_calibration = bool(hanging_status & 0x80)
         return (controlLoopPeriodMs, controlSync, angle_hanging, avgLen, correct_motor_dynamics,
                 timesteps_for_derivative, hanging_on_chip)
+
+    def get_angle_calibration(self):
+        if not self.supports_angle_span_calibration:
+            return None
+        msg = [SERIAL_SOF, CMD_GET_ANGLE_CALIBRATION, 4]
+        msg.append(self._crc(msg))
+        self._write_message(msg)
+        reply = self._receive_reply(CMD_GET_ANGLE_CALIBRATION, 9)
+        angle_circle, calibration_status = struct.unpack('=fB', bytes(reply[3:8]))
+        self.angle_calibration_revision = (calibration_status >> 1) & 0x0F
+        self.angle_span_set_on_chip = bool(calibration_status & 0x20)
+        self.supports_angle_span_calibration = bool(calibration_status & 0x80)
+        return angle_circle
 
     def set_motor(self, speed):
         msg = [SERIAL_SOF, CMD_SET_MOTOR, 8]
@@ -707,6 +729,7 @@ class Interface:
          time_current_measurement_chip, latency, latency_violation,
          secloc_flags, target_equilibrium) = struct.unpack(
             '=hfhfhBIQ2HBf', bytes(reply[3:message_length - 1]))
+        self.angle_calibration_revision = (secloc_flags >> 4) & 0x0F
 
         return (angle, angleD, position, target_position, command, invalid_steps,
                 time_difference / 1e6, time_current_measurement_chip / 1e6,

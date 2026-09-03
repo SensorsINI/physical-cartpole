@@ -44,6 +44,7 @@ int main(void)
 	Button_SetAction(BUTTON_1, CONTROL_ToggleState);
 	Button_SetAction(BUTTON_2, CONTROL_ToggleCalibration);  // Not implemented yet for STM
 	Button_SetAction(BUTTON_3, CONTROL_SetHangingFromCurrentReading);
+	Button_SetAction(BUTTON_4, CONTROL_SetUprightFromCurrentReading);
 	Goniometer_Init();
 	Encoder_Init();
 	Motor_Init();

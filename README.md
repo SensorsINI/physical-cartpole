@@ -78,8 +78,10 @@ already be in flash — how to program it is in
 1. Power on with **SW0–SW3 all off**.
 2. Hang the pole straight down. Press **BTN0**. That disarms control, zeros PWM,
    captures `ANGLE_HANGING`, and leaves control off. RGB flashes white on success.
-3. Arm with **BTN4**, or `python Driver/control.py` then **`u`**.
-4. Turn on **exactly one** switch:
+3. To refresh the angle scale, hold the pole upright and press **BTN1**. RGB is
+   blue while sampling, green on success, and red if the pose is rejected.
+4. Arm with **BTN4**, or `python Driver/control.py` then **`u`**.
+5. Turn on **exactly one** switch:
 
    | Switch | On-chip controller |
    |---|---|
@@ -89,8 +91,8 @@ already be in flash — how to program it is in
    | SW3 | Short-pole PL neural imitator |
 
    All off, or more than one on: Q = 0, motor stopped.
-5. **BTN0** again: disarm + new hanging capture. **BTN5** or PC **`K`**: track
-   center only (does not change hanging).
+6. **BTN0** again: disarm + new hanging capture; follow with **BTN1** if the
+   full-circle scale also drifted. **BTN5** or PC **`K`**: track center only.
 
 What the switches, RGB LEDs, and slider do after this first boot, and how to
 log or take over from the PC:
@@ -197,6 +199,21 @@ contains the same standalone `BOOT.BIN` as QSPI.
 * Mechanical setup, PMODs, motors: [Docs/hardware.md](Docs/hardware.md)
 * Track center, hanging, motor map: [Docs/calibration.md](Docs/calibration.md)
 * STM32 firmware path: [Docs/firmware-and-flash.md](Docs/firmware-and-flash.md#stm32)
+
+#### BTN0 / BTN1 angle calibration
+
+1. Hold the pole still in the hanging-down position and press **BTN0**.
+   Control is disarmed and `ANGLE_HANGING` is averaged from 50 samples.
+2. Hold the pole still upright and press **BTN1**. Control remains disarmed;
+   the firmware averages 50 samples and sets
+   `ANGLE_360_DEG_IN_ADC_UNITS = 2 × |upright − hanging|`.
+
+BTN1 is accepted only when the new span is within ±20% of the previous value.
+Both RGB LEDs are **blue** while sampling, **green** for about 0.7 s on success,
+and **red** for about 1 s if the pole moved or the pose was rejected. A
+connected PC driver adopts the new span immediately. The BTN1 value lasts for
+the current boot; copy the terminal value into `Driver/globals.py` and
+`Firmware/Src/CartPoleFirmware/parameters.c` to make it permanent.
 
 ---
 

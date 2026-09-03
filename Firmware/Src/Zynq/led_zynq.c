@@ -52,13 +52,42 @@ void get_rgb_diodes_input(u32 diode_1, u32 diode_2, u32* diodes)
 u32 rgb_diodes_input_previous;
 const u32 dimmer_counter_max = 10;
 u32 dimmer_counter = 0;
-static unsigned long rgb_confirm_until_us = 0;
+static volatile int rgb_feedback_active = 0;
+static volatile u32 rgb_feedback_color = 0;
+/* Zero keeps the feedback active until success/error replaces it. */
+static volatile unsigned long rgb_feedback_until_us = 0;
+
+static void Led_RgbFeedback(u32 color, unsigned long duration_us)
+{
+#ifdef ZYBO_Z720
+	rgb_feedback_active = 1;
+	rgb_feedback_color = color & 0x7;
+	rgb_feedback_until_us =
+		(duration_us == 0) ? 0 : GetTimeNow() + duration_us;
+#else
+	(void)color;
+	(void)duration_us;
+#endif
+}
 
 void Led_RgbConfirmFlash(void)
 {
-#ifdef ZYBO_Z720
-	rgb_confirm_until_us = GetTimeNow() + 300000UL;
-#endif
+	Led_RgbFeedback(7, 300000UL);
+}
+
+void Led_RgbUprightCaptureStart(void)
+{
+	Led_RgbFeedback(1, 0);  /* blue while collecting */
+}
+
+void Led_RgbUprightCaptureSuccess(void)
+{
+	Led_RgbFeedback(2, 700000UL);  /* green */
+}
+
+void Led_RgbUprightCaptureError(void)
+{
+	Led_RgbFeedback(4, 1000000UL);  /* red */
 }
 
 void indicate_target_position_with_leds(float* target_position, bool dead_zone_warning)
@@ -76,11 +105,14 @@ void indicate_target_position_with_leds(float* target_position, bool dead_zone_w
 	u32 diode_2;
 	unsigned long now = GetTimeNow();
 
-	if (rgb_confirm_until_us != 0 && (long)(rgb_confirm_until_us - now) > 0) {
-		diode_1 = 7;
-		diode_2 = 7;
+	if (rgb_feedback_active
+	    && (rgb_feedback_until_us == 0
+	        || (long)(rgb_feedback_until_us - now) > 0)) {
+		diode_1 = rgb_feedback_color;
+		diode_2 = rgb_feedback_color;
 	} else {
-		rgb_confirm_until_us = 0;
+		rgb_feedback_active = 0;
+		rgb_feedback_until_us = 0;
 		if (dead_zone_warning) {
 			if (((now / 250000UL) % 2) == 0) {
 				diode_1 = 4;
@@ -107,7 +139,7 @@ void indicate_target_position_with_leds(float* target_position, bool dead_zone_w
 	u32 rgb_diodes_input;
 	get_rgb_diodes_input(diode_1, diode_2, &rgb_diodes_input);
 
-	if (rgb_confirm_until_us != 0) {
+	if (rgb_feedback_active) {
 		XGpio_DiscreteWrite(&GpioRGB, 1, rgb_diodes_input);
 		rgb_diodes_input_previous = rgb_diodes_input;
 		return;

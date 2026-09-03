@@ -11,6 +11,7 @@ from CartPoleSimulation.CartPole.cartpole_ekf import EKFCartPole, EKFAdaptiveTun
 from DriverFunctions.joystick import Joystick
 from DriverFunctions.custom_logging import my_logger
 from DriverFunctions.interface import Interface, SERIAL_IO_ERRORS
+from DriverFunctions import incoming_data_processor as incoming_data_processor_module
 from DriverFunctions.incoming_data_processor import IncomingDataProcessor
 from DriverFunctions.ExperimentProtocols.experiment_protocols_manager import ExperimentProtocolsManager
 
@@ -44,6 +45,7 @@ from globals import (
     CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
     ANGLE_DEVIATION, ANGLE_AVG_LENGTH,
     ANGLE_HANGING, ANGLE_HANGING_DEFAULT,
+    ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_NORMALIZATION_FACTOR,
     angle_deviation_update,
     POSITION_ENCODER_RANGE, POSITION_NORMALIZATION_FACTOR,
     MOTOR, MOTOR_CORRECTION, CORRECT_MOTOR_DYNAMICS,
@@ -56,6 +58,7 @@ from globals import (
     USE_DVS_STATE_ESTIMATION,
     USE_EKF, EKF_CALIBRATION_RUN,
 )
+import globals as driver_globals
 
 import warnings
 warnings.simplefilter('ignore', np.RankWarning)
@@ -117,6 +120,7 @@ class PhysicalCartPoleDriver:
         self.secloc_pl_used_chip = 0
         self.secloc_pl_fault_chip = 0
         self._secloc_pl_fault_warned = False
+        self._angle_calibration_revision_seen = None
         self.chip_secloc_config = None
         self._chip_secloc_sent = None
         self.chip_secloc_stats = ChipSeclocStatistics()
@@ -500,6 +504,7 @@ class PhysicalCartPoleDriver:
          self.secloc_skipped_update_chip, self.secloc_gate_skipped_chip,
          self.secloc_pl_used_chip, self.secloc_pl_fault_chip,
          self.target_equilibrium_from_chip) = state
+        self._sync_angle_calibration_if_changed()
         if recovered:
             # Chip may still report a stale nonzero command; do not restore it.
             self._hold_motor_after_uart_loss()
@@ -757,25 +762,67 @@ class PhysicalCartPoleDriver:
                                                   timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE)
 
     def _sync_hanging_from_chip(self):
-        """After the first connect, adopt chip hanging only if BTN0 (or `b`) locked it
-        this boot. Otherwise the chip already has the globals.py value just sent."""
+        """Adopt runtime BTN0/BTN1 angle calibration from the chip."""
         global ANGLE_HANGING, ANGLE_DEVIATION
+        global ANGLE_360_DEG_IN_ADC_UNITS, ANGLE_NORMALIZATION_FACTOR
 
         (_period, _sync, chip_hanging, _avg, _motor, _steps,
          hanging_on_chip) = self.InterfaceInstance.get_config_control()
         chip_hanging = float(chip_hanging)
+        chip_circle = None
+        if self.InterfaceInstance.supports_angle_span_calibration:
+            chip_circle = float(self.InterfaceInstance.get_angle_calibration())
+        self._angle_calibration_revision_seen = (
+            self.InterfaceInstance.angle_calibration_revision
+        )
+
+        circle_changed = (
+            chip_circle is not None
+            and not np.isclose(chip_circle, float(ANGLE_360_DEG_IN_ADC_UNITS))
+        )
+        if chip_circle is not None:
+            if not np.isfinite(chip_circle) or chip_circle <= 0.0:
+                raise RuntimeError(
+                    'Chip returned invalid ANGLE_360_DEG_IN_ADC_UNITS: {}'.format(
+                        chip_circle
+                    )
+                )
+            ANGLE_360_DEG_IN_ADC_UNITS = chip_circle
+            ANGLE_NORMALIZATION_FACTOR = 2.0 * np.pi / chip_circle
+            driver_globals.ANGLE_360_DEG_IN_ADC_UNITS = chip_circle
+            driver_globals.ANGLE_NORMALIZATION_FACTOR = ANGLE_NORMALIZATION_FACTOR
+            incoming_data_processor_module.ANGLE_360_DEG_IN_ADC_UNITS = chip_circle
+            incoming_data_processor_module.ANGLE_NORMALIZATION_FACTOR = (
+                ANGLE_NORMALIZATION_FACTOR
+            )
+
         if hanging_on_chip:
             print('Chip ANGLE_HANGING: {:.3f} ADC (BTN0 this boot or `b`; '
                   'globals.py not applied)'.format(chip_hanging))
             ANGLE_HANGING = chip_hanging
+            driver_globals.ANGLE_HANGING = chip_hanging
+        else:
+            print('Chip ANGLE_HANGING: {:.3f} ADC (globals.py applied once this connect)'.format(
+                chip_hanging))
+
+        if hanging_on_chip or circle_changed:
             ANGLE_DEVIATION[...] = angle_deviation_update(ANGLE_HANGING)
             self.idp.angle_deviation_finetune = 0.0
             print('Session ANGLE_HANGING/ANGLE_DEVIATION adopted from chip '
                   '(globals.py file unchanged).')
             print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
-        else:
-            print('Chip ANGLE_HANGING: {:.3f} ADC (globals.py applied once this connect)'.format(
-                chip_hanging))
+        if chip_circle is not None:
+            source = 'BTN1 this boot' if self.InterfaceInstance.angle_span_set_on_chip else 'firmware default'
+            print('Chip ANGLE_360_DEG_IN_ADC_UNITS: {:.3f} ADC ({})'.format(
+                chip_circle, source))
+
+    def _sync_angle_calibration_if_changed(self):
+        """Adopt a BTN0/BTN1 calibration announced in STATE telemetry."""
+        revision = self.InterfaceInstance.angle_calibration_revision
+        if self._angle_calibration_revision_seen is None:
+            self._angle_calibration_revision_seen = revision
+        elif revision != self._angle_calibration_revision_seen:
+            self._sync_hanging_from_chip()
 
     # TODO: This is now in units which are chip specific. It can be rewritten, so that calibration
     #       gets the motor full scale and calculates the correction factors relative to that

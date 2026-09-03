@@ -7,7 +7,8 @@
 // State packet length includes an 8-byte accumulated chip timestamp, 1 SecLoc telemetry byte
 // (bit 0 = skipped_update, bit 1 = gate_skipped, bit 2 = step computed by the PL backend,
 // bit 3 = PL fault: PL backend selected but the PL block is absent or the transaction
-// failed; the step output zero force, no SW fallback), and target_equilibrium (float).
+// failed; the step output zero force, no SW fallback). Bits 4..7 carry the
+// angle-calibration revision. The packet also carries target_equilibrium (float).
 #define STATE_MESSAGE_LEN 40
 
 
@@ -54,7 +55,13 @@ void prepare_message_to_PC_control_config(
 		unsigned short angle_averageLen,
 		bool correct_motor_dynamics,
 		unsigned short timesteps_for_derivative,
-		bool hanging_set_on_chip
+		unsigned char hanging_status
+		);
+
+void prepare_message_to_PC_angle_calibration(
+		unsigned char *txBuffer,
+		float angle_circle,
+		unsigned char calibration_status
 		);
 
 void prepare_buffer_to_send_long(unsigned char* Buffer, unsigned char CMD, unsigned int message_length);

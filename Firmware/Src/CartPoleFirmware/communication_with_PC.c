@@ -193,6 +193,15 @@ int get_command_from_PC_message(unsigned char * rxBuffer, unsigned int* rxCnt){
 								break;
 							}
 
+							case CMD_GET_ANGLE_CALIBRATION:
+							{
+								if (pktLen == 4)
+								{
+									current_command = CMD_GET_ANGLE_CALIBRATION;
+								}
+								break;
+							}
+
 							default:
 							{
 								break;
@@ -322,7 +331,7 @@ void prepare_message_to_PC_control_config(
 		unsigned short angle_averageLen,
 		bool correct_motor_dynamics,
 		unsigned short timesteps_for_derivative,
-		bool hanging_set_on_chip
+		unsigned char hanging_status
 		){
 
 	txBuffer[ 0] = SERIAL_SOF;
@@ -334,7 +343,22 @@ void prepare_message_to_PC_control_config(
 	serial_put_u16(&txBuffer[10], angle_averageLen);
 	txBuffer[12] = correct_motor_dynamics ? 1 : 0;
 	serial_put_u16(&txBuffer[13], timesteps_for_derivative);
-	txBuffer[15] = hanging_set_on_chip ? 1 : 0;
+	/* bit 0: hanging owned by chip; bits 1..4: revision;
+	 * bit 5: angle span owned by BTN1; bit 7: span query supported */
+	txBuffer[15] = hanging_status;
 	txBuffer[16] = crc(txBuffer, 16);
 
+}
+
+void prepare_message_to_PC_angle_calibration(
+		unsigned char *txBuffer,
+		float angle_circle,
+		unsigned char calibration_status
+		){
+	txBuffer[0] = SERIAL_SOF;
+	txBuffer[1] = CMD_GET_ANGLE_CALIBRATION;
+	txBuffer[2] = 9;
+	serial_put_f32(&txBuffer[3], angle_circle);
+	txBuffer[7] = calibration_status;
+	txBuffer[8] = crc(txBuffer, 8);
 }
