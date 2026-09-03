@@ -71,20 +71,15 @@ for Nonlinear Model Predictive Control](https://www.zora.uzh.ch/id/eprint/254218
 
 ## Quick start (Zybo)
 
-Keep the track clear. For a first boot after flashing, leave the motor disconnected
-or be ready to cut 12 V.
+Boot from QSPI (JP5 on the two center pins labeled QSPI). The show image must
+already be in flash — how to program it is in
+[Docs/firmware-and-flash.md](Docs/firmware-and-flash.md).
 
-**JP5 = JTAG** while programming flash or loading over JTAG. **JP5 = QSPI**
-(two center pins) only for a cold boot from flash. Close Vitis; it steals JTAG.
-
-1. Program (pick one):
-   * QSPI: `Firmware/Scripts/program_show_qspi.sh`
-   * JTAG RAM (does not write flash): `Firmware/Scripts/program_rpgd_amp_production.sh`
-2. Power on with **SW0–SW3 all off**. The motor command stays 0 until you arm.
-3. Hang the pole straight down. Press **BTN0**. That disarms control, zeros PWM,
+1. Power on with **SW0–SW3 all off**.
+2. Hang the pole straight down. Press **BTN0**. That disarms control, zeros PWM,
    captures `ANGLE_HANGING`, and leaves control off. RGB flashes white on success.
-4. Arm with **BTN4**, or `python Driver/control.py` then **`u`**.
-5. Turn on **exactly one** switch:
+3. Arm with **BTN4**, or `python Driver/control.py` then **`u`**.
+4. Turn on **exactly one** switch:
 
    | Switch | On-chip controller |
    |---|---|
@@ -94,18 +89,12 @@ or be ready to cut 12 V.
    | SW3 | Short-pole PL neural imitator |
 
    All off, or more than one on: Q = 0, motor stopped.
-6. **BTN0** again: disarm + new hanging capture. **BTN5** or PC **`K`**: track
+5. **BTN0** again: disarm + new hanging capture. **BTN5** or PC **`K`**: track
    center only (does not change hanging).
 
 What the switches, RGB LEDs, and slider do after this first boot, and how to
 log or take over from the PC:
 [Docs/operating.md](Docs/operating.md), [Docs/pc-driver.md](Docs/pc-driver.md).
-
-The show image is AMP CPU0 (`CartPoleFirmware_rpgd_amp_cpu0.elf`), not the Vitis
-Debug ELF. FSBL loads that one app; CPU0 copies the CPU1 blob into DDR and
-releases it. Do not pack a second ELF or `destination_cpu`.
-
-Full flash and rebuild details: [Docs/firmware-and-flash.md](Docs/firmware-and-flash.md).
 
 ---
 
@@ -186,7 +175,9 @@ QSPI flash (JP5 must be JTAG; boot-mode register `0xF800025C` = 0):
 Firmware/Scripts/program_show_qspi.sh
 ```
 
-Then power off, JP5 = QSPI, power on. See [Docs/firmware-and-flash.md](Docs/firmware-and-flash.md).
+Then power off, JP5 = QSPI, power on. The show image is AMP CPU0
+(`CartPoleFirmware_rpgd_amp_cpu0.elf`); FSBL loads that one app. See
+[Docs/firmware-and-flash.md](Docs/firmware-and-flash.md).
 
 ### Hardware and calibration
 
