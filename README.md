@@ -198,17 +198,22 @@ cpp() {
   eval "$(/(path to miniconda3)/bin/conda shell.bash hook)"
   conda activate cpp
   export PYTHONPATH=$HOME/physical-cartpole:$PYTHONPATH
+  export PYTHONPATH=$HOME/physical-cartpole/Driver:$PYTHONPATH
   export PYTHONPATH=$HOME/physical-cartpole/Driver/CartPoleSimulation:$PYTHONPATH
 }
 ```
 
+In PyCharm, mark `physical-cartpole`, `Driver`, and `Driver/CartPoleSimulation` as Sources Root
+(`right click -> Mark Directory as -> Sources Root`). `conda env config vars set` is not reliable for this.
+
 
 
 ### STM32
-* Connect the STLink or the J-link to the STM32 board and to the PC. For j-link we attach the picture, for st-link, you have to figure it out on your own.
+* Connect the STLink or the J-link to the STM32 board and to the PC.
+  The J-Link picture below applies to ST-Link as well; the connector is the same.
 ![jtag_programming.png](Docs%2Fjtag_programming.png)
 * Open STM32CubeIDE and go to `File -> Import... -> Existing Projects into Workspace`
-and import project from [Firmware/FactoryFirmware/CubeIDE](Firmware%2FCartPole%20CubeIDE).
+and import [Firmware/CubeIDE/CartPoleFirmware](Firmware/CubeIDE/CartPoleFirmware).
 ![CubeImportProject.png](Docs/CubeImportProject.png)
 * Go to hardware_bridge.h and comment out `#define ZYNQ` and uncomment `#define STM`.
 * Build the project (hammer icon).
@@ -348,10 +353,10 @@ To change it
 use a screwdriver to rotate the joint on which it is mounted until you find the dead zone.
 If necessary loose a bit the screw holding the pole to the potentiometer - and if not necessary tighten it afterwards! Otherwise the angle reading might drift!
 
-On Zybo, after you move the screw, hang the pole straight down and press **BTN0**
-(on-chip control and track calibration must be off).
-That overwrites `ANGLE_HANGING` on the chip from a wrap-aware mean of 50 hardware-filtered
-12-bit ADC samples (after skipping 4 control ticks; aborted if the pole is moving).
+On Zybo, after you move the screw, hang the pole straight down and press **BTN0**.
+That immediately disarms on-chip and PC control, zeros PWM, and overwrites
+`ANGLE_HANGING` from a wrap-aware mean of 50 hardware-filtered 12-bit ADC samples
+(aborted if the pole is moving or cart calibration is running). Control stays off.
 Same role as the PC `b` key, but `b` averages 1000 streamed processed-angle samples instead.
 The two RGB LEDs then **alternate red** if the *stored* `ANGLE_HANGING` places the
 potentiometer dead zone (ADC wrap) within 20° of vertical up or down —
@@ -391,7 +396,8 @@ In firmware in parameters.c in ANGLE_360_DEG_IN_ADC_UNITS.
 #### Zero angle calibration
 To get a rough estimation you can let the pole hang down and note the angle reading.
 To get more precise measurement press `b` (PC) or **BTN0** on the Zybo (no PC).
-BTN0 averages 50 still, wrap-aware ADC samples (after skipping 4 ticks); `b` averages 1000 streamed samples.
+BTN0 disarms control first, then averages 50 still, wrap-aware ADC samples;
+`b` averages 1000 streamed samples.
 Fill it in ANGLE_HANGING_ORIGINAL or ANGLE_HANGING_POLOLU in globals.py (and
 `parameters.c` for standalone). The first driver connect applies that globals
 value unless BTN0 already ran this boot. A BTN0 lock is printed as
@@ -437,7 +443,8 @@ platform refreshed from that XSA (`xparameters.h` must list `PL_BUTTONS_GPIO`):
 
 * Hang the pole down and press **BTN0** to recapture `ANGLE_HANGING`. RGB flash white to confirm.
   Firmware prints millicounts on UART, then writes QSPI (`QSPI hanging saved millicounts`).
-  BTN0 is ignored while on-chip control or track calibration is running.
+  If control was armed, BTN0 disarms it first and leaves it off. Do not press BTN0
+  during cart (track) calibration.
 * After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
   applied at boot). Press BTN0 again after reboot if you want that capture
   without a PC.
