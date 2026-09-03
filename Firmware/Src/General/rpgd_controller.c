@@ -1,7 +1,7 @@
 /*
  * On-chip RPGD-C controller (Zynq PS / bare metal).
- * Inactive unless ON_CHIP_BOOT_CONTROLLER is set to OnChipController_RPGD.
- * Dual-core AMP is compiled only with -DRPGD_DUAL_CORE.
+ * Timing/maps come from controller_profiles.c; this module only creates the
+ * solver and talks to the CPU1 worker when -DRPGD_DUAL_CORE.
  */
 
 #include "rpgd_controller.h"
@@ -44,10 +44,7 @@ static unsigned int g_rpgd_stride = 1u;
 static float g_rpgd_last_output;
 static int g_rpgd_last_status = RPGD_STATUS_INVALID_ARGUMENT;
 static int g_rpgd_fault_latched;
-static int g_rpgd_owns_timing;
 static int g_rpgd_deadline_grace;
-static unsigned short g_saved_polling_ms;
-static unsigned short g_saved_derivative_steps;
 
 static const ControllerSpec* RPGD_GetSpec(void) { return &RPGD_Spec; }
 
@@ -88,18 +85,6 @@ static int rpgd_bind_timing(const RpgdConfig* cfg)
 #endif
 }
 
-static void rpgd_restore_timing(void)
-{
-#ifdef RPGD_DUAL_CORE
-    if (g_rpgd_owns_timing) {
-        POLLING_PERIOD_MS = g_saved_polling_ms ? g_saved_polling_ms : 10;
-        SetControlUpdatePeriod(POLLING_PERIOD_MS);
-        set_timesteps_for_derivative(g_saved_derivative_steps ? g_saved_derivative_steps : 2);
-        g_rpgd_owns_timing = 0;
-    }
-#endif
-}
-
 static void RPGD_Init(void)
 {
     Motor_Stop();
@@ -119,25 +104,14 @@ static void RPGD_Init(void)
     g_rpgd_last_status = rpgd_validate_config(&cfg);
     if (g_rpgd_last_status != RPGD_STATUS_OK) return;
 
-#ifdef RPGD_DUAL_CORE
-    g_saved_polling_ms = POLLING_PERIOD_MS;
-    g_saved_derivative_steps = TIMESTEPS_FOR_DERIVATIVE;
-    POLLING_PERIOD_MS = (unsigned short)RPGD_CONTROL_PERIOD_MS;
-    SetControlUpdatePeriod(POLLING_PERIOD_MS);
-    set_timesteps_for_derivative(RPGD_30MS_DERIVATIVE_STEPS);
-    g_rpgd_owns_timing = 1;
-#endif
-
     g_rpgd_last_status = rpgd_bind_timing(&cfg);
     if (g_rpgd_last_status != RPGD_STATUS_OK) {
-        rpgd_restore_timing();
         return;
     }
 
     g_rpgd_solver = rpgd_create(&cfg);
     if (!g_rpgd_solver) {
         g_rpgd_last_status = RPGD_STATUS_WORKSPACE_FAILURE;
-        rpgd_restore_timing();
         return;
     }
 
@@ -148,7 +122,6 @@ static void RPGD_Init(void)
         g_rpgd_last_status = RPGD_CONTROLLER_STATUS_AMP_UNAVAILABLE;
         g_rpgd_fault_latched = 1;
         Motor_Stop();
-        rpgd_restore_timing();
     }
 #endif
 }
@@ -167,7 +140,6 @@ static void RPGD_Release(void)
     g_rpgd_last_status = RPGD_STATUS_INVALID_ARGUMENT;
     g_rpgd_fault_latched = 0;
     g_rpgd_deadline_grace = 0;
-    rpgd_restore_timing();
 }
 
 static void RPGD_Evaluate(const float* in, float* out)
@@ -239,7 +211,7 @@ unsigned int rpgd_controller_stride(void)
 
 int rpgd_controller_owns_timing(void)
 {
-    return g_rpgd_owns_timing;
+    return 0;
 }
 
 int rpgd_controller_take_deadline_grace(void)

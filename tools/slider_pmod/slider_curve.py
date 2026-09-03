@@ -17,7 +17,7 @@ PARK_BAND = 50
 STABLE_N = 10
 MIN_SWEEP_SPAN = 800
 # Firmware SliderTargetHalfLength: pot rails map to ±this, not the 0.198 m track.
-SLIDER_TARGET_HALF_LENGTH = 0.14
+SLIDER_TARGET_HALF_LENGTH = 0.12
 # 12-bit PmodAD1. Keep SLIDER_ADC_LEFT/RIGHT in sync with
 # Firmware/Src/Zynq/external_interface.c. Target 0 is the electrical mid
 # (LEFT+RIGHT)/2 — no visual-centre park.

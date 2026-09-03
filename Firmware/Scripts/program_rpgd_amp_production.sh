@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
-# JTAG-load dual-core RPGD AMP (CPU1 worker, then CPU0 cartpole).
-# Same bitstream/PS7 as the slider programmer. Does not write QSPI.
+# JTAG-load dual-core AMP (CPU1 RPGD worker, CPU0 show mux).
+# Short-pole SecLoc bitstream. Does not write QSPI.
 # Close Vitis first (it steals JTAG). After this, hang + BTN0.
 
 source /tools/Xilinx/Vivado/2020.1/settings64.sh

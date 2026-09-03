@@ -12,8 +12,9 @@ ZYNQ_BOARD = "ZYBO_Z720"  # 'ZYBO_Z720' or 'ZEDBOARD'; must match Firmware hardw
 # slider owns target_position: the driver does not send CMD_SET_TARGET_POSITION
 # and shows the chip target (STATE) on the PC.
 USE_EXTERNAL_INTERFACE = True
-CONTROLLER_NAME = 'neural-imitator'  # IROS short pole Exp-29; long Dense-8 go-to is da41c737
-IROS_SHORT_POLE_PROFILE = True  # must match Firmware/Src/CartPoleFirmware/parameters.h
+SHOW_SWITCH_MUX = True  # Zybo SW0–SW3 pick on-chip controller; chip ignores PC period/N
+CONTROLLER_NAME = 'neural-imitator'  # PC k path; the show is on-chip u + switches
+IROS_SHORT_POLE_PROFILE = False  # must match Firmware/Src/CartPoleFirmware/parameters.h
 USE_SECLOC = False  # Wrap the selected controller with the SecLoc gate; keep False on Development Zybo
 # Push config_secloc.yml to the chip (CMD_SET_SECLOC_CONFIG). Needed only when the
 # on-chip SecLoc gate is in use. Leave False on Development so a home Zybo with
@@ -86,7 +87,7 @@ if CONTROLLER_NAME == 'pid':
 elif CONTROLLER_NAME == 'lqr':
     POLLING_PERIOD_MS = 8
 elif CONTROLLER_NAME == 'neural-imitator':
-    POLLING_PERIOD_MS = 5  # IROS PC neural was 200 Hz; UART cannot carry 1 kHz STATE
+    POLLING_PERIOD_MS = 5 if IROS_SHORT_POLE_PROFILE else 10
 elif CONTROLLER_NAME == 'mpc':
     POLLING_PERIOD_MS = 20  # match on-chip AMP RPGD (8 rollouts, dt == period)
 elif CONTROLLER_NAME == 'fpga':
@@ -118,7 +119,7 @@ elif USE_SECLOC and POLLING_PERIOD_MS == 5:
 elif CONTROLLER_NAME == "mpc":
     _derivative_default = "3" if POLLING_PERIOD_MS == 5 else "1"
 elif CONTROLLER_NAME == "neural-imitator":
-    _derivative_default = "2"  # IROS PC: 2 × 5 ms = 10 ms window (chip uses N=10 at 1 ms)
+    _derivative_default = "2"  # LSTM: 2 × 10 ms; IROS PC: 2 × 5 ms (chip N=10 at 1 ms)
 else:
     _derivative_default = "2"
 TIMESTEPS_FOR_DERIVATIVE = int(_derivative_default)

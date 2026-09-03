@@ -39,11 +39,15 @@ def test_c_rails_match_python():
     )
 
 
-def test_slider_target_half_length_is_fourteen_cm():
+def test_slider_target_half_length_is_twelve_cm():
     text = (REPO_ROOT / "Firmware" / "Src" / "CartPoleFirmware" / "parameters.c").read_text()
     m = re.search(r"SliderTargetHalfLength\s*=\s*([0-9.]+)", text)
-    assert m and float(m.group(1)) == pytest.approx(0.14)
-    assert SLIDER_TARGET_HALF_LENGTH == pytest.approx(0.14)
+    assert m and float(m.group(1)) == pytest.approx(0.12)
+    assert SLIDER_TARGET_HALF_LENGTH == pytest.approx(0.12)
+    profiles = (REPO_ROOT / "Firmware" / "Src" / "CartPoleFirmware" / "controller_profiles.c").read_text()
+    assert "SLIDER_TARGET_HALF_LENGTH_SHOW 0.12f" in profiles
+    assert "0.1125" not in profiles
+    assert "0.14f" not in profiles
 
 
 def test_map_is_single_affine():

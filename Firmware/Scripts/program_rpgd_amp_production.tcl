@@ -2,7 +2,7 @@
 # JTAG only. Does not write QSPI.
 
 set repo_root [file normalize [file join [file dirname [file normalize [info script]]] ../..]]
-set bit [file join $repo_root FPGA VivadoProjects CartpoleDriverZynq_AXIS_secloc CartpoleDriverZynq_AXIS_secloc.runs impl_1 cartpole_driver_design_wrapper.bit]
+set bit [file join $repo_root FPGA bitstreams cartpole_short_pole_secloc.bit]
 set ps7 [file join $repo_root Firmware VitisProjects cartpole_zybo_secloc2026 hw ps7_init.tcl]
 set cpu0 [file join $repo_root Firmware AmpWorkspace RPGD_AMP CartPoleFirmware_rpgd_amp_cpu0.elf]
 set cpu1 [file join $repo_root Firmware AmpWorkspace RPGD_AMP RPGDWorker_cpu1.elf]

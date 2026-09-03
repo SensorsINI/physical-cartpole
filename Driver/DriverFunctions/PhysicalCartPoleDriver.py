@@ -35,6 +35,8 @@ from globals import (
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
     TIMESTEPS_FOR_DERIVATIVE,
+    IROS_SHORT_POLE_PROFILE,
+    SHOW_SWITCH_MUX,
     ON_CHIP_NEURAL_POLLING_PERIOD_MS,
     ON_CHIP_NEURAL_TIMESTEPS_FOR_DERIVATIVE,
     HARDWARE_ANGLE_FILTER_OVERRIDE,
@@ -177,7 +179,11 @@ class PhysicalCartPoleDriver:
             set_ftdi_latency_timer(SERIAL_PORT)
         self.InterfaceInstance.open(SERIAL_PORT, SERIAL_BAUD)
         # Chip STATE period T. UART "skipped" means read_state wait > 1.5 T.
-        self.InterfaceInstance.uart.poll_period_s = POLLING_PERIOD_MS / 1000.0
+        # Show mux: chip period is 1/10/20 ms; use the slowest profile so RPGD
+        # is not flagged skipped. Short-pole STATE is already capped at 200 Hz.
+        self.InterfaceInstance.uart.poll_period_s = (
+            0.020 if SHOW_SWITCH_MUX else POLLING_PERIOD_MS / 1000.0
+        )
         self.InterfaceInstance.pc_control_mode(False)
         self.InterfaceInstance.control_mode(False)
         self.InterfaceInstance.stream_output(False)
@@ -639,7 +645,7 @@ class PhysicalCartPoleDriver:
             # BTN0 changes the firmware's hanging calibration without a host
             # command. Adopt it before displaying or recording the next state.
             self._sync_hanging_from_chip()
-            if CONTROLLER_NAME == 'neural-imitator':
+            if CONTROLLER_NAME == 'neural-imitator' and IROS_SHORT_POLE_PROFILE and not SHOW_SWITCH_MUX:
                 # Connect/`K` pushed PC 5 ms × N=2. Restore IROS chip 1 kHz × N=10.
                 self.InterfaceInstance.set_config_control(
                     controlLoopPeriodMs=ON_CHIP_NEURAL_POLLING_PERIOD_MS,
@@ -651,7 +657,7 @@ class PhysicalCartPoleDriver:
         print("\nFirmware Control", self.firmwareControl)
         self.InterfaceInstance.control_mode(self.firmwareControl)
         if not self.firmwareControl:
-            if CONTROLLER_NAME == 'neural-imitator':
+            if CONTROLLER_NAME == 'neural-imitator' and not SHOW_SWITCH_MUX:
                 self.InterfaceInstance.set_config_control(
                     controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC,
                     angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,

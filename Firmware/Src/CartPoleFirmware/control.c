@@ -20,31 +20,22 @@
 #include "secloc_controller.h"
 #include "secloc_controller_pl.h"
 #include "secloc_lqr.h"
+#include "onchip_controllers.h"
 #ifdef ZYNQ
 #include "rpgd_controller.h"
 #include "rpgd_zynq_30ms_config.h"
+#include "controller_profiles.h"
 #endif
 
-
-#define OnChipController_PID 0
-#define OnChipController_NeuralImitator 1
-#define OnChipController_PID_position 2
-#define OnChipController_LQR 3
-#define OnChipController_neural_controller_C 4
-#define OnChipController_SECLOC 5
-#define OnChipController_SECLOC_LQR 6
-#define OnChipController_neural_controller_LSTM_C 7
-#ifdef ZYNQ
-#define OnChipController_RPGD 8
-#endif
-
-#if defined(ZYNQ) && defined(RPGD_DUAL_CORE)
-/* 2026-09-02 go-to: AMP RPGD 20 ms / 8 rollouts (hang 3261.643). */
+#if defined(ZYNQ) && defined(ZYBO_Z720)
+/* Show mux: boot idle until exactly one of SW0–SW3 is on. */
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_NONE
+#elif defined(ZYNQ) && defined(RPGD_DUAL_CORE)
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_RPGD
-#else
-/* Short pole on PL (hls4ml_short_pole via SecLoc frontend). AMP flash still boots RPGD.
- * Long Dense-8 go-to is da41c737. */
+#elif IROS_SHORT_POLE_PROFILE
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_NeuralImitator
+#else
+#define ON_CHIP_BOOT_CONTROLLER OnChipController_neural_controller_LSTM_C
 #endif
 
 /* Set to 1 for a motor-disabled ARM timing/parity smoke test.
@@ -60,9 +51,20 @@
 
 unsigned short current_controller = ON_CHIP_BOOT_CONTROLLER;
 
-/* Boot / on-chip default period. The PC may overwrite POLLING_PERIOD_MS via
- * CMD_SET_CONTROL_CONFIG (globals.py) while no controller owns the timer.
- * RPGD dual-core takes the period again when it starts (dt must match). */
+static unsigned short led_blink_ticks(unsigned short on_ms)
+{
+	unsigned short period = POLLING_PERIOD_MS;
+	unsigned short ticks;
+
+	if (period == 0) {
+		period = 1;
+	}
+	ticks = (unsigned short)(on_ms / period);
+	return ticks ? ticks : 1;
+}
+
+#if !(defined(ZYNQ) && defined(ZYBO_Z720))
+/* Boot / idle period when the show mux is not compiled in. */
 static unsigned short default_polling_period_ms(unsigned short controller)
 {
 	switch (controller) {
@@ -84,6 +86,7 @@ static unsigned short default_polling_period_ms(unsigned short controller)
 		return 10;
 	}
 }
+#endif
 
 bool correct_motor_dynamics = true;
 
@@ -191,8 +194,12 @@ void CONTROL_Init(void)
 	HardwareConfigSetFromPC = false;
 	AngleHangingSetOnChip = false;
     isCalibrated        = false;
+#if defined(ZYNQ) && defined(ZYBO_Z720)
+	apply_show_profile_for_controller(SHOW_MUX_IDLE);
+#else
 	POLLING_PERIOD_MS = default_polling_period_ms(current_controller);
-    ledPeriod           = 500/POLLING_PERIOD_MS;
+#endif
+    ledPeriod           = led_blink_ticks(500);
 
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
     positionLimitLeft   = positionCentre - 2400;
@@ -211,6 +218,7 @@ void CONTROL_Init(void)
 	PcHangingApplied = false;
 
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
+    POSITION_NORMALIZATION_FACTOR = TrackHalfLength * 2.0f / POSITION_ENCODER_RANGE;
 
     angleSamples = malloc(ANGLE_AVERAGE_LEN_MAX * sizeof(int));
     if (angleSamples == NULL) {
@@ -525,6 +533,38 @@ void CONTROL_BackgroundTask(void)
 				}
 #endif
 #endif
+				int run_onchip_controller = 1;
+#ifdef ZYNQ
+				if (show_switch_mux_enabled()) {
+					int selected = show_mux_debounced_controller(Switches_GetState());
+					if (selected == SHOW_MUX_UNSTABLE) {
+						/* DIP bounce: keep the committed controller for this poll. */
+					} else if (selected < 0) {
+						if (current_controller != OnChipController_NONE) {
+							CB_Reset(&g_cb);
+							current_controller = OnChipController_NONE;
+						}
+						Q = 0.0;
+						Motor_Stop();
+						motor_command_from_chip = 0;
+						motor_command = 0;
+						run_onchip_controller = 0;
+					} else if ((unsigned short)selected != current_controller) {
+						/* Apply timing now; skip eval so RPGD/LSTM init is not
+						 * stacked on a 1 ms tick that also changes the period. */
+						apply_show_profile_for_controller(selected);
+						ledPeriod = led_blink_ticks(100);
+						CB_Reset(&g_cb);
+						current_controller = (unsigned short)selected;
+						Q = 0.0;
+						Motor_Stop();
+						motor_command_from_chip = 0;
+						motor_command = 0;
+						run_onchip_controller = 0;
+					}
+				}
+#endif
+				if (run_onchip_controller) {
 				switch (current_controller){
 				case OnChipController_PID:
 				{
@@ -617,6 +657,7 @@ void CONTROL_BackgroundTask(void)
 				if(!CONTROL_SYNC)
 				{
 					Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
+				}
 				}
 			}
 
@@ -1158,13 +1199,16 @@ void cmd_ControlMode(bool en)
 		enable_irq();
 		CB_Reset(&g_cb);
 #ifdef ZYNQ
-		if (current_controller == OnChipController_RPGD) {
-			Motor_Stop();
-			CB_RebindOnChange(&g_cb, &RPGD_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
+		if (show_switch_mux_enabled()) {
+			int selected = show_mux_controller_from_switches(Switches_GetState());
+			apply_show_profile_for_controller(selected);
+			current_controller = (selected < 0)
+				? OnChipController_NONE
+				: (unsigned short)selected;
 		}
 #endif
 		disable_irq();
-        ledPeriod           = 100/POLLING_PERIOD_MS;
+        ledPeriod           = led_blink_ticks(100);
 	}
 	else if (!en && ControlOnChip_Enabled)
 	{
@@ -1172,8 +1216,10 @@ void cmd_ControlMode(bool en)
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
+		enable_irq();
 		CB_Reset(&g_cb);
-        ledPeriod           = 500/POLLING_PERIOD_MS;
+		disable_irq();
+        ledPeriod           = led_blink_ticks(500);
 	}
 
 	ControlOnChip_Enabled = en;
@@ -1186,9 +1232,14 @@ void cmd_PCControlMode(bool en)
 	if (en)
 	{
 		ControlOnChip_Enabled = false;
+		Motor_Stop();
+		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
-		ledPeriod = 100/POLLING_PERIOD_MS;
+		enable_irq();
+		CB_Reset(&g_cb);
+		disable_irq();
+		ledPeriod = led_blink_ticks(100);
 	}
 	else if (PCControl_Enabled)
 	{
@@ -1196,7 +1247,7 @@ void cmd_PCControlMode(bool en)
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
-		ledPeriod = 500/POLLING_PERIOD_MS;
+		ledPeriod = led_blink_ticks(500);
 	}
 
 	PCControl_Enabled = en;
@@ -1213,7 +1264,7 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 	disable_irq();
 
 #ifdef ZYNQ
-	if (!rpgd_controller_owns_timing()) {
+	if (!show_switch_mux_enabled()) {
 		POLLING_PERIOD_MS = serial_get_u16(&config[0]);
 	}
 #else
@@ -1231,7 +1282,7 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
     ANGLE_AVERAGE_LEN    = serial_get_u16(&config[ 7]);
     correct_motor_dynamics = (config[9] != 0);
 #ifdef ZYNQ
-    if (!rpgd_controller_owns_timing()) {
+    if (!show_switch_mux_enabled()) {
         set_timesteps_for_derivative(serial_get_u16(&config[10]));
         SetControlUpdatePeriod(POLLING_PERIOD_MS);
         secloc_controller_set_time_quantum((float)POLLING_PERIOD_MS / 1000.0f);

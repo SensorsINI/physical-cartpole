@@ -8,22 +8,8 @@
 
 
 
-// Averaging derivatives with median filter on Firmware
-#if IROS_SHORT_POLE_PROFILE
-/*
- * The current Development sensor/dead-zone pipeline balances the physical
- * short pole more reliably with this additional median filtering. The 2024
- * stack used size 1, so this is a current-hardware tuning, not legacy parity.
- */
-#define ANGLE_D_BUFFER_SIZE 10
-#define POSITION_D_BUFFER_SIZE 10
-#else
-#define ANGLE_D_BUFFER_SIZE 1 // Median filter for pole's angular velocity
-#define POSITION_D_BUFFER_SIZE 1 // Median filter for cart's velocity
-#endif
-
+#define DERIVATIVE_MEDIAN_MAX 10
 #define MAX_TIMESTEPS_FOR_DERIVATIVE 20
-
 
 int angle_raw = 0, angle_raw_prev = -1;
 float angle_raw_stable = -1;
@@ -53,8 +39,10 @@ static int hw_dz_settling_polls = 0;
 #define HW_DZ_SETTLING_TOLERANCE_ADC 100  // ~0.15 rad; > worst-case extrapolation drift over one episode
 #define HW_DZ_SETTLING_MAX_MS 100
 
-float angleDBuffer[ANGLE_D_BUFFER_SIZE]; // Buffer for angle derivatives, using int
-float positionDBuffer[POSITION_D_BUFFER_SIZE]; // Buffer for position derivatives, also using int for processing
+float angleDBuffer[DERIVATIVE_MEDIAN_MAX];
+float positionDBuffer[DERIVATIVE_MEDIAN_MAX];
+static unsigned short derivative_median_len = 1;
+static int use_fpga_dz_extrapolation = 1;
 
 // Initialize buffer indices
 unsigned short angleDBufferIndex = 0;
@@ -73,18 +61,17 @@ void updateCircularBuffer_float(float* buffer, unsigned short* index, unsigned s
 
 // Function to average derivatives
 void average_derivatives(float* angleDPtr, float* positionDPtr){
-    // Update angleD buffer with current value
-    updateCircularBuffer_float(angleDBuffer, &angleDBufferIndex, ANGLE_D_BUFFER_SIZE, *angleDPtr);
-
-    updateCircularBuffer_float(positionDBuffer, &positionDBufferIndex, POSITION_D_BUFFER_SIZE, *positionDPtr);
-
-    // Calculate medians using the updated buffers
-    float angleDMedian = ClassicMedianFilter_float(angleDBuffer, ANGLE_D_BUFFER_SIZE); // Adjust casting if necessary
-    float positionDMedian = ClassicMedianFilter_float(positionDBuffer, POSITION_D_BUFFER_SIZE); // Adjust casting if necessary
-
-    // Update pointers with median values
-    *angleDPtr = angleDMedian;
-    *positionDPtr = positionDMedian; // Convert int back to short
+    unsigned short n = derivative_median_len;
+    if (n < 1) {
+        n = 1;
+    }
+    if (n > DERIVATIVE_MEDIAN_MAX) {
+        n = DERIVATIVE_MEDIAN_MAX;
+    }
+    updateCircularBuffer_float(angleDBuffer, &angleDBufferIndex, n, *angleDPtr);
+    updateCircularBuffer_float(positionDBuffer, &positionDBufferIndex, n, *positionDPtr);
+    *angleDPtr = ClassicMedianFilter_float(angleDBuffer, n);
+    *positionDPtr = ClassicMedianFilter_float(positionDBuffer, n);
 }
 
 void report_hardware_deadzone(int contaminated) {
@@ -165,7 +152,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         last_difference = current_difference;
     }
 
-    if (!IROS_SHORT_POLE_PROFILE && hw_dz_valid) {
+    if (use_fpga_dz_extrapolation && hw_dz_valid) {
         // Hardware-triggered handling: the FPGA filter block checks every
         // ~2.2 us XADC conversion against the rail thresholds, so this signal
         // is exact — no jump heuristic and no assumption about where the dead
@@ -306,6 +293,26 @@ void set_timesteps_for_derivative(unsigned short timesteps) {
 	memset(positionDBuffer, 0, sizeof(positionDBuffer));
 	last_difference = 100000.0;
 	freezme = 0;
+}
+
+void set_derivative_median_len(unsigned short len)
+{
+	if (len < 1) {
+		len = 1;
+	}
+	if (len > DERIVATIVE_MEDIAN_MAX) {
+		len = DERIVATIVE_MEDIAN_MAX;
+	}
+	derivative_median_len = len;
+	angleDBufferIndex = 0;
+	positionDBufferIndex = 0;
+	memset(angleDBuffer, 0, sizeof(angleDBuffer));
+	memset(positionDBuffer, 0, sizeof(positionDBuffer));
+}
+
+void set_fpga_deadzone_extrapolation(int enable)
+{
+	use_fpga_dz_extrapolation = enable ? 1 : 0;
 }
 
 

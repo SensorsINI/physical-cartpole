@@ -2,9 +2,6 @@
 
 #include "hw_platform_config.h"
 
-#include "buttons_and_switches.h"
-
-
 #include "fixed_point.hpp"
 
 #if HW_HAS_EDGEDRNN
@@ -88,8 +85,6 @@ const ControllerOps NeuralImitator_Ops = {
     .release  = nn_release
 };
 
-
-#define NETWORKS_SWITCH_NUMBER	3
 
 #define MEM_BASE_ADDR		0x01000000
 
@@ -184,14 +179,7 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
 	short actv_fixed_point_16;
 	int32_t predic_fixed_point_32;
 
-	NeuralNetworkType active_network;
-
-    // Determine active network based on the switch state
-    if (Switch_GetState(NETWORKS_SWITCH_NUMBER)) {
-        active_network = SELECTED_NETWORK_UP;
-    } else {
-        active_network = SELECTED_NETWORK_DOWN;
-    }
+	NeuralNetworkType active_network = NETWORK_HLS4ML;
 
 
     switch (active_network) {

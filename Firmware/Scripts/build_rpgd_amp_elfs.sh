@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Build CPU0 dual-core ELF + CPU1 RPGD worker ELF.
 # Default: motor-safe on-target timing harness (-DRPGD_ON_TARGET_TEST).
-# Production cartpole (boots RPGD, motor path live):
+# Production cartpole (CPU0 show mux, CPU1 waits until SW0 / RPGD):
 #   RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh
 # Does not program the board.
 
@@ -170,7 +170,7 @@ echo "Built:"
 echo "  ${CPU0_ELF}"
 echo "  ${CPU1_ELF}"
 if [ "${PRODUCTION}" = "1" ]; then
-  echo "Production AMP: CPU0 boots RPGD. Program with Firmware/Scripts/program_rpgd_amp_production.sh"
+  echo "Production AMP: CPU0 boots the SW0–SW3 show mux (CPU1 waits until RPGD). Program with Firmware/Scripts/program_rpgd_amp_production.sh"
 else
   echo "Motor-safe on-target harness. Do not program QSPI from this script."
 fi

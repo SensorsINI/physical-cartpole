@@ -6,14 +6,11 @@
 #include <stdbool.h>
 
 /*
- * Physical profile currently deployed on Development.
- *
- * Keep this at 1 while using the IROS ~0.092 m pole/network.  Besides the
- * network/timing selected elsewhere, this restores the signal processing,
- * slider convention, and PWM calibration of the hardware-proven old stack.
- * Set it to 0 when restoring the long-pole Development configuration.
+ * Legacy compile-time pole profile. Zybo show mux applies timing/maps at
+ * runtime (controller_profiles.c); leave this 0 so leftover #if branches
+ * match the long-pole idle default.
  */
-#define IROS_SHORT_POLE_PROFILE 1
+#define IROS_SHORT_POLE_PROFILE 0
 
 extern const unsigned int UART_BAUD;
 
@@ -40,9 +37,9 @@ typedef enum {
 
 
 extern const float TrackHalfLength;
-extern const float SliderTargetHalfLength;
+extern float SliderTargetHalfLength;
 extern const float ANGLE_360_DEG_IN_ADC_UNITS;
-extern const float POSITION_ENCODER_RANGE;
+extern float POSITION_ENCODER_RANGE;
 
 extern float ANGLE_HANGING_POLOLU;
 extern float ANGLE_HANGING_ORIGINAL;
@@ -51,9 +48,9 @@ extern float ANGLE_NORMALIZATION_FACTOR;
 extern float POSITION_NORMALIZATION_FACTOR;
 
 extern const unsigned int CLOCK_FREQ;
-extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
+extern int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
-extern const int MOTOR_FULL_SCALE_SAFE;
+extern int MOTOR_FULL_SCALE_SAFE;
 
 extern bool USE_TARGET_SWITCHES;
 

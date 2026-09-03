@@ -42,7 +42,7 @@
 // See parameters.c to set values
 extern const unsigned int UART_BAUD;
 extern unsigned short POLLING_PERIOD_MS;
-extern const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
+extern int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #ifdef STM
 

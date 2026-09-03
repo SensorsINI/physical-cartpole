@@ -50,6 +50,10 @@ void TIMER1_Init(unsigned int _periodMS){
 
 
 void SetControlUpdatePeriod(unsigned int _periodMS){
+	/* CONTROL_Init applies the show profile before TIMER1_Init. */
+	if (TimerInstance.IsReady != XIL_COMPONENT_IS_READY) {
+		return;
+	}
 
 	int _period;
 	_period = (int)((float)_periodMS*TIMER_LOAD_VALUE_1s/1000.0);

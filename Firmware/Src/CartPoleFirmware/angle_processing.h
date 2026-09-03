@@ -9,6 +9,8 @@
 #define ANGLE_PROCESSING_H_
 
 void set_timesteps_for_derivative(unsigned short timesteps);
+void set_derivative_median_len(unsigned short len);
+void set_fpga_deadzone_extrapolation(int enable);
 void average_derivatives(float* angleDPtr, float* positionDPtr);
 void process_angle(int angleSamples[], unsigned short angleSampIndex, unsigned short angle_averageLen, int* anglePtr, int* angle_raw_Ptr, float* angleDPtr, int* invalid_stepPtr);
 
