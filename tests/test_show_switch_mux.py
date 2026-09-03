@@ -31,6 +31,14 @@ def test_boot_idle_before_rpgd_dual_core():
     assert boot.find("ZYBO_Z720") < boot.find("RPGD_DUAL_CORE")
 
 
+def test_all_four_switches_are_inputs():
+    buttons = (
+        REPO / "Firmware" / "Src" / "Zynq" / "buttons_and_switches.c"
+    ).read_text()
+    assert "XGpio_SetDataDirection(&Gpio, 1, 0xF)" in buttons
+    assert "XGpio_SetDataDirection(&Gpio, 1, 1)" not in buttons
+
+
 def test_switch_decode_is_one_hot():
     header = (
         REPO / "Firmware" / "Src" / "CartPoleFirmware" / "controller_profiles.h"

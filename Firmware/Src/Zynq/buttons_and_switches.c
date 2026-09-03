@@ -78,9 +78,10 @@ void Buttons_And_Switches_Init(){
     XGpioPs_SetDirectionPin(&GpioPS, PS_BTN_4, 0);
     XGpioPs_SetDirectionPin(&GpioPS, PS_BTN_5, 0);
 
-    // GPIO for Switches on PL
+    // GPIO for Switches on PL (SW0–SW3). TRI bit=1 is input; a mask of 1
+    // left SW1–SW3 as outputs, so the show mux could not read them.
     XGpio_Initialize(&Gpio, XPAR_SWITCHES_AND_LEDS_GPIO_DEVICE_ID);
-    XGpio_SetDataDirection(&Gpio, 1, 1);
+    XGpio_SetDataDirection(&Gpio, 1, 0xF);
 
 #if HW_HAS_PL_BUTTONS
     if (PlButtons_Init() != XST_SUCCESS) {
