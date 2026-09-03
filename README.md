@@ -240,6 +240,9 @@ git submodule update --init --recursive
 ```
 
 Prefer a pinned submodule checkout over `--remote` unless you intend to move them.
+`SI_Toolkit` and `Control_Toolkit` are pinned to `cartpole_master` so
+[f1tenth_development_gym](https://github.com/F1Tenth-INI/f1tenth_development_gym)
+can keep using toolkit `main`/`master`.
 
 2. `pip install -r requirements.txt`
 
@@ -528,4 +531,5 @@ Recreate from `FPGA/VivadoProjects` as above.
 * Flashing QSPI with JP5 on QSPI stalls (`BOOT_MODE` is then 1). Power off, JP5
   = JTAG, power on, flash, then move JP5 back.
 * `git submodule update --remote` can move CartPoleSimulation / toolkits off the
-  pinned commits this repo expects.
+  pinned commits this repo expects. Toolkit `--remote` follows `cartpole_master`,
+  not toolkit `main`/`master`.
