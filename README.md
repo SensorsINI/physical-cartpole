@@ -452,25 +452,29 @@ platform refreshed from that XSA (`xparameters.h` must list `PL_BUTTONS_GPIO`):
 
 #### QSPI boot (no SD card, no PC at power-up)
 
-Daily FPGA bring-up can stay **JP5 = JTAG**. Hanging still persists: the app talks to the same
-on-board flash after a JTAG load. Switch JP5 to QSPI when you want power-up without a PC.
+The show image is **AMP CPU0** (`CartPoleFirmware_rpgd_amp_cpu0.elf`), not Vitis Debug
+`CartPoleFirmware.elf`. FSBL loads that one ELF; CPU0 copies the CPU1 worker into DDR
+and releases it. Do not pack a second ELF or `destination_cpu`.
 
-1. Build the Vitis platform + `CartPoleFirmware` from the current XSA (add
-   `Firmware/Src/Zynq/qspi_nvparams.c` next to the other Zynq sources if the project
-   does not pick it up). The standalone BSP already includes `xqspips` when PS QSPI
-   is in the XSA.
-2. Create `BOOT.BIN` and program QSPI at **offset 0**, image-range erase only — **do not
+Daily bring-up can stay **JP5 = JTAG** (`Firmware/Scripts/program_rpgd_amp_production.sh`).
+That path also lets CPU0 start CPU1. Switch JP5 to QSPI when you want power-up without a PC.
+
+1. JP5 = **JTAG**. Close Vitis. Build if needed:
+   `RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh`
+2. Program QSPI at **offset 0**, image-range erase only — **do not
    erase the entire 16 MiB flash** or you wipe hanging at `0xFD0000` / `0xFFF000`:
 
 ```console
-xsct Firmware/Scripts/program_qspi_boot.tcl -fsbl fsbl.elf -bit system.bit -elf CartPoleFirmware.elf
+Firmware/Scripts/program_show_qspi.sh
 ```
 
-   Or Vitis **Create Boot Image** then **Program Flash**, type `qspi-x4-single`, offset 0,
-   uncheck any “Erase entire flash” option. Template BIF: [`Firmware/Scripts/cartpole_qspi.bif`](Firmware/Scripts/cartpole_qspi.bif).
-3. Power off. Place JP5 on the **two center pins labeled QSPI**. Power on. No SD card required.
+   That packs secloc2026 `fsbl.elf` + `FPGA/bitstreams/cartpole_short_pole_secloc.bit` +
+   AMP CPU0 and calls [`program_qspi_boot.tcl`](Firmware/Scripts/program_qspi_boot.tcl).
+   Template BIF: [`Firmware/Scripts/cartpole_qspi.bif`](Firmware/Scripts/cartpole_qspi.bif).
+3. Power off. Place JP5 on the **two center pins labeled QSPI**. Power on.
+   Hang the pole, BTN0, then BTN4 (or PC `u`) and exactly one of SW0–SW3.
 
-SD boot (copy `BOOT.BIN` to a card, JP5 = SD) remains a fallback.
+SD boot (copy the same `BOOT.BIN` to a card, JP5 = SD) remains a fallback.
 
 BTN0–BTN3 are in the Zybo recreate script
 [`FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl`](FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_12_09_2025.tcl)

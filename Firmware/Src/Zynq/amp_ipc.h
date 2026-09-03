@@ -12,6 +12,11 @@ extern "C" {
 #define AMP_IPC_ABI_VERSION    1u
 #define AMP_IPC_MAILBOX_ADDR   0xFFFF0000u
 #define AMP_IPC_CPU1_VECTOR    0xFFFFFFF0u
+#define AMP_IPC_CPU1_LOAD_ADDR 0x10000000u
+#define AMP_IPC_CPU1_BLOB_MAX  (64u * 1024u)
+#define AMP_IPC_CPU1_READY_TIMEOUT_US 2000000u
+#define AMP_IPC_SHARED_ADDR    0x20000000u
+#define AMP_IPC_SHARED_SIZE    0x00100000u
 
 enum AmpWorkerState {
     AMP_WORKER_OFFLINE  = 0,
@@ -75,6 +80,7 @@ _Static_assert(AMP_IPC_MAILBOX_ADDR + sizeof(AmpMailbox) < AMP_IPC_CPU1_VECTOR,
                "mailbox must stay below the CPU1 release vector");
 
 AmpMailbox* amp_ipc_mailbox(void);
+void amp_ipc_configure_regions(void);
 void amp_ipc_dmb(void);
 void amp_ipc_sev(void);
 void amp_ipc_wfe(void);
@@ -89,6 +95,9 @@ int amp_ipc_mailbox_valid(const AmpMailbox* mb);
 void amp_ipc_init_cpu0(uint32_t config_fingerprint, uint32_t solver_sizeof,
                        uint32_t plan_sizeof, uint32_t scratch_sizeof);
 void amp_ipc_start_cpu1(uint32_t entry_addr);
+#if defined(RPGD_DUAL_CORE) && !defined(RPGD_WORKER_ONLY)
+int amp_ipc_load_and_start_cpu1(void);
+#endif
 
 #ifdef __cplusplus
 }

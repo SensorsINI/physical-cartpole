@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
-# JTAG-load dual-core AMP (CPU1 RPGD worker, CPU0 show mux).
-# Short-pole SecLoc bitstream. Does not write QSPI.
+# JTAG-load AMP CPU0 (show mux). CPU0 copies CPU1 into DDR and starts it
+# (same path as QSPI). Short-pole SecLoc bitstream. Does not write QSPI.
 # Close Vitis first (it steals JTAG). After this, hang + BTN0.
 
 source /tools/Xilinx/Vivado/2020.1/settings64.sh

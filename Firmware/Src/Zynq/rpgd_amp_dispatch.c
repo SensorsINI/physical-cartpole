@@ -6,6 +6,7 @@
 #include "hardware_bridge.h"
 #include "parameters.h"
 #include "rpgd_c/rpgd_platform.h"
+#include "sleep.h"
 
 #include <string.h>
 
@@ -113,6 +114,21 @@ static void drain_worker(uint32_t epoch)
     (void)wait_until(mb_drained, RPGD_AMP_DRAIN_TIMEOUT_US);
 }
 
+static void publish_cpu0_result(int status, float action)
+{
+    AmpMailbox* mb = amp_ipc_mailbox();
+    mb->result_status = status;
+    memcpy(&mb->reserved[0], &action, sizeof(action));
+    mb->reserved[1] = g_timing.total_us;
+    mb->reserved[2] = g_timing.prepare_us;
+    mb->reserved[3] = g_timing.dispatch_us;
+    mb->reserved[4] = g_timing.cpu0_range_us;
+    mb->reserved[5] = g_timing.cpu1_range_us;
+    mb->reserved[6] = g_timing.barrier_us;
+    mb->reserved[7] = g_timing.finalize_us;
+    amp_ipc_commit(mb);
+}
+
 static int worker_usable(void)
 {
     AmpMailbox* mb = amp_ipc_mailbox();
@@ -136,6 +152,7 @@ static void fail_step(RpgdSolver* solver, int status, uint32_t epoch, int is_tim
     }
     g_ready = worker_usable();
     g_last_status = status;
+    publish_cpu0_result(status, 0.0f);
 }
 
 int rpgd_amp_init(RpgdSolver* solver, uint32_t config_fingerprint)
@@ -156,6 +173,9 @@ int rpgd_amp_init(RpgdSolver* solver, uint32_t config_fingerprint)
         (uint32_t)rpgd_get_solver_size(),
         (uint32_t)sizeof(RpgdStepPlan),
         (uint32_t)sizeof(RpgdWorkerScratch));
+    amp_ipc_sev();
+    usleep(200);
+    amp_ipc_sev();
 
     if (!wait_until(mb_synced, RPGD_AMP_READY_TIMEOUT_US)) {
         return g_last_status;
@@ -218,6 +238,7 @@ int rpgd_amp_step(RpgdSolver* solver, const float* state6, const RpgdRuntime* ru
     }
 
     const unsigned long long t_all = now_ticks();
+    AmpMailbox* mb = amp_ipc_mailbox();
     unsigned long long t0 = t_all;
     const int prep = rpgd_step_prepare(solver, state6, runtime, &g_shared_plan);
     g_timing.prepare_us = us_from_ticks(now_ticks() - t0);
@@ -226,7 +247,6 @@ int rpgd_amp_step(RpgdSolver* solver, const float* state6, const RpgdRuntime* ru
         return prep;
     }
 
-    AmpMailbox* mb = amp_ipc_mailbox();
     uint32_t epoch = g_epoch + 1u;
     if (epoch == 0u) epoch = 1u;
     const int N = rpgd_get_num_rollouts(solver);
@@ -294,6 +314,9 @@ int rpgd_amp_step(RpgdSolver* solver, const float* state6, const RpgdRuntime* ru
     g_timing.finalize_us = us_from_ticks(now_ticks() - t0);
     g_timing.total_us = us_from_ticks(now_ticks() - t_all);
     g_last_status = rpgd_get_last_status(solver);
+    /* Persist the complete CPU0 result in uncached OCM. The worker owns
+     * result_status while a job runs; CPU0 owns it after completion. */
+    publish_cpu0_result(g_last_status, action);
     if (u) *u = action;
     return g_last_status;
 }

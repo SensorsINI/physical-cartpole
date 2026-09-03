@@ -15,6 +15,9 @@
 #include "rpgd_zynq_30ms_config.h"
 #include "rpgd_amp_dispatch.h"
 #endif
+#ifdef __arm__
+#include "xil_printf.h"
+#endif
 
 #include <math.h>
 #include <stdint.h>
@@ -85,10 +88,20 @@ static int rpgd_bind_timing(const RpgdConfig* cfg)
 #endif
 }
 
+int rpgd_controller_is_ready(void)
+{
+    return g_rpgd_solver && !g_rpgd_fault_latched;
+}
+
 static void RPGD_Init(void)
 {
     Motor_Stop();
 #ifdef RPGD_DUAL_CORE
+    /* Pin period before bind_timing. The mux may still be on the 10 ms idle
+     * profile when `u` first binds RPGD. */
+    POLLING_PERIOD_MS = (unsigned short)RPGD_CONTROL_PERIOD_MS;
+    SetControlUpdatePeriod(POLLING_PERIOD_MS);
+    set_timesteps_for_derivative(RPGD_30MS_DERIVATIVE_STEPS);
     RpgdConfig cfg = RPGD_30MS_CONFIG;
 #else
     RpgdConfig cfg = RPGD_DEFAULT_CONFIG;
@@ -122,6 +135,13 @@ static void RPGD_Init(void)
         g_rpgd_last_status = RPGD_CONTROLLER_STATUS_AMP_UNAVAILABLE;
         g_rpgd_fault_latched = 1;
         Motor_Stop();
+#ifdef __arm__
+        xil_printf("RPGD AMP init FAIL\r\n");
+#endif
+    } else {
+#ifdef __arm__
+        xil_printf("RPGD AMP init OK\r\n");
+#endif
     }
 #endif
 }

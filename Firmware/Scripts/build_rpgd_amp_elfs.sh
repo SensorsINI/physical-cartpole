@@ -18,6 +18,7 @@ XILINX_SPEC="${RPGD_XILINX_SPEC:-${DEBUG}/Xilinx.spec}"
 CC="${RPGD_ARM_CC:-arm-none-eabi-gcc}"
 SIZE="${RPGD_ARM_SIZE:-arm-none-eabi-size}"
 OBJCOPY="${RPGD_ARM_OBJCOPY:-arm-none-eabi-objcopy}"
+READELF="${RPGD_ARM_READELF:-arm-none-eabi-readelf}"
 
 # Same hardware platform as Vitis Debug LSTM (PL buttons / slider).
 DEFAULT_CPU0_BSP="${ROOT}/Firmware/VitisProjects/cartpole_zybo_secloc2026/export/cartpole_zybo_secloc2026/sw/cartpole_zybo_secloc2026/standalone_domain"
@@ -76,6 +77,7 @@ COMMON_CPU0=(
   -fmessage-length=0
   -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard
   "${CPU0_DEFS[@]}"
+  "-I${OUT}"
   "-I${FIRMWARE_SRC}"
   "-I${FIRMWARE_SRC}/CartPoleFirmware"
   "-I${FIRMWARE_SRC}/General"
@@ -112,15 +114,12 @@ CPU1_SRCS=(
   "${FIRMWARE_SRC}/General/rpgd_c/cartpole_cost.c"
 )
 
-CPU0_OBJS=()
-for src in "${CPU0_SRCS[@]}"; do
-  rel="${src#"${FIRMWARE_SRC}/"}"
-  obj="${OUT}/obj_cpu0/${rel%.c}.o"
-  mkdir -p "$(dirname "${obj}")"
-  echo "Compiling cpu0 ${rel}"
-  "${CC}" "${COMMON_CPU0[@]}" -c -MT"${obj}" -MMD -MP -MF"${obj%.o}.d" -o "${obj}" "${src}"
-  CPU0_OBJS+=("${obj}")
-done
+CPU0_ELF="${OUT}/CartPoleFirmware_rpgd_amp_cpu0.elf"
+CPU1_ELF="${OUT}/RPGDWorker_cpu1.elf"
+CPU1_BIN="${OUT}/RPGDWorker_cpu1.bin"
+CPU1_BLOB_S="${OUT}/cpu1_blob.S"
+CPU1_BLOB_META="${OUT}/cpu1_blob_meta.h"
+CPU1_LOAD_ADDR=0x10000000
 
 CPU1_OBJS=()
 for src in "${CPU1_SRCS[@]}"; do
@@ -132,8 +131,82 @@ for src in "${CPU1_SRCS[@]}"; do
   CPU1_OBJS+=("${obj}")
 done
 
-CPU0_ELF="${OUT}/CartPoleFirmware_rpgd_amp_cpu0.elf"
-CPU1_ELF="${OUT}/RPGDWorker_cpu1.elf"
+echo "Linking ${CPU1_ELF}"
+"${CC}" -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -Wl,-build-id=none "-specs=${XILINX_SPEC}" \
+  -Wl,-T -Wl,"${CPU1_LINKER}" \
+  -L"${CPU1_BSP}/bsplib/lib" \
+  -o "${CPU1_ELF}" \
+  "${CPU1_OBJS[@]}" \
+  -lm -Wl,--start-group,-lxil,-lgcc,-lc,--end-group -Wl,--gc-sections
+
+if ! command -v "${READELF}" >/dev/null 2>&1; then
+  echo "ERROR: ${READELF} not in PATH" >&2
+  exit 1
+fi
+
+entry_raw="$("${READELF}" -h "${CPU1_ELF}" | awk '/Entry point address/ { print $NF; exit }')"
+load_vma="$("${READELF}" -lW "${CPU1_ELF}" | awk '$1 == "LOAD" { print $3; exit }')"
+load_lma="$("${READELF}" -lW "${CPU1_ELF}" | awk '$1 == "LOAD" { print $4; exit }')"
+load_filesz="$("${READELF}" -lW "${CPU1_ELF}" | awk '$1 == "LOAD" { print $5; exit }')"
+nload="$("${READELF}" -lW "${CPU1_ELF}" | awk '$1 == "LOAD" { n++ } END { print n+0 }')"
+entry_norm="$(printf '0x%08x' "$((entry_raw))")"
+vma_norm="$(printf '0x%08x' "$((load_vma))")"
+lma_norm="$(printf '0x%08x' "$((load_lma))")"
+if [ "${nload}" -ne 1 ]; then
+  echo "ERROR: CPU1 ELF has ${nload} PT_LOAD segments; objcopy -O binary needs exactly one" >&2
+  exit 1
+fi
+if [ "${entry_norm}" != "${CPU1_LOAD_ADDR}" ] || [ "${vma_norm}" != "${CPU1_LOAD_ADDR}" ] || [ "${lma_norm}" != "${CPU1_LOAD_ADDR}" ]; then
+  echo "ERROR: CPU1 ELF must load and enter at ${CPU1_LOAD_ADDR} (entry=${entry_raw} vma=${load_vma} lma=${load_lma})" >&2
+  exit 1
+fi
+
+echo "objcopy ${CPU1_BIN}"
+"${OBJCOPY}" -O binary "${CPU1_ELF}" "${CPU1_BIN}"
+blob_size="$(stat -c%s "${CPU1_BIN}")"
+if [ "${blob_size}" -le 0 ] || [ "${blob_size}" -ge 65536 ]; then
+  echo "ERROR: CPU1 blob size ${blob_size} must be in (0, 64 KiB)" >&2
+  exit 1
+fi
+if [ "${blob_size}" -ne "$((load_filesz))" ]; then
+  echo "ERROR: CPU1 blob size ${blob_size} != PT_LOAD FileSiz $((load_filesz))" >&2
+  exit 1
+fi
+
+cat > "${CPU1_BLOB_META}" <<EOF
+#ifndef CPU1_BLOB_META_H
+#define CPU1_BLOB_META_H
+#define CPU1_ENTRY_ADDR ${CPU1_LOAD_ADDR}u
+#define CPU1_BLOB_SIZE ${blob_size}u
+#endif
+EOF
+
+cat > "${CPU1_BLOB_S}" <<EOF
+	.section .rodata.cpu1_blob, "a"
+	.global cpu1_blob_start
+	.global cpu1_blob_end
+	.type cpu1_blob_start, %object
+	.type cpu1_blob_end, %object
+	.balign 8
+cpu1_blob_start:
+	.incbin "${CPU1_BIN}"
+cpu1_blob_end:
+EOF
+
+CPU0_OBJS=()
+for src in "${CPU0_SRCS[@]}"; do
+  rel="${src#"${FIRMWARE_SRC}/"}"
+  obj="${OUT}/obj_cpu0/${rel%.c}.o"
+  mkdir -p "$(dirname "${obj}")"
+  echo "Compiling cpu0 ${rel}"
+  "${CC}" "${COMMON_CPU0[@]}" -c -MT"${obj}" -MMD -MP -MF"${obj%.o}.d" -o "${obj}" "${src}"
+  CPU0_OBJS+=("${obj}")
+done
+
+blob_obj="${OUT}/obj_cpu0/cpu1_blob.o"
+echo "Assembling cpu1 blob"
+"${CC}" -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -c -o "${blob_obj}" "${CPU1_BLOB_S}"
+CPU0_OBJS+=("${blob_obj}")
 
 echo "Linking ${CPU0_ELF}"
 "${CC}" -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -Wl,-build-id=none "-specs=${XILINX_SPEC}" \
@@ -143,19 +216,12 @@ echo "Linking ${CPU0_ELF}"
   "${CPU0_OBJS[@]}" \
   -lm -Wl,--start-group,-lxil,-lgcc,-lc,--end-group -Wl,--gc-sections
 
-echo "Linking ${CPU1_ELF}"
-"${CC}" -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -Wl,-build-id=none "-specs=${XILINX_SPEC}" \
-  -Wl,-T -Wl,"${CPU1_LINKER}" \
-  -L"${CPU1_BSP}/bsplib/lib" \
-  -o "${CPU1_ELF}" \
-  "${CPU1_OBJS[@]}" \
-  -lm -Wl,--start-group,-lxil,-lgcc,-lc,--end-group -Wl,--gc-sections
-
 {
   echo "=== cpu0 ==="
   "${SIZE}" "${CPU0_ELF}"
   echo "=== cpu1 ==="
   "${SIZE}" "${CPU1_ELF}"
+  printf 'CPU1_BLOB_SIZE=%s\nCPU1_ENTRY_ADDR=%s\n' "${blob_size}" "${CPU1_LOAD_ADDR}"
   "${CC}" --version | head -1
   printf 'PRODUCTION=%s\nCPU0_BSP=%s\nCPU1_BSP=%s\n' "${PRODUCTION}" "${CPU0_BSP}" "${CPU1_BSP}"
   printf 'CPU0_LINKER=%s\nCPU1_LINKER=%s\n' "${CPU0_LINKER}" "${CPU1_LINKER}"
@@ -169,8 +235,9 @@ echo "Linking ${CPU1_ELF}"
 echo "Built:"
 echo "  ${CPU0_ELF}"
 echo "  ${CPU1_ELF}"
+echo "  ${CPU1_BIN} (${blob_size} bytes)"
 if [ "${PRODUCTION}" = "1" ]; then
-  echo "Production AMP: CPU0 boots the SW0–SW3 show mux (CPU1 waits until RPGD). Program with Firmware/Scripts/program_rpgd_amp_production.sh"
+  echo "Production AMP: CPU0 copies CPU1 into DDR and starts it. JTAG: Firmware/Scripts/program_rpgd_amp_production.sh  QSPI: Firmware/Scripts/program_show_qspi.sh"
 else
   echo "Motor-safe on-target harness. Do not program QSPI from this script."
 fi

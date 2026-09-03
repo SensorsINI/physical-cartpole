@@ -1,7 +1,14 @@
 // Zybo Z7-20 QSPI boot image (Zynq-7000).
 //
-// Replace the three paths with artifacts from the current Vitis platform
-// (same XSA you JTAG-boot). Then:
+// Show demo (SW0–SW3 AMP): do not pack a second ELF or destination_cpu.
+// CPU0 copies the CPU1 worker from its .rodata blob and starts it.
+//   Firmware/Scripts/program_show_qspi.sh
+// which is:
+//   [bootloader] Firmware/VitisProjects/cartpole_zybo_secloc2026/.../boot/fsbl.elf
+//   FPGA/bitstreams/cartpole_short_pole_secloc.bit
+//   Firmware/AmpWorkspace/RPGD_AMP/CartPoleFirmware_rpgd_amp_cpu0.elf
+//
+// Template / Debug single-core still uses:
 //   bootgen -arch zynq -image cartpole_qspi.bif -w on -o i BOOT.BIN
 //
 // Typical locations after a Debug build:

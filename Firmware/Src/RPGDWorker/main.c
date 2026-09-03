@@ -82,6 +82,7 @@ int main(void)
     enable_vfp();
     Xil_ICacheEnable();
     Xil_DCacheEnable();
+    amp_ipc_configure_regions();
 
     AmpMailbox* mb = amp_ipc_mailbox();
     wait_for_valid_mailbox(mb);
