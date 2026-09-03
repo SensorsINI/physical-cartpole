@@ -202,8 +202,13 @@ void CONTROL_Init(void)
     ledPeriod           = led_blink_ticks(500);
 
     positionCentre      = (short)Encoder_Read(); // assume starting position is near center
-    positionLimitLeft   = positionCentre - 2400;
-    positionLimitRight  = positionCentre + 2400; // guess defaults based on 7000-8000 counts at limits
+    {
+		const int halfTrack = (int)(POSITION_ENCODER_RANGE / 2.0f);
+		positionLimitLeft = positionCentre - halfTrack;
+		positionLimitRight = positionCentre + halfTrack;
+    }
+    motor_stall_safety_reset();
+    Motor_DisableOutput();
 
     if (MOTOR == MOTOR_ORIGINAL){
     	ANGLE_HANGING = ANGLE_HANGING_ORIGINAL;
@@ -617,7 +622,13 @@ void CONTROL_BackgroundTask(void)
 #ifdef ZYNQ
 	            case OnChipController_RPGD:
 	            {
-	                /* Bind/init outside the deadline: solver create is tens of ms. */
+	                /* Bind/init outside the deadline: solver create is tens of ms.
+	                 * A failed AMP handshake must not stick ops_last or `u` never retries. */
+	                if (!rpgd_controller_is_ready()
+	                    && rpgd_controller_last_status()
+	                        == RPGD_CONTROLLER_STATUS_AMP_UNAVAILABLE) {
+	                    g_cb.ops_last = 0;
+	                }
 	                CB_RebindOnChange(&g_cb, &RPGD_Ops, g_signals, (uint8_t)G_SIGNALS_LEN);
 	                const unsigned long rpgd_start_us = GetTimeNow();
 	                Q = CB_Eval(&g_cb);
@@ -643,7 +654,14 @@ void CONTROL_BackgroundTask(void)
 
 		        motor_command_from_chip = control_signal_to_motor_command(Q, positionD, correct_motor_dynamics);
 		        motor_command_safety_check(&motor_command_from_chip);
+		        const int requested_motor_command = motor_command_from_chip;
 		        safety_switch_off(&motor_command_from_chip, positionLimitLeft, positionLimitRight);
+		        const int stall_latched = motor_stall_safety_check(
+					&motor_command_from_chip, Encoder_Read(), POLLING_PERIOD_MS);
+		        if (stall_latched
+					|| (requested_motor_command != 0 && motor_command_from_chip == 0)) {
+					Motor_Stop();
+		        }
 #if ON_CHIP_CONTROLLER_DRY_RUN
 		        motor_command_from_chip = 0;
 #endif
@@ -917,7 +935,17 @@ void CONTROL_BackgroundTask(void)
 		case CMD_SET_MOTOR:
 		{
 			int motor_command_from_PC = serial_get_i32(&rxBuffer[3]);
+			if (!PCControl_Enabled) {
+				motor_command_from_PC = 0;
+			}
+			const int requested_motor_command = motor_command_from_PC;
 			safety_switch_off(&motor_command_from_PC, positionLimitLeft, positionLimitRight);
+			const int stall_latched = motor_stall_safety_check(
+				&motor_command_from_PC, Encoder_Read(), POLLING_PERIOD_MS);
+			if (stall_latched
+				|| (requested_motor_command != 0 && motor_command_from_PC == 0)) {
+				Motor_Stop();
+			}
 
 			time_motor_command_obtained = GetTimeNow();
             if(new_motor_command_obtained){
@@ -1037,6 +1065,7 @@ void cmd_Calibrate(void)
 	Encoder_Set_Direction(calibrationEncoderDirection);
 	calibrationLastPosition = Encoder_Read();
 	motor_command = SPEED_CALIBRATION;
+	Motor_EnableOutput();
 	Motor_SetPower(motor_command, MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES);
 	Led_Switch(true);
 }
@@ -1158,7 +1187,7 @@ void CONTROL_CalibrationStep(void)
 		break;
 
 	case CalibrationState_Finished:
-		Motor_Stop();
+		Motor_DisableOutput();
 		motor_command = 0;
 
 		if (!calibrationFailed) {
@@ -1193,6 +1222,9 @@ void CONTROL_CalibrationStep(void)
 void cmd_ControlMode(bool en)
 {
     disable_irq();
+	motor_stall_safety_reset();
+	Motor_DisableOutput();
+	motor_command = 0;
 	if (en && !ControlOnChip_Enabled)
 	{
 		PCControl_Enabled = false;
@@ -1212,7 +1244,7 @@ void cmd_ControlMode(bool en)
 	}
 	else if (!en && ControlOnChip_Enabled)
 	{
-		Motor_Stop();
+		Motor_DisableOutput();
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
@@ -1222,6 +1254,12 @@ void cmd_ControlMode(bool en)
         ledPeriod           = led_blink_ticks(500);
 	}
 
+	if (en) {
+		Motor_EnableOutput();
+	} else {
+		Motor_DisableOutput();
+		motor_command = 0;
+	}
 	ControlOnChip_Enabled = en;
 	enable_irq();
 }
@@ -1229,10 +1267,12 @@ void cmd_ControlMode(bool en)
 void cmd_PCControlMode(bool en)
 {
 	disable_irq();
+	motor_stall_safety_reset();
+	Motor_DisableOutput();
+	motor_command = 0;
 	if (en)
 	{
 		ControlOnChip_Enabled = false;
-		Motor_Stop();
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
@@ -1243,13 +1283,19 @@ void cmd_PCControlMode(bool en)
 	}
 	else if (PCControl_Enabled)
 	{
-		Motor_Stop();
+		Motor_DisableOutput();
 		motor_command = 0;
 		time_motor_command_obtained = 0;
 		new_motor_command_obtained = false;
 		ledPeriod = led_blink_ticks(500);
 	}
 
+	if (en) {
+		Motor_EnableOutput();
+	} else {
+		Motor_DisableOutput();
+		motor_command = 0;
+	}
 	PCControl_Enabled = en;
 	enable_irq();
 }
@@ -1359,7 +1405,8 @@ void cmd_CollectRawAngle(unsigned short MEASURE_LENGTH, unsigned short INTERVAL_
 {
 
 	Interrupt_Unset();
-	Motor_Stop();
+	Motor_DisableOutput();
+	motor_command = 0;
 	Led_Switch(true);
 
 	txBuffer[ 0] = SERIAL_SOF;

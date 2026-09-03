@@ -13,6 +13,10 @@ PROGRAM_TCL = (REPO / "Firmware" / "Scripts" / "program_rpgd_amp_production.tcl"
 SLIDER_SH = (REPO / "tools" / "slider_pmod" / "program_cartpole_slider.sh").read_text()
 RPGD = (REPO / "Firmware" / "Src" / "General" / "rpgd_controller.c").read_text()
 IMITATOR = (REPO / "Firmware" / "Src" / "Zynq" / "neural_imitator.c").read_text()
+POSTPROCESS = (
+    REPO / "Firmware" / "Src" / "CartPoleFirmware" / "control_signal_postprocessing.c"
+).read_text()
+MOTOR_ZYNQ = (REPO / "Firmware" / "Src" / "Zynq" / "motor_zynq.c").read_text()
 
 
 def test_show_mux_flag_on():
@@ -89,7 +93,7 @@ def test_k_parks_amp_worker():
     fn = CONTROL.split("void cmd_PCControlMode(bool en)", 1)[1]
     fn = fn.split("void cmd_SetControlConfig", 1)[0]
     assert "CB_Reset(&g_cb)" in fn
-    assert "Motor_Stop" in fn
+    assert "Motor_DisableOutput" in fn
 
 
 def test_pc_cannot_overwrite_period_or_n_when_mux_on():
@@ -119,11 +123,46 @@ def test_rpgd_does_not_own_timing():
     body = RPGD.split("int rpgd_controller_owns_timing(void)", 1)[1]
     body = body.split("int rpgd_controller_take_deadline_grace", 1)[0]
     assert "return 0;" in body
-    assert "POLLING_PERIOD_MS =" not in RPGD.split("static void RPGD_Init(void)", 1)[1].split(
+    init = RPGD.split("static void RPGD_Init(void)", 1)[1].split(
         "static void RPGD_Release(void)", 1
     )[0]
+    assert "RPGD_CONTROL_PERIOD_MS" in init
 
 
 def test_sw3_is_not_a_pl_network_switch():
     assert "Switch_GetState" not in IMITATOR
     assert "NeuralNetworkType active_network = NETWORK_HLS4ML;" in IMITATOR
+
+
+def test_motor_stops_before_hard_limit_and_on_stall():
+    init = CONTROL.split("void CONTROL_Init(void)", 1)[1].split(
+        "void CONTROL_BackgroundTask(void)", 1
+    )[0]
+    assert "POSITION_ENCODER_RANGE / 2.0f" in init
+    assert "positionCentre - halfTrack" in init
+    assert "positionCentre + halfTrack" in init
+    assert "POSITION_LIMIT_BRAKE_MARGIN_COUNTS 300" in POSTPROCESS
+    assert "MOTOR_STALL_TIMEOUT_MS 100u" in POSTPROCESS
+    assert "motor_stall_safety_check" in CONTROL
+    assert "Motor_Stop();" in CONTROL
+
+
+def test_control_off_latches_motor_output_disabled():
+    chip_mode = CONTROL.split("void cmd_ControlMode(bool en)", 1)[1].split(
+        "void cmd_PCControlMode(bool en)", 1
+    )[0]
+    pc_mode = CONTROL.split("void cmd_PCControlMode(bool en)", 1)[1].split(
+        "void cmd_SetControlConfig", 1
+    )[0]
+    set_motor = CONTROL.split("case CMD_SET_MOTOR:", 1)[1].split(
+        "case CMD_SET_TARGET_POSITION:", 1
+    )[0]
+    assert chip_mode.count("Motor_DisableOutput();") >= 2
+    assert "Motor_EnableOutput();" in chip_mode
+    assert pc_mode.count("Motor_DisableOutput();") >= 2
+    assert "Motor_EnableOutput();" in pc_mode
+    assert "if (!PCControl_Enabled)" in set_motor
+    assert "static volatile int Motor_OutputEnabled" in MOTOR_ZYNQ
+    set_power = MOTOR_ZYNQ.split("void Motor_SetPower", 1)[1]
+    assert "if (!Motor_OutputEnabled)" in set_power
+    assert "Motor_Stop();" in set_power

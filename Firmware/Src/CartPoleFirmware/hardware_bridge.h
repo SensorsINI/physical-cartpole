@@ -58,6 +58,8 @@ extern int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define Motor_Init() 		Motor_INIT(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES)
 #define Motor_SetPwmPeriod  Motor_SetPwmPeriod
+#define Motor_EnableOutput	Motor_EnableOutput
+#define Motor_DisableOutput	Motor_DisableOutput
 #define Motor_Stop			Motor_Stop
 #define Motor_SetPower 		Motor_SetPower
 
@@ -132,6 +134,8 @@ extern int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES;
 
 #define Motor_Init() 		Motor_INIT(MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES)
 #define Motor_SetPwmPeriod  Motor_SetPwmPeriod
+#define Motor_EnableOutput	Motor_EnableOutput
+#define Motor_DisableOutput	Motor_DisableOutput
 #define Motor_Stop			Motor_Stop
 #define Motor_SetPower 		Motor_SetPower
 

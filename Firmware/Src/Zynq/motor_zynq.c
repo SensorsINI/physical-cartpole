@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 XMotor_hls Motor_Instance;
+static volatile int Motor_OutputEnabled;
 
 
 void set_direction(int pwm_duty_cycle_in_clock_cycles);
@@ -15,6 +16,7 @@ void set_power_magnitude(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_c
 void Motor_INIT(int pwm_period_in_clock_cycles)
 {
 	XMotor_hls_Initialize(&Motor_Instance, MOTOR_DEVICE_ID);
+	Motor_OutputEnabled = 0;
 	Motor_SetPwmPeriod(pwm_period_in_clock_cycles);
 	Motor_Stop();
 	XMotor_hls_Set_pwm_duty_cycle_in_clock_cycles(&Motor_Instance, (u32)(0));
@@ -31,9 +33,24 @@ void Motor_Stop(void)
 	XMotor_hls_Set_pwm_duty_cycle_in_clock_cycles(&Motor_Instance, (u32)(0));
 }
 
+void Motor_EnableOutput(void)
+{
+	Motor_Stop();
+	Motor_OutputEnabled = 1;
+}
+
+void Motor_DisableOutput(void)
+{
+	Motor_OutputEnabled = 0;
+	Motor_Stop();
+}
 
 void Motor_SetPower(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles)
 {
+	if (!Motor_OutputEnabled) {
+		Motor_Stop();
+		return;
+	}
 #ifdef ZEDBOARD
 	// The Zedboard rig in the Sevilla lab has the motor wired with reversed
 	// polarity: a positive duty cycle drove the cart to the left, while the

@@ -1,12 +1,15 @@
 #include "motor_stm.h"
 #include <stdlib.h>
 
+static volatile int Motor_OutputEnabled;
+
 void set_direction(int pwm_duty_cycle_in_clock_cycles);
 void set_power_magnitude(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles);
 
 // PWM base frequency is 10 kHz
 void Motor_INIT(int pwm_period_in_clock_cycles)
 {
+	Motor_OutputEnabled = 0;
 	RCC->APB2ENR	|= 1<<3;		// PORTB Clock enable  
 	GPIOB->CRH		&= 0x0000FFFF;	// PORTB12 13 14 15 push-pull
 	GPIOB->CRH		|= 0x22220000;	// PORTB12 13 14 15 push-pull
@@ -46,9 +49,24 @@ void Motor_Stop(void)
 	PB_OUT(12) = 0;					// AIN2
 }
 
+void Motor_EnableOutput(void)
+{
+	Motor_Stop();
+	Motor_OutputEnabled = 1;
+}
+
+void Motor_DisableOutput(void)
+{
+	Motor_OutputEnabled = 0;
+	Motor_Stop();
+}
 
 void Motor_SetPower(int pwm_duty_cycle_in_clock_cycles, int pwm_period_in_clock_cycles)
 {
+	if (!Motor_OutputEnabled) {
+		Motor_Stop();
+		return;
+	}
 	set_direction(pwm_duty_cycle_in_clock_cycles);
 	set_power_magnitude(pwm_duty_cycle_in_clock_cycles, pwm_period_in_clock_cycles);
 }
