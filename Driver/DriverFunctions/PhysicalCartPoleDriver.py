@@ -35,6 +35,8 @@ from globals import (
     POLLING_PERIOD_MS, CONTROL_SYNC,
     CONTROLLER_APPLY_WINDOW_MS,
     TIMESTEPS_FOR_DERIVATIVE,
+    ON_CHIP_NEURAL_POLLING_PERIOD_MS,
+    ON_CHIP_NEURAL_TIMESTEPS_FOR_DERIVATIVE,
     HARDWARE_ANGLE_FILTER_OVERRIDE,
     HARDWARE_ANGLE_FILTER_WINDOW, HARDWARE_ANGLE_FILTER_TRIM, HARDWARE_ANGLE_FILTER_MODE,
     CONTROL_CPU_AFFINITY, LOOP_CPU_AFFINITY,
@@ -637,9 +639,25 @@ class PhysicalCartPoleDriver:
             # BTN0 changes the firmware's hanging calibration without a host
             # command. Adopt it before displaying or recording the next state.
             self._sync_hanging_from_chip()
+            if CONTROLLER_NAME == 'neural-imitator':
+                # Connect/`K` pushed PC 5 ms × N=2. Restore IROS chip 1 kHz × N=10.
+                self.InterfaceInstance.set_config_control(
+                    controlLoopPeriodMs=ON_CHIP_NEURAL_POLLING_PERIOD_MS,
+                    controlSync=CONTROL_SYNC,
+                    angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
+                    correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+                    timesteps_for_derivative=ON_CHIP_NEURAL_TIMESTEPS_FOR_DERIVATIVE,
+                )
         print("\nFirmware Control", self.firmwareControl)
         self.InterfaceInstance.control_mode(self.firmwareControl)
         if not self.firmwareControl:
+            if CONTROLLER_NAME == 'neural-imitator':
+                self.InterfaceInstance.set_config_control(
+                    controlLoopPeriodMs=POLLING_PERIOD_MS, controlSync=CONTROL_SYNC,
+                    angle_hanging=ANGLE_HANGING, avgLen=ANGLE_AVG_LENGTH,
+                    correct_motor_dynamics=CORRECT_MOTOR_DYNAMICS,
+                    timesteps_for_derivative=TIMESTEPS_FOR_DERIVATIVE,
+                )
             # The chip stops immediately, but its last nonzero command may still
             # be present in the packet already being processed. Do not display
             # or record that stale value while firmware control is off.

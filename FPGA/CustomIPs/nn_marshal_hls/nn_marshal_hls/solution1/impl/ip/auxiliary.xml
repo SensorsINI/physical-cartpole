@@ -17,5 +17,5 @@
   <xd:arg xd:name="nn_resp.strb" xd:originalName="nn_resp" xd:direction="in" xd:interfaceRef="nn_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="4"/>
   <xd:arg xd:name="nn_resp.last" xd:originalName="nn_resp" xd:direction="in" xd:interfaceRef="nn_resp" xd:busTypeRef="axis" xd:arraySize="2" xd:dataWidth="1"/>
   <xd:latencyEstimates xd:best-case="undef" xd:worst-case="undef" xd:average-case="undef"/>
-  <xd:resourceEstimates xd:LUT="2381" xd:FF="1330" xd:BRAM="0" xd:DSP="8"/>
+  <xd:resourceEstimates xd:LUT="2244" xd:FF="1264" xd:BRAM="0" xd:DSP="8"/>
 </xd:acceleratorMap>

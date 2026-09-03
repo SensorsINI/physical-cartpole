@@ -9,8 +9,18 @@
 
 
 // Averaging derivatives with median filter on Firmware
+#if IROS_SHORT_POLE_PROFILE
+/*
+ * The current Development sensor/dead-zone pipeline balances the physical
+ * short pole more reliably with this additional median filtering. The 2024
+ * stack used size 1, so this is a current-hardware tuning, not legacy parity.
+ */
+#define ANGLE_D_BUFFER_SIZE 10
+#define POSITION_D_BUFFER_SIZE 10
+#else
 #define ANGLE_D_BUFFER_SIZE 1 // Median filter for pole's angular velocity
 #define POSITION_D_BUFFER_SIZE 1 // Median filter for cart's velocity
+#endif
 
 #define MAX_TIMESTEPS_FOR_DERIVATIVE 20
 
@@ -155,7 +165,7 @@ void treat_deadangle_with_derivative(int* anglePtr, int invalid_step) {
         last_difference = current_difference;
     }
 
-    if (hw_dz_valid) {
+    if (!IROS_SHORT_POLE_PROFILE && hw_dz_valid) {
         // Hardware-triggered handling: the FPGA filter block checks every
         // ~2.2 us XADC conversion against the rail thresholds, so this signal
         // is exact — no jump heuristic and no assumption about where the dead

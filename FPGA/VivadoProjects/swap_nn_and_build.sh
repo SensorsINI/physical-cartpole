@@ -14,7 +14,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-NETWORK_DIR="${1:-${ROOT}/FPGA/NeuralNetworks/hls4ml_dense_1out_8_07_07_2026}"
+# Development currently deploys the IROS short-pole network. An explicit
+# argument is still required when intentionally restoring another network.
+NETWORK_DIR="${1:-${ROOT}/FPGA/NeuralNetworks/hls4ml_short_pole}"
 NETWORK_DIR="$(cd "${NETWORK_DIR}" && pwd)"
 
 if [[ ! -f "${NETWORK_DIR}/nn_marshal_config.h" ]]; then
@@ -31,3 +33,12 @@ echo "=== nn_marshal HLS (network: ${NETWORK_DIR}) ==="
 
 echo "=== Vivado: upgrade nn_marshal + bitstream ==="
 (cd "${ROOT}/FPGA/VivadoProjects" && vivado -mode batch -source swap_nn_and_build.tcl)
+
+BUILT_BIT="${ROOT}/FPGA/VivadoProjects/CartpoleDriverZynq_AXIS_secloc/CartpoleDriverZynq_AXIS_secloc.runs/impl_1/cartpole_driver_design_wrapper.bit"
+DEPLOY_BIT="${ROOT}/FPGA/bitstreams/cartpole_short_pole_secloc.bit"
+if [[ ! -f "${BUILT_BIT}" ]]; then
+    echo "ERROR: rebuilt bitstream not found at ${BUILT_BIT}" >&2
+    exit 1
+fi
+cp "${BUILT_BIT}" "${DEPLOY_BIT}"
+echo "Deployed BIT: ${DEPLOY_BIT}"

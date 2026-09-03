@@ -26,10 +26,10 @@ architecture rtl of nn_marshal_nn_marshal_handle_transaction_NN_NORM_B_rom is
 signal addr0_tmp : std_logic_vector(AWIDTH-1 downto 0); 
 type mem_array is array (0 to MEM_SIZE-1) of std_logic_vector (DWIDTH-1 downto 0); 
 signal mem : mem_array := (
-    0 => "00111100110011111101111111000010", 
+    0 => "10111100010100011000001101000000", 
     1 to 2=> "00000000000000000000000000000000", 
-    3 => "00111100100100000100111110111111", 
-    4 => "10111101011011101000010011000000", 
+    3 => "10111011110000100000100111111011", 
+    4 => "10111100011101101111111111111100", 
     5 to 6=> "00000000000000000000000000000000" );
 
 attribute syn_rom_style : string;

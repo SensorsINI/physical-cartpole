@@ -56,6 +56,9 @@ Driver/SI_Toolkit_ASF/Experiments/*
 # Keep packaged IP (Vivado block designs reference xilinx.com:hls:*:1.0)
 /FPGA/CustomIPs/**/impl/*
 !/FPGA/CustomIPs/**/impl/ip/
+# Ignore Vivado scratch generated inside the retained packaged IP.
+/FPGA/CustomIPs/**/impl/ip/tmp.*
+/FPGA/CustomIPs/**/impl/ip/*.zip
 /FPGA/CustomIPs/**/syn/
 /FPGA/CustomIPs/**/.apc/
 /FPGA/CustomIPs/**/.settings/

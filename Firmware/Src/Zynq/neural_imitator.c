@@ -104,16 +104,14 @@ const ControllerOps NeuralImitator_Ops = {
 //float hls_denormalize_A[] = {1.0};
 //float hls_denormalize_B[] = {0.0};
 
-// Normalization for Dense-7IN-32H1-32H2-1OUT-8 (matches its normalization_vec_a/b,
-// same values as the pure-C controller in neural_controller_C.c; net deployed on the
-// FPGA as hls4ml_dense_1out_8_07_07_2026 behind CONTROLLER_AXILITE_0).
-float hls_normalize_a[] = {0.04595453,1.00000000,1.00000000,5.21186209,0.82011247,1.00000000,6.31313133
+// Normalization Cartpole hpf_v2024_cpp_x3232_14_3_short_v1 (Experiment-29-30 Dense-1).
+// Matches nn_marshal_config.h in FPGA/NeuralNetworks/hls4ml_short_pole.
+float hls_normalize_a[] = {0.03312271,1.00000000,1.00000000,5.43271589,1.19410825,1.00000000,6.31313133
 };
-float hls_normalize_b[] = {0.02537525,0.00000000,0.00000000,0.01761615,-0.05823207,0.00000000,0.00000000
+float hls_normalize_b[] = {-0.01278764,0.00000000,0.00000000,-0.00592160,-0.01507568,0.00000000,0.00000000
 };
 float hls_denormalize_A[] = {1.0};
 float hls_denormalize_B[] = {0.0};
-
 
 //// Normalization Cartpole hpf_v2024_cpp_x3232_12_2_v2
 //float hls_normalize_a[] = {0.05373850,1.00000000,1.00000000,5.44010401,0.86096680,1.00000000,6.31313133
@@ -230,13 +228,27 @@ void Neural_Imitator_Evaluate(unsigned char * network_input_buffer, unsigned cha
                     nn_in[neuron_idx] = *((float*)&network_input_buffer[neuron_idx * DATA_WORD_BYTES]);
                 }
 
-                (void)SeclocFrontendLink_PlainEvaluate(nn_in, &nn_q);
+                /* A timeout must fail safe. Never reuse RX scratch data. */
+                if (!SeclocFrontendLink_PlainEvaluate(nn_in, &nn_q)) {
+                    nn_q = 0.0f;
+                }
 
                 for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
                     *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = nn_q;
                 }
                 break;
             }
+    #if !(HW_HAS_CONTROLLER_AXI || HW_HAS_HLS4ML_DMA || HW_HAS_CONTROLLER_AXILITE)
+            /*
+             * This platform reaches hls4ml only through the SecLoc frontend.
+             * If its boot probe failed, HLS4ML_Network_Evaluate is a stub;
+             * falling through would decode stale RX memory as a motor command.
+             */
+            for (int neuron_idx = 0; neuron_idx < MLP_PREDICTION_NEURONS; neuron_idx++) {
+                *((float*)&network_output_buffer[neuron_idx * DATA_WORD_BYTES]) = 0.0f;
+            }
+            break;
+    #endif
     #endif
     #ifdef HLS4ML
             {

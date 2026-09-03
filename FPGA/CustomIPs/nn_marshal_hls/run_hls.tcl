@@ -9,7 +9,10 @@ set CUSTOM_IPS_DIR ".."
 if {[info exists ::env(SECLOC_NN_NETWORK_DIR)] && $::env(SECLOC_NN_NETWORK_DIR) ne ""} {
     set NORM_DIR $::env(SECLOC_NN_NETWORK_DIR)
 } else {
-    set NORM_DIR "../../NeuralNetworks/hls4ml_dense_1out_8_07_07_2026"
+    # Development currently deploys the IROS short-pole network. Keep the
+    # no-argument rebuild safe; pass SECLOC_NN_NETWORK_DIR explicitly when
+    # restoring another network.
+    set NORM_DIR "../../NeuralNetworks/hls4ml_short_pole"
 }
 puts "nn_marshal network include: ${NORM_DIR}"
 set CFLAGS "-I${CUSTOM_IPS_DIR} -I${NORM_DIR} -I/usr/include/x86_64-linux-gnu"

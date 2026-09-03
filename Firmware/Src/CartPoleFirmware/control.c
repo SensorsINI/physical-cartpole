@@ -42,7 +42,8 @@
 /* 2026-09-02 go-to: AMP RPGD 20 ms / 8 rollouts (hang 3261.643). */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_RPGD
 #else
-/* Dense-8 on PL (hls4ml via SecLoc frontend, gate bypassed). AMP flash still boots RPGD. */
+/* Short pole on PL (hls4ml_short_pole via SecLoc frontend). AMP flash still boots RPGD.
+ * Long Dense-8 go-to is da41c737. */
 #define ON_CHIP_BOOT_CONTROLLER OnChipController_NeuralImitator
 #endif
 
@@ -77,6 +78,8 @@ static unsigned short default_polling_period_ms(unsigned short controller)
 	case OnChipController_RPGD:
 		return (unsigned short)RPGD_CONTROL_PERIOD_MS;
 #endif
+	case OnChipController_NeuralImitator:
+		return 1;  /* IROS short pole 1 kHz; derivative N=10 in parameters.c */
 	default:
 		return 10;
 	}
@@ -655,7 +658,21 @@ void CONTROL_BackgroundTask(void)
 
 		// Send latest state to the PC
 		static int slowdown = 0;
-		if (streamEnable && ++slowdown>=CONTROL_SLOWDOWN && run_hardware_experiment==0)
+		/*
+		 * Keep STATE telemetry at or below 200 Hz. A 40-byte frame cannot be
+		 * transmitted at the 1 kHz short-pole control rate over 230400 baud;
+		 * starting another asynchronous send reuses this buffer before the
+		 * prior transfer has drained. Controller evaluation still runs on
+		 * every 1 ms tick.
+		 */
+		unsigned short stream_decimation =
+			(POLLING_PERIOD_MS < 5)
+				? (unsigned short)((5 + POLLING_PERIOD_MS - 1) / POLLING_PERIOD_MS)
+				: 1;
+		if (CONTROL_SLOWDOWN > stream_decimation) {
+			stream_decimation = CONTROL_SLOWDOWN;
+		}
+		if (streamEnable && ++slowdown >= stream_decimation && run_hardware_experiment==0)
 		{
 			slowdown = 0;
 

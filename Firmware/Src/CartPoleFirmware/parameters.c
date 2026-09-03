@@ -12,7 +12,7 @@ unsigned short CONTROL_SLOWDOWN						=		0;
 bool CONTROL_SYNC									=		true;
 
 // Calculating derivatives and dead angle detection
-unsigned short TIMESTEPS_FOR_DERIVATIVE				=		1;  // Dense-8 known-good: 10 ms window at 10 ms. Must match Driver/globals.py.
+unsigned short TIMESTEPS_FOR_DERIVATIVE				=		10;  // IROS short pole chip: 10 × 1 ms = 10 ms. PC k uses N=2 at 5 ms.
 // TIMESTEPS_FOR_DERIVATIVE: How many timesteps are taken for derivative (position and angle) calculation
 // and dead angle detection.
 // Too small value makes the effect of sensor quantization severe.
@@ -26,7 +26,12 @@ unsigned short ANGLE_AVERAGE_LEN					=		1;		// Number of samples to average over
 
 
 const float TrackHalfLength							=		0.198;
+#if IROS_SHORT_POLE_PROFILE
+/* Old IROS firmware used 1.25 * 0.09 m. */
+const float SliderTargetHalfLength					=		0.1125;
+#else
 const float SliderTargetHalfLength					=		0.14;  // JB pot rails; inside the 0.198 m track
+#endif
 
 int MOTOR = MOTOR_POLOLU;
 
@@ -65,8 +70,14 @@ const float POSITION_ENCODER_RANGE					=		4649;
 #ifdef RPGD_DUAL_CORE
 /* 2026-09-02 go-to: same LSTM quant map as working PC rpgd-c at 20 ms. */
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
+#elif IROS_SHORT_POLE_PROFILE
+/*
+ * PL-only short-pole map selected by physical comparison on Development.
+ * The PC path keeps its independently configured map in Driver/globals.py.
+ */
+float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 #else
-/* Dense-8: same 0.573 map as working LSTM/RPGD on this cart (force-fit 0.511 too weak). */
+/* Dense-8 go-to da41c737: 0.573 (force-fit 0.511 too weak). */
 float MOTOR_CORRECTION[3] 							=		{0.5733488, 0.0257380, 0.0258429};
 #endif
 
@@ -74,12 +85,20 @@ float ANGLE_HANGING_POLOLU 							=		3261.643;  // Stationary hanging mean, meas
 float ANGLE_HANGING_ORIGINAL						=		1008.5;  // Value from sensor when pendulum is at stable equilibrium point
 
 const float ANGLE_360_DEG_IN_ADC_UNITS				=		4044.15;  // 2*(upright 1239.5680 - hanging 3261.6430); must match Driver/globals.py.
+#if IROS_SHORT_POLE_PROFILE
+const float POSITION_ENCODER_RANGE					=		4705.0;
+#else
 const float POSITION_ENCODER_RANGE					=		4695.0;
+#endif
 
 #endif
 
 const unsigned int CLOCK_FREQ						=		333333343;
+#if IROS_SHORT_POLE_PROFILE && !defined(RPGD_DUAL_CORE)
+const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		2500;
+#else
 const int MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES			=		10000;
+#endif
 
 const int MOTOR_FULL_SCALE_SAFE						=		((int)(0.95 * MOTOR_PWM_PERIOD_IN_CLOCK_CYCLES + 0.5));
 

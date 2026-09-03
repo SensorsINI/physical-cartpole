@@ -5,6 +5,16 @@
 
 #include <stdbool.h>
 
+/*
+ * Physical profile currently deployed on Development.
+ *
+ * Keep this at 1 while using the IROS ~0.092 m pole/network.  Besides the
+ * network/timing selected elsewhere, this restores the signal processing,
+ * slider convention, and PWM calibration of the hardware-proven old stack.
+ * Set it to 0 when restoring the long-pole Development configuration.
+ */
+#define IROS_SHORT_POLE_PROFILE 1
+
 extern const unsigned int UART_BAUD;
 
 extern unsigned short POLLING_PERIOD_MS;

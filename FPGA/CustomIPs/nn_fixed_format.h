@@ -24,10 +24,12 @@ static inline ap_uint<32> nn_fixed_quantize(
 {
     const float scaled = normalized * (float)(1 << frac_bits);
     int code = (int)::roundf(scaled);
-    const int max_pos = NN_FIXED_MAX_POS(total_bits);
-    const int min_neg = NN_FIXED_MIN_NEG(total_bits);
-    if (code > max_pos) code = max_pos;
-    if (code < min_neg) code = min_neg;
+    /*
+     * Match the proven direct-IROS path exactly: it rounds into an int32 and
+     * the AXIS adapter consumes only the low TOTAL bits. Do not saturate here;
+     * saturation changes the network input whenever a normalized derivative
+     * exceeds the ap_fixed range.
+     */
     return (ap_uint<32>)(((unsigned)code) & NN_FIXED_MASK(total_bits));
 }
 

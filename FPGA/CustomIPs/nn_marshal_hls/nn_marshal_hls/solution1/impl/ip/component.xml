@@ -351,7 +351,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>32df87b0</spirit:value>
+            <spirit:value>a3bf5da1</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -370,7 +370,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>34ba4441</spirit:value>
+            <spirit:value>0f61e3c2</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -389,7 +389,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>cd980b07</spirit:value>
+            <spirit:value>98bf05b7</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -408,7 +408,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>4e09755c</spirit:value>
+            <spirit:value>1da7bacc</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -904,7 +904,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_verilogsynthesis_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -912,7 +912,7 @@
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -1065,7 +1065,7 @@
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
@@ -1075,7 +1075,7 @@
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
@@ -1093,7 +1093,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_vhdlsynthesis_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -1101,7 +1101,7 @@
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -1152,7 +1152,7 @@
       <spirit:file>
         <spirit:name>hdl/vhdl/nn_marshal.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_57c88b18</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_a83a8cc7</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -1223,7 +1223,7 @@
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
@@ -1233,7 +1233,7 @@
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>hdl/ip/nn_marshal_ap_sitofp_4_no_dsp_32.vhd</spirit:name>
+        <spirit:name>hdl/ip/nn_marshal_ap_fadd_3_full_dsp_32.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>USED_IN_ipstatic</spirit:userFileType>
       </spirit:file>
@@ -1324,8 +1324,8 @@
       </xilinx:taxonomies>
       <xilinx:displayName>Nn_marshal</xilinx:displayName>
       <xilinx:definitionSource>HLS</xilinx:definitionSource>
-      <xilinx:coreRevision>2007101123</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2026-07-10T09:24:35Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>2114769540</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2026-09-03T08:01:15Z</xilinx:coreCreationDateTime>
       <xilinx:sdxKernelAttributes>
         <xilinx:sdx_kernel>true</xilinx:sdx_kernel>
         <xilinx:sdx_kernel_type>hls</xilinx:sdx_kernel_type>
@@ -1334,7 +1334,7 @@
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2020.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="57af9b46"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="6b4c38f9"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="cf78b18b"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="87013d09"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="c4cc7b05"/>
     </xilinx:packagingInfo>

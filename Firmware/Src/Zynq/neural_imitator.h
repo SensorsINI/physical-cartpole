@@ -14,8 +14,8 @@ typedef enum {
 #define SELECTED_NETWORK_DOWN NETWORK_HLS4ML  // Assign to switch DOWN position
 
 
-#define MLP_TOTAL_BITS_PER_VARIABLE	12
-#define MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE	2
+#define MLP_TOTAL_BITS_PER_VARIABLE	14  /* IROS short pole hls4ml; Dense-8 was 12/2 */
+#define MLP_INTEGER_PLUS_SIGN_BITS_PER_VARIABLE	3
 
 #define MLP_ACTIVATION_NEURONS		7 // 4bytes each
 #define MLP_PREDICTION_NEURONS		1 // 4bytes each
