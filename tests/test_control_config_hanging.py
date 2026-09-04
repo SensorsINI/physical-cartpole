@@ -19,6 +19,10 @@ DRIVER = (
     Path(__file__).resolve().parents[1]
     / "Driver/DriverFunctions/PhysicalCartPoleDriver.py"
 )
+LED = (
+    Path(__file__).resolve().parents[1]
+    / "Firmware/Src/Zynq/led_zynq.c"
+)
 
 
 def test_packed_control_config_sizes():
@@ -87,6 +91,27 @@ def test_btn0_immediately_disarms_all_control_before_capture():
     assert capture.count(
         "ControlOnChip_Enabled || PCControl_Enabled || calibrate"
     ) == 2
+
+
+def test_btn0_rgb_feedback_covers_the_full_capture():
+    firmware = CONTROL_C.read_text()
+    led = LED.read_text()
+    handler = firmware.split(
+        "void CONTROL_SetHangingFromCurrentReading(void)", 1
+    )[1].split("void CONTROL_SetUprightFromCurrentReading(void)", 1)[0]
+    abort = firmware.split("static void hanging_capture_abort", 1)[1].split(
+        "static void hanging_capture_feed", 1
+    )[0]
+    capture = firmware.split("static void hanging_capture_feed", 1)[1].split(
+        "static void upright_capture_abort", 1
+    )[0]
+
+    assert "Led_RgbHangingCaptureStart();" in handler
+    assert "Led_RgbHangingCaptureError();" in abort
+    assert "Led_RgbHangingCaptureSuccess();" in capture
+    assert "Led_RgbFeedback(7, 0)" in led
+    assert "Led_RgbFeedback(7, 300000UL)" in led
+    assert "Led_RgbFeedback(4, 1000000UL)" in led
 
 
 def test_boot_loads_paired_qspi_calibration_before_pc_config():

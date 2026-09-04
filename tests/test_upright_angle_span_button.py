@@ -61,6 +61,7 @@ def test_angle_circle_is_runtime_mutable():
 
 
 def test_upright_capture_has_distinct_rgb_feedback():
+    assert "Led_RgbUprightCaptureStart();" in CONTROL
     assert "Led_RgbUprightCaptureStart" in LED
     assert "Led_RgbFeedback(1, 0)" in LED
     assert "Led_RgbUprightCaptureSuccess" in LED

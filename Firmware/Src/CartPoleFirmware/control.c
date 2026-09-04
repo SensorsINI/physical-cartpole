@@ -334,6 +334,9 @@ void CONTROL_SetHangingFromCurrentReading(void)
 	upright_capture_active = false;
 	set_hanging_requested = true;
 	ledPeriod = led_blink_ticks(500);
+#ifdef ZYNQ
+	Led_RgbHangingCaptureStart();
+#endif
 	enable_irq();
 }
 
@@ -404,6 +407,7 @@ static void hanging_capture_abort(const char *reason)
 	hanging_capture_sum = 0.0f;
 #ifdef ZYNQ
 	xil_printf("%s\r\n", reason);
+	Led_RgbHangingCaptureError();
 #else
 	(void)reason;
 #endif
@@ -466,7 +470,7 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		hanging_capture_ref_set = false;
 #ifdef ZYNQ
 		xil_printf("ANGLE_HANGING millicounts: %d\r\n", hanging_millicounts(mean));
-		Led_RgbConfirmFlash();
+		Led_RgbHangingCaptureSuccess();
 		queue_angle_calibration_save();
 #endif
 	}

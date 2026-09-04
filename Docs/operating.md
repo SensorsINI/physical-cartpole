@@ -34,7 +34,8 @@ Before arming with the pole on the track:
 1. Track clear; 12 V motor supply ready to cut.
 2. **JP5** = QSPI for standalone boot, or JTAG if developing from RAM.
 3. **SW0–SW3** all off until after arm.
-4. Pole hanging; **BTN0** (or **`b`**) captured hanging — RGB white flash.
+4. Pole hanging; **BTN0** (or **`b`**) captured hanging — RGB stays white
+   throughout BTN0 sampling.
 5. If recalibrating the angle scale, hold upright and press **BTN1** — blue
    while sampling, green on success, red on rejection.
 6. **BTN5** or **`K`** once per power cycle if the encoder zero may be stale.
@@ -100,7 +101,8 @@ on both paths.
 2. Power on with **SW0–SW3 all off**. RGB may be cyan (target at center).
 3. Firmware restores the stored hanging/circle pair. If no valid record exists,
    or the angle hardware moved, press **BTN0** while hanging. It disarms, zeros
-   PWM, captures and stores `ANGLE_HANGING`; RGB flashes **white**.
+   PWM, captures and stores `ANGLE_HANGING`; RGB stays **white** until all
+   samples are collected.
 4. When recalibrating, hold the pole upright and press **BTN1** to capture and
    store `ANGLE_360_DEG_IN_ADC_UNITS`. RGB is **blue** while sampling,
    **green** on success, and **red** if rejected.
@@ -209,10 +211,10 @@ are used. Old version-1 records are ignored because they contain no angle span.
 
 | Pattern | Meaning |
 |---|---|
-| Both white, ~300 ms | BTN0 hanging capture succeeded |
-| Both blue | BTN1 upright capture in progress |
+| Both white | BTN0 hanging capture in progress; remains white ~300 ms after success |
+| Both blue | BTN1 upright capture in progress, for the full sampling interval |
 | Both green, ~700 ms | BTN1 updated the full-circle angle span |
-| Both red, ~1 s | BTN1 capture rejected |
+| Both red, ~1 s | BTN0/BTN1 capture aborted or rejected |
 | Alternating red | Stored hanging puts the pot dead zone within ~20° of vertical |
 | Both cyan | Cart target is 0 (center) |
 | Green (one diode) | Target > 0 |

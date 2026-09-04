@@ -83,8 +83,8 @@ intentionally ignored.
 
 1. Power on with **SW0–SW3 all off**.
 2. Hang the pole straight down. Press **BTN0**. That disarms control, zeros PWM,
-   captures and stores `ANGLE_HANGING`, and leaves control off. RGB flashes
-   white on success.
+   captures and stores `ANGLE_HANGING`, and leaves control off. Both RGB LEDs
+   stay white throughout sampling and briefly after success.
 3. To refresh the angle scale, hold the pole upright and press **BTN1**. RGB is
    blue while sampling, green when the new span is accepted and queued for
    persistent storage, and red if the pose is rejected.
@@ -217,9 +217,11 @@ contains the same standalone `BOOT.BIN` as QSPI.
    `ANGLE_360_DEG_IN_ADC_UNITS = 2 × |upright − hanging|`.
 
 BTN1 is accepted only when the new span is within ±20% of the previous value.
-Both RGB LEDs are **blue** while sampling, **green** for about 0.7 s on success,
-and **red** for about 1 s if the pole moved or the pose was rejected. A
-connected PC driver adopts the new span immediately. BTN0 and BTN1 each save
+For BTN0, both RGB LEDs stay **white** throughout the 50-sample capture and for
+about 0.3 s after success. For BTN1, they stay **blue** throughout capture,
+then **green** for about 0.7 s on success. Either capture shows **red** for about
+1 s if it is aborted or rejected. A connected PC driver adopts the new span
+immediately. BTN0 and BTN1 each save
 the complete pair—`ANGLE_HANGING` plus `ANGLE_360_DEG_IN_ADC_UNITS`—to QSPI.
 The pair is read at every startup and takes precedence over the normal
 `globals.py` hanging value. PC **`b`** also stores its new hanging value

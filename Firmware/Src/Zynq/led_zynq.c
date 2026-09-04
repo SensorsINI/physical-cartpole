@@ -70,9 +70,19 @@ static void Led_RgbFeedback(u32 color, unsigned long duration_us)
 #endif
 }
 
-void Led_RgbConfirmFlash(void)
+void Led_RgbHangingCaptureStart(void)
+{
+	Led_RgbFeedback(7, 0);  /* white while collecting */
+}
+
+void Led_RgbHangingCaptureSuccess(void)
 {
 	Led_RgbFeedback(7, 300000UL);
+}
+
+void Led_RgbHangingCaptureError(void)
+{
+	Led_RgbFeedback(4, 1000000UL);  /* red */
 }
 
 void Led_RgbUprightCaptureStart(void)

@@ -50,9 +50,11 @@ wraps. Tighten the clamp afterward or the reading drifts.
 On Zybo, hang the pole and press **BTN0**. That immediately disarms on-chip and
 PC control, zeros PWM, and overwrites `ANGLE_HANGING` from a wrap-aware mean of
 50 hardware-filtered 12-bit samples (aborted if the pole is moving or track
-calibration is running). Control stays off. PC **`b`** is the same role but
-averages 1000 streamed samples. Both paths queue a QSPI save containing the
-new hanging value and the current full-circle span.
+calibration is running). Both RGB LEDs stay white for the complete sampling
+interval, then remain white briefly on success or turn red on abort. Control
+stays off. PC **`b`** is the same role but averages 1000 streamed samples. Both
+paths queue a QSPI save containing the new hanging value and the current
+full-circle span.
 
 RGB **alternating red**: stored hanging places the dead zone within 20° of
 vertical. Turn the screw toward horizontal and press BTN0 again. **Cyan** is a
@@ -80,9 +82,10 @@ On Zybo, capture hanging with **BTN0**, hold the pole still and upright, then
 press **BTN1**. BTN1 disarms control, averages 50 filtered samples, and applies
 `2 × |upright − ANGLE_HANGING|` to the circle, normalization factor, and zero
 offset. It rejects movement and results outside ±20% of the previous circle.
-RGB is blue while sampling, green on success, and red on rejection. A connected
-driver adopts the new span automatically. BTN1 saves the updated span together
-with the current hanging value, so both are restored on the next startup.
+Both RGB LEDs stay blue for the complete sampling interval, then turn green on
+success or red on rejection. A connected driver adopts the new span
+automatically. BTN1 saves the updated span together with the current hanging
+value, so both are restored on the next startup.
 BTN0 likewise saves its new hanging value together with the current span.
 Wait a few seconds after either calibration before cutting power.
 
