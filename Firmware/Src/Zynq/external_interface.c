@@ -86,9 +86,8 @@ u32 get_slider_state(){
 #ifdef XPAR_PMODAD1_BASEADDR
 	u32 ADC_data;
 	ADC_data = Xil_In32(XPAR_PMODAD1_BASEADDR);
-//	slider_value = ADC_data & AD1_DATA_MASK;
-	slider_value = (ADC_data >> 1) & AD1_DATA_MASK;
-//	slider_value = (data >> 17) & AD1_DATA_MASK; // to use second available ADC
+	/* Use PmodAD1 D1/ch1; D0/ch0 is unreliable after a cold QSPI boot. */
+	slider_value = (ADC_data >> 17) & AD1_DATA_MASK;
 #endif
 	return slider_value;
 
