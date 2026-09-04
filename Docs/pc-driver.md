@@ -44,7 +44,7 @@ calibration is sane. `command` stays 0 until you arm.
 | `u` | On-chip control on/off (same as **BTN4**) |
 | `k` | PC control on/off (`CONTROLLER_NAME` in `globals.py`) |
 | `K` | Track-center calibration (same as **BTN5**) |
-| `b` | Capture hanging from ~1000 streamed samples (RAM only; does not write QSPI) |
+| `b` | Capture hanging from ~1000 streamed samples and store it with the current angle circle in QSPI |
 | `=` / `-` | Fine-tune angle deviation |
 | `[` / `]` | Decrease / increase target position — **ignored** while the JB slider owns the target |
 | `;` | Flip target equilibrium (±1) — **ignored** with the slider interface |
@@ -206,7 +206,7 @@ two targets, ~16 s, then motor 0). It turns PC control off first.
 | No connection | Port: Digilent **interface 1** (`SERIAL_PORT_NUMBER = 1`, often `/dev/ttyUSB1`). Close Vitis and other serial monitors. |
 | Laggy PC control | FTDI latency timer: 1 ms on Linux (driver sets it); Windows: [SettingLatencyTimerOnWindows.png](../Docs/SettingLatencyTimerOnWindows.png). |
 | `skipped` in status line | IO thread waited > 1.5 chip STATE periods — heavy PC load or wrong `POLLING_PERIOD_MS` vs chip period. |
-| Wrong hanging after connect | **BTN0** this boot locks chip hanging; driver adopts it. Otherwise first connect pushes `globals.py` once. |
+| Wrong hanging after connect | A valid stored QSPI calibration takes priority and the driver adopts it. Use **BTN0** or **`b`** to replace hanging; use BTN1 to replace the circle. |
 | MacOS latency | No known FTDI fix (see [Known issues](../README.md#known-issues)). |
 
 ## Dance

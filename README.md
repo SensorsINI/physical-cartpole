@@ -75,11 +75,19 @@ Boot from QSPI (JP5 on the two center pins labeled QSPI). The show image must
 already be in flash — how to program it is in
 [Docs/firmware-and-flash.md](Docs/firmware-and-flash.md).
 
+At startup, firmware loads `ANGLE_HANGING` and
+`ANGLE_360_DEG_IN_ADC_UNITS` together from the QSPI calibration record. If no
+valid record exists, it uses the compiled defaults. After installing this
+record-format version, run BTN0 then BTN1 once; old hanging-only records are
+intentionally ignored.
+
 1. Power on with **SW0–SW3 all off**.
 2. Hang the pole straight down. Press **BTN0**. That disarms control, zeros PWM,
-   captures `ANGLE_HANGING`, and leaves control off. RGB flashes white on success.
+   captures and stores `ANGLE_HANGING`, and leaves control off. RGB flashes
+   white on success.
 3. To refresh the angle scale, hold the pole upright and press **BTN1**. RGB is
-   blue while sampling, green on success, and red if the pose is rejected.
+   blue while sampling, green when the new span is accepted and queued for
+   persistent storage, and red if the pose is rejected.
 4. Arm with **BTN4**, or `python Driver/control.py` then **`u`**.
 5. Turn on **exactly one** switch:
 
@@ -211,9 +219,13 @@ contains the same standalone `BOOT.BIN` as QSPI.
 BTN1 is accepted only when the new span is within ±20% of the previous value.
 Both RGB LEDs are **blue** while sampling, **green** for about 0.7 s on success,
 and **red** for about 1 s if the pole moved or the pose was rejected. A
-connected PC driver adopts the new span immediately. The BTN1 value lasts for
-the current boot; copy the terminal value into `Driver/globals.py` and
-`Firmware/Src/CartPoleFirmware/parameters.c` to make it permanent.
+connected PC driver adopts the new span immediately. BTN0 and BTN1 each save
+the complete pair—`ANGLE_HANGING` plus `ANGLE_360_DEG_IN_ADC_UNITS`—to QSPI.
+The pair is read at every startup and takes precedence over the normal
+`globals.py` hanging value. PC **`b`** also stores its new hanging value
+together with the current circle. Wait a few seconds after calibration before
+cutting power. `Driver/globals.py` and `parameters.c` remain the fallback when
+no valid QSPI calibration exists.
 
 ---
 

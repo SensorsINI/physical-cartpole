@@ -8,6 +8,8 @@ README = (REPO / "README.md").read_text()
 HARDWARE = (REPO / "Docs" / "hardware.md").read_text()
 FIRMWARE = (REPO / "Docs" / "firmware-and-flash.md").read_text()
 SLIDER = (REPO / "tools" / "slider_pmod" / "README.md").read_text()
+CALIBRATION = (REPO / "Docs" / "calibration.md").read_text()
+OPERATING = (REPO / "Docs" / "operating.md").read_text()
 
 
 def test_show_mux_and_arming_are_documented():
@@ -36,6 +38,17 @@ def test_setup_paths_and_tools_version():
     assert "Firmware/CubeIDE/CartPoleFirmware" in FIRMWARE
     assert "CartpoleDriverZynq_AXIS_12_09_2025.tcl" in FIRMWARE
     assert "cartpole_zybo_secloc2026" in FIRMWARE
+
+
+def test_angle_pair_persistence_is_documented():
+    for text in (README, CALIBRATION, OPERATING):
+        assert "ANGLE_HANGING" in text
+        assert "ANGLE_360_DEG_IN_ADC_UNITS" in text
+        assert "QSPI" in text
+        assert "startup" in text
+    assert "complete pair" in README
+    assert "session-only" not in CALIBRATION
+    assert "QSPI is not loaded" not in OPERATING
 
 
 def test_obsolete_factory_and_zynq_folder_docs_are_gone():

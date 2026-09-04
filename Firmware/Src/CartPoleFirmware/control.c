@@ -223,10 +223,23 @@ void CONTROL_Init(void)
     	ANGLE_HANGING = ANGLE_HANGING_POLOLU;
     }
 
-	/* Compile-time default only. Do not load QSPI here: a stored hanging would
-	 * lock the chip before the PC can apply globals.py. BTN0 this boot still
-	 * locks; QSPI is written on BTN0 for optional later use. */
-	AngleHangingSetOnChip = false;
+	/* A valid QSPI record owns both coupled angle-calibration values. */
+#ifdef ZYNQ
+	{
+		float stored_hanging;
+		float stored_angle_360;
+		if (QspiNv_LoadCalibration(&stored_hanging, &stored_angle_360) == 0) {
+			ANGLE_HANGING = stored_hanging;
+			ANGLE_360_DEG_IN_ADC_UNITS = stored_angle_360;
+			ANGLE_NORMALIZATION_FACTOR = (2.0f * M_PI) / ANGLE_360_DEG_IN_ADC_UNITS;
+			AngleHangingSetOnChip = true;
+			AngleSpanSetOnChip = true;
+			xil_printf("QSPI angle calibration loaded: hanging %d; circle %d millicounts\r\n",
+				   hanging_millicounts(ANGLE_HANGING),
+				   hanging_millicounts(ANGLE_360_DEG_IN_ADC_UNITS));
+		}
+	}
+#endif
 	PcHangingApplied = false;
 
     ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
@@ -295,9 +308,17 @@ static int upright_capture_count = 0;
 static float upright_capture_ref = 0.0f;
 static float upright_capture_sum = 0.0f;
 #ifdef ZYNQ
-static volatile int hanging_nv_pending = 0;
-static float hanging_nv_value = 0.0f;
-static int hanging_nv_skip_logged = 0;
+static volatile int angle_calibration_nv_pending = 0;
+static float angle_calibration_nv_hanging = 0.0f;
+static float angle_calibration_nv_circle = 0.0f;
+static int angle_calibration_nv_skip_logged = 0;
+
+static void queue_angle_calibration_save(void)
+{
+	angle_calibration_nv_hanging = ANGLE_HANGING;
+	angle_calibration_nv_circle = ANGLE_360_DEG_IN_ADC_UNITS;
+	angle_calibration_nv_pending = 1;
+}
 #endif
 
 void CONTROL_SetHangingFromCurrentReading(void)
@@ -439,7 +460,6 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		ANGLE_HANGING = mean;
 		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
 		AngleHangingSetOnChip = true;
-		AngleSpanSetOnChip = false;
 		AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;
 		enable_irq();
 		hanging_capture_active = false;
@@ -447,8 +467,7 @@ static void hanging_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 #ifdef ZYNQ
 		xil_printf("ANGLE_HANGING millicounts: %d\r\n", hanging_millicounts(mean));
 		Led_RgbConfirmFlash();
-		hanging_nv_value = mean;
-		hanging_nv_pending = 1;
+		queue_angle_calibration_save();
 #endif
 	}
 }
@@ -529,7 +548,6 @@ static void upright_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		ANGLE_360_DEG_IN_ADC_UNITS = new_circle;
 		ANGLE_NORMALIZATION_FACTOR = (2.0f * M_PI) / ANGLE_360_DEG_IN_ADC_UNITS;
 		ANGLE_DEVIATION = angle_deviation_update(ANGLE_HANGING);
-		/* The span is meaningful only together with the hanging reference used. */
 		AngleHangingSetOnChip = true;
 		AngleSpanSetOnChip = true;
 		AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;
@@ -540,6 +558,7 @@ static void upright_capture_feed(int adc_12bit, int invalid_step, float angleD_a
 		xil_printf("UPRIGHT millicounts: %d; ANGLE_360 millicounts: %d\r\n",
 			   hanging_millicounts(upright), hanging_millicounts(new_circle));
 		Led_RgbUprightCaptureSuccess();
+		queue_angle_calibration_save();
 #endif
 	}
 }
@@ -967,20 +986,22 @@ void CONTROL_BackgroundTask(void)
 #endif
 
 #ifdef ZYNQ
-	if (hanging_nv_pending) {
-		if (ControlOnChip_Enabled) {
-			if (!hanging_nv_skip_logged) {
-				xil_printf("QSPI hanging save deferred: control on\r\n");
-				hanging_nv_skip_logged = 1;
+	if (angle_calibration_nv_pending) {
+		if (ControlOnChip_Enabled || PCControl_Enabled) {
+			if (!angle_calibration_nv_skip_logged) {
+				xil_printf("QSPI angle calibration save deferred: control on\r\n");
+				angle_calibration_nv_skip_logged = 1;
 			}
 		} else {
-			hanging_nv_pending = 0;
-			hanging_nv_skip_logged = 0;
-			if (QspiNv_SaveHanging(hanging_nv_value) == 0) {
-				xil_printf("QSPI hanging saved millicounts: %d\r\n",
-					   hanging_millicounts(hanging_nv_value));
+			angle_calibration_nv_pending = 0;
+			angle_calibration_nv_skip_logged = 0;
+			if (QspiNv_SaveCalibration(angle_calibration_nv_hanging,
+						   angle_calibration_nv_circle) == 0) {
+				xil_printf("QSPI angle calibration saved: hanging %d; circle %d millicounts\r\n",
+					   hanging_millicounts(angle_calibration_nv_hanging),
+					   hanging_millicounts(angle_calibration_nv_circle));
 			} else {
-				xil_printf("QSPI hanging save failed\r\n");
+				xil_printf("QSPI angle calibration save failed\r\n");
 			}
 		}
 	}
@@ -1439,8 +1460,8 @@ void cmd_PCControlMode(bool en)
 void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 {
 	bool force_angle_hanging = (pktLen >= 17) && (config[12] != 0);
-	bool btn0_this_boot = AngleHangingSetOnChip && !force_angle_hanging;
-	bool apply_hanging = force_angle_hanging || (!btn0_this_boot && !PcHangingApplied);
+	bool chip_calibration_locked = AngleHangingSetOnChip && !force_angle_hanging;
+	bool apply_hanging = force_angle_hanging || (!chip_calibration_locked && !PcHangingApplied);
 
 	disable_irq();
 
@@ -1456,7 +1477,6 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 		ANGLE_HANGING = serial_get_f32(&config[3]);
 		if (force_angle_hanging) {
 			AngleHangingSetOnChip = true;
-			AngleSpanSetOnChip = false;
 			AngleCalibrationRevision = (AngleCalibrationRevision + 1u) & 0x0Fu;
 		} else {
 			PcHangingApplied = true;
@@ -1482,11 +1502,14 @@ void cmd_SetControlConfig(const unsigned char * config, unsigned char pktLen)
 	enable_irq();
 
 #ifdef ZYNQ
-	if (btn0_this_boot) {
-		xil_printf("PC ANGLE_HANGING ignored (BTN0 this boot); millicounts: %d\r\n",
+	if (force_angle_hanging) {
+		queue_angle_calibration_save();
+	}
+	if (chip_calibration_locked) {
+		xil_printf("PC ANGLE_HANGING ignored (chip/QSPI calibration); millicounts: %d\r\n",
 			   hanging_millicounts(ANGLE_HANGING));
 	} else if (force_angle_hanging) {
-		xil_printf("PC forced ANGLE_HANGING millicounts: %d\r\n",
+		xil_printf("PC forced ANGLE_HANGING millicounts: %d; QSPI save queued\r\n",
 			   hanging_millicounts(ANGLE_HANGING));
 	} else if (apply_hanging) {
 		xil_printf("PC ANGLE_HANGING applied once from globals; millicounts: %d\r\n",

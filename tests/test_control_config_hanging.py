@@ -6,8 +6,8 @@ Firmware/Src/CartPoleFirmware/communication_with_PC.c:
   GET 17: same fields as SET 16 plus hanging status, CRC last
 
 Hanging status bit 0 is hanging_set_on_chip, bits 1..4 carry the calibration
-revision also sent in STATE telemetry bits 4..7, bit 5 is BTN1 span ownership,
-and bit 7 advertises support for querying the runtime angle span.
+revision also sent in STATE telemetry bits 4..7, bit 5 is chip/QSPI span
+ownership, and bit 7 advertises support for querying the runtime angle span.
 """
 from __future__ import annotations
 
@@ -89,8 +89,34 @@ def test_btn0_immediately_disarms_all_control_before_capture():
     ) == 2
 
 
-def test_boot_uses_compile_default_not_qspi_lock():
+def test_boot_loads_paired_qspi_calibration_before_pc_config():
     src = CONTROL_C.read_text()
-    assert "QspiNv_LoadHanging" not in src
+    init = src.split("void CONTROL_Init(void)", 1)[1].split(
+        "void CONTROL_ToggleState(void)", 1
+    )[0]
+    assert "QspiNv_LoadCalibration(&stored_hanging, &stored_angle_360)" in init
+    assert "ANGLE_HANGING = stored_hanging;" in init
+    assert "ANGLE_360_DEG_IN_ADC_UNITS = stored_angle_360;" in init
+    assert "ANGLE_NORMALIZATION_FACTOR = (2.0f * M_PI)" in init
+    assert "AngleHangingSetOnChip = true;" in init
+    assert "AngleSpanSetOnChip = true;" in init
     assert "PcHangingApplied" in src
-    assert "BTN0 this boot" in src
+    assert "chip/QSPI calibration" in src
+
+
+def test_all_calibration_changes_queue_paired_qspi_save():
+    src = CONTROL_C.read_text()
+    btn0 = src.split("static void hanging_capture_feed", 1)[1].split(
+        "static void upright_capture_abort", 1
+    )[0]
+    btn1 = src.split("static void upright_capture_feed", 1)[1].split(
+        "int clip(", 1
+    )[0]
+    pc_config = src.rsplit("void cmd_SetControlConfig", 1)[1].split(
+        "void cmd_SetSeclocConfig", 1
+    )[0]
+    assert "queue_angle_calibration_save();" in btn0
+    assert "queue_angle_calibration_save();" in btn1
+    assert "if (force_angle_hanging)" in pc_config
+    assert "queue_angle_calibration_save();" in pc_config
+    assert "QspiNv_SaveCalibration(angle_calibration_nv_hanging," in src

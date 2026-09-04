@@ -797,7 +797,7 @@ class PhysicalCartPoleDriver:
             )
 
         if hanging_on_chip:
-            print('Chip ANGLE_HANGING: {:.3f} ADC (BTN0 this boot or `b`; '
+            print('Chip ANGLE_HANGING: {:.3f} ADC (chip/QSPI calibration; '
                   'globals.py not applied)'.format(chip_hanging))
             ANGLE_HANGING = chip_hanging
             driver_globals.ANGLE_HANGING = chip_hanging
@@ -812,7 +812,11 @@ class PhysicalCartPoleDriver:
                   '(globals.py file unchanged).')
             print('ANGLE_DEVIATION: {:.3f} ADC reading'.format(float(ANGLE_DEVIATION.item())))
         if chip_circle is not None:
-            source = 'BTN1 this boot' if self.InterfaceInstance.angle_span_set_on_chip else 'firmware default'
+            source = (
+                'chip/QSPI calibration'
+                if self.InterfaceInstance.angle_span_set_on_chip
+                else 'firmware default'
+            )
             print('Chip ANGLE_360_DEG_IN_ADC_UNITS: {:.3f} ADC ({})'.format(
                 chip_circle, source))
 

@@ -98,12 +98,12 @@ on both paths.
 
 1. JP5 = **QSPI**, 12 V connected, track empty, pole hanging.
 2. Power on with **SW0–SW3 all off**. RGB may be cyan (target at center).
-3. **BTN0** — disarms, zeros PWM, captures `ANGLE_HANGING`. RGB flashes **white**
-   on success. Alternating **red** means the pot dead zone is too close to
-   vertical: rotate the clamp toward horizontal and press BTN0 again.
-4. Hold the pole upright and press **BTN1** to refresh `ANGLE_360_DEG_IN_ADC_UNITS`.
-   RGB is **blue** for the 50-sample capture, **green** on success, and **red**
-   if the pole moved or was not opposite the hanging pose.
+3. Firmware restores the stored hanging/circle pair. If no valid record exists,
+   or the angle hardware moved, press **BTN0** while hanging. It disarms, zeros
+   PWM, captures and stores `ANGLE_HANGING`; RGB flashes **white**.
+4. When recalibrating, hold the pole upright and press **BTN1** to capture and
+   store `ANGLE_360_DEG_IN_ADC_UNITS`. RGB is **blue** while sampling,
+   **green** on success, and **red** if rejected.
 5. Optional: **BTN5** once after power-up to re-center the track (does not
    change hanging).
 6. **BTN4** to arm. Motor is still 0 until a valid one-hot switch is on.
@@ -194,15 +194,16 @@ The LEDs above the switches mirror the DIP state.
 
 | Button | Firmware name | Action |
 |---|---|---|
-| **BTN0** (PL) | `BUTTON_3` | Disarm on-chip and PC control, zero PWM, capture hanging (50 wrap-aware filtered ADC samples). Aborts if the pole is moving, the dead zone is in the sample, or calibration is running. Writes QSPI at `0xFD0000` / `0xFFF000` when control stays off. |
-| **BTN1** (PL) | `BUTTON_4` | Disarm and capture upright (50 samples), then set `ANGLE_360_DEG_IN_ADC_UNITS = 2 × |upright − hanging|`. Rejects movement or a result outside ±20% of the current span. Session only. |
+| **BTN0** (PL) | `BUTTON_3` | Disarm on-chip and PC control, zero PWM, capture hanging (50 wrap-aware filtered ADC samples), then store the hanging/circle pair in QSPI. |
+| **BTN1** (PL) | `BUTTON_4` | Disarm and capture upright (50 samples), set `ANGLE_360_DEG_IN_ADC_UNITS = 2 × |upright − hanging|`, then store the updated pair in QSPI. Rejects movement or a result outside ±20% of the current span. |
 | **BTN4** (PS) | `BUTTON_1` | Arm / disarm on-chip control. Same as PC **`u`**. |
 | **BTN5** (PS) | `BUTTON_2` | Track-center calibration. Same as PC **`K`**. Never changes hanging. |
 | **BTN2–BTN3** | PL, unassigned by default | Present in the bitstream; `Button_SetAction(PL_BTN_n, …)` can bind them without a new FPGA build. |
 
-After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
-loaded at boot). First PC connect applies `globals.py` once, unless BTN0 already
-ran this boot.
+At startup, a valid version-2 QSPI record restores both `ANGLE_HANGING` and
+`ANGLE_360_DEG_IN_ADC_UNITS`. That pair takes precedence over the normal
+`globals.py` hanging value. With no valid record, firmware and PC file defaults
+are used. Old version-1 records are ignored because they contain no angle span.
 
 ### RGB LEDs
 
@@ -250,19 +251,17 @@ the target.
 
 ## After every power cycle
 
-Not stored across reset (unless you copy numbers into `parameters.c` /
-`globals.py`):
+Not stored across reset:
 
 * Track center — **BTN5** / **`K`**
-* Session hanging — **BTN0** / **`b`**, or the compile-time default
-* Session full-circle angle span — **BTN1**, or the compile-time default
 * Motor type in RAM — calibration detects encoder sign; each side reloads its
   file default after reset. Starting the Python driver overwrites firmware RAM
   with `MOTOR` from `globals.py`
 
-Angle circle (`ANGLE_360_DEG_IN_ADC_UNITS`) and the motor map
-(`MOTOR_CORRECTION`) are compile-time / file constants. Recalibrate those only
-when the analog chain or the motor changes. See
+The hanging angle and full-circle span are stored together in QSPI and restored
+at startup. The compiled/file values are fallbacks when the record is absent or
+invalid. The motor map (`MOTOR_CORRECTION`) remains a compile-time/file
+constant. Recalibrate these only when the analog chain or motor changes. See
 [calibration.md](calibration.md).
 
 ## Glossary

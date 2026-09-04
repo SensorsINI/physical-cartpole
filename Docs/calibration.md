@@ -51,18 +51,20 @@ On Zybo, hang the pole and press **BTN0**. That immediately disarms on-chip and
 PC control, zeros PWM, and overwrites `ANGLE_HANGING` from a wrap-aware mean of
 50 hardware-filtered 12-bit samples (aborted if the pole is moving or track
 calibration is running). Control stays off. PC **`b`** is the same role but
-averages 1000 streamed samples and does not write QSPI.
+averages 1000 streamed samples. Both paths queue a QSPI save containing the
+new hanging value and the current full-circle span.
 
 RGB **alternating red**: stored hanging places the dead zone within 20° of
 vertical. Turn the screw toward horizontal and press BTN0 again. **Cyan** is a
 centered cart target, not a fault.
 
-After reset, hanging is the compile-time value in `parameters.c` (QSPI is not
-loaded at boot). The first PC connect applies `globals.py` once, unless BTN0
-already ran this boot. Later `CMD_SET_CONTROL_CONFIG` (including after `K`) does
-not change hanging. `b` forces RAM on the chip; BTN0 also writes QSPI at
-`0xFD0000` / `0xFFF000`. To persist across reboot without BTN0, copy the value
-into `ANGLE_HANGING_*` in `globals.py` and `parameters.c`.
+At startup, firmware loads `ANGLE_HANGING` and
+`ANGLE_360_DEG_IN_ADC_UNITS` as one validated QSPI record from `0xFD0000` or
+`0xFFF000`. A loaded calibration takes precedence over the normal
+`globals.py` value sent by the PC. If the record is absent or invalid, firmware
+uses `parameters.c`, and the first PC connection may apply the hanging fallback
+from `globals.py`. Version-1 records stored hanging only and are intentionally
+rejected; after installing version 2, run BTN0 then BTN1 once.
 
 BTN2–BTN3 remain free in the bitstream and can take `Button_SetAction(PL_BTN_n, ...)`
 without another FPGA build.
@@ -79,13 +81,16 @@ press **BTN1**. BTN1 disarms control, averages 50 filtered samples, and applies
 `2 × |upright − ANGLE_HANGING|` to the circle, normalization factor, and zero
 offset. It rejects movement and results outside ±20% of the previous circle.
 RGB is blue while sampling, green on success, and red on rejection. A connected
-driver adopts the new span automatically. The result is session-only; copy it
-from the terminal into `globals.py` and `parameters.c` to persist it.
+driver adopts the new span automatically. BTN1 saves the updated span together
+with the current hanging value, so both are restored on the next startup.
+BTN0 likewise saves its new hanging value together with the current span.
+Wait a few seconds after either calibration before cutting power.
 
-Firmware **does** define `ANGLE_360_DEG_IN_ADC_UNITS` in `parameters.c`. It
-must match `globals.py`. Current Zybo Development values (new analog chain,
-2026-09-03): hanging **3273.353**, circle **4068.73**. STM and Zybo numbers
-differ (different robots and/or the 3.3 V → 1 V divider).
+Firmware **does** define `ANGLE_360_DEG_IN_ADC_UNITS` in `parameters.c`.
+`parameters.c` and `globals.py` should still match because they are the
+fallback when QSPI has no valid calibration. Current Zybo Development values
+(new analog chain, 2026-09-03): hanging **3273.353**, circle **4068.73**. STM
+and Zybo numbers differ (different robots and/or the 3.3 V → 1 V divider).
 
 ## Zero angle
 

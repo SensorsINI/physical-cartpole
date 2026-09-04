@@ -70,13 +70,15 @@ These must agree for predictable behavior:
 | Chip / board | `Driver/globals.py` `CHIP`, `ZYNQ_BOARD` | `hardware_bridge.h` `ZYNQ` / `STM`, `ZYBO_Z720` |
 | Slider interface | `USE_EXTERNAL_INTERFACE` | `#define USE_EXTERNAL_INTERFACE` |
 | Show mux | `SHOW_SWITCH_MUX` | Compiled for Zybo Z7-20 in `controller_profiles.c` |
-| Hanging angle | `ANGLE_HANGING_*` in `globals.py` | `parameters.c` |
-| Angle circle | `ANGLE_360_DEG_IN_ADC_UNITS` | `parameters.c` |
+| Hanging angle fallback | `ANGLE_HANGING_*` in `globals.py` | `parameters.c` |
+| Angle circle fallback | `ANGLE_360_DEG_IN_ADC_UNITS` | `parameters.c` |
 | Motor map | `MOTOR_CORRECTION_*` | `parameters.c` `MOTOR_CORRECTION` |
 | Motor type default | `MOTOR` | `parameters.c` / calibration RAM |
 
-After **`K`** / track calibration, hanging is unchanged. After **BTN0**, the
-chip may lock hanging for the boot (QSPI save); the PC adopts it on connect.
+At startup, a valid QSPI record overrides both angle fallbacks with one paired
+`ANGLE_HANGING` / `ANGLE_360_DEG_IN_ADC_UNITS` calibration. BTN0, BTN1, and PC
+**`b`** update that record; normal PC configuration cannot overwrite a loaded
+pair. **`K`** / track calibration never changes angle calibration.
 
 ## Sim → train → deploy (pointers only)
 

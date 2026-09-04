@@ -6,21 +6,25 @@ Daily operation is in [operating.md](operating.md). Script details:
 
 ## Standalone / QSPI (no PC at power-up)
 
-Hardcode hanging and motor map in `parameters.c` first, or press BTN0 after each
-boot. Prove the same image on JTAG before flashing.
+Firmware loads the paired hanging/full-circle calibration from QSPI at startup.
+If no valid version-2 record exists, it falls back to `parameters.c`. After the
+first installation of version 2, press BTN0 while hanging and BTN1 while
+upright once to create the new record. Prove the same image on JTAG before
+flashing.
 
 The show `BOOT.BIN` is secloc2026 FSBL +
 `FPGA/bitstreams/cartpole_short_pole_secloc.bit` + AMP CPU0
 (`CartPoleFirmware_rpgd_amp_cpu0.elf`). CPU0 starts CPU1. Image-range erase
-only — **do not erase the entire 16 MiB** or you wipe hanging at `0xFD0000` /
-`0xFFF000`.
+only — **do not erase the entire 16 MiB** or you wipe angle calibration at
+`0xFD0000` / `0xFFF000`.
 
 1. JP5 = **JTAG**. Close Vitis. Build if needed:
    `RPGD_AMP_PRODUCTION=1 Firmware/Scripts/build_rpgd_amp_elfs.sh`
 2. `Firmware/Scripts/program_show_qspi.sh`
    (uses [program_qspi_boot.tcl](../Firmware/Scripts/program_qspi_boot.tcl);
    template BIF: [cartpole_qspi.bif](../Firmware/Scripts/cartpole_qspi.bif)).
-3. Power off. JP5 = **QSPI**. Power on. Hang, BTN0, BTN4, exactly one of SW0–SW3.
+3. Power off. JP5 = **QSPI**. Power on. Recalibrate with BTN0 then BTN1 only if
+   needed; BTN4, then exactly one of SW0–SW3.
 
 ### Standalone / microSD fallback
 
