@@ -1,4 +1,4 @@
 [submodule "Driver/CartPoleSimulation"]
 	path = Driver/CartPoleSimulation
-	url = git@github.com:SensorsINI/CartPoleSimulation.git
+	url = https://github.com/SensorsINI/CartPoleSimulation.git
 	branch = master
