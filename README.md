@@ -32,6 +32,9 @@ Integration with [Neural Control Tools](https://github.com/SensorsINI/Neural-Con
   (simulator + GRU). Recordings are the CartPoleSimulation Release
   [`l4dc25-pole-L-and-m-data`](https://github.com/SensorsINI/CartPoleSimulation/releases/tag/l4dc25-pole-L-and-m-data).
   Details: [experiment README](Driver/CartPoleSimulation/SI_Toolkit_ASF/Experiments/Experiment_16_11_2024_pole_L_and_m_informed/README.md).
+  Angle-offset sister (GRU-8IN-64-0, swings up at 90°/180°):
+  [`angle-adaptive-gru-recreated`](https://github.com/SensorsINI/physical-cartpole/tree/angle-adaptive-gru-recreated).
+  Details: [experiment README](Driver/CartPoleSimulation/SI_Toolkit_ASF/Experiments/Experiment_angle_offset_GRU_8IN/README.md).
 * [Hardware Neural Control of CartPole and F1TENTH Race Car](https://arxiv.org/abs/2407.08681)
 * [RPGD: A Small-Batch Parallel Gradient Descent Optimizer with Explorative Resampling
 for Nonlinear Model Predictive Control](https://www.zora.uzh.ch/id/eprint/254218/1/RPGD_ICRA_2023.pdf)
