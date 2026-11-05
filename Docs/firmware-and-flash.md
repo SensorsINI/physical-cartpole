@@ -83,11 +83,12 @@ Setup:
 * Connect ST-Link or J-Link. The J-Link picture applies to ST-Link; the
   connector is the same.
   ![jtag_programming.png](../Docs/jtag_programming.png)
-* STM32CubeIDE → `File -> Import... -> Existing Projects into Workspace` →
+* STM32CubeIDE → `File -> Import... -> General -> Existing Projects into Workspace` →
   [Firmware/CubeIDE/CartPoleFirmware](../Firmware/CubeIDE/CartPoleFirmware).
   ![CubeImportProject.png](../Docs/CubeImportProject.png)
 * In `hardware_bridge.h`: comment `#define ZYNQ`, uncomment `#define STM`.
-* Build, then `Run As -> STM32 C/C++ Application`. Debugger tab: your probe.
+* In the `Project Explorer`, select the `CartPoleFirmware` project, then choose `Project -> Build Project`.
+* `Run As -> STM32 C/C++ Application`. Debugger tab: your probe.
   ![RunConfigurationSTM.png](../Docs/RunConfigurationSTM.png)
 * STM firmware lives in flash and overwrites the factory image. Save the
   original first if you still need it.

@@ -24,7 +24,9 @@
 // JB Pmod slider → target_position; JB equilibrium button → target_equilibrium
 // (see tools/slider_pmod/README.md). Needs the cartpole bitstream with PmodAD1
 // counts 40/120/1000/800.
+# ifdef ZYNQ
 #define USE_EXTERNAL_INTERFACE
+#endif
 
 /* Opt-in Zynq PS RPGD timing/parity harness. Leave undefined for normal control. */
 /* #define RPGD_ON_TARGET_TEST */
